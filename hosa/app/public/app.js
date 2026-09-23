@@ -82,7 +82,7 @@ function renderConceptDetail(concept) {
 
   const body = document.createElement('div');
   body.className = 'concept-body';
-  body.innerHTML = concept.bodyHtml; // trusted: local KB content the user controls, not external input
+  body.innerHTML = concept.bodyHtml; // sanitized server-side (sanitize-html) before it reaches the client
   panel.appendChild(body);
 }
 

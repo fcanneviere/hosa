@@ -115,6 +115,17 @@ test('getConcept renders body to HTML in bodyHtml', () => {
   assert.match(result.bodyHtml, /<p>Corps\.<\/p>/);
 });
 
+test('getConcept sanitizes bodyHtml, stripping script tags from concept bodies', () => {
+  const root = makeFixtureKb();
+  fs.writeFileSync(
+    path.join(root, 'cdc', 'malicious.md'),
+    '---\ntype: Exigence\ntitle: Malicious\n---\nSafe text.\n<script>alert(1)</script>\n'
+  );
+  const result = getConcept(root, 'cdc/malicious.md');
+  assert.doesNotMatch(result.bodyHtml, /<script/i);
+  assert.match(result.bodyHtml, /Safe text\./);
+});
+
 test('getConcept computes trustTier: human-reviewed when verified.by starts with human:', () => {
   const root = makeFixtureKb();
   const result = getConcept(root, 'trust-cases/human-reviewed.md');

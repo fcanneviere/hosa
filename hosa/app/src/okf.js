@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
 const { marked } = require('marked');
+const sanitizeHtml = require('sanitize-html');
 
 const RESERVED_FILENAMES = new Set(['index.md', 'log.md']);
 const TICKET_STATES = new Set(['todo', 'doing', 'done', 'blocked']);
@@ -66,7 +67,7 @@ function getConcept(kbRoot, relPath) {
     path: normalizedPath,
     frontmatter: parsed.data,
     body: parsed.content,
-    bodyHtml: marked.parse(parsed.content),
+    bodyHtml: sanitizeHtml(marked.parse(parsed.content)),
     trustTier: trustTier(parsed.data.verified),
   };
 }
