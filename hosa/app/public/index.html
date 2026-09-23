@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Hosa — pilotage de projet</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Hosa</h1>
+    <nav>
+      <button data-view="tickets" class="active">Tickets</button>
+      <button data-view="kb">Base de connaissance</button>
+    </nav>
+    <button id="refresh">Rafraîchir</button>
+  </header>
+
+  <main>
+    <section id="view-tickets">
+      <div class="board">
+        <div class="column" data-state="todo"><h2>À faire</h2><div class="cards"></div></div>
+        <div class="column" data-state="doing"><h2>En cours</h2><div class="cards"></div></div>
+        <div class="column" data-state="done"><h2>Fait</h2><div class="cards"></div></div>
+        <div class="column" data-state="blocked"><h2>Bloqué</h2><div class="cards"></div></div>
+      </div>
+    </section>
+
+    <section id="view-kb" hidden>
+      <label for="type-filter">Type :</label>
+      <select id="type-filter">
+        <option value="">Tous</option>
+      </select>
+      <ul id="concept-list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
