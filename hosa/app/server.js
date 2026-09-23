@@ -9,12 +9,16 @@ function createApp(kbRoot) {
   return app;
 }
 
+function startServer(kbRoot, port) {
+  return createApp(kbRoot).listen(port, '127.0.0.1');
+}
+
 if (require.main === module) {
   const kbRoot = process.env.HOSA_KB_ROOT || path.join(__dirname, '..', 'kb');
   const port = process.env.PORT || 3000;
-  createApp(kbRoot).listen(port, () => {
+  startServer(kbRoot, port).on('listening', () => {
     console.log(`hosa app listening on http://localhost:${port}`);
   });
 }
 
-module.exports = { createApp };
+module.exports = { createApp, startServer };

@@ -54,7 +54,12 @@ function getConcept(kbRoot, relPath) {
     return null;
   }
   const raw = fs.readFileSync(resolvedTarget, 'utf8');
-  const parsed = matter(raw);
+  let parsed;
+  try {
+    parsed = matter(raw, {}); // options object bypasses gray-matter's content cache
+  } catch (err) {
+    return null; // malformed YAML frontmatter
+  }
   const normalizedPath = path.relative(resolvedRoot, resolvedTarget).split(path.sep).join('/');
   return { path: normalizedPath, frontmatter: parsed.data, body: parsed.content };
 }

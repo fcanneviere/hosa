@@ -63,12 +63,23 @@ function switchView(view) {
   }
 }
 
+function showError(message) {
+  const banner = document.getElementById('error-banner');
+  banner.textContent = message;
+  banner.hidden = !message;
+}
+
 async function refresh() {
-  if (state.view === 'tickets') {
-    await loadTickets();
-  } else {
-    const typeFilter = document.getElementById('type-filter').value;
-    await loadKb(typeFilter);
+  try {
+    if (state.view === 'tickets') {
+      await loadTickets();
+    } else {
+      const typeFilter = document.getElementById('type-filter').value;
+      await loadKb(typeFilter);
+    }
+    showError('');
+  } catch (err) {
+    showError(`Erreur de chargement : ${err.message}`);
   }
 }
 
@@ -83,7 +94,11 @@ document.getElementById('type-filter').addEventListener('change', refresh);
 document.getElementById('refresh').addEventListener('click', refresh);
 
 (async function init() {
-  const allConcepts = await loadKb();
-  populateTypeFilter(allConcepts);
-  await loadTickets();
+  try {
+    const allConcepts = await loadKb();
+    populateTypeFilter(allConcepts);
+    await loadTickets();
+  } catch (err) {
+    showError(`Erreur de chargement : ${err.message}`);
+  }
 })();

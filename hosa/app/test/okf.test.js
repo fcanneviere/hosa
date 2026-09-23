@@ -87,3 +87,10 @@ test('getConcept returns frontmatter and body for a valid path', () => {
   assert.equal(result.frontmatter.type, 'Exigence');
   assert.match(result.body, /Corps\./);
 });
+
+test('getConcept returns null for malformed frontmatter instead of throwing', () => {
+  const root = makeFixtureKb();
+  assert.doesNotThrow(() => getConcept(root, 'tickets/ticket-bad-frontmatter.md'));
+  const result = getConcept(root, 'tickets/ticket-bad-frontmatter.md');
+  assert.equal(result, null);
+});
