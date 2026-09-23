@@ -34,6 +34,20 @@ function makeFixtureKb() {
     '---\ntype: Ticket\ntitle: [unterminated\n---\nCorps.\n'
   );
   fs.writeFileSync(path.join(root, 'tickets', 'no-type.md'), '---\ntitle: Sans type\n---\nCorps.\n');
+
+  fs.mkdirSync(path.join(root, 'trust-cases'));
+  fs.writeFileSync(
+    path.join(root, 'trust-cases', 'human-reviewed.md'),
+    '---\ntype: Stack Decision\ntitle: Verifie humain\nverified: { by: "human:fcanneviere" }\n---\nCorps.\n'
+  );
+  fs.writeFileSync(
+    path.join(root, 'trust-cases', 'machine-confirmed.md'),
+    '---\ntype: Stack Decision\ntitle: Verifie machine\nverified: { by: "claude-code/sonnet-5" }\n---\nCorps.\n'
+  );
+  fs.writeFileSync(
+    path.join(root, 'trust-cases', 'unverified.md'),
+    '---\ntype: Stack Decision\ntitle: Non verifie\n---\nCorps.\n'
+  );
   return root;
 }
 
@@ -93,4 +107,28 @@ test('getConcept returns null for malformed frontmatter instead of throwing', ()
   assert.doesNotThrow(() => getConcept(root, 'tickets/ticket-bad-frontmatter.md'));
   const result = getConcept(root, 'tickets/ticket-bad-frontmatter.md');
   assert.equal(result, null);
+});
+
+test('getConcept renders body to HTML in bodyHtml', () => {
+  const root = makeFixtureKb();
+  const result = getConcept(root, 'cdc/exigence-1.md');
+  assert.match(result.bodyHtml, /<p>Corps\.<\/p>/);
+});
+
+test('getConcept computes trustTier: human-reviewed when verified.by starts with human:', () => {
+  const root = makeFixtureKb();
+  const result = getConcept(root, 'trust-cases/human-reviewed.md');
+  assert.equal(result.trustTier, 'human-reviewed');
+});
+
+test('getConcept computes trustTier: machine-confirmed when verified.by is set but not human:', () => {
+  const root = makeFixtureKb();
+  const result = getConcept(root, 'trust-cases/machine-confirmed.md');
+  assert.equal(result.trustTier, 'machine-confirmed');
+});
+
+test('getConcept computes trustTier: unverified when verified is absent', () => {
+  const root = makeFixtureKb();
+  const result = getConcept(root, 'trust-cases/unverified.md');
+  assert.equal(result.trustTier, 'unverified');
 });

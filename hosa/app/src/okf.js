@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
+const { marked } = require('marked');
 
 const RESERVED_FILENAMES = new Set(['index.md', 'log.md']);
 const TICKET_STATES = new Set(['todo', 'doing', 'done', 'blocked']);
@@ -61,7 +62,18 @@ function getConcept(kbRoot, relPath) {
     return null; // malformed YAML frontmatter
   }
   const normalizedPath = path.relative(resolvedRoot, resolvedTarget).split(path.sep).join('/');
-  return { path: normalizedPath, frontmatter: parsed.data, body: parsed.content };
+  return {
+    path: normalizedPath,
+    frontmatter: parsed.data,
+    body: parsed.content,
+    bodyHtml: marked.parse(parsed.content),
+    trustTier: trustTier(parsed.data.verified),
+  };
+}
+
+function trustTier(verified) {
+  if (!verified || !verified.by) return 'unverified';
+  return verified.by.startsWith('human:') ? 'human-reviewed' : 'machine-confirmed';
 }
 
 function listTicketsByState(kbRoot) {

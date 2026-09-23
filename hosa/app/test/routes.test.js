@@ -45,6 +45,17 @@ test('GET /api/concepts/*path returns a concept for a valid path', async () => {
   server.close();
 });
 
+test('GET /api/concepts/*path includes bodyHtml and trustTier', async () => {
+  const kbRoot = makeFixtureKb();
+  const server = await startTestServer(kbRoot);
+  const { port } = server.address();
+  const res = await fetch(`http://localhost:${port}/api/concepts/tickets/ticket-1.md`);
+  const body = await res.json();
+  assert.match(body.bodyHtml, /<p>Corps du ticket\.<\/p>/);
+  assert.equal(body.trustTier, 'unverified');
+  server.close();
+});
+
 test('GET /api/concepts/*path returns 404 for a nonexistent concept', async () => {
   const kbRoot = makeFixtureKb();
   const server = await startTestServer(kbRoot);
