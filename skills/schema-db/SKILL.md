@@ -13,6 +13,9 @@ Turns the application-side data structures into real database schema — migrati
 Cherche une Stack Decision base de données existante dans
 kb/stack/ ; absente → demande à l'utilisateur, l'enregistre
         ↓
+Détermine le projet cible : kb/infra/ existant, sinon
+demande le chemin et l'enregistre
+        ↓
 Reprend les entités de schema-app (ou les redérive si besoin)
         ↓
 Lit les conventions de migration déjà en place dans le
@@ -38,6 +41,8 @@ Read `kb/stack/` for an existing `Stack Decision` covering the managed project's
 mkdir -p hosa/kb/stack/
 ```
 
+Write to `hosa/kb/stack/base-de-donnees-projet-gere.md`:
+
 ```markdown
 ---
 type: Stack Decision
@@ -56,19 +61,23 @@ generated: { by: human:<user>, at: <ISO8601> }
 
 Log to `kb/stack/log.md` (create if missing) — OKF §9.
 
-## Step 2: Get the Entities
+## Step 2: Find the Managed Project
+
+Same as `schema-app` Step 1: read `kb/infra/` for the `Infra` entry giving the project's root path. If none exists, ask the user for it and write one there. Never accept `hosa/app` or `hosa/kb` as the path — those are Hosa's own tooling, out of scope; if the user gives one of them, say so and ask again.
+
+## Step 3: Get the Entities
 
 If `schema-app` just ran in this session, reuse its entities. Otherwise, re-derive them the same way (`donnees`-qualified `Exigence`s + `Persona`s), same rule as `schema-app` Step 2 — stop and ask for `donnees` to run first if any item lacks an origin annotation.
 
-## Step 3: Read Existing Migration Conventions
+## Step 4: Read Existing Migration Conventions
 
 Before writing anything, read the managed project's existing migration/DDL setup — which tool it uses (if any), naming style, directory layout. Match it exactly. If none exists yet, pick conventions consistent with the chosen database engine and the project's existing stack, and say what you chose and why.
 
-## Step 4: Write the Migrations
+## Step 5: Write the Migrations
 
-One migration/DDL file per entity (or grouped, if the project's existing convention groups them), in the managed project, in its existing style.
+One migration/DDL file per entity (or grouped, if the project's existing convention groups them), in the managed project, in its existing style. Never edit an existing migration that may already be applied — write a new one for any change to an entity already covered.
 
-## Step 5: Update the `Infra` Entry
+## Step 6: Update the `Infra` Entry
 
 If the migrations' path isn't already recorded in the `Infra` entry (`schema-app`'s Step 1), add it and log the update to `kb/infra/log.md`.
 

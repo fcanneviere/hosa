@@ -37,11 +37,13 @@ Manual: `/schema-app`. Auto: immediately after `donnees`, or "génère la struct
 
 ## Step 1: Find the Managed Project
 
-Read `kb/infra/` for an existing `Infra` entry giving the project's root path. If none exists, ask the user for it and write one:
+Read `kb/infra/` for an existing `Infra` entry giving the project's root path. If none exists, ask the user for it and write one. Never accept `hosa/app` or `hosa/kb` as the path — those are Hosa's own tooling, out of scope; if the user gives one of them, say so and ask again.
 
 ```
 mkdir -p hosa/kb/infra/
 ```
+
+Write to `hosa/kb/infra/projet-gere.md`:
 
 ```markdown
 ---
@@ -60,9 +62,9 @@ Log to `kb/infra/log.md` (create if missing) — OKF §9.
 
 ## Step 2: Derive Data Entities
 
-Read every `stable` `Exigence` in `kb/cdc/` annotated by `donnees`, and the `Persona`s they reference. Group `Données en entrée`/`sortie` items into coherent entities — items that describe the same real-world thing (a client, a commande, a facture...) belong to the same entity, regardless of which Exigence mentions them.
+Read every `stable` `Exigence` in `kb/cdc/`, and the `Persona`s they reference. If any `Données en entrée`/`sortie` item has no origin annotation (`— origine : ...`) yet, stop and say so — run `donnees` first, don't guess an origin here.
 
-If an item has no origin annotation yet, stop and say so — run `donnees` first, don't guess an origin here.
+Once every item is annotated, group them into coherent entities — items that describe the same real-world thing (a client, a commande, a facture...) belong to the same entity, regardless of which Exigence mentions them.
 
 ## Step 3: Read Existing Conventions
 
@@ -70,7 +72,7 @@ Before writing anything, read the managed project's existing code: language, fra
 
 ## Step 4: Write the Structures
 
-One data structure (type/model/schema, whatever the project's stack calls for) per entity, in the managed project, in its existing style.
+One data structure (type/model/schema, whatever the project's stack calls for) per entity, in the managed project, in its existing style. If a structure for that entity already exists, extend it to match the current entity definition rather than creating a duplicate.
 
 ## Step 5: Write the Documentation
 
