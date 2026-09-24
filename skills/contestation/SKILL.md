@@ -52,6 +52,8 @@ Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": 
 
 If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3.
 
+Once at least one `Exigence` has been validated to `stable` in this session, propose the next stage: "Le cahier des charges est stable. Je lance la qualification des données maintenant ? (skill `donnees`)". Yes → invoke `donnees`. No → finish normally; `donnees` stays invocable manually later.
+
 ## No Commits
 
 This skill doesn't commit. Report what changed (including any `status`/`verified` updates, and any persona Pain points/Quick wins `hosa-key-user` appended and logged to `kb/personnas/log.md` during Step 1) and let the user or the orchestrating flow decide when to commit.
