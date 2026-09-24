@@ -1,4 +1,4 @@
-const state = { view: 'tickets', allConcepts: [] };
+const state = { view: 'home', allConcepts: [] };
 
 const TRUST_LABELS = {
   'human-reviewed': 'vérifié (humain)',
@@ -10,6 +10,40 @@ async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Request failed: ${url}`);
   return res.json();
+}
+
+function renderHome(project) {
+  const container = document.getElementById('home-content');
+  container.replaceChildren();
+  if (!project) {
+    const empty = document.createElement('p');
+    empty.className = 'home-empty';
+    empty.textContent = 'Projet non initialisé. Utilisez le skill hosa pour renseigner son nom, son objectif, sa description et son public cible.';
+    container.appendChild(empty);
+    return;
+  }
+  const hero = document.createElement('div');
+  hero.className = 'home-hero';
+  const title = document.createElement('h1');
+  title.textContent = project.frontmatter.title || project.path;
+  const tagline = document.createElement('p');
+  tagline.className = 'home-tagline';
+  tagline.textContent = project.frontmatter.description || '';
+  const body = document.createElement('div');
+  body.className = 'concept-body';
+  body.innerHTML = project.bodyHtml; // sanitized server-side (sanitize-html) before it reaches the client
+  hero.append(title, tagline, body);
+  container.appendChild(hero);
+}
+
+async function loadHome() {
+  const list = await fetchJson('/api/concepts?type=Project');
+  if (!list.length) {
+    renderHome(null);
+    return;
+  }
+  const project = await fetchJson(`/api/concepts/${list[0].path}`);
+  renderHome(project);
 }
 
 function renderTickets(grouped) {
@@ -157,8 +191,10 @@ function populateTagFilter(concepts) {
 
 function switchView(view) {
   state.view = view;
-  document.getElementById('view-tickets').hidden = view !== 'tickets';
-  document.getElementById('view-kb').hidden = view !== 'kb';
+  const section = view === 'personas' ? 'kb' : view;
+  document.getElementById('view-home').hidden = section !== 'home';
+  document.getElementById('view-tickets').hidden = section !== 'tickets';
+  document.getElementById('view-kb').hidden = section !== 'kb';
   for (const button of document.querySelectorAll('nav button')) {
     button.classList.toggle('active', button.dataset.view === view);
   }
@@ -172,12 +208,17 @@ function showError(message) {
 
 async function refresh() {
   try {
-    if (state.view === 'tickets') {
+    if (state.view === 'home') {
+      await loadHome();
+    } else if (state.view === 'tickets') {
       await loadTickets();
     } else {
       const concepts = await loadKb();
       populateTypeFilter(concepts);
       populateTagFilter(concepts);
+      if (state.view === 'personas') {
+        document.getElementById('type-filter').value = 'Persona';
+      }
       renderKbView();
     }
     showError('');
@@ -200,6 +241,7 @@ document.getElementById('refresh').addEventListener('click', refresh);
 
 (async function init() {
   try {
+    await loadHome();
     const concepts = await loadKb();
     populateTypeFilter(concepts);
     populateTagFilter(concepts);

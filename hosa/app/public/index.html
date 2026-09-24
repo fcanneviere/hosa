@@ -9,7 +9,9 @@
   <header>
     <h1>Hosa</h1>
     <nav>
-      <button data-view="tickets" class="active">Tickets</button>
+      <button data-view="home" class="active">Accueil</button>
+      <button data-view="tickets">Tickets</button>
+      <button data-view="personas">Personas</button>
       <button data-view="kb">Base de connaissance</button>
     </nav>
     <button id="refresh">Rafraîchir</button>
@@ -18,7 +20,11 @@
   <p id="error-banner" hidden></p>
 
   <main>
-    <section id="view-tickets">
+    <section id="view-home">
+      <div id="home-content"></div>
+    </section>
+
+    <section id="view-tickets" hidden>
       <div class="board">
         <div class="column" data-state="todo"><h2>À faire</h2><div class="cards"></div></div>
         <div class="column" data-state="doing"><h2>En cours</h2><div class="cards"></div></div>

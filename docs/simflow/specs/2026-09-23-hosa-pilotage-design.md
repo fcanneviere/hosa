@@ -43,6 +43,7 @@ Chaque sous-dossier de `hosa/kb/` est un bundle OKF avec un type de concept déd
 
 | Dossier | `type` | Contenu |
 |---|---|---|
+| `kb/project/` | `Project` | Identité du projet (singleton) : nom, objectif, descriptif, public cible |
 | `kb/cdc/` | `Exigence` | Une exigence/besoin par fichier, extrait du cahier des charges |
 | `kb/personnas/` | `Persona` | Un persona (PO, utilisateur...) par fichier |
 | `kb/rules/design/` | `Design Rule` | Règles de conception |
@@ -106,6 +107,10 @@ Chaque dossier de bundle modifié reçoit une entrée dans son `log.md` (§9 OKF
 liste chronologique groupée par date, entrée la plus récente en tête.
 
 ## 2. Skill `hosa`
+
+**Statut (2026-09-24) :** une première tranche est implémentée — initialisation/mise
+à jour de l'identité du projet (`kb/project/`) et des personas. Les autres
+responsabilités listées ci-dessous restent à construire.
 
 Nouveau dossier `C:\dev\hosa\skills\hosa\SKILL.md`, suivant les conventions
 existantes des skills SimFlow (frontmatter `name`/`description`, diagramme de
