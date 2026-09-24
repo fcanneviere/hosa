@@ -27,6 +27,9 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
 | `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 3 |
 | `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 4 |
+| `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 1 |
+| `schema-app` | Derive data entities and write application-side data structures + documentation into the managed project — data-structuring pipeline stage 2 |
+| `schema-db` | Write database migrations/DDL into the managed project — data-structuring pipeline stage 3 |
 
 ## Triggering Rules
 
@@ -48,6 +51,9 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Rédige les exigences", "Écris le cahier des charges" (avec notes fournies) | `redaction` |
 | "Relis le cahier des charges" | `relecture` |
 | "Challenge le cahier des charges" | `contestation` |
+| "Précise les données du cahier des charges", "Qualifie l'origine des données" | `donnees` |
+| "Génère la structure de données de l'application" | `schema-app` |
+| "Génère la structure de base de données" | `schema-db` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
 
