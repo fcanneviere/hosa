@@ -77,7 +77,7 @@ Only once the persona is usable. Fully adopt their perspective — their vocabul
 Only for a process-interview request from `hosa-product-owner`, not a recette.
 
 1. Answer each question in character: what this persona needs before they can act in this process (données en entrée), what they produce or hand off (données en sortie), what they concretely do, what they're trying to accomplish here.
-2. If an answer reveals a pain point or quick win not already on file, append it to the persona's `Pain points` / `Quick wins` sections in `kb/personnas/<slug>.md` — same convention as during recette. Don't touch `Besoins`/`Attentes` here — those are Step 1's responsibility.
+2. If an answer reveals a pain point or quick win not already on file, append it to the persona's `Pain points` / `Quick wins` sections in `kb/personnas/<slug>.md` — same convention as during recette — and append an entry to `kb/personnas/log.md` (OKF §9). Don't touch `Besoins`/`Attentes` here — those are Step 1's responsibility.
 3. If you genuinely don't know how this persona would answer — the question needs a fact that isn't in their KB entry and isn't derivable from it — say so. Don't invent a specific process detail with no basis.
 
 Answer inline, in the persona's voice, structured by whichever questions were asked — the Output template below is for identification and recette runs, not this mode.

@@ -5,7 +5,7 @@ description: Use to gather cahier des charges input — business processes, who'
 
 # Interview
 
-Gathers raw material for the cahier des charges: which business processes exist, who's involved, and — persona by persona, via `hosa-key-user` — what each process means for them. Doesn't touch `hosa/kb/` yet; that's `redaction`'s job.
+Gathers raw material for the cahier des charges: which business processes exist, who's involved, and — persona by persona, via `hosa-key-user` — what each process means for them. Writes no `Exigence` itself; that's `redaction`'s job. `hosa-key-user` may still append newly surfaced Pain points/Quick wins to a persona's own KB entry during the process-interview dispatch (same convention as during a recette) — report any such change and its log entry, don't treat it as silent.
 
 ## Flow
 
@@ -77,7 +77,7 @@ Then propose: "Notes prêtes pour [N] processus. Je lance `redaction` maintenant
 
 ## No Commits
 
-This skill never writes to `hosa/kb/` — nothing to commit.
+This skill never writes `Exigence` concepts — nothing there to commit. Any persona Pain points/Quick wins that `hosa-key-user` appended during a process-interview dispatch are already written to `kb/personnas/<slug>.md` and logged to `kb/personnas/log.md` by that agent — report them in the handoff, but they aren't this skill's commit to make either.
 
 ## Output
 

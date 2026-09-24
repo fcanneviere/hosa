@@ -34,7 +34,7 @@ Manual: `/contestation`. Auto: immediately after a clean `relecture`, or "challe
 
 ## Step 1: PO → Personas Challenge
 
-Source the weak points from `relecture`'s report if it just ran; otherwise the PO does a quick pass itself first to identify anything that reads as under-justified. For each weak point tied to a persona, dispatch `hosa-key-user` (process-interview mode) with the PO's sharper question — "pourquoi ce besoin précisément", "qu'est-ce qui se passe si on ne le fait pas" — until the answer is either solid or the need turns out not to hold. If it doesn't hold, flag the exigence for rewrite in Step 3.
+The PO always does its own quick pass over `kb/cdc/` first, looking for any need that reads as under-justified — `relecture` checks precision and completeness, not whether a stated need actually holds up, so a clean `relecture` report is not a reason to skip this. If `relecture` just ran, fold its findings in as additional candidates rather than replacing this pass. For each weak point tied to a persona, dispatch `hosa-key-user` (process-interview mode) with the PO's sharper question — "pourquoi ce besoin précisément", "qu'est-ce qui se passe si on ne le fait pas" — until the answer is either solid or the need turns out not to hold. If it doesn't hold, flag the exigence for rewrite in Step 3.
 
 ## Step 2: `hosa-challenger` Independent Audit
 
@@ -48,13 +48,13 @@ If a second full loop still finds anomalies, stop looping silently and tell the 
 
 ## Step 4: Final Sign-Off
 
-Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": ask the user "Le cahier des charges est propre — tu valides ? (les exigences passeront en `stable`)". On yes, for every `Exigence` touched in this cycle, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }`. Log the change to `kb/cdc/log.md`.
+Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": list every `Exigence` still at `status: draft` that this audit actually covered (every one Step 2 read — the full bundle, since `hosa-challenger` always receives all of `kb/cdc/`), then ask "Le cahier des charges est propre — tu valides ? (ces N exigences passeront en `stable`)". On yes, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }` on each one listed. Log the change to `kb/cdc/log.md`.
 
 If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3.
 
 ## No Commits
 
-This skill doesn't commit. Report what changed (including any `status`/`verified` updates) and let the user or the orchestrating flow decide when to commit.
+This skill doesn't commit. Report what changed (including any `status`/`verified` updates, and any persona Pain points/Quick wins `hosa-key-user` appended and logged to `kb/personnas/log.md` during Step 1) and let the user or the orchestrating flow decide when to commit.
 
 ## Output
 
