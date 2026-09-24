@@ -22,6 +22,11 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `simflow:debug` | Systematic root cause analysis → confirm with user → fix → commit |
 | `simflow:status` | Snapshot of project state — spec, progress, tests, next step |
 | `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`hosa/kb/`) |
+| `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
+| `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
+| `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
+| `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 3 |
+| `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 4 |
 
 ## Triggering Rules
 
@@ -38,6 +43,11 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "It's broken", "This isn't working", "I'm getting an error", "There's a bug" | `simflow:debug` |
 | "Where are we?", "What's done?", "Catch me up", "What's left?" | `simflow:status` |
 | "Initialise le projet", "Configure hosa", "Crée un persona pour..." | `hosa` |
+| "Fais une recette de...", "Valide ça avec [persona]", "Est-ce que ça répond au besoin de..." | `recette` |
+| "Rédige le cahier des charges", "Interview les personas", "Démarre le cahier des charges" | `interview` |
+| "Rédige les exigences", "Écris le cahier des charges" (avec notes fournies) | `redaction` |
+| "Relis le cahier des charges" | `relecture` |
+| "Challenge le cahier des charges" | `contestation` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
 
