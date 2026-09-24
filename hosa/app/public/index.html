@@ -28,18 +28,22 @@
     </section>
 
     <section id="view-kb" hidden>
-      <label for="type-filter">Type :</label>
-      <select id="type-filter">
-        <option value="">Tous</option>
-      </select>
-      <label for="tag-filter">Tag :</label>
-      <select id="tag-filter">
-        <option value="">Tous</option>
-      </select>
-      <label for="search-box">Recherche :</label>
-      <input type="search" id="search-box" placeholder="titre ou description" />
-      <ul id="concept-list"></ul>
-      <div id="concept-detail" hidden></div>
+      <div class="kb-toolbar">
+        <label for="type-filter">Type</label>
+        <select id="type-filter">
+          <option value="">Tous</option>
+        </select>
+        <label for="tag-filter">Tag</label>
+        <select id="tag-filter">
+          <option value="">Tous</option>
+        </select>
+        <label for="search-box">Recherche</label>
+        <input type="search" id="search-box" placeholder="titre ou description" />
+      </div>
+      <div class="kb-layout">
+        <ul id="concept-list"></ul>
+        <div id="concept-detail" hidden></div>
+      </div>
     </section>
   </main>
 

@@ -40,12 +40,30 @@ function renderConceptList(concepts) {
   list.replaceChildren();
   for (const concept of concepts) {
     const item = document.createElement('li');
-    const title = concept.frontmatter.title || concept.path;
-    const description = concept.frontmatter.description || '';
-    item.textContent = `[${concept.frontmatter.type}] ${title} — ${description}`;
+    const title = document.createElement('span');
+    title.className = 'concept-title';
+    title.textContent = concept.frontmatter.title || concept.path;
+    const type = document.createElement('span');
+    type.className = 'badge badge-type';
+    type.textContent = concept.frontmatter.type;
+    const description = document.createElement('span');
+    description.className = 'concept-description';
+    description.textContent = concept.frontmatter.description || '';
+    item.append(type, title, description);
     item.addEventListener('click', () => showConceptDetail(concept.path));
     list.appendChild(item);
   }
+}
+
+function infoboxRow(table, label, value) {
+  if (!value) return;
+  const row = table.insertRow();
+  const th = document.createElement('th');
+  th.textContent = label;
+  row.appendChild(th);
+  const td = document.createElement('td');
+  td.textContent = value;
+  row.appendChild(td);
 }
 
 function renderConceptDetail(concept) {
@@ -57,28 +75,24 @@ function renderConceptDetail(concept) {
   title.textContent = concept.frontmatter.title || concept.path;
   panel.appendChild(title);
 
-  const meta = document.createElement('p');
-  const trust = TRUST_LABELS[concept.trustTier] || concept.trustTier;
-  meta.textContent = `${concept.frontmatter.type} · ${concept.frontmatter.status || 'stable'} · ${trust}`;
-  panel.appendChild(meta);
-
+  const infobox = document.createElement('table');
+  infobox.className = 'infobox';
+  infoboxRow(infobox, 'Type', concept.frontmatter.type);
+  infoboxRow(infobox, 'Statut', concept.frontmatter.status || 'stable');
+  infoboxRow(infobox, 'Confiance', TRUST_LABELS[concept.trustTier] || concept.trustTier);
   if (concept.frontmatter.tags && concept.frontmatter.tags.length) {
-    const tags = document.createElement('p');
-    tags.textContent = `Tags : ${concept.frontmatter.tags.join(', ')}`;
-    panel.appendChild(tags);
+    infoboxRow(infobox, 'Tags', concept.frontmatter.tags.join(', '));
   }
-
   if (concept.frontmatter.generated) {
-    const gen = document.createElement('p');
-    gen.textContent = `Généré par ${concept.frontmatter.generated.by} le ${concept.frontmatter.generated.at || '?'}`;
-    panel.appendChild(gen);
+    infoboxRow(infobox, 'Généré par', `${concept.frontmatter.generated.by} (${concept.frontmatter.generated.at || '?'})`);
   }
-
   if (concept.frontmatter.verified) {
-    const ver = document.createElement('p');
-    ver.textContent = `Vérifié par ${concept.frontmatter.verified.by} le ${concept.frontmatter.verified.at || '?'}`;
-    panel.appendChild(ver);
+    infoboxRow(infobox, 'Vérifié par', `${concept.frontmatter.verified.by} (${concept.frontmatter.verified.at || '?'})`);
   }
+  const trustBadge = document.createElement('span');
+  trustBadge.className = `badge badge-trust badge-trust-${concept.trustTier}`;
+  trustBadge.textContent = TRUST_LABELS[concept.trustTier] || concept.trustTier;
+  panel.append(infobox, trustBadge);
 
   const body = document.createElement('div');
   body.className = 'concept-body';
