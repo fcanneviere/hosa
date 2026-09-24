@@ -24,6 +24,10 @@ user says "terminé"
 Write kb/project/identity.md +
 kb/personnas/<slug>.md per persona
         ↓
+Dispatch hosa-key-user per persona: interroge
+l'utilisateur → enrichit Identité/Objectifs/Besoins/
+Attentes/Pain points/Quick wins
+        ↓
 Log to kb/project/log.md and
 kb/personnas/log.md
 ```
@@ -82,6 +86,24 @@ generated: { by: human:<user>, at: <ISO8601> }
 <description>
 ```
 
+### Enriching personas
+
+This flow only captures nom + description — not enough to embody the
+persona for recette métier. Once all personas for this session are written
+(the user has said "terminé"), for each persona just created dispatch
+`hosa-key-user` in identification mode (persona file path, no recette
+target) so it interrogates the user directly and writes back Identité /
+Objectifs / Besoins / Attentes / Pain points / Quick wins to
+`kb/personnas/<slug>.md`, per its own process. Do this one persona at a time
+— don't batch the interrogation across personas.
+
+Once every persona in this session has been enriched, propose the next
+stage: "Personas prêts. Lancer l'interview du cahier des charges
+maintenant ? (skill `interview`)". Yes → invoke the `interview` skill. No →
+finish normally; `interview` stays invocable manually later. Skip this
+proposal entirely if zero personas were created or enriched this session —
+there's nothing yet to interview about.
+
 ### Logging
 
 Append an entry to `kb/project/log.md` and `kb/personnas/log.md` (create if missing) — OKF §9 format: chronological, most recent date first, grouped by date.
@@ -92,7 +114,7 @@ Append an entry to `kb/project/log.md` and `kb/personnas/log.md` (create if miss
 
 Read the current values and show them to the user. Ask which field(s) to change. Confirm each new value (echo it back, wait for yes) before writing — overwrite only the confirmed fields, leave the rest untouched. Log the update to `kb/project/log.md`.
 
-Personas already in `kb/personnas/` are not touched by the update flow — adding a new persona later is a separate request ("ajoute un persona pour...").
+Personas already in `kb/personnas/` are not touched by the update flow — adding a new persona later is a separate request ("ajoute un persona pour..."), following the same "Writing personas" + "Enriching personas" steps as the init flow.
 
 ---
 
