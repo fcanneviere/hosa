@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Use to design and scaffold the software architecture of the project Hosa manages, consistent with the stable cahier des charges, the chosen stack, and the data structures already written by `schema-app`/`schema-db`. Fifth and last stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture).
+description: Use to design and scaffold the software architecture of the project Hosa manages, consistent with the stable cahier des charges, the chosen stack, and the data structures already written by `schema-app`/`schema-db`. Fifth stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture → backlog).
 ---
 
 # Architecture
@@ -77,5 +77,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - `<path>`
 
 ## Suite
-Pipeline de structuration des données terminé.
+Je lance `backlog` maintenant ?
 ```
