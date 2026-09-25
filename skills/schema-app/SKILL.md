@@ -1,6 +1,6 @@
 ---
 name: schema-app
-description: Use to derive data entities from qualified `kb/cdc/` Exigences and write the corresponding data structures, plus their documentation, into the project Hosa manages. Second stage of the data-structuring pipeline (donnees → schema-app → schema-db).
+description: Use to derive data entities from qualified `kb/cdc/` Exigences and write the corresponding data structures, plus their documentation, into the project Hosa manages. Third stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture).
 ---
 
 # Schema App
@@ -68,7 +68,7 @@ Once every item is annotated, group them into coherent entities — items that d
 
 ## Step 3: Read Existing Conventions
 
-Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `simflow-implementer`. If the project has no existing data-structure code yet, pick conventions consistent with its language/framework and say what you chose and why.
+Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `simflow-implementer`. If the project has no existing data-structure code yet, use the language/framework `Stack Decision` in `kb/stack/` (written by the `stack` skill) rather than guessing; if that's also missing, pick conventions consistent with whatever's available and say what you chose and why.
 
 ## Step 4: Write the Structures
 
