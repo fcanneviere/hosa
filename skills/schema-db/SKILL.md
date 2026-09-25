@@ -1,6 +1,6 @@
 ---
 name: schema-db
-description: Use to write database migrations/DDL for the data entities derived from `kb/cdc/`, into the project Hosa manages. Third and last stage of the data-structuring pipeline (donnees → schema-app → schema-db).
+description: Use to write database migrations/DDL for the data entities derived from `kb/cdc/`, into the project Hosa manages. Fourth stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture).
 ---
 
 # Schema DB
@@ -10,8 +10,8 @@ Turns the application-side data structures into real database schema — migrati
 ## Flow
 
 ```
-Cherche une Stack Decision base de données existante dans
-kb/stack/ ; absente → demande à l'utilisateur, l'enregistre
+Lit la Stack Decision base de données (écrite par `stack`,
+ou demandée ici en fallback si absente)
         ↓
 Détermine le projet cible : kb/infra/ existant, sinon
 demande le chemin et l'enregistre
@@ -25,6 +25,8 @@ projet cible
         ↓
 Met à jour l'entrée Infra si le chemin des migrations n'y
 figure pas encore
+        ↓
+Propose d'enchaîner sur `architecture`
 ```
 
 ## Trigger
@@ -35,7 +37,7 @@ Manual: `/schema-db`. Auto: immediately after `schema-app`, or "génère la stru
 
 ## Step 1: Determine the Database Engine
 
-Read `kb/stack/` for an existing `Stack Decision` covering the managed project's database. If none exists, ask the user and write one:
+Read `kb/stack/` for the `Stack Decision` covering the managed project's database — normally already written by the `stack` skill before this pipeline reaches `schema-db`. If none exists (this skill invoked standalone, without `stack` having run), fall back to asking the user and writing one:
 
 ```
 mkdir -p hosa/kb/stack/
@@ -95,5 +97,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - `<path>` — <entité>
 
 ## Suite
-Pipeline de structuration des données terminé.
+Je lance `architecture` maintenant ?
 ```
