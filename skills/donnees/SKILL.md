@@ -1,6 +1,6 @@
 ---
 name: donnees
-description: Use to annotate the origin (générée/fournie/saisie) of each donnée listed under `Données en entrée`/`Données en sortie` in stable `kb/cdc/` Exigences. First stage of the data-structuring pipeline (donnees → schema-app → schema-db), runs after `contestation` has made the CDC stable.
+description: Use to annotate the origin (générée/fournie/saisie) of each donnée listed under `Données en entrée`/`Données en sortie` in stable `kb/cdc/` Exigences. Second stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture), runs after `stack` has recorded the technical choices.
 ---
 
 # Données
@@ -10,8 +10,9 @@ Qualifies where each piece of data in the cahier des charges actually comes from
 ## Flow
 
 ```
-Pour chaque Exigence stable de kb/cdc/ (ou celles touchées
-dans cette session si enchaîné depuis contestation) :
+Pour chaque Exigence stable de kb/cdc/ (ou celles validées
+par contestation dans cette session, si enchaîné depuis
+contestation/stack) :
         ↓
 Pour chaque item de Données en entrée/sortie déjà annoté : passe
         ↓
@@ -28,13 +29,13 @@ Propose d'enchaîner sur `schema-app`
 
 ## Trigger
 
-Manual: `/donnees`. Auto: immediately after a clean `contestation` sign-off, or "précise les données du cahier des charges", "qualifie l'origine des données".
+Manual: `/donnees`. Auto: immediately after `stack`, or "précise les données du cahier des charges", "qualifie l'origine des données".
 
 ---
 
 ## Step 1: Scope
 
-If invoked right after `contestation`, work on the `Exigence`s that just moved to `stable` in this session. Otherwise, read every `stable` `Exigence` in `kb/cdc/`. Skip anything still `draft` — data qualification works from a settled cahier des charges, not one still being contested. If there are no `stable` Exigences at all, say so and stop.
+If `contestation` validated one or more `Exigence`s to `stable` earlier in this same session (whether or not `stack` ran in between), work on those just-validated `Exigence`s. Otherwise, read every `stable` `Exigence` in `kb/cdc/`. Skip anything still `draft` — data qualification works from a settled cahier des charges, not one still being contested. If there are no `stable` Exigences at all, say so and stop.
 
 ## Step 2: Per Item — Qualify Origin
 
