@@ -16,8 +16,12 @@ demande le chemin et l'enregistre
 Lit les Exigence stable de kb/cdc/ → dérive les besoins
 techniques pertinents
         ↓
+Vérifie kb/stack/ (décisions déjà enregistrées) et le code
+existant du projet cible — une catégorie déjà fixée n'est pas
+reproposée
+        ↓
 Propose 2-3 stacks (langage, framework, BDD, hébergement)
-avec compromis
+avec compromis, uniquement pour les catégories encore ouvertes
         ↓
 Utilisateur choisit
         ↓
@@ -61,13 +65,20 @@ Log to `kb/infra/log.md` (create if missing) — OKF §9. Never accept `hosa/app
 
 Read every `stable` `Exigence` in `kb/cdc/`. If there are none, say so and stop — a stack choice needs a settled cahier des charges. Derive the needs that bear on a stack choice: data volume and shape, external integrations, deployment constraints, anything else named in the CDC.
 
-## Step 3: Propose Options
+## Step 3: Check for Existing Decisions
 
-Propose 2-3 stack options — language, framework, database, hosting where relevant — each with its trade-offs. Recommend one and say why.
+Before proposing anything, read `kb/stack/` for `Stack Decision`s already recorded for this project, and the managed project's existing code (if any) for a stack already in use. For each category (language/framework, database, hosting):
+- Already fixed by existing code, or already recorded as a `Stack Decision` → don't re-propose it. State what's already fixed and why, and skip straight to confirming it still holds — a rerun of `stack` isn't a license to pick something new for a category the project already committed to.
+- If the existing code and an existing `Stack Decision` disagree, say so and ask the user which one is authoritative before continuing — don't silently pick one.
+- Genuinely undecided → propose for it in Step 4.
 
-## Step 4: Record the Decision
+## Step 4: Propose Options
 
-Once the user picks, write each decision as a `Stack Decision` in `kb/stack/` — one file per category, e.g. `hosa/kb/stack/langage-framework-projet-gere.md`, `hosa/kb/stack/base-de-donnees-projet-gere.md`, `hosa/kb/stack/hebergement-projet-gere.md`:
+Propose 2-3 stack options — language, framework, database, hosting where relevant, but only for categories Step 3 found undecided — each with its trade-offs. Recommend one and say why.
+
+## Step 5: Record the Decision
+
+Once the user picks, write each newly-decided category as a `Stack Decision` in `kb/stack/` — one file per category, e.g. `hosa/kb/stack/langage-framework-projet-gere.md`, `hosa/kb/stack/base-de-donnees-projet-gere.md`, `hosa/kb/stack/hebergement-projet-gere.md`. Never overwrite a category Step 3 found already fixed — a database migration or scaffolded code may already depend on it.
 
 ```markdown
 ---

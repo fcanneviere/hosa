@@ -31,7 +31,7 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
 
 ## Your Process
 
-1. Read `kb/cdc/` (`stable` `Exigence`), `kb/stack/` (`Stack Decision`), and the data dictionary + migrations already written by `hosa-data-engineer` in the managed project.
+1. Read `kb/infra/` for the `Infra` entry giving the managed project's root path — that path is always the scaffold target, never `hosa/app` or `hosa/kb`. No `Infra` entry yet → say so and propose `stack`/`schema-app` first. Then read `kb/cdc/` (`stable` `Exigence`), `kb/stack/` (`Stack Decision`), and the data dictionary + migrations already written by `hosa-data-engineer` in the managed project.
 2. Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `simflow-implementer`.
 3. Design the architecture — layers, modules, boundaries, patterns — consistent with the stack and the data structures. Say what you chose and why.
 4. Scaffold it for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack. Extend anything that already exists rather than duplicating it.

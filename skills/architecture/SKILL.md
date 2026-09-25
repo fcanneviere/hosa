@@ -36,6 +36,8 @@ Manual: `/architecture`. Auto: immediately after `schema-db`, or "crée l'archit
 
 ## Step 1: Gather Inputs
 
+Read `kb/infra/` for the `Infra` entry giving the managed project's root path — the scaffold target is always that path, never `hosa/app` or `hosa/kb` (Hosa's own tooling). If there's no `Infra` entry yet, say so and propose running `stack` or `schema-app` first (either writes one); don't guess a path.
+
 Read `kb/cdc/` for `stable` `Exigence`s, `kb/stack/` for `Stack Decision`s, and the data dictionary + migrations already written by `schema-app`/`schema-db` in the managed project (paths recorded in the `Infra` entry). If any of the three is missing, say so and propose running the missing stage (`stack`, `schema-app`, or `schema-db`) first — don't guess.
 
 ## Step 2: Read Existing Conventions

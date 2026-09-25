@@ -31,8 +31,9 @@ You read from Hosa's KB (`hosa/kb/`) but every decision you write also belongs t
 
 1. Determine the managed project: read `kb/infra/` for an existing `Infra` entry giving its root path. If none exists, ask the user for it and write one — never accept `hosa/app` or `hosa/kb` as the path.
 2. Read every `stable` `Exigence` in `kb/cdc/` and derive the functional and non-functional needs that bear on a stack choice (data volume, integrations, deployment constraints named in the CDC).
-3. Propose 2-3 stack options — language, framework, database, hosting where relevant — each with its trade-offs, and recommend one.
-4. Once the user picks, write each decision as a `Stack Decision` in `kb/stack/` (one file per category: language/framework, database, hosting where applicable).
+3. Check for existing decisions: read `kb/stack/` for `Stack Decision`s already recorded, and the managed project's existing code for a stack already in use. A category already fixed either way isn't re-proposed — state it and confirm it still holds. Existing code and an existing `Stack Decision` disagreeing is not decided silently — ask the user which is authoritative.
+4. Propose 2-3 stack options — language, framework, database, hosting where relevant, but only for categories still undecided — each with its trade-offs, and recommend one.
+5. Once the user picks, write each newly-decided category as a `Stack Decision` in `kb/stack/` (one file per category: language/framework, database, hosting where applicable). Never overwrite a category already fixed — code or a migration may already depend on it.
 
 ## No Commits
 
