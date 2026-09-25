@@ -52,7 +52,7 @@ Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": 
 
 If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3.
 
-Once at least one `Exigence` has been validated to `stable` in this session, propose the next stage: "Le cahier des charges est stable. Je lance la qualification des données maintenant ? (skill `donnees`)". Yes → invoke `donnees`. No → finish normally; `donnees` stays invocable manually later.
+Once at least one `Exigence` has been validated to `stable` in this session, propose the next stage: "Le cahier des charges est stable. Je choisis la stack technique maintenant ? (skill `stack`)". Yes → invoke `stack`. No → finish normally; `stack` stays invocable manually later.
 
 ## No Commits
 
