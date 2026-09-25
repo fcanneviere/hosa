@@ -1,0 +1,105 @@
+---
+name: stack
+description: Use to propose and record the technical stack for the project Hosa manages, based on the stable cahier des charges. First stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture).
+---
+
+# Stack
+
+Turns "what the application must do" (the stable cahier des charges) into a chosen technical stack, recorded before any data structure or architecture work begins.
+
+## Flow
+
+```
+Détermine le projet cible : kb/infra/ existant, sinon
+demande le chemin et l'enregistre
+        ↓
+Lit les Exigence stable de kb/cdc/ → dérive les besoins
+techniques pertinents
+        ↓
+Propose 2-3 stacks (langage, framework, BDD, hébergement)
+avec compromis
+        ↓
+Utilisateur choisit
+        ↓
+Écrit chaque décision comme Stack Decision dans kb/stack/
+        ↓
+Propose d'enchaîner sur `donnees`
+```
+
+## Trigger
+
+Manual: `/stack`. Auto: immediately after a clean `contestation` sign-off, or "choisis la stack technique", "quelle stack pour le projet".
+
+---
+
+## Step 1: Find the Managed Project
+
+Read `kb/infra/` for an existing `Infra` entry giving the project's root path. If none exists, ask the user for it and write one:
+
+```
+mkdir -p hosa/kb/infra/
+```
+
+Write to `hosa/kb/infra/projet-gere.md`:
+
+```markdown
+---
+type: Infra
+title: Projet géré — chemin racine
+description: Racine du projet applicatif géré par Hosa
+tags: []
+status: stable
+generated: { by: human:<user>, at: <ISO8601> }
+---
+## Chemin racine
+<chemin>
+```
+
+Log to `kb/infra/log.md` (create if missing) — OKF §9. Never accept `hosa/app` or `hosa/kb` as the path — those are Hosa's own tooling, out of scope; if the user gives one of them, say so and ask again.
+
+## Step 2: Derive Technical Needs
+
+Read every `stable` `Exigence` in `kb/cdc/`. If there are none, say so and stop — a stack choice needs a settled cahier des charges. Derive the needs that bear on a stack choice: data volume and shape, external integrations, deployment constraints, anything else named in the CDC.
+
+## Step 3: Propose Options
+
+Propose 2-3 stack options — language, framework, database, hosting where relevant — each with its trade-offs. Recommend one and say why.
+
+## Step 4: Record the Decision
+
+Once the user picks, write each decision as a `Stack Decision` in `kb/stack/` — one file per category, e.g. `hosa/kb/stack/langage-framework-projet-gere.md`, `hosa/kb/stack/base-de-donnees-projet-gere.md`, `hosa/kb/stack/hebergement-projet-gere.md`:
+
+```markdown
+---
+type: Stack Decision
+title: <catégorie> — <projet>
+description: <choix technique et sa catégorie>
+tags: []
+status: stable
+generated: { by: human:<user>, at: <ISO8601> }
+---
+## Décision
+<choix>
+
+## Justification
+<pourquoi>
+```
+
+Log to `kb/stack/log.md` (create if missing) — OKF §9.
+
+## No Commits
+
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+
+## Output
+
+```
+## Stack proposée
+[Options présentées avec compromis]
+
+## Stack retenue
+- `kb/stack/<slug>.md` — [décision]
+
+## Suite
+Je lance `donnees` maintenant ?
+```
