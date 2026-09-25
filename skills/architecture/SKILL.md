@@ -58,7 +58,7 @@ An architecture document in the managed project (e.g. `docs/architecture.md`, or
 
 ## Step 6: Update the `Infra` Entry
 
-Add the architecture documentation's path to the `Infra` entry, and log the update to `kb/infra/log.md`.
+Add the architecture documentation's path to the `Infra` entry under its own `## Documentation d'architecture` heading — a fixed heading, not a bare line, so a later reader (e.g. `backlog`) can tell it apart from the data dictionary or migrations paths `schema-app`/`schema-db` also record there. Log the update to `kb/infra/log.md`.
 
 ## No Commits
 

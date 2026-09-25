@@ -78,7 +78,7 @@ Never block ticket creation on a missing `Stack Decision`.
 
 ## Step 4: Add the Architecture Placement (architect role)
 
-Read `kb/infra/` for the `Infra` entry's architecture documentation path (written by `architecture`). If one is recorded, read it and append to the ticket:
+Read `kb/infra/` for the `Infra` entry's `## Documentation d'architecture` heading (written by `architecture`) — that heading, specifically, not the data dictionary or migrations paths `schema-app`/`schema-db` also record in the same `Infra` entry. If it's there, read the documentation it points to and append to the ticket:
 
 ```markdown
 ## Placement architecture (architecte)
