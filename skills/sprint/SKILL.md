@@ -1,11 +1,11 @@
 ---
 name: sprint
-description: Use to compose a sprint from the Product Backlog — dispatches tickets in `hosa-product-owner`'s priority order, up to a given capacity, guarding against dispatching a ticket whose technical feasibility or architecture placement was never actually evaluated. Follows the data-structuring pipeline's last stage (`backlog`), but is itself delivery planning, not data structuring.
+description: Use to compose a sprint from the Product Backlog — dispatches tickets in `hosa-product-owner`'s priority order, up to a given capacity, guarding against dispatching a ticket whose technical feasibility, architecture placement, or interface placement was never actually evaluated. Follows the data-structuring pipeline's last stage (`backlog`), but is itself delivery planning, not data structuring.
 ---
 
 # Sprint
 
-Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility and architecture placement have both been actually evaluated, not left on `backlog`'s fallback line.
+Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line.
 
 ## Flow
 
@@ -19,9 +19,9 @@ Reprend l'ordre de priorité tenu par hosa-product-owner
 (demande si pas explicite)
         ↓
 Pour chaque ticket dans cet ordre, jusqu'à capacité :
-vérifie Note technique + Placement architecture ; si ligne
-de repli, propose de combler le manque plutôt que
-d'engager sans savoir
+vérifie Note technique + Placement architecture (architecte) +
+Placement interface (UX/UI) ; si ligne de repli, propose de
+combler le manque plutôt que d'engager sans savoir
         ↓
 Écrit kb/sprints/<slug>.md, state: planned
         ↓
@@ -50,10 +50,10 @@ Read the priority order `hosa-product-owner` currently holds for these tickets (
 
 Walk the tickets in that order, up to the capacity from Step 1:
 
-- Read the ticket's `## Note technique (senior dev)` and `## Placement architecture (architecte)` sections.
-- If either section is missing entirely, or still holds `backlog`'s fallback line ("Stack pas encore choisie — faisabilité non évaluée." or "Architecture pas encore scaffoldée — placement non déterminé."), treat it the same way: say so and propose filling the gap now — running `stack`/`architecture`, or getting a real opinion from the senior-dev/architect roles — rather than dispatching the ticket without knowing whether it's actually buildable. A ticket written directly by `hosa-product-owner` without going through `backlog` has no such sections at all — that's the same gap, not a pass.
+- Read the ticket's `## Note technique (senior dev)`, `## Placement architecture (architecte)`, and `## Placement interface (UX/UI)` sections.
+- If any of the three sections is missing entirely, or still holds `backlog`'s fallback line ("Stack pas encore choisie — faisabilité non évaluée.", "Architecture pas encore scaffoldée — placement non déterminé.", or "Interface pas encore scaffoldée — placement non déterminé."), treat it the same way: say so and propose filling the gap now — running `stack`/`architecture`/`interface`, or getting a real opinion from the senior-dev/architect/UX-UI-designer roles — rather than dispatching the ticket without knowing whether it's actually buildable. A ticket written directly by `hosa-product-owner` without going through `backlog` has no such sections at all — that's the same gap, not a pass.
 - If the user fills the gap, re-read the updated note and re-evaluate this ticket against it. If the gap stays unfilled, this ticket does not enter this sprint — it stays in the backlog, and capacity is not spent on it.
-- Otherwise (both notes are real), dispatch it: write `sprint: <slug>` into the ticket's frontmatter, add it to the sprint's ticket list.
+- Otherwise (all three notes are real), dispatch it: write `sprint: <slug>` into the ticket's frontmatter, add it to the sprint's ticket list.
 - If capacity is reached before the ticket list runs out, stop — the rest stay in the backlog for a future sprint. If fewer eligible tickets exist than the requested capacity, dispatch every eligible one and say so — not an error.
 
 ## Step 5: Write the Sprint
