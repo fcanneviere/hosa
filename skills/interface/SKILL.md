@@ -46,7 +46,7 @@ Manual: `/interface`. Auto: immediately after `architecture`, or "conçois l'int
 
 Read `kb/infra/` for the `Infra` entry giving the managed project's root path — the scaffold target is always that path, never `hosa/app` or `hosa/kb`. If there's no `Infra` entry, or no `## Documentation d'architecture` heading recorded on it yet, say so and propose running `architecture` first; don't guess a path or a layer to build on.
 
-Read `kb/cdc/` for `stable` `Exigence`s, `kb/personnas/` for every persona, `kb/stack/` for `Stack Decision`s, and the architecture documentation itself (path from the `Infra` entry).
+Read `kb/cdc/` for `stable` `Exigence`s, `kb/personnas/` for every persona, `kb/stack/` for `Stack Decision`s, and the architecture documentation itself (path from the `Infra` entry). If none of `kb/cdc/`'s `Exigence`s is `stable`, say so and propose running `contestation` first. If `kb/stack/` has no `Stack Decision` yet, say so and propose running `stack` first. If `kb/personnas/` only holds the example persona (no real one), say so and propose sharpening it (via `hosa-key-user`) or running `hosa` first — don't interview a placeholder. If `kb/project/` only holds the example `Project` concept (no real one), say so and propose running `hosa` first, before any persona is interviewed — writing a visual identity into a placeholder happens in Step 3, but knowing there's nowhere to write it is a precondition, not something to discover after N interviews.
 
 ## Step 2: Interview Each Persona
 
@@ -54,7 +54,7 @@ For each persona in `kb/personnas/`, dispatch `hosa-key-user` as a UI-interview 
 
 ## Step 3: Propose the Visual Identity
 
-Propose a visual identity (color palette, typography, tone) for the project. Once the user validates or adjusts it, write it into `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading. If `kb/project/` has no real `Project` concept yet (only the example entry), say so and propose running `hosa` first rather than writing into a placeholder.
+Propose a visual identity (color palette, typography, tone) for the project. Once the user validates or adjusts it, write it into `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading.
 
 ## Step 4: Propose Design Rules
 
