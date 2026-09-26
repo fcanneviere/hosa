@@ -13,7 +13,7 @@ You receive:
 - **A single task** from `hosa-tech-lead`'s plan — description, files involved, the placement constraint (module/layer/entity) it must stay inside
 - **The managed project's worktree path** for the active sprint
 
-If any of this is missing and you cannot proceed without it, say so immediately — do not guess.
+If any of this is missing, or you cannot finish the task for a reason that isn't a structural deviation (a behavior the ticket/task never specified, an edit that turns out impossible as described), say so immediately under `Blocked` in your Output — do not guess, and do not attempt a partial or best-guess finish.
 
 ## Your Process
 
@@ -40,6 +40,10 @@ You never commit. The `develop` skill commits once, at the end of the ticket, af
 ## Structural Deviation
 [If none: "None"]
 [What's missing from the current structure to complete this task]
+
+## Blocked
+[If none: "None"]
+[Missing input, or a behavior the task never specified, that stopped you short of a structural deviation — what, and what you need to proceed]
 
 ## Watch Out For
 [Integration points, assumptions to validate — if none: "None"]

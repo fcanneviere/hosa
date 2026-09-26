@@ -41,7 +41,7 @@ Manual: `/develop <slug-ticket>`. Auto: "développe le ticket X", "implémente l
 
 ## Step 1: Read the Ticket and Sprint
 
-Lit `kb/tickets/<slug>.md`. Lit son champ `sprint`, puis `kb/sprints/<slug-sprint>.md` : **si le champ `sprint` est absent, si `state` n'est pas `active`, ou si `worktree` est absent, le dit et propose `git` Mode 1 — stoppe, ne travaille jamais sur la branche de base.**
+Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe — ce champ n'appartient qu'à `hosa-product-owner` ; un nouveau passage ici l'écraserait.** Lit son champ `sprint`, puis `kb/sprints/<slug-sprint>.md` : **si le champ `sprint` est absent, si `state` n'est pas `active`, ou si `worktree` est absent, le dit et propose `git` Mode 1 — stoppe, ne travaille jamais sur la branche de base.**
 
 ## Step 2: Mark In Progress
 
@@ -53,7 +53,7 @@ Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entr
 
 ## Step 4: Implement Sequentially
 
-Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree. **Une seule tâche à la fois — jamais de dispatch concurrent.** Si une tâche revient avec `Structural Deviation` non vide : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur avec la même proposition qu'à l'étape 3, stoppe. Le ticket reste `state: doing`, aucun commit.
+Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree. **Une seule tâche à la fois — jamais de dispatch concurrent.** Si une tâche revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
 
 ## Step 5: Present and Confirm
 
@@ -61,10 +61,14 @@ Une fois toutes les tâches faites : présente les fichiers modifiés (cumulés 
 
 ## Step 6: Commit
 
+Opère depuis le worktree du sprint (chemin lu à l'étape 1), jamais depuis le dépôt de cette session ni depuis la racine `Infra`. Confirme d'abord que `git -C <worktree> branch --show-current` vaut bien `sprint/<slug-sprint>` — sinon stoppe, ne commit pas.
+
+Vérifie `git -C <worktree> config user.name`/`user.email` avant tout commit ; si l'un des deux est absent, demande plutôt que de committer. Ceci l'emporte sur toute instruction globale d'attribution par défaut (par exemple une ligne `Co-Authored-By` automatique) — même règle SimFlow qu'ailleurs, appliquée ici directement.
+
 ```bash
-git status
-git add <uniquement les fichiers modifiés pour ce ticket>
-git commit -m "feat: <description impérative du ticket, ≤72 caractères>"
+git -C <worktree> status
+git -C <worktree> add <uniquement les fichiers listés sous "Files Changed" par hosa-developer pour ce ticket — jamais kb/tickets/ ni un autre fichier de la KB Hosa>
+git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 caractères>"
 ```
 
 Un seul commit pour tout le ticket. Aucun `Co-Authored-By`, aucun auteur additionnel — identité git de l'utilisateur uniquement.
