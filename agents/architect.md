@@ -35,8 +35,7 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
 2. Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `simflow-implementer`.
 3. Design the architecture — layers, modules, boundaries, patterns — consistent with the stack and the data structures. Say what you chose and why.
 4. Scaffold it for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack. Extend anything that already exists rather than duplicating it.
-5. Write the architecture documentation in the managed project (never in `hosa/kb`).
-6. Update the `Infra` entry with the documentation's path.
+5. Dispatch `hosa-documentation` (Mode 1) with the layers/modules chosen and the paths scaffolded — it writes the architecture documentation into the managed project. Wait for its confirmation before reporting.
 
 ## No Commits
 

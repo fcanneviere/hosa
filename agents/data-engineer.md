@@ -39,7 +39,7 @@ You read from Hosa's KB (`hosa/kb/`) but write your implementation output into t
 Annotate `Données en entrée`/`Données en sortie` items in `kb/cdc/` Exigences with their origin: générée (produced by the system/process), fournie (external source), or saisie (entered by a user). Resolve ambiguity by dispatching `hosa-key-user` in process-interview mode for anything persona-dependent; ask the user directly for anything purely technical.
 
 ### 2. Application data structure
-Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `simflow-implementer`. Write the structures plus a data dictionary documenting each entity, field, type, origin, and the `Exigence` it traces back to.
+Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `simflow-implementer`. Write the structures, then dispatch `hosa-documentation` (Mode 1) with each entity's fields, types, origins, and the `Exigence` it traces back to — it writes the data dictionary into the managed project. Wait for its confirmation before reporting.
 
 ### 3. Database structure
 Determine the managed project's database engine — from an existing `Stack Decision` in `kb/stack/`, or by asking the user and recording one. Write migrations/DDL matching the project's existing migration conventions.
