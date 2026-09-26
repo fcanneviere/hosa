@@ -32,8 +32,9 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `schema-app` | Derive data entities and write application-side data structures + documentation into the managed project — data-structuring pipeline stage 3 |
 | `schema-db` | Write database migrations/DDL into the managed project — data-structuring pipeline stage 4 |
 | `architecture` | Design and scaffold the software architecture of the managed project, consistent with the CDC, the stack, and the data structures — data-structuring pipeline stage 5 |
-| `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, and an architecture placement note — data-structuring pipeline stage 6 |
-| `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility or architecture placement was never actually evaluated — follow-on to the data-structuring pipeline |
+| `interface` | Interview each persona, propose a visual identity and design rules, then design and scaffold the interface layer (UX/UI) of the managed project, consistent with the CDC and the software architecture — data-structuring pipeline stage 6 |
+| `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, an architecture placement note, and an interface placement note — data-structuring pipeline stage 7 |
+| `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
 
 ## Triggering Rules
 
@@ -60,6 +61,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Génère la structure de données de l'application" | `schema-app` |
 | "Génère la structure de base de données" | `schema-db` |
 | "Crée l'architecture logicielle", "Génère l'architecture de l'application" | `architecture` |
+| "Conçois l'interface", "Crée l'identité visuelle", "Définis l'UX/UI du projet" | `interface` |
 | "Crée le product backlog", "Génère les tickets à partir du cahier des charges" | `backlog` |
 | "Planifie un sprint", "Compose le prochain sprint" | `sprint` |
 
