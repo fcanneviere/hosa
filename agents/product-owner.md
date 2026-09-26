@@ -25,7 +25,7 @@ Hosa's KB (`hosa/kb/`) is the single source of truth — OKF v0.2 format, see `d
 |---|---|---|
 | `kb/personnas/` | `Persona` | The users you build for. Read before writing vision or stories — a story with no persona behind it is a guess. |
 | `kb/cdc/` | `Exigence` | Vision- and requirement-level statements extracted from the cahier des charges. |
-| `kb/tickets/` | `Ticket` | The Product Backlog. `state: todo \| doing \| done \| blocked`. |
+| `kb/tickets/` | `Ticket` | The Product Backlog. `state: todo \| doing \| done \| blocked`. Optional `sprint: <slug>` — set by `hosa-sprint-planner` once dispatched into a sprint; absent while a ticket sits in the unplanned backlog. Preserve it when you rewrite or reprioritize a ticket — it's not yours to clear. |
 
 **Frontmatter you must fill correctly on every concept you write:**
 - `generated: { by: human:<user>, at: <ISO8601> }` — the user asked for this explicitly

@@ -36,7 +36,7 @@ Manual: `/sprint [capacité]`. Auto: immediately after `backlog`, or "planifie u
 
 ## Step 1: Get the Capacity
 
-If a capacity (ticket count) wasn't given with the trigger, ask the user for one — no complexity-estimation field exists on `Ticket` today, so there's no way to derive a default automatically.
+If a capacity (ticket count) wasn't given with the trigger, ask the user for one — no complexity-estimation field exists on `Ticket` today, so there's no way to derive a default automatically. A capacity below 1 means there's nothing to plan — say so and ask for a real number rather than composing an empty sprint.
 
 ## Step 2: Scope
 
@@ -51,12 +51,14 @@ Read the priority order `hosa-product-owner` currently holds for these tickets (
 Walk the tickets in that order, up to the capacity from Step 1:
 
 - Read the ticket's `## Note technique (senior dev)` and `## Placement architecture (architecte)` sections.
-- If either is still `backlog`'s fallback line ("Stack pas encore choisie — faisabilité non évaluée." or "Architecture pas encore scaffoldée — placement non déterminé."), say so and propose filling the gap now — running `stack`/`architecture`, or getting a real opinion from the senior-dev/architect roles — rather than dispatching the ticket without knowing whether it's actually buildable.
+- If either section is missing entirely, or still holds `backlog`'s fallback line ("Stack pas encore choisie — faisabilité non évaluée." or "Architecture pas encore scaffoldée — placement non déterminé."), treat it the same way: say so and propose filling the gap now — running `stack`/`architecture`, or getting a real opinion from the senior-dev/architect roles — rather than dispatching the ticket without knowing whether it's actually buildable. A ticket written directly by `hosa-product-owner` without going through `backlog` has no such sections at all — that's the same gap, not a pass.
 - If the user fills the gap, re-read the updated note and re-evaluate this ticket against it. If the gap stays unfilled, this ticket does not enter this sprint — it stays in the backlog, and capacity is not spent on it.
 - Otherwise (both notes are real), dispatch it: write `sprint: <slug>` into the ticket's frontmatter, add it to the sprint's ticket list.
 - If capacity is reached before the ticket list runs out, stop — the rest stay in the backlog for a future sprint. If fewer eligible tickets exist than the requested capacity, dispatch every eligible one and say so — not an error.
 
 ## Step 5: Write the Sprint
+
+If no ticket was dispatched in Step 4 (every eligible ticket hit the guard and the gap stayed unfilled), don't write a `Sprint` at all — report every ticket under "Tickets écartés" and put what's needed to unblock them under "Open Questions", then stop. Otherwise, ask the user for the sprint's name and objective/period if not already given — never invent them — then check `kb/sprints/` for a file with that slug; if one already exists, ask for a different name rather than overwriting it (an existing `Sprint`'s tickets still point back to it).
 
 Write to `kb/sprints/<slug>.md`:
 
