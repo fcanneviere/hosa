@@ -27,6 +27,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
 | `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 3 |
 | `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 4 |
+| `fondamentaux` | Check the cahier des charges against a standard checklist of cross-cutting essentials (admin, login, rights, settings, import/export, backup, audit, notifications) and write missing ones — companion check to the CDC pipeline, usable anytime |
 | `stack` | Propose and record the technical stack of the managed project, based on the stable cahier des charges — data-structuring pipeline stage 1 |
 | `infra` | Set up and configure the managed project's Docker environment, install the chosen stack into it for real, and document installation — data-structuring pipeline stage 2 |
 | `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 3 |
@@ -38,6 +39,8 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
 | `qa-plan` | Prepare a sprint's technical test plan — one `Test Plan` per ticket in `kb/test/`, grounded in the senior dev's recorded stack decisions, identifying which persona(s) must validate it via recette — follow-on to `sprint` |
 | `qa` | Run a sprint's QA — dispatch `simflow-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
+| `qualite` | Audit the managed project's source code against a fixed checklist of coding best practices and security rules — dispatches `hosa-senior-dev`, classifies findings by severity, records them in `kb/qualite/` — companion check usable anytime |
+| `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
 
 ## Triggering Rules
 
@@ -59,6 +62,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Rédige les exigences", "Écris le cahier des charges" (avec notes fournies) | `redaction` |
 | "Relis le cahier des charges" | `relecture` |
 | "Challenge le cahier des charges" | `contestation` |
+| "Vérifie les fondamentaux du cahier des charges", "Le cahier des charges couvre-t-il les basiques (admin, login, import/export...)" | `fondamentaux` |
 | "Choisis la stack technique", "Quelle stack pour le projet" | `stack` |
 | "Mets en place l'environnement Docker", "Installe la stack" | `infra` |
 | "Précise les données du cahier des charges", "Qualifie l'origine des données" | `donnees` |
@@ -70,6 +74,8 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Planifie un sprint", "Compose le prochain sprint" | `sprint` |
 | "Prépare les tests du sprint", "Planifie les tests techniques du sprint" | `qa-plan` |
 | "Exécute la QA du sprint", "Teste le sprint", "Fais la recette du sprint" | `qa` |
+| "Audite la qualité du code", "Vérifie les bonnes pratiques", "Fais une revue de sécurité du code" | `qualite` |
+| "Vérifie que la documentation est à jour", "Génère la documentation du projet", "Documente le projet" | `documentation` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
 

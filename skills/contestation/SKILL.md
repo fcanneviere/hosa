@@ -48,9 +48,9 @@ If a second full loop still finds anomalies, stop looping silently and tell the 
 
 ## Step 4: Final Sign-Off
 
-Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": list every `Exigence` still at `status: draft` that this audit actually covered (every one Step 2 read — the full bundle, since `hosa-challenger` always receives all of `kb/cdc/`), then ask "Le cahier des charges est propre — tu valides ? (ces N exigences passeront en `stable`)". On yes, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }` on each one listed. Log the change to `kb/cdc/log.md`.
+Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": list every `Exigence` still at `status: draft` that this audit actually covered (every one Step 2 read — the full bundle, since `hosa-challenger` always receives all of `kb/cdc/`), then ask "Le cahier des charges est propre — tu valides ? (ces N exigences passeront en `stable`)". On yes, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }` on each one listed. Log the change to `kb/cdc/log.md`. Then dispatch `hosa-documentation` (Mode 1) with the newly-stable Exigence(s) and their linked persona(s) — it writes or updates the functional documentation. Wait for its confirmation before continuing.
 
-If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3.
+If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3. No dispatch to `hosa-documentation` happens in this case — only an actual `stable` transition triggers it.
 
 Once at least one `Exigence` has been validated to `stable` in this session, propose the next stage: "Le cahier des charges est stable. Je choisis la stack technique maintenant ? (skill `stack`)". Yes → invoke `stack`. No → finish normally; `stack` stays invocable manually later.
 
