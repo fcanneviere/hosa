@@ -10,28 +10,29 @@ Drives the managed project's git repository lifecycle for one `Sprint` at a time
 ## Flow
 
 ```
-Lit kb/sprints/<slug>.md
-        ↓
 Détermine le mode depuis la requête (démarrage / fusion / ad hoc)
+        ↓
+Sprint identifié (Mode 1/2) ou requête libre (Mode 3)
         ↓
 Dispatch hosa-git dans ce mode
         ↓
-Rapporte le résultat (branche/worktree ouverts, ou fusion/blocage)
+Rapporte le résultat (branche/worktree ouverts, fusion/blocage,
+ou résultat de la requête ad hoc)
 ```
 
 ## Trigger
 
-Manual: `/git demarre <slug>`, `/git termine <slug>`. Auto: "démarre le sprint X", "commence le sprint X" → Mode 1 ; "termine le sprint X", "fusionne le sprint X", "merge le sprint X" → Mode 2.
+Manual: `/git demarre <slug>`, `/git termine <slug>`, or any other git request against the managed project (`/git <requête libre>`) for Mode 3. Auto: "démarre le sprint X", "commence le sprint X" → Mode 1 ; "termine le sprint X", "fusionne le sprint X", "merge le sprint X" → Mode 2 ; any other git request against the managed project's repo (statut, nettoyage d'un worktree orphelin, annuler un commit...) → Mode 3.
 
 ---
 
-## Step 1: Determine the Mode and Sprint
+## Step 1: Determine the Mode and Target
 
-From the request, determine whether this is a start (Mode 1), a finish (Mode 2), or an ad hoc git request (Mode 3), and which `Sprint` slug it targets. If either is unclear, ask rather than guess.
+From the request, determine whether this is a start (Mode 1), a finish (Mode 2), or an ad hoc git request (Mode 3). Modes 1 and 2 need a `Sprint` slug — if it's unclear which one, ask rather than guess. Mode 3 doesn't require one; it can be any other git request against the managed project's repo.
 
 ## Step 2: Dispatch `hosa-git`
 
-Dispatch `hosa-git` in the determined mode with the sprint slug. It reads `kb/sprints/<slug>.md` and the relevant KB, performs the worktree creation or QA-gated merge (or the ad hoc request), and reports back.
+Dispatch `hosa-git` in the determined mode — with the sprint slug for Mode 1/2, or with the request as given for Mode 3. It reads `kb/sprints/<slug>.md` and the relevant KB when a sprint is involved, performs the worktree creation or QA-gated merge (or handles the ad hoc request directly), and reports back.
 
 ## Commits
 
