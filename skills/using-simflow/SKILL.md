@@ -33,6 +33,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `schema-db` | Write database migrations/DDL into the managed project — data-structuring pipeline stage 4 |
 | `architecture` | Design and scaffold the software architecture of the managed project, consistent with the CDC, the stack, and the data structures — data-structuring pipeline stage 5 |
 | `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, and an architecture placement note — data-structuring pipeline stage 6 |
+| `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility or architecture placement was never actually evaluated — follow-on to the data-structuring pipeline |
 
 ## Triggering Rules
 
@@ -60,6 +61,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Génère la structure de base de données" | `schema-db` |
 | "Crée l'architecture logicielle", "Génère l'architecture de l'application" | `architecture` |
 | "Crée le product backlog", "Génère les tickets à partir du cahier des charges" | `backlog` |
+| "Planifie un sprint", "Compose le prochain sprint" | `sprint` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
 

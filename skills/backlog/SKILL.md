@@ -23,7 +23,7 @@ n'existe
         ↓
 Log kb/tickets/log.md
         ↓
-Pipeline de structuration des données terminé
+Propose de lancer sprint
 ```
 
 ## Trigger
@@ -109,5 +109,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - `kb/tickets/<slug>.md` — [titre] (state: todo)
 
 ## Suite
-Pipeline de structuration des données terminé.
+Je lance `sprint` maintenant ?
 ```
