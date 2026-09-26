@@ -47,7 +47,7 @@ Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check th
 For each ticket:
 
 1. Dispatch `simflow-tester` with the plan's `## Cas de test` as the brief, the recently changed files for this ticket, and the managed project's root path (from `Infra`).
-2. Append a `## Résultats techniques` section to `kb/test/<slug-ticket>-technique.md` with the pass/fail detail.
+2. Append a `## Résultats techniques` section to `kb/test/<slug-ticket>-technique.md` with the pass/fail detail, and refresh its `generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }` frontmatter to this write's timestamp — the same attribution convention `hosa-qa-lead` uses whenever it creates or extends a `Test Plan`.
 3. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → flag for `simflow:debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, don't suggest debug.
 
 ## Step 3: Run Recette Per Ticket
