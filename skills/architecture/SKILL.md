@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Use to design and scaffold the software architecture of the project Hosa manages, consistent with the stable cahier des charges, the chosen stack, and the data structures already written by `schema-app`/`schema-db`. Fifth stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: Use to design and scaffold the software architecture of the project Hosa manages, consistent with the stable cahier des charges, the chosen stack, and the data structures already written by `schema-app`/`schema-db`. Sixth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
 ---
 
 # Architecture

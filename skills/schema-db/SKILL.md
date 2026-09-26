@@ -1,6 +1,6 @@
 ---
 name: schema-db
-description: Use to write database migrations/DDL for the data entities derived from `kb/cdc/`, into the project Hosa manages. Fourth stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture).
+description: Use to write database migrations/DDL for the data entities derived from `kb/cdc/`, into the project Hosa manages. Fifth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture).
 ---
 
 # Schema DB

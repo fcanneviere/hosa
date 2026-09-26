@@ -1,6 +1,6 @@
 ---
 name: interface
-description: Use to design and scaffold the interface layer (UX/UI) of the project Hosa manages, consistent with the stable cahier des charges, the personas' needs, and the software architecture already scaffolded by `architecture`. Sixth stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: Use to design and scaffold the interface layer (UX/UI) of the project Hosa manages, consistent with the stable cahier des charges, the personas' needs, and the software architecture already scaffolded by `architecture`. Seventh stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
 ---
 
 # Interface
