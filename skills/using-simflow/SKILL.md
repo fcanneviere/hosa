@@ -35,6 +35,8 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `interface` | Interview each persona, propose a visual identity and design rules, then design and scaffold the interface layer (UX/UI) of the managed project, consistent with the CDC and the software architecture — data-structuring pipeline stage 6 |
 | `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, an architecture placement note, and an interface placement note — data-structuring pipeline stage 7 |
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
+| `qa-plan` | Prepare a sprint's technical test plan — one `Test Plan` per ticket in `kb/test/`, grounded in the senior dev's recorded stack decisions, identifying which persona(s) must validate it via recette — follow-on to `sprint` |
+| `qa` | Run a sprint's QA — dispatch `simflow-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
 
 ## Triggering Rules
 
@@ -64,6 +66,8 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Conçois l'interface", "Crée l'identité visuelle", "Définis l'UX/UI du projet" | `interface` |
 | "Crée le product backlog", "Génère les tickets à partir du cahier des charges" | `backlog` |
 | "Planifie un sprint", "Compose le prochain sprint" | `sprint` |
+| "Prépare les tests du sprint", "Planifie les tests techniques du sprint" | `qa-plan` |
+| "Exécute la QA du sprint", "Teste le sprint", "Fais la recette du sprint" | `qa` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
 

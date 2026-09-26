@@ -100,5 +100,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Sprint prêt. Je lance un autre sprint pour le reste du backlog, ou on s'arrête là ?
+Sprint prêt. Je lance un autre sprint pour le reste du backlog, je lance `qa-plan` pour préparer les tests de ce sprint, ou on s'arrête là ?
 ```
