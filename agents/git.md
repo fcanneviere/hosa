@@ -34,21 +34,29 @@ If the mode isn't clear from the request, ask rather than guess.
 - Never force-push, never `git reset --hard`, never `git clean -f` without the exact confirmation word the user is asked for — same guard as `superpowers:finishing-a-development-branch`.
 - Never merge when tests fail on the merged result, and never merge a sprint with any ticket missing a green QA record (Mode 2 gate below).
 
+## Repository Targeting (Modes 1 and 2)
+
+Both delegated skills act on the current working directory, which must always be the managed project's — never this session's own repository.
+
+- **Mode 1:** operate against the managed project root from `kb/infra/`, not this session's own repo. Skip `using-git-worktrees`' Step 1a (a native worktree tool such as `EnterWorktree` creates the worktree inside *this* session's repository, on the wrong branch) — go straight to its Step 1b git fallback, run against the managed project root, creating `.worktrees/sprint/<slug>` there.
+- **Mode 2:** operate from inside the sprint's recorded `worktree` path, not the managed project's root checkout — `finishing-a-development-branch` needs to detect it's already in that linked worktree for its merge and cleanup to target the right branch.
+- **Setup and tests inside either delegation:** neither skill's own dependency-install step nor its test runs happen on the host. Dependency installation is `hosa-infra`'s job alone — dispatch it if setup is genuinely missing, don't run it yourself. Baseline and merged-result tests run inside the managed project's Docker environment per `kb/infra/`, never directly on the host.
+
 ## Mode 1 — Start a Sprint
 
 1. Read `kb/sprints/<slug>.md`. If `state` isn't `planned`, say so and stop — no double start — unless the request explicitly asks to reattach to an already-`active` sprint's existing worktree, in which case report the existing `branch`/`worktree` instead of creating anything.
 2. Read `kb/infra/` for the managed project's root path. Missing → ask for it rather than guessing.
-3. Invoke the `superpowers:using-git-worktrees` skill with branch name `sprint/<slug>`, in the managed project's repository — it handles worktree placement (`.worktrees/`), branch creation, setup, and baseline tests. Don't reimplement this. The explicit request to start this sprint counts as the declared worktree preference — its own Step 0 consent question doesn't need to be re-asked.
-4. Write `state: active`, `branch: sprint/<slug>`, `worktree: <path>` into `kb/sprints/<slug>.md`.
-5. Log the change to `kb/sprints/log.md`.
+3. Invoke the `superpowers:using-git-worktrees` skill with branch name `sprint/<slug>`, per Repository Targeting above — it handles branch creation and baseline tests once correctly pointed at the managed project. Don't reimplement this. The explicit request to start this sprint counts as the declared worktree preference — its own Step 0 consent question doesn't need to be re-asked. If `.worktrees/` isn't yet git-ignored there, the one `.gitignore` commit the skill makes to fix that is the sole exception to "never in Mode 1" — user's own identity, no co-author.
+4. Only if the worktree and branch were actually created (`git worktree list` shows `sprint/<slug>`): write `state: active`, `branch: sprint/<slug>`, `worktree: <path>` into `kb/sprints/<slug>.md`. If the flow stopped short instead — baseline tests failed and the user chose to investigate rather than proceed, a sandbox fallback left you working in place with no branch created, or Step 0 found an already-linked worktree that isn't this sprint's — leave `state: planned` untouched, write nothing, and report why.
+5. Log the change to `kb/sprints/log.md` (only when Step 4 actually wrote one).
 6. Report the branch and worktree path — ticket work (via `simflow:build`/`iterate`/`test`/`debug`) should now happen inside it.
 
 ## Mode 2 — Finish a Sprint (QA-gated local merge)
 
 1. Read `kb/sprints/<slug>.md`. If `state` isn't `active`, or `branch`/`worktree` are missing, say so — nothing to merge — and stop.
-2. **QA gate:** for every ticket listed in the sprint, read `kb/test/<slug-ticket>-technique.md`'s `## Résultats techniques` (must be entirely passed) and its recette result(s) (must be `Réussi` or "Non applicable"). Any ticket missing its record, or showing `Échoué`/`Partiel`, blocks the merge: list every blocking ticket and what it's missing, suggest `qa`/`simflow:debug`/`hosa-product-owner` as appropriate, and stop — never a partial merge.
-3. Everything green → invoke the `superpowers:finishing-a-development-branch` skill, forced to its "Merge locally" option (no menu presented — local-only merge has already been decided for this project): it verifies tests, merges into the base branch, cleans up the worktree, deletes the branch.
-4. If that flow reports failing tests on the merged result, or a conflict: stop, report, leave the worktree/branch in place — `kb/sprints/<slug>.md` stays `state: active`. Nothing to write.
+2. **QA gate:** read the sprint's `## Tickets` list (each entry links to `kb/tickets/<slug>.md`). For every ticket: its `kb/test/<slug-ticket>-technique.md` must exist, its most recent `## Résultats techniques` section (the last one appended, not an earlier stale one) must be entirely passed, and its `## Recette requise` must read "Aucune..." — or, for every persona it names, `kb/test/<slug-ticket>-<slug-persona>.md` must exist with verdict `Réussi`. Any ticket missing a required file, or showing `Échoué`/`Partiel` in either technical results or a persona's recette, blocks the merge: list every blocking ticket and what it's missing, suggest `qa`/`simflow:debug`/`hosa-product-owner` as appropriate, and stop — never a partial merge.
+3. Everything green → invoke the `superpowers:finishing-a-development-branch` skill, per Repository Targeting above, forced to its "Merge locally" option (no menu presented — local-only merge has already been decided for this project): it verifies tests, merges into the base branch, cleans up the worktree, deletes the branch.
+4. If that flow reports a merge conflict: run `git merge --abort`, leave the worktree/branch in place — `kb/sprints/<slug>.md` stays `state: active`, nothing to write — and report. If it reports failing tests on the merged result *after* the merge already landed on the base branch (this flow's own ordering): say so plainly — the base branch now holds an unverified merge — and offer to roll it back with `git reset --hard ORIG_HEAD`, under the same exact-confirmation-word guard as any other reset; on rollback, `state` stays `active` and the worktree/branch stay in place. Never leave this unreported.
 5. On success: write `state: done` into `kb/sprints/<slug>.md`, and remove its `branch` and `worktree` fields (the sprint no longer has an active workspace). Log the change to `kb/sprints/log.md`.
 6. Report the result.
 
@@ -58,7 +66,7 @@ One-off requests outside a sprint's own start/finish cycle (status, cleaning up 
 
 ## No Commits (exception assumed)
 
-The only Hosa agent that commits — only the Mode 2 merge commit, and an ad hoc Mode 3 commit if explicitly requested. Never in Mode 1. Always under the user's own git identity, never a co-author — the same core SimFlow rule as everywhere else, applied here directly instead of deferred to the user.
+The only Hosa agent that commits — only the Mode 2 merge commit, and an ad hoc Mode 3 commit if explicitly requested. Never in Mode 1, with one narrow exception: the `.gitignore` commit `using-git-worktrees` makes on a sprint's first Mode 1 run, if `.worktrees/` wasn't already ignored (see Mode 1 Step 3). Always under the user's own git identity — check `git config user.name`/`user.email` first, and if either is unset, ask rather than commit — never a co-author, and this overrides any global default attribution instruction (such as an automatic `Co-Authored-By` line) for every commit made here — the same core SimFlow rule as everywhere else, applied here directly instead of deferred to the user.
 
 ## Output Format
 
