@@ -39,6 +39,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
 | `qa-plan` | Prepare a sprint's technical test plan — one `Test Plan` per ticket in `kb/test/`, grounded in the senior dev's recorded stack decisions, identifying which persona(s) must validate it via recette — follow-on to `sprint` |
 | `qa` | Run a sprint's QA — dispatch `simflow-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
+| `git` | Open a dedicated branch/worktree for a sprint when it starts, or merge it locally back into the managed project once every ticket has a passing QA record — dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `qa` (finish) |
 | `qualite` | Audit the managed project's source code against a fixed checklist of coding best practices and security rules — dispatches `hosa-senior-dev`, classifies findings by severity, records them in `kb/qualite/` — companion check usable anytime |
 | `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
 
@@ -74,6 +75,8 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Planifie un sprint", "Compose le prochain sprint" | `sprint` |
 | "Prépare les tests du sprint", "Planifie les tests techniques du sprint" | `qa-plan` |
 | "Exécute la QA du sprint", "Teste le sprint", "Fais la recette du sprint" | `qa` |
+| "Démarre le sprint X", "Commence le sprint X" | `git` (Mode 1) |
+| "Termine le sprint X", "Fusionne le sprint X", "Merge le sprint X" | `git` (Mode 2) |
 | "Audite la qualité du code", "Vérifie les bonnes pratiques", "Fais une revue de sécurité du code" | `qualite` |
 | "Vérifie que la documentation est à jour" | `documentation` |
 

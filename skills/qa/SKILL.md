@@ -88,6 +88,6 @@ This skill does not commit. Report what changed in the KB and let the user decid
 [Proposition et justification, ou "Rien à signaler"]
 
 ## Suite
-[Si tout est propre : "Sprint validé."]
-[Sinon : liste des actions suggérées ci-dessus]
+[Si tout est propre : "Sprint validé. Je fusionne le sprint maintenant (skill `git`) ?"]
+[Sinon : liste des actions suggérées ci-dessus — pas d'offre de fusion tant que le verdict n'est pas propre]
 ```
