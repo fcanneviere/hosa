@@ -54,18 +54,18 @@ For each persona in `kb/personnas/`, dispatch `hosa-key-user` as a UI-interview 
 
 ## Step 3: Propose the Visual Identity
 
-Propose a visual identity (color palette, typography, tone) for the project. Once the user validates or adjusts it, write it into `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading.
+Propose a visual identity (color palette, typography, tone) for the project. Once the user validates or adjusts it, write it into `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading — if that heading already exists (a re-run), update it in place rather than duplicating it. Log the update to `kb/project/log.md` (create if missing) — OKF §9.
 
 ## Step 4: Propose Design Rules
 
-Propose design rules (information density, reusable components, interaction conventions). For each one the user validates or adjusts, write it to `kb/rules/design/<slug>.md`:
+Propose design rules (information density, reusable components, interaction conventions). For each one the user validates or adjusts, write it to `kb/rules/design/<slug>.md` — tagged `ux` to distinguish it from a process/methodology `Design Rule` `hosa-product-owner` might record in the same bundle. If a file already exists at that slug, update it in place rather than creating a duplicate.
 
 ```markdown
 ---
 type: Design Rule
 title: <titre court>
 description: <résumé une ligne>
-tags: []
+tags: [ux]
 status: stable
 generated: { by: human:<user>, at: <ISO8601> }
 ---
@@ -92,7 +92,7 @@ An interface document in the managed project (e.g. `docs/interface.md`, or where
 
 ## Step 8: Update the `Infra` Entry
 
-Add the interface documentation's path to the `Infra` entry under its own `## Documentation d'interface` heading — a fixed heading, not a bare line, so a later reader (`backlog`) can tell it apart from the architecture documentation path `architecture` also records there. Log the update to `kb/infra/log.md`.
+Add the interface documentation's path to the `Infra` entry under its own `## Documentation d'interface` heading — a fixed heading, not a bare line, so a later reader (`backlog`) can tell it apart from the architecture documentation path `architecture` also records there. If that heading already exists (a re-run), update the path in place rather than duplicating the heading. Log the update to `kb/infra/log.md`.
 
 ## No Commits
 

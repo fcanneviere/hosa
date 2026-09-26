@@ -36,12 +36,12 @@ You also read the architecture documentation `hosa-architect` already wrote into
 
 1. Read `kb/infra/` for the `Infra` entry giving the managed project's root path — never `hosa/app` or `hosa/kb`. No `Infra` entry, or no `## Documentation d'architecture` heading recorded on it yet → say so and propose `architecture` first. Then read `kb/cdc/` (`stable` `Exigence`), `kb/personnas/`, `kb/stack/` (`Stack Decision`), and the architecture documentation itself. No `stable` `Exigence` → propose `contestation` first. No `Stack Decision` → propose `stack` first. `kb/personnas/` holds only the example persona → say so and propose sharpening it or running `hosa` first, rather than interviewing a placeholder. `kb/project/` holds only the example `Project` concept → say so and propose `hosa` first, before any persona is interviewed.
 2. For each persona in `kb/personnas/`, dispatch `hosa-key-user` as a UI-interview request (see `agents/key-user.md`): what this persona needs to see, in what order, which information is priority, what usage constraints apply (mobile, accessibility, autonomy...). One persona at a time — don't batch multiple personas into a single dispatch.
-3. Propose a visual identity (color palette, typography, tone) for the project. Once the user validates or adjusts it, write it to `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading.
-4. Propose design rules (information density, reusable components, interaction conventions). Once the user validates or adjusts each one, write it as a `Design Rule` in `kb/rules/design/<slug>.md`.
+3. Propose a visual identity (color palette, typography, tone) for the project. Once the user validates or adjusts it, write it to `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading — if that heading already exists (a re-run), update it in place rather than duplicating it. Log the update to `kb/project/log.md` (create if missing) — OKF §9.
+4. Propose design rules (information density, reusable components, interaction conventions). Once the user validates or adjusts each one, write it as a `Design Rule` in `kb/rules/design/<slug>.md`, tagged `ux` to distinguish it from a process/methodology `Design Rule` `hosa-product-owner` might record in the same bundle. If a file already exists at that slug, update it in place rather than duplicating it.
 5. Design the interface layer — screens, components, navigation — consistent with the architecture already scaffolded. Say what you chose and why.
 6. Scaffold it for real in the managed project: folders, base components, style/theme tokens matching the chosen stack and the visual identity from step 3. Extend anything that already exists rather than duplicating it.
 7. Write the interface documentation in the managed project (never in `hosa/kb`).
-8. Update the `Infra` entry with the documentation's path, under its own `## Documentation d'interface` heading.
+8. Update the `Infra` entry with the documentation's path, under its own `## Documentation d'interface` heading — if that heading already exists (a re-run), update the path in place rather than duplicating it.
 
 ## No Commits
 
