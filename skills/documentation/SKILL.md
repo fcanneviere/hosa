@@ -19,7 +19,7 @@ Rapporte les sections rafraîchies et celles déjà à jour
 
 ## Trigger
 
-Manual: `/documentation`. Auto: "vérifie que la documentation est à jour", "génère la documentation du projet", "documente le projet".
+Manual: `/documentation`. Auto: "vérifie que la documentation est à jour".
 
 ---
 
@@ -29,7 +29,7 @@ Read `kb/infra/` for the managed project's root path (same as `stack`/`infra`/`q
 
 ## Step 2: Dispatch the Cold Check
 
-Dispatch `hosa-documentation` in Mode 2. It reads every `kb/documentation/` entry, compares each source's date to its own `generated.at`, and refreshes anything that's drifted. If no `kb/documentation/` entry exists yet, it says so — nothing to check until at least one section has been written by a Mode 1 dispatch.
+Dispatch `hosa-documentation` in Mode 2. It reads every `kb/documentation/` entry, compares each source's date to its own `generated.at`, and refreshes anything that's drifted. A source with no readable date is reported as non vérifiable, never silently treated as up to date. If no `kb/documentation/` entry exists yet, it says so — nothing to check until at least one section has been written by a Mode 1 dispatch.
 
 ## No Commits
 
@@ -41,6 +41,7 @@ You don't commit. Report what changed and let the user decide when to commit.
 ## Documentation
 - À jour : <section>, <section>
 - Rafraîchie : <section> (source : <quoi>)
+- Non vérifiable : <section> (source sans date : <quoi>)
 - [Si aucune entrée encore : "Rien à vérifier — aucune section écrite pour l'instant"]
 
 ## Open Questions

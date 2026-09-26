@@ -38,8 +38,7 @@ If neither is clear from the request, ask which mode you're operating in before 
 5. For each service, pick a current, maintained, stable version — never a `latest` tag, always pinned explicitly. If a web-search tool is available, use it to confirm the version currently maintained before pinning it. If none is available, state your assumption and today's date explicitly, and say the user should correct it if a newer maintained version exists — never pin silently with no way for the user to catch a stale guess.
 6. Write the `Dockerfile`(s) and `docker-compose.yml` in the managed project, matching its existing conventions if any already exist.
 7. Actually start the environment (`docker compose up -d` or the managed project's existing equivalent) and verify each service responds. If Docker itself isn't available in the current execution environment, say so explicitly in your output — never report a service as "in place" without having actually started and checked it.
-8. Dispatch `hosa-documentation` (Mode 1) with what was installed and the paths concerned (Dockerfile(s), compose file, services/versions) — it writes the installation documentation into the managed project. Wait for its confirmation before continuing to Step 9.
-9. Write or update `hosa/kb/infra/environnement-docker.md`:
+8. Write or update `hosa/kb/infra/environnement-docker.md`:
 
 ```markdown
 ---
@@ -56,12 +55,10 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Fichiers
 - `<Dockerfile(s)>`
 - `<docker-compose.yml>`
-
-## Documentation
-- `<path installation.md>`
 ```
 
 If the file already exists (a re-run), update it in place rather than duplicating it. Log the update.
+9. Dispatch `hosa-documentation` (Mode 1) with what was installed and the paths concerned (Dockerfile(s), compose file, services/versions) — it writes the installation documentation into the managed project. Wait for its confirmation before continuing.
 
 ## Mode 2 — On-Demand Installation Request (dispatched directly by any other agent, at any time)
 
@@ -73,7 +70,7 @@ Input: the requesting agent, what it needs (a server, a framework, a dependency)
    - The request conflicts with an existing `Stack Decision` or infrastructure choice → say so and ask the user which is authoritative before doing anything — never silently pick one side.
    - Genuinely new and consistent with what exists → proceed to Step 3.
 3. Once the request (or your counter-proposal) is confirmed, pick a current maintained version pinned explicitly (same discipline as Mode 1 Step 5), add it to the Docker composition (a new service) or to the managed project's dependency manifest (matching its existing package-manager conventions), restart/rebuild as needed, and verify it works.
-4. Dispatch `hosa-documentation` (Mode 1) with the new piece and the paths concerned — it updates the managed project's installation documentation. Wait for its confirmation, then write `hosa/kb/infra/<slug-service>.md`:
+4. Write `hosa/kb/infra/<slug-service>.md`:
 
 ```markdown
 ---
@@ -93,7 +90,8 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 
 Log the update.
 
-5. Confirm back to the requesting agent that the new piece is in place — it does not resume its own task until this confirmation.
+5. Dispatch `hosa-documentation` (Mode 1) with the new piece and the paths concerned — it updates the managed project's installation documentation. Wait for its confirmation.
+6. Confirm back to the requesting agent that the new piece is in place — it does not resume its own task until this confirmation.
 
 ## No Commits
 

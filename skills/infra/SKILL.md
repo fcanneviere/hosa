@@ -24,11 +24,11 @@ et maintenue par service
 Écrit Dockerfile(s) + docker-compose.yml, démarre réellement
 l'environnement, vérifie chaque service
         ↓
-Rédige la documentation d'installation dans le projet cible
+Écrit/complète kb/infra/environnement-docker.md, log
+kb/infra/log.md
         ↓
-Écrit/complète kb/infra/environnement-docker.md
-        ↓
-Log kb/infra/log.md
+Dispatch hosa-documentation (Mode 1) pour la documentation
+d'installation
         ↓
 Propose d'enchaîner sur `donnees`
 ```
@@ -59,11 +59,7 @@ Determine one service per stack component that has to run (application runtime, 
 
 Write the `Dockerfile`(s) and `docker-compose.yml` in the managed project, matching its existing conventions if any. Actually start it (`docker compose up -d` or the project's existing equivalent) and verify each service responds. If Docker isn't available in the current execution environment, say so explicitly — never report a service as "in place" without having actually started and checked it.
 
-## Step 6: Write the Documentation
-
-An installation document in the managed project (e.g. `docs/installation.md` or `INSTALL.md`): prerequisites, how to start/rebuild the environment, and how to request a future addition (point at `hosa-infra`).
-
-## Step 7: Update the `Infra` Entry
+## Step 6: Update the `Infra` Entry
 
 Write or update `hosa/kb/infra/environnement-docker.md`:
 
@@ -82,12 +78,13 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Fichiers
 - `<Dockerfile(s)>`
 - `<docker-compose.yml>`
-
-## Documentation
-- `<path installation.md>`
 ```
 
 If the file already exists (a re-run), update it in place rather than duplicating it. Log to `kb/infra/log.md` (create if missing) — OKF §9.
+
+## Step 7: Dispatch `hosa-documentation` (Mode 1)
+
+Dispatch `hosa-documentation` (Mode 1) with what was installed and the paths concerned (Dockerfile(s), compose file, services/versions) — it writes the installation documentation into the managed project. Wait for its confirmation before continuing.
 
 ## No Commits
 

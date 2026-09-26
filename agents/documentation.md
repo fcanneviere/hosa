@@ -77,8 +77,8 @@ Input: the producer (`hosa-infra`/`hosa-architect`/`hosa-data-engineer`/`contest
 
 1. Read every entry in `kb/documentation/`. None yet → say so; nothing to check until at least one section has been written.
 2. For each entry, compare the date of each of its `sources` (the source bundle's latest log entry, or the `generated.at` of the concerned `Exigence`/`Stack Decision`/`Infra`) to the entry's own `generated.at`.
-3. A source newer than the entry → refresh the section (same write as Mode 1, Steps 3-4). Source unchanged → nothing to do, list it as up to date.
-4. Report, section by section, what was refreshed and what was already current.
+3. A source newer than the entry → refresh the section (same write as Mode 1, Steps 3-4). Source unchanged → nothing to do, list it as up to date. Source with no readable date to compare → list it as non vérifiable, never as up to date — an unreadable date means drift can't be ruled out.
+4. Report, section by section, what was refreshed, what was already current, and what couldn't be verified.
 
 ## Edge Cases
 
@@ -100,6 +100,7 @@ You do not commit. Report what changed and let the user or the orchestrating ski
 ## Vérification (Mode 2)
 - À jour : <section>, <section>
 - Rafraîchie : <section> (source : <quoi>)
+- Non vérifiable : <section> (source sans date : <quoi>)
 - [If no entry yet: "Rien à vérifier — aucune section écrite pour l'instant"]
 
 ## Registre

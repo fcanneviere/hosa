@@ -75,7 +75,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Prépare les tests du sprint", "Planifie les tests techniques du sprint" | `qa-plan` |
 | "Exécute la QA du sprint", "Teste le sprint", "Fais la recette du sprint" | `qa` |
 | "Audite la qualité du code", "Vérifie les bonnes pratiques", "Fais une revue de sécurité du code" | `qualite` |
-| "Vérifie que la documentation est à jour", "Génère la documentation du projet", "Documente le projet" | `documentation` |
+| "Vérifie que la documentation est à jour" | `documentation` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
 

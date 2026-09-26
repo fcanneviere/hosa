@@ -23,9 +23,10 @@ avec stack + données + logique métier
         ↓
 Scaffold l'architecture dans le projet cible
         ↓
-Rédige la documentation d'architecture dans le projet cible
+Dispatch hosa-documentation (Mode 1) pour la documentation
+d'architecture
         ↓
-Met à jour l'entrée Infra avec le chemin de la doc
+Met à jour l'entrée Infra avec le chemin confirmé
 ```
 
 ## Trigger
@@ -52,13 +53,13 @@ Design the layers, modules, and boundaries that let the business logic (CDC), th
 
 Write the architecture for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack. If parts of the architecture already exist (from `schema-app`'s output or otherwise), extend them rather than duplicating.
 
-## Step 5: Write the Documentation
+## Step 5: Dispatch `hosa-documentation` (Mode 1)
 
-An architecture document in the managed project (e.g. `docs/architecture.md`, or wherever the project's existing docs live) — never in `hosa/kb`. Cover the layers/modules chosen, their boundaries, and how they relate to the data structures and the CDC.
+Dispatch `hosa-documentation` (Mode 1) with the layers/modules chosen and the paths scaffolded — it writes the architecture documentation into the managed project. Wait for its confirmation and the path it wrote to.
 
 ## Step 6: Update the `Infra` Entry
 
-Add the architecture documentation's path to the `Infra` entry under its own `## Documentation d'architecture` heading — a fixed heading, not a bare line, so a later reader (e.g. `backlog`) can tell it apart from the data dictionary or migrations paths `schema-app`/`schema-db` also record there. Log the update to `kb/infra/log.md`.
+Add the confirmed architecture documentation path to the `Infra` entry under its own `## Documentation d'architecture` heading — a fixed heading, not a bare line, so a later reader (e.g. `backlog`) can tell it apart from the data dictionary or migrations paths `schema-app`/`schema-db` also record there. Log the update to `kb/infra/log.md`.
 
 ## No Commits
 

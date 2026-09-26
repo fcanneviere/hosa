@@ -21,10 +21,10 @@ conventions) avant d'écrire
         ↓
 Écrit les structures de données dans le style déjà en place
         ↓
-Rédige la documentation (dictionnaire de données) dans le
-projet cible
+Dispatch hosa-documentation (Mode 1) pour le dictionnaire de
+données
         ↓
-Met à jour l'entrée Infra avec le chemin de la doc
+Met à jour l'entrée Infra avec le chemin confirmé
         ↓
 Propose d'enchaîner sur `schema-db`
 ```
@@ -74,20 +74,13 @@ Before writing anything, read the managed project's existing code: language, fra
 
 One data structure (type/model/schema, whatever the project's stack calls for) per entity, in the managed project, in its existing style. If a structure for that entity already exists, extend it to match the current entity definition rather than creating a duplicate.
 
-## Step 5: Write the Documentation
+## Step 5: Dispatch `hosa-documentation` (Mode 1)
 
-A data dictionary in the managed project (e.g. `docs/data-model.md`, or wherever the project's existing docs live), one section per entity:
-
-```markdown
-## <Entité>
-| Champ | Type | Origine | Exigence |
-|---|---|---|---|
-| <champ> | <type> | <générée/fournie/saisie> | [<exigence>](<chemin kb/cdc>) |
-```
+Dispatch `hosa-documentation` (Mode 1) with each entity's fields, types, origins, and the `Exigence` it traces back to — it writes the data dictionary into the managed project. Wait for its confirmation and the path it wrote to.
 
 ## Step 6: Update the `Infra` Entry
 
-Add the documentation file's path to the `Infra` entry from Step 1, and log the update to `kb/infra/log.md`.
+Add the confirmed documentation path to the `Infra` entry from Step 1, and log the update to `kb/infra/log.md`.
 
 ## No Commits
 
