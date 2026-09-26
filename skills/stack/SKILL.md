@@ -1,6 +1,6 @@
 ---
 name: stack
-description: Use to propose and record the technical stack for the project Hosa manages, based on the stable cahier des charges. First stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture).
+description: Use to propose and record the technical stack for the project Hosa manages, based on the stable cahier des charges. First stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture).
 ---
 
 # Stack
@@ -112,5 +112,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - `kb/stack/<slug>.md` — [décision]
 
 ## Suite
-Je lance `donnees` maintenant ?
+Je lance `infra` maintenant ?
 ```

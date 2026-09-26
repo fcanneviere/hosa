@@ -1,6 +1,6 @@
 ---
 name: donnees
-description: Use to annotate the origin (générée/fournie/saisie) of each donnée listed under `Données en entrée`/`Données en sortie` in stable `kb/cdc/` Exigences. Second stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture), runs after `stack` has recorded the technical choices.
+description: Use to annotate the origin (générée/fournie/saisie) of each donnée listed under `Données en entrée`/`Données en sortie` in stable `kb/cdc/` Exigences. Third stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture), runs after `infra` has set up the managed project's environment.
 ---
 
 # Données
@@ -29,7 +29,7 @@ Propose d'enchaîner sur `schema-app`
 
 ## Trigger
 
-Manual: `/donnees`. Auto: immediately after `stack`, or "précise les données du cahier des charges", "qualifie l'origine des données".
+Manual: `/donnees`. Auto: immediately after `infra`, or "précise les données du cahier des charges", "qualifie l'origine des données".
 
 ---
 

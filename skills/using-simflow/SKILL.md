@@ -28,12 +28,13 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 3 |
 | `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 4 |
 | `stack` | Propose and record the technical stack of the managed project, based on the stable cahier des charges — data-structuring pipeline stage 1 |
-| `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 2 |
-| `schema-app` | Derive data entities and write application-side data structures + documentation into the managed project — data-structuring pipeline stage 3 |
-| `schema-db` | Write database migrations/DDL into the managed project — data-structuring pipeline stage 4 |
-| `architecture` | Design and scaffold the software architecture of the managed project, consistent with the CDC, the stack, and the data structures — data-structuring pipeline stage 5 |
-| `interface` | Interview each persona, propose a visual identity and design rules, then design and scaffold the interface layer (UX/UI) of the managed project, consistent with the CDC and the software architecture — data-structuring pipeline stage 6 |
-| `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, an architecture placement note, and an interface placement note — data-structuring pipeline stage 7 |
+| `infra` | Set up and configure the managed project's Docker environment, install the chosen stack into it for real, and document installation — data-structuring pipeline stage 2 |
+| `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 3 |
+| `schema-app` | Derive data entities and write application-side data structures + documentation into the managed project — data-structuring pipeline stage 4 |
+| `schema-db` | Write database migrations/DDL into the managed project — data-structuring pipeline stage 5 |
+| `architecture` | Design and scaffold the software architecture of the managed project, consistent with the CDC, the stack, and the data structures — data-structuring pipeline stage 6 |
+| `interface` | Interview each persona, propose a visual identity and design rules, then design and scaffold the interface layer (UX/UI) of the managed project, consistent with the CDC and the software architecture — data-structuring pipeline stage 7 |
+| `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, an architecture placement note, and an interface placement note — data-structuring pipeline stage 8 |
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
 | `qa-plan` | Prepare a sprint's technical test plan — one `Test Plan` per ticket in `kb/test/`, grounded in the senior dev's recorded stack decisions, identifying which persona(s) must validate it via recette — follow-on to `sprint` |
 | `qa` | Run a sprint's QA — dispatch `simflow-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
@@ -59,6 +60,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Relis le cahier des charges" | `relecture` |
 | "Challenge le cahier des charges" | `contestation` |
 | "Choisis la stack technique", "Quelle stack pour le projet" | `stack` |
+| "Mets en place l'environnement Docker", "Installe la stack" | `infra` |
 | "Précise les données du cahier des charges", "Qualifie l'origine des données" | `donnees` |
 | "Génère la structure de données de l'application" | `schema-app` |
 | "Génère la structure de base de données" | `schema-db` |
@@ -83,3 +85,5 @@ These apply everywhere in SimFlow, in every skill, in every agent:
 - **No forced entry point.** Any skill can start the session. Skills auto-detect prior outputs like spec files.
 - **No guessing.** If you need information to proceed, ask. Don't invent requirements, file paths, or behaviors.
 - **Trust the user.** Don't add steps, gates, or checks they haven't asked for.
+- **Only `hosa-infra` installs.** No other agent ever runs an installation or provisioning command itself, or adds a server, a framework, or a dependency to the managed project on its own. It stops and dispatches `hosa-infra` with what it needs and why, then resumes only once `hosa-infra` confirms it's in place.
+- **The managed project runs in Docker.** Once `hosa-infra` has set up its environment, every command against the managed project — build, migration, test, run — executes inside it, not directly on the host.
