@@ -100,5 +100,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Sprint prêt. Je démarre le sprint maintenant (ouvre la branche/worktree dédiée — skill `git`) ? Sinon, je lance un autre sprint pour le reste du backlog, je lance `qa-plan` pour préparer les tests de ce sprint, ou on s'arrête là ?
+Sprint prêt. Je démarre le sprint maintenant (ouvre la branche/worktree dédiée — skill `git`) ? Une fois démarré, je peux lancer `develop` sur son premier ticket. Sinon, je lance un autre sprint pour le reste du backlog, je lance `qa-plan` pour préparer les tests de ce sprint, ou on s'arrête là ?
 ```

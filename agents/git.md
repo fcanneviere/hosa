@@ -49,7 +49,7 @@ Both delegated skills act on the current working directory, which must always be
 3. Invoke the `superpowers:using-git-worktrees` skill with branch name `sprint/<slug>`, per Repository Targeting above — it handles branch creation and baseline tests once correctly pointed at the managed project. Don't reimplement this. The explicit request to start this sprint counts as the declared worktree preference — its own Step 0 consent question doesn't need to be re-asked. If `.worktrees/` isn't yet git-ignored there, the one `.gitignore` commit the skill makes to fix that is the sole exception to "never in Mode 1" — user's own identity, no co-author.
 4. Only if the worktree and branch were actually created (`git worktree list` shows `sprint/<slug>`): write `state: active`, `branch: sprint/<slug>`, `worktree: <path>`, `base: <branch captured in Step 2>` into `kb/sprints/<slug>.md`. If the flow stopped short instead — baseline tests failed and the user chose to investigate rather than proceed, a sandbox fallback left you working in place with no branch created, or Step 0 found an already-linked worktree that isn't this sprint's — leave `state: planned` untouched, write nothing, and report why.
 5. Log the change to `kb/sprints/log.md` (only when Step 4 actually wrote one).
-6. Report the branch and worktree path — ticket work (via `simflow:build`/`iterate`/`test`/`debug`) should now happen inside it.
+6. Report the branch and worktree path — ticket work should now happen inside it, one ticket at a time, via the `develop` skill.
 
 ## Mode 2 — Finish a Sprint (QA-gated local merge)
 
