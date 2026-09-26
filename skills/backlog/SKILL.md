@@ -1,11 +1,11 @@
 ---
 name: backlog
-description: Use to turn every stable cahier des charges Exigence without a ticket yet into a Ticket enriched with a user story (PO), a technical feasibility note (senior dev), and an architecture placement note (architect). Sixth and last stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture → backlog).
+description: Use to turn every stable cahier des charges Exigence without a ticket yet into a Ticket enriched with a user story (PO), a technical feasibility note (senior dev), an architecture placement note (architect), and an interface placement note (UX/UI designer). Seventh stage of the data-structuring pipeline (stack → donnees → schema-app → schema-db → architecture → interface → backlog).
 ---
 
 # Backlog
 
-Turns "what the application must do" (the stable cahier des charges) into Product Backlog tickets — each one carrying the business story, its technical feasibility, and where it lands in the architecture, so nothing enters `kb/tickets/` disconnected from the technical reality already decided by `stack` and `architecture`.
+Turns "what the application must do" (the stable cahier des charges) into Product Backlog tickets — each one carrying the business story, its technical feasibility, where it lands in the architecture, and where it lands in the interface, so nothing enters `kb/tickets/` disconnected from the technical reality already decided by `stack`, `architecture`, and `interface`.
 
 ## Flow
 
@@ -21,6 +21,9 @@ Ajoute un placement architecture (rôle architecte), ou une
 ligne "pas encore déterminé" si aucune doc d'architecture
 n'existe
         ↓
+Ajoute un placement interface (rôle UX/UI designer), ou une
+ligne "pas encore déterminé" si aucune doc d'interface n'existe
+        ↓
 Log kb/tickets/log.md
         ↓
 Propose de lancer sprint
@@ -28,7 +31,7 @@ Propose de lancer sprint
 
 ## Trigger
 
-Manual: `/backlog`. Auto: immediately after `architecture`, or "crée le product backlog", "génère les tickets à partir du cahier des charges".
+Manual: `/backlog`. Auto: immediately after `interface`, or "crée le product backlog", "génère les tickets à partir du cahier des charges".
 
 ---
 
@@ -94,7 +97,25 @@ Architecture pas encore scaffoldée — placement non déterminé.
 
 Never block ticket creation on a missing architecture doc.
 
-## Step 5: Log
+## Step 5: Add the Interface Placement (UX/UI designer role)
+
+Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading (written by `interface`) — that heading, specifically, not the architecture doc, the data dictionary, or the migrations paths the same `Infra` entry may also record. If it's there, read the documentation it points to and append to the ticket:
+
+```markdown
+## Placement interface (UX/UI)
+[Écran/composant concerné et pourquoi]
+```
+
+If no interface documentation path is recorded yet (this skill invoked standalone, before `interface` ran), append instead:
+
+```markdown
+## Placement interface (UX/UI)
+Interface pas encore scaffoldée — placement non déterminé.
+```
+
+Never block ticket creation on a missing interface doc.
+
+## Step 6: Log
 
 Log each ticket created to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9.
 
