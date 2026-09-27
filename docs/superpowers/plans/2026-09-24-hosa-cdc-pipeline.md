@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the four-skill cahier des charges pipeline (`interview` → `redaction` → `relecture` → `contestation`), the new `hosa-challenger` agent, and the supporting extensions to `hosa-key-user` and `hosa`/`using-simflow`.
+**Goal:** Build the four-skill cahier des charges pipeline (`interview` → `redaction` → `relecture` → `contestation`), the new `hosa-challenger` agent, and the supporting extensions to `hosa-key-user` and `hosa`/`using-hosa`.
 
 **Architecture:** Markdown prompt-artifact repo (agents in `agents/`, skills in `skills/`) — no application code, no test runner. "Tests" for this plan are structural verifications (frontmatter present, cross-references resolve, required sections exist) run via Grep/Bash, not unit tests.
 
 **Tech Stack:** Markdown (YAML frontmatter + prose), Claude Code agent/skill conventions already established in this repo.
 
-**Spec:** `docs/simflow/specs/2026-09-24-hosa-cdc-pipeline-design.md`
+**Spec:** `docs/specs/2026-09-24-hosa-cdc-pipeline-design.md`
 
 ## Global Constraints
 
@@ -734,10 +734,10 @@ git commit -m "feat: chain interview skill after persona enrichment in hosa"
 
 ---
 
-### Task 8: Register the 4 new skills in `using-simflow`
+### Task 8: Register the 4 new skills in `using-hosa`
 
 **Files:**
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: skill names `interview`, `redaction`, `relecture`, `contestation` (Tasks 3–6)
@@ -781,13 +781,13 @@ Replace with:
 
 - [ ] **Step 3: Verify structure**
 
-Run: `grep -c "^| \`interview\`\|^| \`redaction\`\|^| \`relecture\`\|^| \`contestation\`" skills/using-simflow/SKILL.md` — Expected: `4`
+Run: `grep -c "^| \`interview\`\|^| \`redaction\`\|^| \`relecture\`\|^| \`contestation\`" skills/using-hosa/SKILL.md` — Expected: `4`
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/using-simflow/SKILL.md
-git commit -m "docs: register CDC pipeline skills in using-simflow"
+git add skills/using-hosa/SKILL.md
+git commit -m "docs: register CDC pipeline skills in using-hosa"
 ```
 
 ---
@@ -817,7 +817,7 @@ Expected: all three files listed (each references `redaction` as a routing targe
 Run: `grep -l "interview" skills/redaction/SKILL.md skills/relecture/SKILL.md skills/contestation/SKILL.md skills/hosa/SKILL.md`
 Expected: all four files listed
 
-- [ ] **Step 3: `using-simflow` table entries match actual skill directory names**
+- [ ] **Step 3: `using-hosa` table entries match actual skill directory names**
 
 Run: `ls skills/ | grep -E "^(interview|redaction|relecture|contestation)$"`
 Expected: all 4 names listed, matching the rows added in Task 8
@@ -830,7 +830,7 @@ If any check in Steps 1–3 fails, fix the specific file it points to (go back t
 
 ## Self-Review Notes
 
-- **Spec coverage:** §1 agents → Tasks 1–2. §1.3 key-user mode → Task 2. §2 Exigence schema → Task 4 Step 2. §3.1–3.4 four skills → Tasks 3–6. §4 hosa trigger → Task 7. §5 using-simflow registry → Task 8.
+- **Spec coverage:** §1 agents → Tasks 1–2. §1.3 key-user mode → Task 2. §2 Exigence schema → Task 4 Step 2. §3.1–3.4 four skills → Tasks 3–6. §4 hosa trigger → Task 7. §5 using-hosa registry → Task 8.
 - **Placeholder scan:** no TBD/TODO; every skill/agent file above is complete content, not a description of content.
 - **Type consistency:** agent name `hosa-key-user` and `hosa-challenger` used identically across all referencing tasks; skill names `interview`/`redaction`/`relecture`/`contestation` used identically everywhere they're cross-referenced.
 - **Review Focus:** all 5 items map to a specific instruction inside a specific task (see list above under Global Constraints/Review Focus) — none left uncovered.

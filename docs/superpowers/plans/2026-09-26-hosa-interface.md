@@ -18,7 +18,7 @@
 - `hosa-ux-designer` never writes to `hosa/kb/` except the concepts its own skill names explicitly (`Project`'s `## Identité visuelle` section, `Design Rule`, `Infra`'s `## Documentation d'interface` heading) — same "write only what your skill says" discipline as every other Hosa agent.
 - `interface` never treats `hosa/app` or `hosa/kb` as its "managed project" target — only the project path recorded in the `Infra` concept.
 - OKF logging convention: append to the bundle's `log.md` (create if missing), chronological, most recent entry first, grouped by date.
-- Git commits in this plan use the repo's existing convention: plain commit, user's configured `git config user.name`/`user.email` only, no co-author trailer (matches this repo's existing commit history and `skills/using-simflow/SKILL.md`'s Core Rules).
+- Git commits in this plan use the repo's existing convention: plain commit, user's configured `git config user.name`/`user.email` only, no co-author trailer (matches this repo's existing commit history and `skills/using-hosa/SKILL.md`'s Core Rules).
 - New pipeline order everywhere it's referenced: `stack → donnees → schema-app → schema-db → architecture → interface → backlog → sprint`.
 
 ## Review Focus
@@ -90,7 +90,7 @@ You also read the architecture documentation `hosa-architect` already wrote into
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the SimFlow core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the Hosa core rule that commits are always in the user's name only.
 
 ## Output Format
 
@@ -666,10 +666,10 @@ git commit -m "feat: extend sprint's technical-readiness guard to interface plac
 
 ---
 
-### Task 7: Register `interface` in `using-simflow`, renumber `backlog`/`sprint`
+### Task 7: Register `interface` in `using-hosa`, renumber `backlog`/`sprint`
 
 **Files:**
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: skill name `interface` (Task 2)
@@ -713,14 +713,14 @@ Replace with:
 
 - [ ] **Step 3: Verify structure**
 
-Run: `grep -c "^| \`interface\`" skills/using-simflow/SKILL.md` — Expected: `2` (1 row in the skills table + 1 row in the triggers table)
-Run: `grep -c "data-structuring pipeline stage 7" skills/using-simflow/SKILL.md` — Expected: `1`
+Run: `grep -c "^| \`interface\`" skills/using-hosa/SKILL.md` — Expected: `2` (1 row in the skills table + 1 row in the triggers table)
+Run: `grep -c "data-structuring pipeline stage 7" skills/using-hosa/SKILL.md` — Expected: `1`
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/using-simflow/SKILL.md
-git commit -m "docs: register interface skill in using-simflow, renumber backlog/sprint"
+git add skills/using-hosa/SKILL.md
+git commit -m "docs: register interface skill in using-hosa, renumber backlog/sprint"
 ```
 
 ---
@@ -779,7 +779,7 @@ git commit -m "docs: register hosa-ux-designer in agents README"
 Run: `grep -l "hosa-ux-designer" agents/*.md skills/*/SKILL.md`
 Expected: includes `agents/ux-designer.md`, `agents/key-user.md`, `skills/interface/SKILL.md`, `agents/README.md`
 
-Run: `grep -l "\`interface\`" skills/architecture/SKILL.md skills/backlog/SKILL.md skills/using-simflow/SKILL.md`
+Run: `grep -l "\`interface\`" skills/architecture/SKILL.md skills/backlog/SKILL.md skills/using-hosa/SKILL.md`
 Expected: all three files listed
 
 - [ ] **Step 2: The pipeline chain is unbroken end to end**
@@ -793,7 +793,7 @@ Expected: `1`
 Run: `grep -c "Propose de lancer \`backlog\`" skills/interface/SKILL.md`
 Expected: at least `1`
 
-- [ ] **Step 3: `using-simflow` and `agents/README.md` entries match actual file names**
+- [ ] **Step 3: `using-hosa` and `agents/README.md` entries match actual file names**
 
 Run: `ls skills/ | grep -E "^interface$"`
 Expected: `interface` listed
@@ -819,7 +819,7 @@ If any check in Steps 1-5 fails, fix the specific file it points to (go back to 
 
 ## Self-Review Notes
 
-- **Spec coverage:** §1 `hosa-ux-designer` agent → Task 1. §2 `interface` skill → Task 2. §3 `hosa-key-user` UI-interview mode → Task 3. §4 `architecture` chaining change → Task 4. §5 `backlog` Placement interface step → Task 5. §6 `sprint` guard extension → Task 6. §7 `using-simflow` registry → Task 7. Agent discoverability in `agents/README.md` (matches existing convention, implicit in every prior iteration's registry step) → Task 8. §Hors scope (v1) → deliberately no task (no new OKF type, no wireframe/image generation, no drift detection, no automated a11y testing).
+- **Spec coverage:** §1 `hosa-ux-designer` agent → Task 1. §2 `interface` skill → Task 2. §3 `hosa-key-user` UI-interview mode → Task 3. §4 `architecture` chaining change → Task 4. §5 `backlog` Placement interface step → Task 5. §6 `sprint` guard extension → Task 6. §7 `using-hosa` registry → Task 7. Agent discoverability in `agents/README.md` (matches existing convention, implicit in every prior iteration's registry step) → Task 8. §Hors scope (v1) → deliberately no task (no new OKF type, no wireframe/image generation, no drift detection, no automated a11y testing).
 - **Placeholder scan:** no TBD/TODO; every agent/skill file content and Find/Replace block above is complete, not a description of content.
 - **Type consistency:** agent name `hosa-ux-designer` used identically across Tasks 1, 3, 8. Skill name `interface` used identically across Tasks 2, 4, 5, 7. `Design Rule` frontmatter shape in Task 2 matches the shape given in the spec. Section heading `## Placement interface (UX/UI)` used identically in Task 5 (written by `backlog`) and Task 6 (read by `sprint`'s guard) — same string, so the guard's grep actually matches what gets written.
 - **Review Focus:** all 5 items map to a specific instruction inside a specific task (see numbered list above) — none left uncovered.

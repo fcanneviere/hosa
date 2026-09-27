@@ -5,8 +5,8 @@
 
 ## Contexte
 
-Aujourd'hui, rien dans SimFlow/Hosa ne gère de branche ni de worktree.
-`simflow:build`/`iterate`/`test`/`debug` committent chacun directement sur
+Aujourd'hui, rien dans Hosa ne gère de branche ni de worktree.
+`build`/`iterate`/`test`/`debug` committent chacun directement sur
 la branche courante, quelle qu'elle soit, au moment de leur étape finale.
 Le concept `Sprint` (`kb/sprints/`) existe déjà (`hosa-sprint-planner`,
 skill `sprint`) avec un cycle `planned → active → done`, mais rien ne fait
@@ -18,7 +18,7 @@ projet *géré* pour la durée d'un sprint : il ouvre une branche/worktree
 dédiée quand un sprint démarre, et la fusionne dans la branche de base une
 fois que chaque ticket du sprint a une QA verte enregistrée. Il applique
 par ailleurs, pour toute opération git qu'on lui demande, les mêmes règles
-de prudence déjà en vigueur ailleurs dans SimFlow.
+de prudence déjà en vigueur ailleurs dans Hosa.
 
 ## Portée : le projet géré, pas Hosa lui-même
 
@@ -47,7 +47,7 @@ existants lui proposent la suite naturelle du travail :
 | Skill `git` (`/git`) directement | L'utilisateur le demande explicitement | Mode 1, 2 ou 3 selon la requête |
 
 Chaque point de dispatch propose l'enchaînement — il ne l'impose jamais :
-même discipline que le reste de SimFlow ("Trust the user").
+même discipline que le reste de Hosa ("Trust the user").
 
 ## Extension du concept `Sprint`
 
@@ -96,7 +96,7 @@ d'état/branche — chronologique, plus récent en premier, OKF §9.
 - Avant tout commit qu'il fait lui-même (uniquement le commit de fusion en
   Mode 2, et tout commit ad hoc explicitement demandé en Mode 3) : vérifie
   `git config user.name`/`user.email`, jamais de `Co-Authored-By`, jamais
-  d'auteur additionnel — règle core SimFlow appliquée littéralement.
+  d'auteur additionnel — règle core Hosa appliquée littéralement.
 - Jamais de `force-push`, `git reset --hard`, `git clean -f` sans la
   confirmation explicite du mot exact demandé par l'utilisateur — même
   garde-fou que `superpowers:finishing-a-development-branch`.
@@ -120,7 +120,7 @@ d'état/branche — chronologique, plus récent en premier, OKF §9.
    dans `kb/sprints/<slug>.md`.
 5. Log `kb/sprints/log.md`.
 6. Rapporte le chemin du worktree et la branche — le travail des tickets
-   (via `simflow:build`/`iterate`/`test`/`debug`) doit désormais se faire
+   (via `build`/`iterate`/`test`/`debug`) doit désormais se faire
    dedans.
 
 ### Mode 2 — Fusion de fin de sprint
@@ -132,7 +132,7 @@ d'état/branche — chronologique, plus récent en premier, OKF §9.
    être entièrement passé) et son/ses fichier(s) de recette (`Réussi` ou
    "Non applicable"). Un ticket manquant sa QA, ou avec un résultat
    `Échoué`/`Partiel`, bloque la fusion : liste les tickets bloquants et ce
-   qu'il leur manque, propose `qa`/`simflow:debug`/`hosa-product-owner`
+   qu'il leur manque, propose `qa`/`debug`/`hosa-product-owner`
    selon le cas, et stoppe — jamais de fusion partielle.
 3. Tout vert → invoque `superpowers:finishing-a-development-branch`, forcé
    sur l'option "Merge locally" (pas de menu proposé — le choix
@@ -160,7 +160,7 @@ s'applique à la place).
 Seul agent Hosa qui commit — uniquement le commit de fusion en Mode 2, et
 un commit ad hoc en Mode 3 si explicitement demandé. Jamais en Mode 1.
 Toujours sous l'identité git de l'utilisateur, jamais de co-auteur —
-même règle core SimFlow que partout ailleurs, appliquée ici plutôt que
+même règle core Hosa que partout ailleurs, appliquée ici plutôt que
 déférée à l'utilisateur.
 
 ### Output Format
@@ -229,10 +229,10 @@ le sprint maintenant ?" → dispatch `git` Mode 2 si accepté. Si le verdict
 n'est pas clean, ne propose rien — la porte QA de `hosa-git` referait de
 toute façon le même contrôle et bloquerait.
 
-## Registre dans `using-simflow` et `agents/README.md`
+## Registre dans `using-hosa` et `agents/README.md`
 
 - `hosa-git` ajouté à la table "Hosa agents" de `agents/README.md`.
-- `git` ajouté à la table des skills de `skills/using-simflow/SKILL.md`,
+- `git` ajouté à la table des skills de `skills/using-hosa/SKILL.md`,
   décrit comme le skill qui ouvre/fusionne la branche de sprint dédiée du
   projet géré, et à la table des triggers auto.
 
@@ -241,7 +241,7 @@ toute façon le même contrôle et bloquerait.
 - Push vers un remote / création de Pull Request GitHub — fusion toujours
   locale. Pourrait devenir un Mode 4 plus tard si demandé, sans
   restructuration (même agent, même garde QA).
-- Prise en main des commits de `simflow:build`/`iterate`/`test`/`debug` —
+- Prise en main des commits de `build`/`iterate`/`test`/`debug` —
   ces skills continuent de committer eux-mêmes, simplement désormais dans
   le worktree du sprint actif plutôt que sur une branche arbitraire.
 - Résolution de conflits entre sprints concurrents au-delà de ce que git

@@ -76,7 +76,7 @@ You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exist
 
 1. Read the ticket: its story, `Note technique (senior dev)`, `Placement architecture (architecte)`, `Placement interface (UX/UI)`. **Any of these three still holding `backlog`'s fallback line** ("Stack pas encore choisie...", "Architecture pas encore scaffoldée...", "Interface pas encore scaffoldée...") **is a blocker — say so and stop; this ticket shouldn't have passed `sprint`'s technical-readiness guard.**
 2. Read, in the managed project, the actual code/documentation the `Placement architecture` points to (path from `Infra`), and the data structures `hosa-data-engineer` already wrote — the real boundary, not just the placement note's text.
-3. Break the ticket into short tasks, **strictly sequential — never a parallel group**. One task per file/behavior, in execution order. Same sizing discipline as `simflow-planner`: split a task needing more than ~5 files or more than one clear deliverable; merge a task changing fewer than 5 lines or a single config value into its nearest neighbor.
+3. Break the ticket into short tasks, **strictly sequential — never a parallel group**. One task per file/behavior, in execution order. Same sizing discipline as `hosa-planner`: split a task needing more than ~5 files or more than one clear deliverable; merge a task changing fewer than 5 lines or a single config value into its nearest neighbor.
 4. **Halt rule (ambiguity):** a task that would force `hosa-developer` to guess a behavior the ticket never specified — list the question, stop, return no task plan.
 5. **Halt rule (structural deviation):** the ticket, as written, needs a module/layer or an entity/field that isn't already scaffolded — **stop the whole ticket right there** and report exactly what's missing and why it exceeds the current structure. Never propose the extension yourself; that call belongs to `hosa-architect`/`hosa-data-engineer`.
 
@@ -183,7 +183,7 @@ If any of this is missing and you cannot proceed without it, say so immediately 
 ## Your Process
 
 1. **Read before write.** Read every file relevant to this task before changing anything. Understand the existing patterns, naming conventions, and architecture already in place.
-2. **Follow conventions exactly.** Match the style, structure, and patterns of the surrounding code — same discipline as `simflow-implementer`.
+2. **Follow conventions exactly.** Match the style, structure, and patterns of the surrounding code — same discipline as `hosa-implementer`.
 3. **Implement exactly the task.** Build what the task describes. No unrelated refactor, no unrequested feature.
 4. **Stay inside the placement you were given.** Never add a module, layer, entity, or field outside what `hosa-architect`/`hosa-data-engineer` already scaffolded. **If the task genuinely needs one to be correct — don't improvise a workaround: stop this task and report the deviation** exactly like `hosa-tech-lead` does (what's missing, why).
 5. **No comments explaining what code does.** Only add one when the WHY is non-obvious: a hidden constraint, a specific workaround.
@@ -392,23 +392,23 @@ git commit -m "feat: add develop skill, per-ticket task breakdown and implementa
 
 ---
 
-### Task 4: Wire hand-off into `git`/`sprint`, register `develop` in `using-simflow`
+### Task 4: Wire hand-off into `git`/`sprint`, register `develop` in `using-hosa`
 
 **Files:**
 - Modify: `agents/git.md`
 - Modify: `skills/sprint/SKILL.md`
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: the `develop` skill's identity and purpose (Task 3).
-- Produces: `develop` discoverable via `using-simflow`'s tables, `git` Mode 1's report and `sprint`'s Suite each pointing at it as the natural next step.
+- Produces: `develop` discoverable via `using-hosa`'s tables, `git` Mode 1's report and `sprint`'s Suite each pointing at it as the natural next step.
 
 - [ ] **Step 1: Point `hosa-git` Mode 1's report at `develop`**
 
 In `agents/git.md`, replace:
 
 ```
-6. Report the branch and worktree path — ticket work (via `simflow:build`/`iterate`/`test`/`debug`) should now happen inside it.
+6. Report the branch and worktree path — ticket work (via `build`/`iterate`/`test`/`debug`) should now happen inside it.
 ```
 
 with:
@@ -422,7 +422,7 @@ with:
 Run: `grep -c "via the \`develop\` skill" agents/git.md`
 Expected: `1`
 
-Run: `grep -c "simflow:build\`/\`iterate\`/\`test\`/\`debug\`" agents/git.md`
+Run: `grep -c "build\`/\`iterate\`/\`test\`/\`debug\`" agents/git.md`
 Expected: `0`
 
 - [ ] **Step 3: Add the hand-off line to `sprint`'s Suite**
@@ -444,34 +444,34 @@ Sprint prêt. Je démarre le sprint maintenant (ouvre la branche/worktree dédi�
 Run: `grep -c "je peux lancer \`develop\` sur son premier ticket" skills/sprint/SKILL.md`
 Expected: `1`
 
-- [ ] **Step 5: Register `develop` in `using-simflow`'s skills table**
+- [ ] **Step 5: Register `develop` in `using-hosa`'s skills table**
 
-In `skills/using-simflow/SKILL.md`, in the skills table, after the `git` row, add:
+In `skills/using-hosa/SKILL.md`, in the skills table, after the `git` row, add:
 
 ```markdown
 | `develop` | Implement a single sprint ticket — break it into short sequential tasks (`hosa-tech-lead`) and implement them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Follow-on to `git` Mode 1, precondition for `qa-plan`/`qa` |
 ```
 
-- [ ] **Step 6: Register `develop` in `using-simflow`'s triggers table**
+- [ ] **Step 6: Register `develop` in `using-hosa`'s triggers table**
 
-In `skills/using-simflow/SKILL.md`, in the triggers table, after the `git` (Mode 2) trigger row, add:
+In `skills/using-hosa/SKILL.md`, in the triggers table, after the `git` (Mode 2) trigger row, add:
 
 ```markdown
 | "Développe le ticket X", "Implémente le ticket X" | `develop` |
 ```
 
-- [ ] **Step 7: Verify the `using-simflow` edits**
+- [ ] **Step 7: Verify the `using-hosa` edits**
 
-Run: `grep -c "^| \`develop\` |" skills/using-simflow/SKILL.md`
+Run: `grep -c "^| \`develop\` |" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -c "\`develop\`$" skills/using-simflow/SKILL.md`
+Run: `grep -c "\`develop\`$" skills/using-hosa/SKILL.md`
 Expected: at least `1`
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add agents/git.md skills/sprint/SKILL.md skills/using-simflow/SKILL.md
+git add agents/git.md skills/sprint/SKILL.md skills/using-hosa/SKILL.md
 git commit -m "feat: sprint/git dispatch develop, register develop skill"
 ```
 
@@ -500,7 +500,7 @@ Expected: no output (empty).
 
 - [ ] **Step 3: Confirm no other skill file was modified beyond the three expected**
 
-Run: `git diff --stat -- skills/ | grep -v "develop/SKILL.md\|sprint/SKILL.md\|using-simflow/SKILL.md"`
+Run: `git diff --stat -- skills/ | grep -v "develop/SKILL.md\|sprint/SKILL.md\|using-hosa/SKILL.md"`
 Expected: no output (empty).
 
 - [ ] **Step 4: Confirm no new pipeline stage numbering was introduced**

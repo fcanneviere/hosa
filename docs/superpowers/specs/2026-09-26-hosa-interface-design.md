@@ -246,11 +246,11 @@ scaffoldée...", "Interface pas encore scaffoldée...") déclenche le même
 traitement que déjà défini : le dire, proposer de combler le manque, et
 laisser le ticket dans le backlog si le manque reste non comblé.
 
-## 7. Registre dans `using-simflow`
+## 7. Registre dans `using-hosa`
 
 `interface` est ajouté à la table des skills (stage 6 du pipeline de
 structuration des données) et à la table de triggers auto de
-`skills/using-simflow/SKILL.md`, même format que les entrées existantes.
+`skills/using-hosa/SKILL.md`, même format que les entrées existantes.
 Les descriptions de `backlog` et `sprint` sont mises à jour pour refléter
 la nouvelle position (`backlog` devient stage 7). `hosa-ux-designer` est
 ajouté à `agents/README.md`.

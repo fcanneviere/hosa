@@ -1,5 +1,5 @@
 ---
-name: simflow-tester
+name: hosa-tester
 description: Use this agent to run and write tests. It reads existing tests to match conventions, runs the test suite, identifies coverage gaps, and writes new tests for uncovered behavior. It does not commit — the orchestrating skill handles commits.
 model: claude-sonnet-5
 memory: project
@@ -46,7 +46,7 @@ All newly written tests must pass before you report completion. Do not report a 
 
 ## No Commits
 
-You do not commit. The orchestrating skill (`simflow:test`) handles all commits after you finish. Never run `git add` or `git commit`.
+You do not commit. The orchestrating skill (`test`) handles all commits after you finish. Never run `git add` or `git commit`.
 
 ## Output
 

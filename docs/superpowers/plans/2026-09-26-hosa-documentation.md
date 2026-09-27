@@ -405,14 +405,14 @@ In `agents/data-engineer.md`, replace:
 
 ```
 ### 2. Application data structure
-Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `simflow-implementer`. Write the structures plus a data dictionary documenting each entity, field, type, origin, and the `Exigence` it traces back to.
+Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `hosa-implementer`. Write the structures plus a data dictionary documenting each entity, field, type, origin, and the `Exigence` it traces back to.
 ```
 
 with:
 
 ```
 ### 2. Application data structure
-Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `simflow-implementer`. Write the structures, then dispatch `hosa-documentation` (Mode 1) with each entity's fields, types, origins, and the `Exigence` it traces back to — it writes the data dictionary into the managed project. Wait for its confirmation before reporting.
+Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `hosa-implementer`. Write the structures, then dispatch `hosa-documentation` (Mode 1) with each entity's fields, types, origins, and the `Exigence` it traces back to — it writes the data dictionary into the managed project. Wait for its confirmation before reporting.
 ```
 
 - [ ] **Step 7: Verify the `hosa-data-engineer` edit**
@@ -432,15 +432,15 @@ git commit -m "feat: hosa-infra/architect/data-engineer dispatch hosa-documentat
 
 ---
 
-### Task 4: Wire hot dispatch into `contestation`, register `documentation` in `using-simflow`
+### Task 4: Wire hot dispatch into `contestation`, register `documentation` in `using-hosa`
 
 **Files:**
 - Modify: `skills/contestation/SKILL.md`
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: `hosa-documentation`'s Mode 1 contract (same as Task 3).
-- Produces: the `documentation` skill (Task 2) registered and discoverable via `using-simflow`'s tables — consumed by nothing downstream in this plan, but required for the skill to be auto-triggerable per the repo's own convention.
+- Produces: the `documentation` skill (Task 2) registered and discoverable via `using-hosa`'s tables — consumed by nothing downstream in this plan, but required for the skill to be auto-triggerable per the repo's own convention.
 
 - [ ] **Step 1: Update `contestation`'s Step 4 (Final Sign-Off)**
 
@@ -472,34 +472,34 @@ Expected: `1`
 Run: `grep -c "No dispatch to \`hosa-documentation\` happens in this case" skills/contestation/SKILL.md`
 Expected: `1`
 
-- [ ] **Step 3: Register `documentation` in `using-simflow`'s skills table**
+- [ ] **Step 3: Register `documentation` in `using-hosa`'s skills table**
 
-In `skills/using-simflow/SKILL.md`, in the skills table, after the `qualite` row, add:
+In `skills/using-hosa/SKILL.md`, in the skills table, after the `qualite` row, add:
 
 ```markdown
 | `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
 ```
 
-- [ ] **Step 4: Register `documentation` in `using-simflow`'s triggers table**
+- [ ] **Step 4: Register `documentation` in `using-hosa`'s triggers table**
 
-In `skills/using-simflow/SKILL.md`, in the triggers table, after the `qualite` trigger row, add:
+In `skills/using-hosa/SKILL.md`, in the triggers table, after the `qualite` trigger row, add:
 
 ```markdown
 | "Vérifie que la documentation est à jour", "Génère la documentation du projet", "Documente le projet" | `documentation` |
 ```
 
-- [ ] **Step 5: Verify the `using-simflow` edits**
+- [ ] **Step 5: Verify the `using-hosa` edits**
 
-Run: `grep -c "^| \`documentation\` |" skills/using-simflow/SKILL.md`
+Run: `grep -c "^| \`documentation\` |" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -c "Vérifie que la documentation est à jour" skills/using-simflow/SKILL.md`
+Run: `grep -c "Vérifie que la documentation est à jour" skills/using-hosa/SKILL.md`
 Expected: `1`
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add skills/contestation/SKILL.md skills/using-simflow/SKILL.md
+git add skills/contestation/SKILL.md skills/using-hosa/SKILL.md
 git commit -m "feat: contestation dispatches hosa-documentation, register documentation skill"
 ```
 
@@ -515,7 +515,7 @@ git commit -m "feat: contestation dispatches hosa-documentation, register docume
 
 - [ ] **Step 1: Confirm the agent name is consistent everywhere it's referenced**
 
-Run: `grep -c "hosa-documentation" agents/documentation.md agents/README.md skills/documentation/SKILL.md agents/infra.md agents/architect.md agents/data-engineer.md skills/contestation/SKILL.md skills/using-simflow/SKILL.md`
+Run: `grep -c "hosa-documentation" agents/documentation.md agents/README.md skills/documentation/SKILL.md agents/infra.md agents/architect.md agents/data-engineer.md skills/contestation/SKILL.md skills/using-hosa/SKILL.md`
 Expected: at least `1` in each of the eight files (exact counts vary; a `0` in any file is the failure condition).
 
 - [ ] **Step 2: Confirm no other agent file in `agents/` was modified beyond the four expected**

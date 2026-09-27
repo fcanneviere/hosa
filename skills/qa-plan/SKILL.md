@@ -47,7 +47,7 @@ For each ticket without a plan yet:
 
 1. Read the ticket (`kb/tickets/<slug-ticket>.md`): its story, the persona it links, and its `## Note technique (senior dev)` section.
 2. Read `kb/stack/` for the recorded `Stack Decision`s — your "with the senior dev" basis, not a live consultation. If the technical note or the stack decisions are missing something needed to define a precise test case, say so and ask the user rather than inventing a technical detail with no basis.
-3. Define the technical test cases: happy path, error cases, edge cases — in the same terms `simflow-tester` already uses.
+3. Define the technical test cases: happy path, error cases, edge cases — in the same terms `hosa-tester` already uses.
 4. Identify the recette required: the persona(s) linked in the ticket's story. If none is linked, write "Aucune — ticket sans persona identifié dans sa story." — never guess.
 5. Write `hosa/kb/test/<slug-ticket>-technique.md`:
 
@@ -61,7 +61,7 @@ status: stable
 generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }
 ---
 ## Cas de test
-- <cas de test technique, dans les termes de simflow-tester>
+- <cas de test technique, dans les termes de hosa-tester>
 
 ## Recette requise
 - [<persona>](../personnas/<slug>.md)

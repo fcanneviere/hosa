@@ -76,14 +76,14 @@ Be direct. Don't soften. The goal is to surface problems before they become bugs
 
 ## Phase 4: Write Spec
 
-**If `docs/simflow/specs/` does not exist, create it:**
+**If `docs/specs/` does not exist, create it:**
 ```bash
-mkdir -p docs/simflow/specs/
+mkdir -p docs/specs/
 ```
 
 Write the spec to:
 ```
-docs/simflow/specs/YYYY-MM-DD-<topic>-spec.md
+docs/specs/YYYY-MM-DD-<topic>-spec.md
 ```
 
 `<topic>` is: lowercase, hyphen-separated, max 5 words derived from the feature name. Example: `2026-07-16-user-auth-middleware-spec.md`
@@ -115,7 +115,7 @@ docs/simflow/specs/YYYY-MM-DD-<topic>-spec.md
 Keep it short and clear. A 1-page spec beats a 5-page spec every time.
 
 After writing, say:
-> "Spec written to `docs/simflow/specs/<filename>`. Please review it and let me know when you're ready for the quiz — or if you want anything changed."
+> "Spec written to `docs/specs/<filename>`. Please review it and let me know when you're ready for the quiz — or if you want anything changed."
 
 **If the user requests changes:** update the spec file, present the changed sections, wait for confirmation again. Repeat until the user is satisfied.
 
@@ -182,7 +182,7 @@ If the directory is not a git repository: stop and tell the user — "This direc
 
 When all checks pass:
 ```bash
-git add docs/simflow/specs/<filename>.md
+git add docs/specs/<filename>.md
 git commit -m "docs: add spec for <topic>"
 ```
 

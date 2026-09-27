@@ -5,14 +5,14 @@ description: Use when the user wants to check if the implementation matches the 
 
 # Review
 
-Checks the implementation against the spec. If gaps exist, identifies exactly what's missing and triggers `simflow:build` for only those gaps. Loops until the reviewer returns a clean result.
+Checks the implementation against the spec. If gaps exist, identifies exactly what's missing and triggers `build` for only those gaps. Loops until the reviewer returns a clean result.
 
 ## Flow
 
 ```
 Locate spec + read implementation
         ↓
-simflow-reviewer → PASS / PASS-WITH-NOTES / FAIL
+hosa-reviewer → PASS / PASS-WITH-NOTES / FAIL
         ↓ PASS or PASS-WITH-NOTES
 Done — confirm all requirements satisfied
         ↓ FAIL
@@ -20,7 +20,7 @@ List exact gaps with locations
         ↓
 If no spec exists → write inline requirements to a temp spec first
         ↓
-Trigger simflow:build for gap tasks only
+Trigger build for gap tasks only
 (full build flow including user review quiz and commit per task)
         ↓
 Loop back to review
@@ -33,9 +33,9 @@ After 3 full review→build cycles with the same gap still present:
 
 ## Step 1: Locate Input
 
-**Spec:** look in `docs/simflow/specs/` for the most recent file by YYYY-MM-DD filename prefix. If multiple exist on the same date, ask the user which to use.
+**Spec:** look in `docs/specs/` for the most recent file by YYYY-MM-DD filename prefix. If multiple exist on the same date, ask the user which to use.
 
-**No spec:** ask the user to describe the requirements. Write those requirements to `docs/simflow/specs/YYYY-MM-DD-inline-requirements-spec.md` before invoking the reviewer — the reviewer agent requires a spec file to work from.
+**No spec:** ask the user to describe the requirements. Write those requirements to `docs/specs/YYYY-MM-DD-inline-requirements-spec.md` before invoking the reviewer — the reviewer agent requires a spec file to work from.
 
 **Implementation:** read the files that correspond to the spec. If it's not obvious which files, check recent git commits and ask if needed.
 
@@ -43,7 +43,7 @@ After 3 full review→build cycles with the same gap still present:
 
 ## Step 2: Invoke Reviewer
 
-Dispatch `simflow-reviewer` with:
+Dispatch `hosa-reviewer` with:
 - The full spec file content
 - The implementation files to review
 
@@ -60,7 +60,7 @@ For each gap the reviewer identified:
 - Note exactly what's missing and where it should be
 - Track this gap with a counter (starts at 1 per unique gap)
 
-Trigger `simflow:build` scoped to only the gap tasks. The full build flow applies — including the user review step and 2-question quiz before each commit. Do not skip these steps.
+Trigger `build` scoped to only the gap tasks. The full build flow applies — including the user review step and 2-question quiz before each commit. Do not skip these steps.
 
 All commits during this phase: **user's git name and email only. No Co-Authored-By.**
 
@@ -68,7 +68,7 @@ All commits during this phase: **user's git name and email only. No Co-Authored-
 
 ## Step 4: Loop
 
-After the gap build completes, automatically re-run the reviewer (return to Step 2). Do not wait for the user to invoke `simflow:review` again.
+After the gap build completes, automatically re-run the reviewer (return to Step 2). Do not wait for the user to invoke `review` again.
 
 **At the start of every review cycle, print the cycle header:**
 ```

@@ -18,7 +18,7 @@
 - `hosa-senior-dev` and `hosa-architect` never write to `hosa/kb/` except the concepts their own skills name explicitly (`Stack Decision`, `Infra`) — same "write only what your skill says" discipline as every other Hosa agent.
 - `stack` and `architecture` never treat `hosa/app` or `hosa/kb` as their "managed project" target — only the project path recorded in the `Infra` concept.
 - OKF logging convention: append to the bundle's `log.md` (create if missing), chronological, most recent entry first, grouped by date.
-- Git commits in this plan use the repo's existing convention: plain commit, user's configured `git config user.name`/`user.email` only, no co-author trailer (matches this repo's existing commit history and `skills/using-simflow/SKILL.md`'s Core Rules).
+- Git commits in this plan use the repo's existing convention: plain commit, user's configured `git config user.name`/`user.email` only, no co-author trailer (matches this repo's existing commit history and `skills/using-hosa/SKILL.md`'s Core Rules).
 - New pipeline order everywhere it's referenced: `stack → donnees → schema-app → schema-db → architecture`, chained after `contestation`.
 
 ## Review Focus
@@ -81,7 +81,7 @@ You read from Hosa's KB (`hosa/kb/`) but every decision you write also belongs t
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the SimFlow core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the Hosa core rule that commits are always in the user's name only.
 
 ## Output Format
 
@@ -298,7 +298,7 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
 ## Your Process
 
 1. Read `kb/cdc/` (`stable` `Exigence`), `kb/stack/` (`Stack Decision`), and the data dictionary + migrations already written by `hosa-data-engineer` in the managed project.
-2. Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `simflow-implementer`.
+2. Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `hosa-implementer`.
 3. Design the architecture — layers, modules, boundaries, patterns — consistent with the stack and the data structures. Say what you chose and why.
 4. Scaffold it for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack. Extend anything that already exists rather than duplicating it.
 5. Write the architecture documentation in the managed project (never in `hosa/kb`).
@@ -306,7 +306,7 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the SimFlow core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the Hosa core rule that commits are always in the user's name only.
 
 ## Output Format
 
@@ -401,7 +401,7 @@ Read `kb/cdc/` for `stable` `Exigence`s, `kb/stack/` for `Stack Decision`s, and 
 
 ## Step 2: Read Existing Conventions
 
-Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `simflow-implementer`.
+Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `hosa-implementer`.
 
 ## Step 3: Design the Architecture
 
@@ -632,7 +632,7 @@ Find:
 ```markdown
 ## Step 3: Read Existing Conventions
 
-Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `simflow-implementer`. If the project has no existing data-structure code yet, pick conventions consistent with its language/framework and say what you chose and why.
+Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `hosa-implementer`. If the project has no existing data-structure code yet, pick conventions consistent with its language/framework and say what you chose and why.
 ```
 
 Replace with:
@@ -640,7 +640,7 @@ Replace with:
 ```markdown
 ## Step 3: Read Existing Conventions
 
-Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `simflow-implementer`. If the project has no existing data-structure code yet, use the language/framework `Stack Decision` in `kb/stack/` (written by the `stack` skill) rather than guessing; if that's also missing, pick conventions consistent with whatever's available and say what you chose and why.
+Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `hosa-implementer`. If the project has no existing data-structure code yet, use the language/framework `Stack Decision` in `kb/stack/` (written by the `stack` skill) rather than guessing; if that's also missing, pick conventions consistent with whatever's available and say what you chose and why.
 ```
 
 - [ ] **Step 3: Verify structure**
@@ -811,10 +811,10 @@ git commit -m "feat: chain stack skill after contestation sign-off"
 
 ---
 
-### Task 9: Register `stack` and `architecture` in `using-simflow`
+### Task 9: Register `stack` and `architecture` in `using-hosa`
 
 **Files:**
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: skill names `stack`, `architecture` (Tasks 2, 4)
@@ -862,13 +862,13 @@ Replace with:
 
 - [ ] **Step 3: Verify structure**
 
-Run: `grep -c "^| \`stack\`\|^| \`donnees\`\|^| \`schema-app\`\|^| \`schema-db\`\|^| \`architecture\`" skills/using-simflow/SKILL.md` — Expected: `10` (5 rows in the skills table + 5 rows in the triggers table)
+Run: `grep -c "^| \`stack\`\|^| \`donnees\`\|^| \`schema-app\`\|^| \`schema-db\`\|^| \`architecture\`" skills/using-hosa/SKILL.md` — Expected: `10` (5 rows in the skills table + 5 rows in the triggers table)
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/using-simflow/SKILL.md
-git commit -m "docs: register stack and architecture skills in using-simflow"
+git add skills/using-hosa/SKILL.md
+git commit -m "docs: register stack and architecture skills in using-hosa"
 ```
 
 ---
@@ -941,7 +941,7 @@ Expected: `skills/schema-db/SKILL.md` listed
 Run: `grep -l "schema-db" skills/architecture/SKILL.md`
 Expected: `skills/architecture/SKILL.md` listed
 
-- [ ] **Step 3: `using-simflow` and `agents/README.md` entries match actual file names**
+- [ ] **Step 3: `using-hosa` and `agents/README.md` entries match actual file names**
 
 Run: `ls skills/ | grep -E "^(stack|architecture)$"`
 Expected: both names listed, matching the rows added in Task 9
@@ -962,7 +962,7 @@ If any check in Steps 1-4 fails, fix the specific file it points to (go back to 
 
 ## Self-Review Notes
 
-- **Spec coverage:** §1 `hosa-senior-dev` → Task 1. §2 `stack` skill → Task 2. §3 `hosa-architect` → Task 3. §4 `architecture` skill → Task 4. §5 `schema-db`/`schema-app` modifications → Tasks 5-6. Pipeline renumbering (§5) → Tasks 5-9. §6 `using-simflow` registry → Task 9. Chaining from `contestation` (implicit in "Pipeline mis à jour") → Task 8; `donnees`'s own chain adjustment → Task 7. Agent discoverability (matches existing `agents/README.md` convention, not explicitly in spec but required for consistency) → Task 10.
+- **Spec coverage:** §1 `hosa-senior-dev` → Task 1. §2 `stack` skill → Task 2. §3 `hosa-architect` → Task 3. §4 `architecture` skill → Task 4. §5 `schema-db`/`schema-app` modifications → Tasks 5-6. Pipeline renumbering (§5) → Tasks 5-9. §6 `using-hosa` registry → Task 9. Chaining from `contestation` (implicit in "Pipeline mis à jour") → Task 8; `donnees`'s own chain adjustment → Task 7. Agent discoverability (matches existing `agents/README.md` convention, not explicitly in spec but required for consistency) → Task 10.
 - **Placeholder scan:** no TBD/TODO; every agent/skill file above is complete content, not a description of content.
 - **Type consistency:** agent names `hosa-senior-dev`/`hosa-architect` used identically across all tasks; skill names `stack`/`architecture` used identically everywhere cross-referenced; `Stack Decision` frontmatter shape matches exactly between Task 2's `stack` skill and the pre-existing shape in `schema-db` (Task 5), unchanged.
 - **Review Focus:** all 5 items map to a specific instruction inside a specific task (see numbered list above) — none left uncovered.

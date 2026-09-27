@@ -5,7 +5,7 @@
 
 ## Contexte
 
-Le skill `hosa` (voir `docs/simflow/specs/2026-09-23-hosa-pilotage-design.md` et
+Le skill `hosa` (voir `docs/specs/2026-09-23-hosa-pilotage-design.md` et
 `skills/hosa/SKILL.md`) initialise l'identité du projet et les personas, puis
 les enrichit via `hosa-key-user`. Une fois les personas finalisés, il n'existe
 aucun moyen structuré de transformer leurs besoins en cahier des charges — les
@@ -208,9 +208,9 @@ démarrer sans accord explicite) :
 Oui → invoque `interview`. Non → s'arrête normalement ; `interview` reste
 invocable manuellement plus tard.
 
-## 5. Registre dans `using-simflow`
+## 5. Registre dans `using-hosa`
 
-Les quatre skills sont ajoutés à la table de `skills/using-simflow/SKILL.md`
+Les quatre skills sont ajoutés à la table de `skills/using-hosa/SKILL.md`
 et à la table de triggers auto, même format que les entrées existantes
 (`hosa`, `recette`).
 
@@ -221,6 +221,6 @@ et à la table de triggers auto, même format que les entrées existantes
   qui est un pur passage de notes sans écriture KB donc non bloquant)
 - Nouveau type OKF pour stocker le rapport de `contestation` — reste un
   rapport conversationnel, pas un concept KB (même logique que
-  `simflow-reviewer`, dont le verdict n'est pas persisté)
+  `hosa-reviewer`, dont le verdict n'est pas persisté)
 - Détection automatique des processus métier à partir du code ou de la KB —
   la liste des processus est fournie par l'utilisateur en début d'`interview`

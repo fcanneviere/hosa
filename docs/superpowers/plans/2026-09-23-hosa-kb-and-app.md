@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node.js (`node:test` for tests, `node --test`), Express 4, `gray-matter` for YAML frontmatter parsing, vanilla JS/HTML/CSS frontend.
 
-**Spec:** `docs/simflow/specs/2026-09-23-hosa-pilotage-design.md` — this plan implements sections 1 (KB structure) and 3 (app). Section 2 (the `hosa` skill) is out of scope for this plan (deferred phase).
+**Spec:** `docs/specs/2026-09-23-hosa-pilotage-design.md` — this plan implements sections 1 (KB structure) and 3 (app). Section 2 (the `hosa` skill) is out of scope for this plan (deferred phase).
 
 ## Global Constraints
 

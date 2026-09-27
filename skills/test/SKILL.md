@@ -5,14 +5,14 @@ description: Use when the user wants to test the implementation. Dispatches the 
 
 # Test
 
-Runs the test phase using `simflow-tester`. Works standalone from anywhere in the lifecycle — no prior `simflow:build` required.
+Runs the test phase using `hosa-tester`. Works standalone from anywhere in the lifecycle — no prior `build` required.
 
 ## Flow
 
 ```
 Detect what to test (spec + recent commits or inline description)
         ↓
-simflow-tester: run existing tests → identify gaps → write new tests
+hosa-tester: run existing tests → identify gaps → write new tests
         ↓
 Existing tests:
     All pass → continue
@@ -22,16 +22,16 @@ New tests written → commit in user's name only
         ↓
 Report: what passed, what failed, what's covered, what's still a gap
         ↓ implementation bugs found
-Suggest simflow:debug with specific failure details
+Suggest debug with specific failure details
 ```
 
 ---
 
 ## Step 1: Detect Input
 
-**With spec + commits:** check `docs/simflow/specs/` for the most recent spec (by YYYY-MM-DD filename prefix), and check the last 10 commits (or since the last git tag if one exists) to understand what was just built.
+**With spec + commits:** check `docs/specs/` for the most recent spec (by YYYY-MM-DD filename prefix), and check the last 10 commits (or since the last git tag if one exists) to understand what was just built.
 
-**Without spec or commits:** ask the user: "What should I test, and what's the expected behavior?" Pass their description to `simflow-tester` as the working brief.
+**Without spec or commits:** ask the user: "What should I test, and what's the expected behavior?" Pass their description to `hosa-tester` as the working brief.
 
 Both paths are valid. The tester agent adapts to whichever is available.
 
@@ -39,7 +39,7 @@ Both paths are valid. The tester agent adapts to whichever is available.
 
 ## Step 2: Run Tester Agent
 
-Dispatch `simflow-tester` with:
+Dispatch `hosa-tester` with:
 - The spec content (or user's inline description)
 - The list of recently changed files from git
 - The project root path so it can discover the test framework
@@ -51,8 +51,8 @@ Dispatch `simflow-tester` with:
 **Test failures — classify first:**
 
 If failures look like **implementation bugs** (wrong output, uncaught exception, business logic error):
-> "Tests found [N] implementation failures. Running `simflow:debug` — or do you want to look at the failures first?"
-Trigger `simflow:debug` with the specific failure details.
+> "Tests found [N] implementation failures. Running `debug` — or do you want to look at the failures first?"
+Trigger `debug` with the specific failure details.
 
 If failures look like **test infrastructure issues** (wrong import path, missing test fixture, environment not configured):
 Report them directly to the user — these are setup issues, not code bugs. Do not trigger debug.

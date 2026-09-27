@@ -141,7 +141,7 @@ lancer `stack`/`schema-app`/`schema-db` d'abord plutôt que de deviner.
    le dictionnaire de données + migrations déjà écrits par
    `hosa-data-engineer` dans le projet cible.
 2. Lit le code existant du projet cible, si présent, pour respecter les
-   conventions déjà en place — même discipline que `simflow-implementer`.
+   conventions déjà en place — même discipline que `hosa-implementer`.
 3. Conçoit l'architecture (couches, modules, limites, patterns) cohérente
    avec la stack et les données ; dit ce qu'il choisit et pourquoi.
 4. Scaffold l'architecture dans le projet cible : dossiers, squelettes de
@@ -210,7 +210,7 @@ l'utilisateur et écrit la `Stack Decision`) est retiré. À la place : lit la
 `Stack Decision` base de données déjà écrite par `stack` dans `kb/stack/`.
 Si absente (le skill est invoqué seul, sans que `stack` ait tourné), retombe
 sur l'ancien comportement — demande à l'utilisateur et écrit la décision —
-conformément à la règle SimFlow "no forced entry point".
+conformément à la règle Hosa "no forced entry point".
 
 ### `schema-app`
 
@@ -224,10 +224,10 @@ Les descriptions de `donnees`, `schema-app`, `schema-db` ("stage 1/2/3 du
 pipeline de structuration des données") deviennent stage 2/3/4 ; `stack` est
 stage 1, `architecture` est stage 5.
 
-## 6. Registre dans `using-simflow`
+## 6. Registre dans `using-hosa`
 
 `stack` et `architecture` sont ajoutés à la table des skills et à la table
-de triggers auto de `skills/using-simflow/SKILL.md`, même format que les
+de triggers auto de `skills/using-hosa/SKILL.md`, même format que les
 entrées existantes. Les descriptions de `donnees`/`schema-app`/`schema-db`
 sont mises à jour pour refléter la nouvelle numérotation.
 

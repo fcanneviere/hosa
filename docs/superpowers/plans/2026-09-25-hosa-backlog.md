@@ -253,10 +253,10 @@ git commit -m "feat: chain architecture into backlog instead of ending the pipel
 
 ---
 
-### Task 3: Register `backlog` in `using-simflow`
+### Task 3: Register `backlog` in `using-hosa`
 
 **Files:**
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: skill name `backlog` (Task 1)
@@ -294,13 +294,13 @@ Replace with:
 
 - [ ] **Step 3: Verify structure**
 
-Run: `grep -c "^| \`backlog\`" skills/using-simflow/SKILL.md` — Expected: `2` (1 row in the skills table + 1 row in the triggers table)
+Run: `grep -c "^| \`backlog\`" skills/using-hosa/SKILL.md` — Expected: `2` (1 row in the skills table + 1 row in the triggers table)
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/using-simflow/SKILL.md
-git commit -m "docs: register backlog skill in using-simflow"
+git add skills/using-hosa/SKILL.md
+git commit -m "docs: register backlog skill in using-hosa"
 ```
 
 ---
@@ -322,7 +322,7 @@ Expected: `skills/architecture/SKILL.md` listed
 Run: `grep -c "Pipeline de structuration des données terminé" skills/backlog/SKILL.md`
 Expected: `1` (moved here from `architecture`, not duplicated)
 
-- [ ] **Step 2: `using-simflow` entry matches the actual file name**
+- [ ] **Step 2: `using-hosa` entry matches the actual file name**
 
 Run: `ls skills/ | grep -E "^backlog$"`
 Expected: `backlog` listed
@@ -345,7 +345,7 @@ If any check in Steps 1-4 fails, fix the specific file it points to (go back to 
 
 ## Self-Review Notes
 
-- **Spec coverage:** "Le Product Backlog reste `kb/tickets/`" → no task needed, confirmed as a constraint, not a file change. Skill `skills/backlog/SKILL.md` (Steps 1-4 of the spec) → Task 1. "Modification à `architecture`" → Task 2. "Registre dans `using-simflow`" → Task 3. "Hors scope (v1)" → deliberately no task (no drift-detection, no auto-splitting, no auto-prioritization).
+- **Spec coverage:** "Le Product Backlog reste `kb/tickets/`" → no task needed, confirmed as a constraint, not a file change. Skill `skills/backlog/SKILL.md` (Steps 1-4 of the spec) → Task 1. "Modification à `architecture`" → Task 2. "Registre dans `using-hosa`" → Task 3. "Hors scope (v1)" → deliberately no task (no drift-detection, no auto-splitting, no auto-prioritization).
 - **Placeholder scan:** no TBD/TODO; `skills/backlog/SKILL.md`'s content above is complete, not a description of content.
 - **Type consistency:** `Ticket` frontmatter shape in Task 1 matches the pre-existing shape already used by `hosa-product-owner` and `hosa/kb/tickets/exemple-ticket.md`, unchanged. Skill name `backlog` used identically across all three tasks.
 - **Review Focus:** all 5 items map to a specific instruction inside a specific task (see numbered list above) — none left uncovered.

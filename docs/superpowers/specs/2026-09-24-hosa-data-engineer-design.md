@@ -5,7 +5,7 @@
 
 ## Contexte
 
-Le pipeline CDC (`docs/simflow/specs/2026-09-24-hosa-cdc-pipeline-design.md`)
+Le pipeline CDC (`docs/specs/2026-09-24-hosa-cdc-pipeline-design.md`)
 produit des `Exigence` stables dans `kb/cdc/`, chacune avec ses `Données en
 entrée`/`Données en sortie`. Rien, aujourd'hui, ne précise l'origine de ces
 données (générée par le système, fournie par une source externe, saisie par
@@ -20,10 +20,10 @@ structure de données correspondante.
 
 `hosa/kb/` (CDC, personas) reste la source de spécification. `hosa/app/` et
 sa décision "pas de base de données" (§3 de
-`docs/simflow/specs/2026-09-23-hosa-pilotage-design.md`) ne sont **pas**
+`docs/specs/2026-09-23-hosa-pilotage-design.md`) ne sont **pas**
 concernés et restent inchangés. Les skills 2 et 3 écrivent dans le projet
 *externe* que Hosa pilote — chemin découvert/demandé à l'exécution, jamais
-supposé être `hosa/app`. Même logique que `simflow-implementer` : lire les
+supposé être `hosa/app`. Même logique que `hosa-implementer` : lire les
 conventions existantes du projet cible avant d'écrire.
 
 ## 1. Agent `hosa-data-engineer`
@@ -39,7 +39,7 @@ Rôle : garant de la donnée du projet géré par Hosa. Lit `kb/cdc/`,
 `kb/personnas/`, `kb/stack/`, `kb/infra/`. N'écrit dans `hosa/kb/` que les
 concepts propres à ses skills (annotations d'origine sur les `Exigence`,
 entrée `Infra`, `Stack Decision` DB — voir sections skills). Ne commit
-jamais — même règle que tous les agents Hosa/SimFlow, le commit reste à
+jamais — même règle que tous les agents Hosa, le commit reste à
 l'utilisateur ou au flow orchestrateur.
 
 ### Input
@@ -144,7 +144,7 @@ Je lance `schema-app` maintenant ?
    regroupement cohérent de données en entrée/sortie).
 3. Lit le code existant du projet cible (conventions, langage, framework,
    ORM éventuel) avant d'écrire quoi que ce soit — même règle que
-   `simflow-implementer`.
+   `hosa-implementer`.
 4. Écrit les structures de données (types/modèles/schémas) dans le projet
    cible, dans le style déjà en place.
 5. Rédige la documentation de la structure de données (dictionnaire de
@@ -194,9 +194,9 @@ Je lance `schema-db` maintenant ?
 Pipeline de structuration des données terminé.
 ```
 
-## 4. Registre dans `using-simflow`
+## 4. Registre dans `using-hosa`
 
-Les trois skills sont ajoutés à la table de `skills/using-simflow/SKILL.md`
+Les trois skills sont ajoutés à la table de `skills/using-hosa/SKILL.md`
 et à la table de triggers auto, même format que les entrées existantes
 (`interview`, `redaction`, `relecture`, `contestation`).
 

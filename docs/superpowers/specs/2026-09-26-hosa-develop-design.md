@@ -7,7 +7,7 @@
 
 Une fois un sprint composé (`sprint`) et sa branche/worktree ouverte
 (`git` Mode 1), rien de spécifique à Hosa n'implémente encore les tickets.
-La spec `hosa-git` renvoie ce travail vers `simflow:build`/`iterate`/
+La spec `hosa-git` renvoie ce travail vers `build`/`iterate`/
 `test`/`debug` — des skills génériques qui ignorent le placement
 architecture déjà décidé par `hosa-architect` et les structures de données
 déjà écrites par `hosa-data-engineer`. Un ticket peut donc être implémenté
@@ -97,7 +97,7 @@ plan à `develop`, qui logge.
    seulement le texte du placement.
 3. Découpe le ticket en tâches courtes, **strictement séquentielles** (pas
    de groupe parallèle) — une tâche par fichier/comportement, dans l'ordre
-   d'exécution. Même règle de taille que `simflow-planner` : une tâche
+   d'exécution. Même règle de taille que `hosa-planner` : une tâche
    trop grosse (>5 fichiers à lire, plus d'un livrable) est scindée ; une
    tâche triviale (<5 lignes, une seule valeur de config) est fusionnée à
    la tâche voisine.
@@ -152,7 +152,7 @@ memory: project
 ```
 
 Implémente une tâche à la fois, dans le cadre strict fixé par
-`hosa-tech-lead` — même discipline que `simflow-implementer`, avec une
+`hosa-tech-lead` — même discipline que `hosa-implementer`, avec une
 contrainte en plus : jamais d'extension de l'architecture ou des données
 de sa propre initiative.
 
@@ -177,7 +177,7 @@ worktree du sprint.
    `hosa-tech-lead` (quoi manque, pourquoi).
 5. **Pas de commentaires explicatifs** — uniquement si le pourquoi est non
    évident (contrainte cachée, contournement spécifique).
-6. **Pas de faille de sécurité** — même discipline que `simflow-implementer`
+6. **Pas de faille de sécurité** — même discipline que `hosa-implementer`
    (injection, XSS, secrets en dur, etc.).
 
 ### No Commits
@@ -297,7 +297,7 @@ git commit -m "feat: <description impérative du ticket, ≤72 caractères>"
 
 Un seul commit pour tout le ticket (toutes ses tâches regroupées). Aucun
 `Co-Authored-By`, aucun auteur additionnel — identité git de l'utilisateur
-uniquement, même règle core SimFlow qu'ailleurs.
+uniquement, même règle core Hosa qu'ailleurs.
 
 ### Step 7 — Log
 
@@ -322,7 +322,7 @@ qa-plan maintenant ?
 
 ### `agents/git.md` / `docs/superpowers/specs/2026-09-26-hosa-git-design.md`
 
-Mode 1, étape 6 : "le travail des tickets (via `simflow:build`/`iterate`/
+Mode 1, étape 6 : "le travail des tickets (via `build`/`iterate`/
 `test`/`debug`)" est remplacé par "le travail des tickets (skill `develop`,
 un ticket à la fois)".
 
@@ -337,7 +337,7 @@ Step 6 (Suite), ajoute une proposition : après avoir démarré le sprint (ou
 à la place, si l'utilisateur ne veut pas encore ouvrir le worktree),
 "Je lance `develop` sur le premier ticket du sprint ?"
 
-### `agents/README.md` et `skills/using-simflow/SKILL.md`
+### `agents/README.md` et `skills/using-hosa/SKILL.md`
 
 - `hosa-tech-lead` et `hosa-developer` ajoutés à la table "Hosa agents".
 - `develop` ajouté à la table des skills, décrit comme le skill qui

@@ -1,5 +1,5 @@
 ---
-name: simflow-implementer
+name: hosa-implementer
 description: Use this agent to execute a specific implementation task. Provide the task description, relevant context, and files to read. It writes code following existing patterns, reports what it built, and never commits — the orchestrating skill handles all commits.
 model: claude-sonnet-5
 memory: project
@@ -26,7 +26,7 @@ If any of this is missing and you cannot proceed without it, say so immediately 
 
 ## No Commits
 
-You do not commit. The orchestrating skill (`simflow:build`) handles all commits after the user quiz. Never run `git add` or `git commit` unless you are being called directly outside of `simflow:build`.
+You do not commit. The orchestrating skill (`build`) handles all commits after the user quiz. Never run `git add` or `git commit` unless you are being called directly outside of `build`.
 
 ## Output
 

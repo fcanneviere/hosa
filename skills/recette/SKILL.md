@@ -1,11 +1,11 @@
 ---
 name: recette
-description: Use when the user wants business/functional acceptance testing ("recette métier") of a feature or ticket, from a specific persona's point of view — not code-level testing (that's `simflow:test`). Dispatches the `hosa-key-user` agent, which embodies the persona, enriches its KB entry if too thin, and validates the target against that persona's needs and expectations.
+description: Use when the user wants business/functional acceptance testing ("recette métier") of a feature or ticket, from a specific persona's point of view — not code-level testing (that's `test`). Dispatches the `hosa-key-user` agent, which embodies the persona, enriches its KB entry if too thin, and validates the target against that persona's needs and expectations.
 ---
 
 # Recette
 
-Runs a business acceptance pass on a feature/ticket using `hosa-key-user`, which embodies one persona from `hosa/kb/personnas/`. Distinct from `simflow:test`: that skill checks the code works; this skill checks it serves the person it's for.
+Runs a business acceptance pass on a feature/ticket using `hosa-key-user`, which embodies one persona from `hosa/kb/personnas/`. Distinct from `test`: that skill checks the code works; this skill checks it serves the person it's for.
 
 ## Flow
 
@@ -24,7 +24,7 @@ Log to kb/test/log.md (and kb/personnas/log.md if enriched)
         ↓
 Report: verdict, scénarios, pain points, quick wins
         ↓ Échoué scenarios found
-Suggest simflow:debug (implementation gap) or hosa-product-owner (ticket needs rework)
+Suggest debug (implementation gap) or hosa-product-owner (ticket needs rework)
 ```
 
 ## Trigger
@@ -37,7 +37,7 @@ Manual: `/recette`. Auto: "fais une recette de...", "valide ça avec [persona]",
 
 **Persona:** if named, use it. If not and `kb/personnas/` has exactly one non-example persona, use that. Otherwise list the personas found and ask which one.
 
-**Target:** a ticket (`kb/tickets/`), a spec (`docs/simflow/specs/`), or an inline feature description. If none given, ask: "Qu'est-ce que je fais valider, et à quel persona ?"
+**Target:** a ticket (`kb/tickets/`), a spec (`docs/specs/`), or an inline feature description. If none given, ask: "Qu'est-ce que je fais valider, et à quel persona ?"
 
 ## Step 2: Run `hosa-key-user`
 
@@ -75,10 +75,10 @@ Append to `kb/test/log.md` (create if missing, OKF §9 format). If the persona w
 
 Report the agent's verdict, scénarios, pain points, and quick wins in plain language.
 
-- **Échoué scenarios that look like implementation bugs** → suggest `simflow:debug` with the specific gap.
+- **Échoué scenarios that look like implementation bugs** → suggest `debug` with the specific gap.
 - **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → suggest routing back to `hosa-product-owner` to rework the backlog item.
 - **Accepté** → nothing further; note any quick wins as candidates for new tickets, don't create them unasked.
 
 ## No Commits
 
-This skill does not commit. Report what changed in the KB and let the user decide when to commit, per the SimFlow core rule.
+This skill does not commit. Report what changed in the KB and let the user decide when to commit, per the Hosa core rule.

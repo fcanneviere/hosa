@@ -5,7 +5,7 @@ description: Use when the user wants to change, extend, or refactor something th
 
 # Iterate
 
-For changes to existing code — not greenfield. Faster than `simflow:understand` + `simflow:build` because you don't need a full spec; you just need to understand the current state and what needs to change.
+For changes to existing code — not greenfield. Faster than `understand` + `build` because you don't need a full spec; you just need to understand the current state and what needs to change.
 
 ## Flow
 
@@ -18,11 +18,11 @@ Light grill — challenge the change, find edge cases
         ↓
 Confirm scope: what changes, what stays the same
         ↓
-simflow-planner → targeted task list (changes only)
+hosa-planner → targeted task list (changes only)
         ↓
 For each task: implement → present → 2 MCQ quiz → commit
         ↓
-Suggest simflow:test or simflow:review when done
+Suggest test or review when done
 ```
 
 ---
@@ -54,7 +54,7 @@ One question only. Get a clear answer, then move to the grill.
 
 ## Phase 3: Light Grill
 
-This is shorter than `simflow:understand`'s grill — you're not designing from scratch, you're stress-testing a targeted change. Ask 2–4 sharp questions:
+This is shorter than `understand`'s grill — you're not designing from scratch, you're stress-testing a targeted change. Ask 2–4 sharp questions:
 
 - **Impact:** "What else currently depends on this behavior? Have you checked X and Y?"
 - **Edge cases:** "What happens to [existing edge case] after this change?"
@@ -77,15 +77,15 @@ Wait for confirmation. If the user corrects anything, update your understanding 
 
 ## Phase 5: Plan and Build
 
-Dispatch `simflow-planner` with:
+Dispatch `hosa-planner` with:
 - The current code context (what exists now)
 - The agreed scope of changes
 - Any constraints from the grill
 
-The planner returns a targeted task list. Execute using the same flow as `simflow:build`:
+The planner returns a targeted task list. Execute using the same flow as `build`:
 
 For each task (or parallel group):
-1. Dispatch `simflow-implementer`
+1. Dispatch `hosa-implementer`
 2. Present the changes to the user
 3. Run the **hard-gate quiz** (2 MCQs, both correct required — see below)
 4. Commit in the user's name only
@@ -115,4 +115,4 @@ Commit message format for iterations: `feat: <what changed>` for new behavior, `
 ## Completion
 
 When all tasks are committed:
-> "Change complete. Want me to run `simflow:test` to verify the existing tests still pass, or `simflow:review` to check the full spec?"
+> "Change complete. Want me to run `test` to verify the existing tests still pass, or `review` to check the full spec?"

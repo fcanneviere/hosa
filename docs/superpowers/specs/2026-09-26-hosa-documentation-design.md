@@ -274,12 +274,12 @@ entités, champs, origines et chemins.
 validées et leurs personas liées, avant de proposer l'étape suivante
 (`stack`).
 
-## Registre dans `using-simflow` et `agents/README.md`
+## Registre dans `using-hosa` et `agents/README.md`
 
 - `hosa-documentation` ajouté à la table "Hosa agents" de
   `agents/README.md`.
 - `documentation` ajouté à la table des skills de
-  `skills/using-simflow/SKILL.md`, décrit comme "companion check usable
+  `skills/using-hosa/SKILL.md`, décrit comme "companion check usable
   anytime — like `qualite`/`fondamentaux`", et à la table des triggers
   auto.
 

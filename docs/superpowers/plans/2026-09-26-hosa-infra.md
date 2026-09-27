@@ -4,7 +4,7 @@
 
 **Goal:** Add a new agent, `hosa-infra`, that is the sole owner of installing/provisioning anything for the project Hosa manages — it sets up and runs the project's Docker environment, installs the chosen stack into it, documents installation, and handles every later request from any other agent for a new server/framework/dependency (validate or counter-propose, install, document, confirm). Every other agent loses the right to install anything itself.
 
-**Architecture:** One new agent (`agents/infra.md`) with two input modes (Mode 1 — initial setup, dispatched from the new `infra` skill; Mode 2 — on-demand installation request, dispatched directly by any other agent, same pattern as `hosa-key-user`). `infra` becomes the data-structuring pipeline's stage 2, inserted between `stack` and `donnees`, pushing every later stage's number up by one. The installation ban is a single centralized addition to `skills/using-simflow/SKILL.md`'s `## Core Rules` — not duplicated across the 14 existing agent files, since that section already states its rules "apply everywhere in SimFlow, in every skill, in every agent."
+**Architecture:** One new agent (`agents/infra.md`) with two input modes (Mode 1 — initial setup, dispatched from the new `infra` skill; Mode 2 — on-demand installation request, dispatched directly by any other agent, same pattern as `hosa-key-user`). `infra` becomes the data-structuring pipeline's stage 2, inserted between `stack` and `donnees`, pushing every later stage's number up by one. The installation ban is a single centralized addition to `skills/using-hosa/SKILL.md`'s `## Core Rules` — not duplicated across the 14 existing agent files, since that section already states its rules "apply everywhere in Hosa, in every skill, in every agent."
 
 **Tech Stack:** Markdown agent/skill files (Claude Code plugin conventions), no code/tests — this repo's "implementation" is markdown content, verified by grep/read checks, same as the `sprint`/`interface`/`qa` plans.
 
@@ -19,7 +19,7 @@
 - Every version `hosa-infra` pins (Docker image tag, package version) must be an explicit, current, maintained version — never a `latest` tag. If no web-search tool is available to confirm the current version, state the assumption and its date explicitly rather than silently guessing.
 - Mode 1 must actually run the Docker environment (`docker compose up -d` or equivalent) and verify each service responds before documenting it as in place. If Docker isn't available in the current execution environment, say so explicitly — never report "in place" without a real check.
 - Mode 2 must validate every request against what's already provisioned before installing — an already-available equivalent is a counter-proposal, not a silent duplicate. A request inconsistent with an existing decision is a question back to the user, not a silent pick.
-- The installation ban ("Seul `hosa-infra` installe") and the Docker-runtime rule ("Le projet géré tourne en Docker") are added exactly once, to `skills/using-simflow/SKILL.md`'s `## Core Rules` — no edits to any of the 14 existing files in `agents/`.
+- The installation ban ("Seul `hosa-infra` installe") and the Docker-runtime rule ("Le projet géré tourne en Docker") are added exactly once, to `skills/using-hosa/SKILL.md`'s `## Core Rules` — no edits to any of the 14 existing files in `agents/`.
 - No agent/skill in this plan commits. No agent/skill in this plan applies a Mode 2 counter-proposal without explicit confirmation.
 - OKF §9 logging (chronological, most recent date first) to `kb/infra/log.md` for every write.
 - Git commits are in the user's name only (`git config user.name`/`user.email`) — never Co-Authored-By, never additional authors. This overrides any global default attribution instruction for this repo's work.
@@ -381,10 +381,10 @@ git commit -m "feat: add infra skill, data-structuring pipeline stage 2"
 **Files:**
 - Modify: `skills/stack/SKILL.md`
 - Modify: `skills/donnees/SKILL.md`
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
-- Consumes: Task 2's `infra` skill name and trigger phrasing — the `## Suite` text in `stack` and the `using-simflow` tables must refer to it by the same name and the same trigger phrase already written into `skills/infra/SKILL.md`.
+- Consumes: Task 2's `infra` skill name and trigger phrasing — the `## Suite` text in `stack` and the `using-hosa` tables must refer to it by the same name and the same trigger phrase already written into `skills/infra/SKILL.md`.
 - Produces: the centralized installation-ban and Docker-runtime Core Rules, consumed implicitly by every other agent and skill in the repo from this point on (no other file needs to be edited for the ban to apply).
 
 - [ ] **Step 1: Update `stack`'s pipeline chain and Suite text**
@@ -457,9 +457,9 @@ Expected: `1`
 Run: `grep -c "Auto: immediately after \`infra\`" skills/donnees/SKILL.md`
 Expected: `1`
 
-- [ ] **Step 5: Register `infra` in `using-simflow`'s skills table**
+- [ ] **Step 5: Register `infra` in `using-hosa`'s skills table**
 
-In `skills/using-simflow/SKILL.md`, in the skills table, replace:
+In `skills/using-hosa/SKILL.md`, in the skills table, replace:
 
 ```markdown
 | `stack` | Propose and record the technical stack of the managed project, based on the stable cahier des charges — data-structuring pipeline stage 1 |
@@ -484,9 +484,9 @@ with:
 | `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, an architecture placement note, and an interface placement note — data-structuring pipeline stage 8 |
 ```
 
-- [ ] **Step 6: Register `infra` in `using-simflow`'s triggers table**
+- [ ] **Step 6: Register `infra` in `using-hosa`'s triggers table**
 
-In `skills/using-simflow/SKILL.md`, in the triggers table, replace:
+In `skills/using-hosa/SKILL.md`, in the triggers table, replace:
 
 ```markdown
 | "Choisis la stack technique", "Quelle stack pour le projet" | `stack` |
@@ -503,31 +503,31 @@ with:
 
 - [ ] **Step 7: Add the installation gate and Docker-runtime rule to Core Rules**
 
-In `skills/using-simflow/SKILL.md`, in `## Core Rules`, after the existing "**Trust the user.**" bullet, add:
+In `skills/using-hosa/SKILL.md`, in `## Core Rules`, after the existing "**Trust the user.**" bullet, add:
 
 ```markdown
 - **Only `hosa-infra` installs.** No other agent ever runs an installation or provisioning command itself, or adds a server, a framework, or a dependency to the managed project on its own. It stops and dispatches `hosa-infra` with what it needs and why, then resumes only once `hosa-infra` confirms it's in place.
 - **The managed project runs in Docker.** Once `hosa-infra` has set up its environment, every command against the managed project — build, migration, test, run — executes inside it, not directly on the host.
 ```
 
-- [ ] **Step 8: Verify all `using-simflow` edits**
+- [ ] **Step 8: Verify all `using-hosa` edits**
 
-Run: `grep -c "^| \`infra\` |" skills/using-simflow/SKILL.md`
+Run: `grep -c "^| \`infra\` |" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -c "data-structuring pipeline stage 8" skills/using-simflow/SKILL.md`
+Run: `grep -c "data-structuring pipeline stage 8" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -c "Only \`hosa-infra\` installs" skills/using-simflow/SKILL.md`
+Run: `grep -c "Only \`hosa-infra\` installs" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -c "The managed project runs in Docker" skills/using-simflow/SKILL.md`
+Run: `grep -c "The managed project runs in Docker" skills/using-hosa/SKILL.md`
 Expected: `1`
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add skills/stack/SKILL.md skills/donnees/SKILL.md skills/using-simflow/SKILL.md
+git add skills/stack/SKILL.md skills/donnees/SKILL.md skills/using-hosa/SKILL.md
 git commit -m "feat: chain infra after stack, add installation gate to Core Rules"
 ```
 
@@ -657,7 +657,7 @@ git commit -m "docs: renumber data-structuring pipeline stages for infra inserti
 
 - [ ] **Step 1: Confirm the agent name is consistent everywhere it's referenced**
 
-Run: `grep -c "hosa-infra" agents/infra.md agents/README.md skills/infra/SKILL.md skills/using-simflow/SKILL.md`
+Run: `grep -c "hosa-infra" agents/infra.md agents/README.md skills/infra/SKILL.md skills/using-hosa/SKILL.md`
 Expected: at least `1` in each of the four files (exact counts vary; a `0` in any file is the failure condition).
 
 - [ ] **Step 2: Confirm no other agent file in `agents/` was modified**
@@ -667,10 +667,10 @@ Expected: no output (empty) — only `agents/infra.md` and `agents/README.md` ch
 
 - [ ] **Step 3: Confirm the installation gate and Docker rule appear exactly once each**
 
-Run: `grep -rc "Only \`hosa-infra\` installs" skills/using-simflow/SKILL.md`
+Run: `grep -rc "Only \`hosa-infra\` installs" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -rc "The managed project runs in Docker" skills/using-simflow/SKILL.md`
+Run: `grep -rc "The managed project runs in Docker" skills/using-hosa/SKILL.md`
 Expected: `1`
 
 - [ ] **Step 4: Confirm no new OKF concept type was introduced**

@@ -158,7 +158,7 @@ s'arrête là ?
 Le `## Suite` actuel ("Pipeline de structuration des données terminé.")
 est retiré. À la place : "Je lance `sprint` maintenant ?"
 
-## Registre dans `using-simflow`
+## Registre dans `using-hosa`
 
 `sprint` est ajouté à la table des skills — décrit comme la suite du
 pipeline de structuration des données plutôt que comme une de ses étapes

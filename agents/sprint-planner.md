@@ -54,7 +54,7 @@ generated: { by: hosa-sprint-planner/1.0, at: <ISO8601> }
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or orchestrating skill decide when to commit, per SimFlow's core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or orchestrating skill decide when to commit, per Hosa's core rule that commits are always in the user's name only.
 
 ## Output Format
 

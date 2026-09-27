@@ -5,8 +5,8 @@
 
 ## Contexte
 
-`C:\dev\hosa` héberge SimFlow, un plugin Claude Code (agents + skills de cycle de dev).
-`C:\dev\hosa\hosa` est le projet cible : une couche de pilotage par-dessus SimFlow,
+`C:\dev\hosa` héberge Hosa, un plugin Claude Code (agents + skills de cycle de dev).
+`C:\dev\hosa\hosa` est le projet cible : sa couche de pilotage (KB + app),
 inspirée (très librement) de [paperclip](https://github.com/paperclipai/paperclip) —
 mais réduite à l'usage d'un seul développeur en local, sans org chart, budgets,
 auth ni multi-tenant.
@@ -19,7 +19,7 @@ Trois livrables, à construire dans cet ordre car chacun dépend du précédent 
 
 ### Phasage
 
-SimFlow (agents/skills existants dans `C:\dev\hosa\skills` et `agents/`) sert de
+Hosa (agents/skills existants dans `C:\dev\hosa\skills` et `agents/`) sert de
 base et n'est pas modifié dans cette itération. Le travail sur les skills
 (section 2 : le skill `hosa`) est repoussé à une phase ultérieure dédiée.
 
@@ -113,9 +113,9 @@ liste chronologique groupée par date, entrée la plus récente en tête.
 responsabilités listées ci-dessous restent à construire.
 
 Nouveau dossier `C:\dev\hosa\skills\hosa\SKILL.md`, suivant les conventions
-existantes des skills SimFlow (frontmatter `name`/`description`, diagramme de
+existantes des skills Hosa (frontmatter `name`/`description`, diagramme de
 flux, sections pas-à-pas). Référencé dans le tableau de
-`skills/using-simflow/SKILL.md` au même titre que `build`/`iterate`/`status`/etc.
+`skills/using-hosa/SKILL.md` au même titre que `build`/`iterate`/`status`/etc.
 
 ### Responsabilités
 
@@ -128,8 +128,8 @@ flux, sections pas-à-pas). Référencé dans le tableau de
 - Ajouter une entrée `log.md` dans le bundle concerné à chaque changement.
 - Répondre aux questions de traçabilité ("qui a demandé X ?", "d'où vient
   cette règle ?") en lisant `generated`/`sources` dans la KB.
-- Peut être invoqué depuis une autre session SimFlow (ex: pendant
-  `simflow:build`, si un besoin hors scope apparaît → créer un `Ticket` au
+- Peut être invoqué depuis une autre session Hosa (ex: pendant
+  `build`, si un besoin hors scope apparaît → créer un `Ticket` au
   lieu de dévier la tâche en cours).
 
 ### Triggers auto

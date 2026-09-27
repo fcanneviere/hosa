@@ -11,7 +11,7 @@ Runs independent tasks in parallel using concurrent Agent tool invocations. Use 
 
 - Two or more independent features, fixes, or investigations that don't share files or state
 - Parallel exploration across different parts of a codebase
-- Fan-out from `simflow:build` when the planner identifies a parallel task group
+- Fan-out from `build` when the planner identifies a parallel task group
 - Any situation where one task doesn't need the output of another before starting
 
 **Do not dispatch an agent for:**
@@ -47,11 +47,11 @@ Match each task to the most suitable agent:
 
 | Task type | Agent |
 |---|---|
-| Architectural decisions, task planning | `simflow-planner` |
-| Writing code, implementing features | `simflow-implementer` |
-| Writing or running tests | `simflow-tester` |
-| Investigating bugs | `simflow-debugger` |
-| Reviewing code or spec compliance | `simflow-reviewer` |
+| Architectural decisions, task planning | `hosa-planner` |
+| Writing code, implementing features | `hosa-implementer` |
+| Writing or running tests | `hosa-tester` |
+| Investigating bugs | `hosa-debugger` |
+| Reviewing code or spec compliance | `hosa-reviewer` |
 | General research, unknown type | Handle directly without spawning an agent |
 
 ---

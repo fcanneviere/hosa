@@ -125,10 +125,10 @@ Le `## Suite` actuel ("Pipeline de structuration des données terminé.")
 est retiré — cette étape n'est plus la dernière. À la place :
 "Je lance `backlog` maintenant ?"
 
-## Registre dans `using-simflow`
+## Registre dans `using-hosa`
 
 `backlog` est ajouté à la table des skills (stage 6) et à la table de
-triggers auto de `skills/using-simflow/SKILL.md`, même format que les
+triggers auto de `skills/using-hosa/SKILL.md`, même format que les
 entrées existantes.
 
 ## Hors scope (v1)

@@ -1,11 +1,11 @@
 ---
 name: qa
-description: Use to run a sprint's QA once it's implemented — dispatches `simflow-tester` against each ticket's technical test plan and `hosa-key-user` for its required recette, classifies failures, and routes them to the right owner (`simflow:debug` for technical bugs, `hosa-product-owner` for business gaps). Follow-on to `qa-plan`.
+description: Use to run a sprint's QA once it's implemented — dispatches `hosa-tester` against each ticket's technical test plan and `hosa-key-user` for its required recette, classifies failures, and routes them to the right owner (`debug` for technical bugs, `hosa-product-owner` for business gaps). Follow-on to `qa-plan`.
 ---
 
 # QA
 
-Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical tests via `simflow-tester`, business recette via `hosa-key-user`, one pass per ticket, plus a tooling-health check at the end.
+Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical tests via `hosa-tester`, business recette via `hosa-key-user`, one pass per ticket, plus a tooling-health check at the end.
 
 ## Flow
 
@@ -18,7 +18,7 @@ technique.md
 Propose de lancer qa-plan d'abord
         ↓ tous présents
 Pour chaque ticket : exécute les tests techniques
-(simflow-tester), puis la recette (hosa-key-user) pour
+(hosa-tester), puis la recette (hosa-key-user) pour
 chaque persona listée
         ↓
 Échecs techniques trouvés → classe (bug d'implémentation
@@ -46,9 +46,9 @@ Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check th
 
 For each ticket:
 
-1. Dispatch `simflow-tester` with the plan's `## Cas de test` as the brief, the recently changed files for this ticket, and the managed project's root path — the sprint's `worktree` path from `kb/sprints/<slug>.md` if it's still `active`, otherwise the root path from `Infra`.
+1. Dispatch `hosa-tester` with the plan's `## Cas de test` as the brief, the recently changed files for this ticket, and the managed project's root path — the sprint's `worktree` path from `kb/sprints/<slug>.md` if it's still `active`, otherwise the root path from `Infra`.
 2. Append a `## Résultats techniques` section to `kb/test/<slug-ticket>-technique.md` with the pass/fail detail, and refresh its `generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }` frontmatter to this write's timestamp — the same attribution convention `hosa-qa-lead` uses whenever it creates or extends a `Test Plan`.
-3. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → flag for `simflow:debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, don't suggest debug.
+3. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → flag for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, don't suggest debug.
 
 ## Step 3: Run Recette Per Ticket
 
@@ -77,7 +77,7 @@ This skill does not commit. Report what changed in the KB and let the user decid
 - <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel/Non applicable
 
 ## Échecs techniques
-- <ticket> — [détail] → suggéré : simflow:debug
+- <ticket> — [détail] → suggéré : debug
 [Si aucun : "Aucun"]
 
 ## Recette à corriger

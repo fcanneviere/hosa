@@ -21,7 +21,7 @@ Suggest the most logical next skill to invoke
 
 ## What to Read
 
-**Spec:** check `docs/simflow/specs/` for all spec files. Note each one's date, topic, and any open questions listed inside.
+**Spec:** check `docs/specs/` for all spec files. Note each one's date, topic, and any open questions listed inside.
 
 **Git log:** run `git log --oneline -20` to see recent commits. Identify:
 - Which tasks have been committed (look for `feat:`, `fix:`, `test:` prefixes)
@@ -39,10 +39,10 @@ Suggest the most logical next skill to invoke
 Print this snapshot clearly:
 
 ```
-## SimFlow Project Status
+## Hosa Project Status
 
 ### Spec
-- File: docs/simflow/specs/<filename>
+- File: docs/specs/<filename>
 - Topic: <what's being built>
 - Written: <date>
 - Open questions: <N unresolved / none>
@@ -63,8 +63,8 @@ Print this snapshot clearly:
 [One sentence: the most logical thing to do next based on the above state]
 ```
 
-If there is no spec file: say so and suggest `simflow:understand` to create one.
+If there is no spec file: say so and suggest `understand` to create one.
 
-If the git repo has no commits yet: say so and suggest `simflow:understand` or `simflow:build`.
+If the git repo has no commits yet: say so and suggest `understand` or `build`.
 
 Keep the output scannable. No paragraphs — just the facts.

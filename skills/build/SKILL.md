@@ -5,17 +5,17 @@ description: Use when the user wants to implement something. Reads the spec (or 
 
 # Build
 
-Reads a spec (or an inline description), dispatches `simflow-planner` to break it into tasks, then implements each task or group — pausing after each for the user to review and pass a 2-question quiz before committing.
+Reads a spec (or an inline description), dispatches `hosa-planner` to break it into tasks, then implements each task or group — pausing after each for the user to review and pass a 2-question quiz before committing.
 
 ## Flow
 
 ```
 Locate spec OR accept inline description
         ↓
-simflow-planner → task list with dependency map
+hosa-planner → task list with dependency map
         ↓
 For each sequential task OR parallel group:
-    Dispatch simflow-implementer(s)
+    Dispatch hosa-implementer(s)
         ↓
     If implementer fails → report to user → get feedback → retry
         ↓
@@ -29,7 +29,7 @@ For each sequential task OR parallel group:
         ↓ both correct
     git status → stage only task files → commit in user's name
         ↓
-All tasks done → suggest simflow:test
+All tasks done → suggest test
 ```
 
 ---
@@ -37,7 +37,7 @@ All tasks done → suggest simflow:test
 ## Step 1: Locate Input
 
 Check for an existing spec in this order:
-1. Look in `docs/simflow/specs/` for files matching `*.md`
+1. Look in `docs/specs/` for files matching `*.md`
 2. Use the most recent file by the **YYYY-MM-DD date prefix** in the filename. If two share the same date, use the one with the latest git commit timestamp.
 3. If multiple specs exist with different dates and it's unclear which to use: ask the user which one.
 4. If no spec file exists: ask the user to describe what to build. Take that description as the working brief.
@@ -46,7 +46,7 @@ Check for an existing spec in this order:
 
 ## Step 2: Plan
 
-Dispatch `simflow-planner` with the full spec content or the user's inline description. The planner returns:
+Dispatch `hosa-planner` with the full spec content or the user's inline description. The planner returns:
 - A task list with descriptions and agent assignments
 - Which tasks are independent (parallel group) and which depend on prior tasks (sequential)
 
@@ -60,7 +60,7 @@ If the planner returns ambiguities: surface them to the user and get answers bef
 Run one at a time. After each: review → quiz → commit.
 
 ### Parallel groups (independent tasks)
-Use the Agent tool with multiple concurrent invocations — one `simflow-implementer` per task. All agents run simultaneously.
+Use the Agent tool with multiple concurrent invocations — one `hosa-implementer` per task. All agents run simultaneously.
 
 After all agents in the group complete:
 - If **any agent failed**: report all failures to the user before presenting any work. Get direction (retry? skip? change approach?) before continuing.
@@ -81,7 +81,7 @@ After each task or group, show the user:
 Then say:
 > "Take a look at the above. Let me know when you're ready for the quiz — or if anything looks wrong."
 
-**If the user rejects the work:** take their feedback, return it to `simflow-implementer` as a correction, and re-implement from Step 3. Do not quiz on rejected work.
+**If the user rejects the work:** take their feedback, return it to `hosa-implementer` as a correction, and re-implement from Step 3. Do not quiz on rejected work.
 
 ---
 
@@ -156,4 +156,4 @@ Examples of good commit messages:
 ## Completion
 
 When all tasks are committed:
-> "All tasks complete. Want me to run `simflow:test` to verify everything works?"
+> "All tasks complete. Want me to run `test` to verify everything works?"

@@ -209,8 +209,8 @@ Je lance `donnees` maintenant ?
 
 ## Règle transversale : garde-fou d'installation
 
-Ajout à `## Core Rules` de `skills/using-simflow/SKILL.md` (déjà explicite :
-"these apply everywhere in SimFlow, in every skill, in every agent") — pas de
+Ajout à `## Core Rules` de `skills/using-hosa/SKILL.md` (déjà explicite :
+"these apply everywhere in Hosa, in every skill, in every agent") — pas de
 clause dupliquée dans chacun des 14 fichiers d'agent, une seule règle
 centrale :
 
@@ -246,10 +246,10 @@ son propre repli (ex. `schema-db` redemande une `Stack Decision` si absente)
 pour `donnees`/`schema-app`/`schema-db`, qui ne touchent ni code ni
 environnement au sens strict.
 
-## Registre dans `using-simflow` et `agents/README.md`
+## Registre dans `using-hosa` et `agents/README.md`
 
 - `infra` ajouté à la table des skills et des triggers auto de
-  `skills/using-simflow/SKILL.md`, entre `stack` et `donnees`, décrit comme
+  `skills/using-hosa/SKILL.md`, entre `stack` et `donnees`, décrit comme
   "data-structuring pipeline stage 2" — les stages 2-7 déjà listés
   renumérotent en 3-8.
 - `hosa-infra` ajouté à la table "Hosa agents" de `agents/README.md`, juste

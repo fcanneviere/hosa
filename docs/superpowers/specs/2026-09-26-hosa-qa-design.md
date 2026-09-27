@@ -11,20 +11,20 @@ dispatché a une note technique, un placement architecture et un placement
 interface réels. Une fois un sprint composé puis implémenté, rien ne
 garantit aujourd'hui que ses tickets ont été testés techniquement, ni
 qu'ils ont été validés du point de vue des personas qu'ils servent — seul
-`simflow-tester` (test de code, à la demande, sans lien avec un sprint) et
+`hosa-tester` (test de code, à la demande, sans lien avec un sprint) et
 `hosa-key-user` (recette, un ticket/persona à la fois, à la demande) offrent
 des morceaux de cette garantie, jamais à l'échelle d'un sprint entier.
 
 Cette itération ajoute un agent — `hosa-qa-lead` — et deux nouvelles étapes,
 `qa-plan` et `qa`, en aval de `sprint`. Elles ne remplacent aucun agent
-existant : `hosa-qa-lead` orchestre `simflow-tester` et `hosa-key-user` à
+existant : `hosa-qa-lead` orchestre `hosa-tester` et `hosa-key-user` à
 l'échelle du sprint, et prend en plus la responsabilité, propre à lui, de
 l'outillage de test (fiabilité, vitesse d'exécution) — une responsabilité
 qu'aucun agent ne porte aujourd'hui.
 
 ## Portée : le projet géré, pas Hosa lui-même
 
-Même règle que le reste du pipeline : `simflow-tester` s'exécute contre le
+Même règle que le reste du pipeline : `hosa-tester` s'exécute contre le
 projet *externe* que Hosa pilote (chemin lu depuis l'entrée `Infra`), jamais
 contre `hosa/app` ou `hosa/kb`. `hosa/kb/` reste la source d'enregistrement
 des plans de test et des résultats de recette.
@@ -91,7 +91,7 @@ Un ticket à préparer pour les tests.
    nécessaires pour définir un cas de test précis, le dit et demande à
    l'utilisateur plutôt que d'inventer un détail technique sans base.
 3. Définit les cas de test techniques à couvrir : chemin nominal, cas
-   d'erreur, cas limites — dans les mêmes termes que `simflow-tester`
+   d'erreur, cas limites — dans les mêmes termes que `hosa-tester`
    emploie déjà (Step 3 de `agents/tester.md`), pour qu'il puisse les
    reprendre tels quels à l'exécution.
 4. Identifie la recette requise : le(s) persona(s) que ce ticket sert,
@@ -109,7 +109,7 @@ status: stable
 generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }
 ---
 ## Cas de test
-- <cas de test technique, dans les termes de simflow-tester>
+- <cas de test technique, dans les termes de hosa-tester>
 
 ## Recette requise
 - [<persona>](../personnas/<slug>.md)
@@ -125,12 +125,12 @@ Lié à : [ticket](../tickets/<slug-ticket>.md)
 Un ticket déjà préparé (`kb/test/<slug-ticket>-technique.md` existe) à
 exécuter.
 
-1. Dispatch `simflow-tester` avec les `## Cas de test` du plan comme brief,
+1. Dispatch `hosa-tester` avec les `## Cas de test` du plan comme brief,
    la liste des fichiers récemment modifiés pour ce ticket, et le chemin du
-   projet géré. `simflow-tester` exécute la suite existante et écrit les
+   projet géré. `hosa-tester` exécute la suite existante et écrit les
    tests manquants pour ces cas — même contrat qu'aujourd'hui.
 2. Ajoute une section `## Résultats techniques` au fichier `Test Plan` de
-   l'étape 1, avec ce que `simflow-tester` a rapporté (passés/échoués,
+   l'étape 1, avec ce que `hosa-tester` a rapporté (passés/échoués,
    nature de chaque échec).
 3. Pour chaque persona listée dans `## Recette requise` : dispatch
    `hosa-key-user` en mode recette (même contrat que la requête envoyée par
@@ -149,7 +149,7 @@ fin de Mode 2 pour tout le sprint.
 
 1. Relit sa propre mémoire projet (facteurs de lenteur/instabilité déjà
    observés lors de runs précédents de Mode 2) et les rapports
-   `simflow-tester` de la session en cours.
+   `hosa-tester` de la session en cours.
 2. Si un problème récurrent ressort (le même test signalé instable ou lent
    sur au moins deux runs), propose une optimisation concrète — isoler le
    test instable, ajuster une configuration d'exécution, paralléliser une
@@ -176,7 +176,7 @@ fin de Mode 2 pour tout le sprint.
 [Proposition et justification, ou "Rien à signaler"]
 
 ## Suite recommandée
-[simflow:debug pour un échec technique / hosa-product-owner pour un
+[debug pour un échec technique / hosa-product-owner pour un
 Échoué-Partiel de recette / rien si tout est propre]
 
 ## Open Questions
@@ -189,7 +189,7 @@ Ne commit jamais — même règle que tous les agents Hosa.
 
 ### Project Memory
 
-Sauvegarde : les tests signalés instables/lents par `simflow-tester` à
+Sauvegarde : les tests signalés instables/lents par `hosa-tester` à
 travers plusieurs sessions, pour détecter la récurrence en Mode 3 ; les
 optimisations d'outillage déjà proposées et leur issue (acceptée/refusée),
 pour ne pas representer la même proposition refusée. Ne sauvegarde pas : le
@@ -262,7 +262,7 @@ Rapporte le verdict global du sprint
 - <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel
 
 ## Échecs techniques
-- <ticket> — [détail] → suggéré : simflow:debug
+- <ticket> — [détail] → suggéré : debug
 
 ## Recette à corriger
 - <ticket>/<persona> — [ce qui a échoué] → suggéré : hosa-product-owner
@@ -283,10 +283,10 @@ Le `## Suite` actuel se termine par "Je lance un autre sprint pour le reste
 du backlog, ou on s'arrête là ?". Une ligne est ajoutée : "Je lance
 `qa-plan` pour préparer les tests de ce sprint ?"
 
-## Registre dans `using-simflow` et `agents/README.md`
+## Registre dans `using-hosa` et `agents/README.md`
 
 `qa-plan` et `qa` sont ajoutés à la table des skills et à la table de
-triggers auto de `skills/using-simflow/SKILL.md`, décrits comme des étapes
+triggers auto de `skills/using-hosa/SKILL.md`, décrits comme des étapes
 de livraison en aval de `sprint` (même formulation que `sprint` l'est déjà
 vis-à-vis de `backlog`). `hosa-qa-lead` est ajouté à la table "Hosa agents"
 de `agents/README.md`.

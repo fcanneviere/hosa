@@ -5,7 +5,7 @@ description: Use when initializing or updating the Hosa project's identity (name
 
 # Hosa
 
-Initializes or updates the Hosa project's identity and personas in `hosa/kb/`. This is the first slice of the `hosa` skill from `docs/simflow/specs/2026-09-23-hosa-pilotage-design.md` — broader responsibilities (creating arbitrary `Exigence`/`Ticket`/`Stack Decision` concepts from natural language, answering provenance questions) are a later increment, not covered here.
+Initializes or updates the Hosa project's identity and personas in `hosa/kb/`. This is the first slice of the `hosa` skill from `docs/specs/2026-09-23-hosa-pilotage-design.md` — broader responsibilities (creating arbitrary `Exigence`/`Ticket`/`Stack Decision` concepts from natural language, answering provenance questions) are a later increment, not covered here.
 
 ## Flow
 

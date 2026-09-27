@@ -18,7 +18,7 @@
 - `hosa-data-engineer` never writes to `hosa/kb/` except the concepts its own skills name explicitly (Exigence origin annotations, `Infra`, `Stack Decision`) — same "write only what your skill says" discipline as every other Hosa agent.
 - `Exigence` frontmatter and its six existing body sections are unchanged — `donnees` only appends `— origine : ...` to existing `Données en entrée`/`Données en sortie` list items, never rewrites a section.
 - OKF logging convention: append to the bundle's `log.md` (create if missing), chronological, most recent entry first, grouped by date.
-- Git commits in this plan use the repo's existing convention: plain commit, user's configured `git config user.name`/`user.email` only, no co-author trailer (matches this repo's existing commit history and `skills/using-simflow/SKILL.md`'s Core Rules).
+- Git commits in this plan use the repo's existing convention: plain commit, user's configured `git config user.name`/`user.email` only, no co-author trailer (matches this repo's existing commit history and `skills/using-hosa/SKILL.md`'s Core Rules).
 - `schema-app` and `schema-db` never treat `hosa/app` or `hosa/kb` as their "managed project" target — only the project path recorded in the `Infra` concept.
 
 ## Review Focus
@@ -84,7 +84,7 @@ You read from Hosa's KB (`hosa/kb/`) but write your implementation output into t
 Annotate `Données en entrée`/`Données en sortie` items in `kb/cdc/` Exigences with their origin: générée (produced by the system/process), fournie (external source), or saisie (entered by a user). Resolve ambiguity by dispatching `hosa-key-user` in process-interview mode for anything persona-dependent; ask the user directly for anything purely technical.
 
 ### 2. Application data structure
-Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `simflow-implementer`. Write the structures plus a data dictionary documenting each entity, field, type, origin, and the `Exigence` it traces back to.
+Derive data entities from qualified Exigences and personas. Before writing anything, read the managed project's existing code — language, framework, existing models — and match its conventions exactly, same discipline as `hosa-implementer`. Write the structures plus a data dictionary documenting each entity, field, type, origin, and the `Exigence` it traces back to.
 
 ### 3. Database structure
 Determine the managed project's database engine — from an existing `Stack Decision` in `kb/stack/`, or by asking the user and recording one. Write migrations/DDL matching the project's existing migration conventions.
@@ -94,7 +94,7 @@ You're accountable for data staying traceable end to end — every field in the 
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the SimFlow core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the Hosa core rule that commits are always in the user's name only.
 
 ## Output Format
 
@@ -323,7 +323,7 @@ If an item has no origin annotation yet, stop and say so — run `donnees` first
 
 ## Step 3: Read Existing Conventions
 
-Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `simflow-implementer`. If the project has no existing data-structure code yet, pick conventions consistent with its language/framework and say what you chose and why.
+Before writing anything, read the managed project's existing code: language, framework, any existing models/types/schemas, naming style. Match it exactly — same discipline as `hosa-implementer`. If the project has no existing data-structure code yet, pick conventions consistent with its language/framework and say what you chose and why.
 
 ## Step 4: Write the Structures
 
@@ -541,10 +541,10 @@ git commit -m "feat: chain donnees skill after contestation sign-off"
 
 ---
 
-### Task 6: Register the 3 new skills in `using-simflow`
+### Task 6: Register the 3 new skills in `using-hosa`
 
 **Files:**
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
 - Consumes: skill names `donnees`, `schema-app`, `schema-db` (Tasks 2-4)
@@ -586,13 +586,13 @@ Replace with:
 
 - [ ] **Step 3: Verify structure**
 
-Run: `grep -c "^| \`donnees\`\|^| \`schema-app\`\|^| \`schema-db\`" skills/using-simflow/SKILL.md` — Expected: `6` (3 rows in the skills table + 3 rows in the triggers table)
+Run: `grep -c "^| \`donnees\`\|^| \`schema-app\`\|^| \`schema-db\`" skills/using-hosa/SKILL.md` — Expected: `6` (3 rows in the skills table + 3 rows in the triggers table)
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/using-simflow/SKILL.md
-git commit -m "docs: register data-structuring pipeline skills in using-simflow"
+git add skills/using-hosa/SKILL.md
+git commit -m "docs: register data-structuring pipeline skills in using-hosa"
 ```
 
 ---
@@ -622,7 +622,7 @@ Expected: both files listed (each references `schema-app` as next step or prior 
 Run: `grep -l "donnees" skills/contestation/SKILL.md skills/schema-app/SKILL.md skills/schema-db/SKILL.md`
 Expected: all three files listed
 
-- [ ] **Step 3: `using-simflow` table entries match actual skill directory names**
+- [ ] **Step 3: `using-hosa` table entries match actual skill directory names**
 
 Run: `ls skills/ | grep -E "^(donnees|schema-app|schema-db)$"`
 Expected: all 3 names listed, matching the rows added in Task 6

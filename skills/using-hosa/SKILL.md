@@ -1,11 +1,11 @@
 ---
-name: using-simflow
-description: Bootstrap skill — always loaded at session start. Explains what SimFlow is, what skills exist, and when to trigger them automatically.
+name: using-hosa
+description: Bootstrap skill — always loaded at session start. Explains what Hosa is, what skills exist, and when to trigger them automatically.
 ---
 
-# SimFlow
+# Hosa
 
-You have SimFlow — a lightweight full dev lifecycle plugin for Claude Code and Codex. SimFlow gives you skills and agents to understand, build, test, review, and debug software without ceremony.
+You have a lightweight full dev lifecycle skill set for Claude Code and Codex — generic skills and agents to understand, build, test, review, and debug software without ceremony, plus Hosa's own project-specific pipeline (cahier des charges, backlog, sprints, QA).
 
 ## Skills
 
@@ -13,14 +13,14 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 
 | Skill | What it does |
 |---|---|
-| `simflow:understand` | Brainstorm + grill an idea → write spec → quiz user → commit |
-| `simflow:build` | Read spec or description → plan → implement task by task → quiz → commit |
-| `simflow:iterate` | Change or extend existing code → light grill → targeted plan → quiz → commit |
-| `simflow:dispatch` | Fan out independent tasks to agents in parallel |
-| `simflow:test` | Run tests, identify gaps, write new tests, commit them |
-| `simflow:review` | Check implementation against spec → fix gaps → loop until clean |
-| `simflow:debug` | Systematic root cause analysis → confirm with user → fix → commit |
-| `simflow:status` | Snapshot of project state — spec, progress, tests, next step |
+| `understand` | Brainstorm + grill an idea → write spec → quiz user → commit |
+| `build` | Read spec or description → plan → implement task by task → quiz → commit |
+| `iterate` | Change or extend existing code → light grill → targeted plan → quiz → commit |
+| `dispatch` | Fan out independent tasks to agents in parallel |
+| `test` | Run tests, identify gaps, write new tests, commit them |
+| `review` | Check implementation against spec → fix gaps → loop until clean |
+| `debug` | Systematic root cause analysis → confirm with user → fix → commit |
+| `status` | Snapshot of project state — spec, progress, tests, next step |
 | `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`hosa/kb/`) |
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
@@ -38,7 +38,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note, an architecture placement note, and an interface placement note — data-structuring pipeline stage 8 |
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
 | `qa-plan` | Prepare a sprint's technical test plan — one `Test Plan` per ticket in `kb/test/`, grounded in the senior dev's recorded stack decisions, identifying which persona(s) must validate it via recette — follow-on to `sprint` |
-| `qa` | Run a sprint's QA — dispatch `simflow-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
+| `qa` | Run a sprint's QA — dispatch `hosa-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
 | `git` | Open a dedicated branch/worktree for a sprint when it starts, or merge it locally back into the managed project once every ticket has a passing QA record — dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `qa` (finish) |
 | `develop` | Implement a single sprint ticket — break it into short sequential tasks (`hosa-tech-lead`) and implement them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Follow-on to `git` Mode 1, precondition for `qa-plan`/`qa` |
 | `qualite` | Audit the managed project's source code against a fixed checklist of coding best practices and security rules — dispatches `hosa-senior-dev`, classifies findings by severity, records them in `kb/qualite/` — companion check usable anytime |
@@ -50,14 +50,14 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 
 | User says something like... | Trigger |
 |---|---|
-| "I have an idea for...", "I want to build...", "Let's plan..." | `simflow:understand` |
-| "Implement this", "Build it", "Add this feature", "Write the code" | `simflow:build` |
-| "Change how X works", "Refactor this", "Update this", "Add X to existing Y" | `simflow:iterate` |
-| "Run these in parallel", "Fan out", "Do these simultaneously" | `simflow:dispatch` |
-| "Test this", "Run tests", "Check if it works" | `simflow:test` |
-| "Does this match the spec?", "Check requirements", "Is everything implemented?" | `simflow:review` |
-| "It's broken", "This isn't working", "I'm getting an error", "There's a bug" | `simflow:debug` |
-| "Where are we?", "What's done?", "Catch me up", "What's left?" | `simflow:status` |
+| "I have an idea for...", "I want to build...", "Let's plan..." | `understand` |
+| "Implement this", "Build it", "Add this feature", "Write the code" | `build` |
+| "Change how X works", "Refactor this", "Update this", "Add X to existing Y" | `iterate` |
+| "Run these in parallel", "Fan out", "Do these simultaneously" | `dispatch` |
+| "Test this", "Run tests", "Check if it works" | `test` |
+| "Does this match the spec?", "Check requirements", "Is everything implemented?" | `review` |
+| "It's broken", "This isn't working", "I'm getting an error", "There's a bug" | `debug` |
+| "Where are we?", "What's done?", "Catch me up", "What's left?" | `status` |
 | "Initialise le projet", "Configure hosa", "Crée un persona pour..." | `hosa` |
 | "Fais une recette de...", "Valide ça avec [persona]", "Est-ce que ça répond au besoin de..." | `recette` |
 | "Rédige le cahier des charges", "Interview les personas", "Démarre le cahier des charges" | `interview` |
@@ -82,15 +82,15 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Audite la qualité du code", "Vérifie les bonnes pratiques", "Fais une revue de sécurité du code" | `qualite` |
 | "Vérifie que la documentation est à jour" | `documentation` |
 
-**Manual trigger**: the user can always invoke a skill directly by naming it or typing `/simflow:skill-name`.
+**Manual trigger**: the user can always invoke a skill directly by naming it or typing `/skill-name`.
 
 **When ambiguous**: if the message could match two skills, pick the one with the stronger signal and invoke it. If you genuinely cannot tell, ask one clarifying question first.
 
-**For standalone `simflow:dispatch`**: the user should provide a list of specific independent tasks. If they say "run in parallel" with vague tasks, ask: "What are the specific tasks you want to run in parallel, and for each — what's the goal and which files are involved?"
+**For standalone `dispatch`**: the user should provide a list of specific independent tasks. If they say "run in parallel" with vague tasks, ask: "What are the specific tasks you want to run in parallel, and for each — what's the goal and which files are involved?"
 
 ## Core Rules
 
-These apply everywhere in SimFlow, in every skill, in every agent:
+These apply everywhere in Hosa, in every skill, in every agent:
 
 - **Git commits are always in the user's name only.** Check `git config user.name` and `git config user.email` before committing. Never add Co-Authored-By. Never add any additional author. Zero exceptions.
 - **No forced entry point.** Any skill can start the session. Skills auto-detect prior outputs like spec files.

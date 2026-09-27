@@ -45,7 +45,7 @@ You also read the architecture documentation `hosa-architect` already wrote into
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the SimFlow core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the Hosa core rule that commits are always in the user's name only.
 
 ## Output Format
 

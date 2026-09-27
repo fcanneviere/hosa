@@ -43,7 +43,7 @@ Read `kb/cdc/` for `stable` `Exigence`s, `kb/stack/` for `Stack Decision`s, and 
 
 ## Step 2: Read Existing Conventions
 
-Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `simflow-implementer`.
+Read the managed project's existing code, if any, to respect conventions already in place — same discipline as `hosa-implementer`.
 
 ## Step 3: Design the Architecture
 

@@ -4,7 +4,7 @@
 
 **Goal:** Add a seventh stage, `sprint`, that composes sprints from the Product Backlog (`kb/tickets/`), guarding against dispatching a ticket whose technical feasibility or architecture placement was never really evaluated.
 
-**Architecture:** New OKF concept `Sprint` in `kb/sprints/`, a new agent `hosa-sprint-planner` that owns the sprint-composition process, and a self-contained skill `skills/sprint/SKILL.md` that embeds that same process inline (same pattern as `stack`/`architecture`/`backlog`). `backlog`'s `## Suite` output is updated to offer chaining into `sprint`, and `sprint` is registered in `using-simflow` and `agents/README.md`.
+**Architecture:** New OKF concept `Sprint` in `kb/sprints/`, a new agent `hosa-sprint-planner` that owns the sprint-composition process, and a self-contained skill `skills/sprint/SKILL.md` that embeds that same process inline (same pattern as `stack`/`architecture`/`backlog`). `backlog`'s `## Suite` output is updated to offer chaining into `sprint`, and `sprint` is registered in `using-hosa` and `agents/README.md`.
 
 **Tech Stack:** Markdown agent/skill files (Claude Code plugin conventions), no code/tests — this repo's "implementation" is markdown content, verified by grep/read checks, same as the `backlog` plan.
 
@@ -103,7 +103,7 @@ generated: { by: hosa-sprint-planner/1.0, at: <ISO8601> }
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or orchestrating skill decide when to commit, per SimFlow's core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or orchestrating skill decide when to commit, per Hosa's core rule that commits are always in the user's name only.
 
 ## Output Format
 
@@ -297,14 +297,14 @@ git commit -m "feat: add sprint skill, data-structuring pipeline follow-on stage
 
 ---
 
-### Task 3: Chain `backlog` into `sprint`, register in `using-simflow`
+### Task 3: Chain `backlog` into `sprint`, register in `using-hosa`
 
 **Files:**
 - Modify: `skills/backlog/SKILL.md`
-- Modify: `skills/using-simflow/SKILL.md`
+- Modify: `skills/using-hosa/SKILL.md`
 
 **Interfaces:**
-- Consumes: Task 2's `sprint` skill name and trigger phrasing (the `## Suite` text in `backlog` and the `using-simflow` tables must refer to it by the same name, `sprint`, and the same trigger phrases already written into `skills/sprint/SKILL.md`'s Trigger section).
+- Consumes: Task 2's `sprint` skill name and trigger phrasing (the `## Suite` text in `backlog` and the `using-hosa` tables must refer to it by the same name, `sprint`, and the same trigger phrases already written into `skills/sprint/SKILL.md`'s Trigger section).
 - Produces: nothing new consumed by later tasks — this task only wires existing pieces together.
 
 - [ ] **Step 1: Update `backlog`'s Flow diagram and Output**
@@ -349,35 +349,35 @@ Expected: `0`
 Run: `grep -c "Je lance \`sprint\` maintenant ?" skills/backlog/SKILL.md`
 Expected: `1`
 
-- [ ] **Step 3: Register `sprint` in `using-simflow`'s skills table**
+- [ ] **Step 3: Register `sprint` in `using-hosa`'s skills table**
 
-In `skills/using-simflow/SKILL.md`, after the `backlog` row in the skills table, add:
+In `skills/using-hosa/SKILL.md`, after the `backlog` row in the skills table, add:
 
 ```markdown
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility or architecture placement was never actually evaluated — follow-on to the data-structuring pipeline |
 ```
 
-- [ ] **Step 4: Register `sprint` in `using-simflow`'s triggers table**
+- [ ] **Step 4: Register `sprint` in `using-hosa`'s triggers table**
 
-In `skills/using-simflow/SKILL.md`, after the `backlog` row in the triggers table, add:
+In `skills/using-hosa/SKILL.md`, after the `backlog` row in the triggers table, add:
 
 ```markdown
 | "Planifie un sprint", "Compose le prochain sprint" | `sprint` |
 ```
 
-- [ ] **Step 5: Verify both `using-simflow` edits**
+- [ ] **Step 5: Verify both `using-hosa` edits**
 
-Run: `grep -c "^| \`sprint\` |" skills/using-simflow/SKILL.md`
+Run: `grep -c "^| \`sprint\` |" skills/using-hosa/SKILL.md`
 Expected: `1`
 
-Run: `grep -c "Planifie un sprint" skills/using-simflow/SKILL.md`
+Run: `grep -c "Planifie un sprint" skills/using-hosa/SKILL.md`
 Expected: `1`
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add skills/backlog/SKILL.md skills/using-simflow/SKILL.md
-git commit -m "feat: chain sprint after backlog, register it in using-simflow"
+git add skills/backlog/SKILL.md skills/using-hosa/SKILL.md
+git commit -m "feat: chain sprint after backlog, register it in using-hosa"
 ```
 
 ---
