@@ -5,29 +5,27 @@ description: Use to run a sprint's QA once it's implemented — dispatches `hosa
 
 # QA
 
-Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical tests via `hosa-tester`, business recette via `hosa-key-user`, one pass per ticket, plus a tooling-health check at the end.
+Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical tests via `hosa-tester`, business recette via `hosa-key-user`, one pass per ticket, plus a tooling-health check at the end. This skill is the only one that talks to the user or dispatches other agents — the actual briefing, classification, and routing is `hosa-qa-lead`'s.
 
 ## Flow
 
 ```
-Lit kb/sprints/<slug>.md pour sa liste de tickets
-        ↓
 Vérifie que chaque ticket a un kb/test/<slug-ticket>-
 technique.md
         ↓ manquant
 Propose de lancer qa-plan d'abord
         ↓ tous présents
-Pour chaque ticket : exécute les tests techniques
-(hosa-tester), puis la recette (hosa-key-user) pour
+Pour chaque ticket : dispatch hosa-qa-lead (Mode 2 Phase 1)
+→ brief
+        ↓
+Dispatch hosa-tester avec le brief, puis hosa-key-user pour
 chaque persona listée
         ↓
-Échecs techniques trouvés → classe (bug d'implémentation
-vs infrastructure de test), même logique que le skill test
+Redispatch hosa-qa-lead (Mode 2 Phase 2) avec les résultats
+→ classe, route
         ↓
-Recette Échoué/Partiel → route vers hosa-product-owner
-        ↓
-Fin de sprint : vérifie la santé de l'outillage (tests
-flaky/lents récurrents) une fois, sur l'ensemble des runs
+Fin de sprint : dispatch hosa-qa-lead (Mode 3) pour la santé
+de l'outillage
         ↓
 Rapporte le verdict global du sprint
 ```
@@ -40,35 +38,31 @@ Manual: `/qa <slug-sprint>`. Auto: "exécute la QA du sprint", "teste le sprint"
 
 ## Step 1: Read the Sprint and Check Preconditions
 
-Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
+Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
 
-## Step 2: Run Technical Tests Per Ticket
+## Step 2: Brief Per Ticket
 
-For each ticket:
+For each ticket, dispatch `hosa-qa-lead` (Mode 2 Phase 1, `agents/qa-lead.md`). It returns the brief for `hosa-tester` (`## Cas de test`, recently changed files, the managed project's root path — the sprint's `worktree` path from `kb/sprints/<slug>.md` if it's still `active`, otherwise the root path from `Infra`) and, for each persona under `## Recette requise`, the brief for `hosa-key-user`.
 
-1. Dispatch `hosa-tester` with the plan's `## Cas de test` as the brief, the recently changed files for this ticket, and the managed project's root path — the sprint's `worktree` path from `kb/sprints/<slug>.md` if it's still `active`, otherwise the root path from `Infra`.
-2. Append a `## Résultats techniques` section to `kb/test/<slug-ticket>-technique.md` with the pass/fail detail, and refresh its `generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }` frontmatter to this write's timestamp — the same attribution convention `hosa-qa-lead` uses whenever it creates or extends a `Test Plan`.
-3. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → flag for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, don't suggest debug.
+## Step 3: Run Technical Tests Per Ticket
 
-## Step 3: Run Recette Per Ticket
+Dispatch `hosa-tester` with the brief from Step 2. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
 
-For each ticket, read `## Recette requise` from its `Test Plan`:
+## Step 4: Run Recette Per Ticket
 
-- If it lists persona(s): for each one, dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. Write the result to `hosa/kb/test/<slug-ticket>-<slug-persona>.md`, in the format `recette` already uses (Step 3 of that skill). If the persona was enriched, log to `kb/personnas/log.md` too.
-- If it reads "Aucune...": skip recette for this ticket and say so explicitly in the report — don't omit any mention of it.
-- Any Échoué or Partiel scenario: flag this ticket for `hosa-product-owner` — the ticket itself needs rework, not a code fix.
+For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) capturing exactly what the persona rejected — the ticket itself needs rework, not a code fix.
 
-## Step 4: Log
+## Step 5: Dispatch to Record
 
-Append an entry to `kb/test/log.md` for every file touched in Steps 2-3 — chronological, most recent date first, per OKF §9.
+Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every `hosa-key-user` recette result from Steps 3-4. It appends `## Résultats techniques`, records each recette result, refreshes the `Test Plan`'s `generated` frontmatter to this write's timestamp, and logs to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched).
 
-## Step 5: Tooling Health
+## Step 6: Tooling Health
 
-Once every ticket in the sprint has been run through Steps 2-3: review whether the same test was flagged flaky or slow across at least two of this session's runs (or against what's already known from prior sessions). If so, propose one concrete optimization and its reasoning — apply only if the user confirms. If nothing recurs, report "rien à signaler sur l'outillage" instead of inventing a proposal.
+Once every ticket in the sprint has been run through Steps 2-5: dispatch `hosa-qa-lead` (Mode 3 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 3 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
 
 ## No Commits
 
-This skill does not commit. Report what changed in the KB and let the user decide when to commit.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
 
 ## Output
 
@@ -77,17 +71,17 @@ This skill does not commit. Report what changed in the KB and let the user decid
 - <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel/Non applicable
 
 ## Échecs techniques
-- <ticket> — [détail] → suggéré : debug
+- <ticket> — [détail] → ticket créé : `kb/tickets/<slug>.md` → suggéré : debug
 [Si aucun : "Aucun"]
 
 ## Recette à corriger
-- <ticket>/<persona> — [ce qui a échoué] → suggéré : hosa-product-owner
+- <ticket>/<persona> — [ce qui a échoué] → ticket créé : `kb/tickets/<slug>.md`
 [Si aucun : "Aucun"]
 
 ## Outillage
 [Proposition et justification, ou "Rien à signaler"]
 
 ## Suite
-[Si tout est propre : "Sprint validé. Je fusionne le sprint maintenant (skill `git`) ?"]
-[Sinon : liste des actions suggérées ci-dessus — pas d'offre de fusion tant que le verdict n'est pas propre]
+[Si tout est propre : "QA propre. Je lance la validation des tickets maintenant ? (skill `validation`)"]
+[Sinon : liste des actions suggérées ci-dessus — pas d'offre de validation tant que le verdict n'est pas propre]
 ```

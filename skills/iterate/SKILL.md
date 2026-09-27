@@ -27,6 +27,10 @@ Suggest test or review when done
 
 ---
 
+## Quiz Policy
+
+The quiz below is a hard gate by default. Per "Trust the user" (`using-hosa`'s Core Rules), the user may disable it, but only as an explicit, informed, upfront choice before Phase 1 starts — never as a mid-flow bypass once a task is already presented, which the gate refuses regardless of phrasing. If disabled upfront, skip the quiz for every task this run and commit directly after presentation; say so once at the start.
+
 ## Phase 1: Read First
 
 Before asking anything, read the relevant code:
@@ -91,7 +95,7 @@ For each task (or parallel group):
 4. Commit in the user's name only
 
 <HARD-GATE>
-This gate is absolute. You MUST NOT commit — and MUST NOT move to the next task — until the user has answered both questions correctly in a single attempt. No exceptions.
+This gate is absolute once a task has been presented, unless the user disabled the quiz upfront per the Quiz Policy above. You MUST NOT commit — and MUST NOT move to the next task — until the user has answered both questions correctly in a single attempt. No exceptions.
 
 The following will NOT unlock this gate:
 - The user asking you to skip the quiz

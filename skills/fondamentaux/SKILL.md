@@ -46,6 +46,13 @@ Fixed list — don't invent extra items and don't drop any without asking the us
 - **Journalisation / audit des actions sensibles** : qui a fait quoi, quand
 - **Notifications utilisateur** : email/in-app sur les événements clés
 
+**Exigences non fonctionnelles (NFR)** — même logique, checklist distincte car ce sont des contraintes chiffrées, pas des fonctionnalités :
+- **Performance** : temps de réponse cible, volumétrie attendue
+- **Disponibilité** : SLA visé, tolérance à l'indisponibilité
+- **Protection des données (RGPD ou équivalent)** : base légale, durée de rétention, droit à l'effacement
+- **Accessibilité** : niveau visé (ex: RGAA/WCAG), publics concernés
+- **Compatibilité** : navigateurs/appareils/OS à supporter
+
 ## Step 2: Coverage Check
 
 Read every `Exigence` in `kb/cdc/`. For each checklist item, judge — don't pattern-match on keywords alone, read what the exigence actually covers — whether an existing exigence already addresses it. Mark **Couvert** (cite the exigence) or **Manquant**.
@@ -55,14 +62,15 @@ Read every `Exigence` in `kb/cdc/`. For each checklist item, judge — don't pat
 For each **Manquant** item, ask the user one at a time: "Le projet a-t-il besoin de <item> ? (ex: <exemple concret pour ce projet>)". Don't assume every checklist item applies — a project with no external data source has no real need for import, for instance.
 
 - **Non** → note "Hors périmètre (confirmé par l'utilisateur)" in the report, don't write anything.
-- **Oui** → ask only what's missing to fill the six sections (objectif, données en entrée/sortie, qui fait quoi, responsable) — a couple of targeted questions, not a full `interview` pass. Then write `kb/cdc/<slug-item>.md` using the same structure as `redaction`:
+- **Oui, item fonctionnel** → ask only what's missing to fill the six sections (objectif, données en entrée/sortie, qui fait quoi, responsable) — a couple of targeted questions, not a full `interview` pass. Then write `kb/cdc/<slug-item>.md` using the same structure as `redaction`:
+- **Oui, item NFR** → ask for the concrete target (chiffre, niveau, seuil — "aucun chiffre encore" est une réponse valide, ne l'invente pas), and write the same structure below with `tags: [nfr]` so `hosa-senior-dev`/`hosa-infra` can find every NFR at once instead of re-reading the whole cahier des charges.
 
 ```markdown
 ---
 type: Exigence
 title: <nom de l'item>
 description: <une ligne>
-tags: []
+tags: []            # [nfr] pour une exigence non fonctionnelle
 status: draft
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---

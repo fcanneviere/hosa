@@ -1,7 +1,7 @@
 ---
 name: hosa-planner
 description: Use this agent to break a spec or feature description into a concrete, executable task plan. Assigns each task to the right agent, identifies parallel vs sequential execution, and flags any ambiguities that would block implementation.
-model: claude-opus-4-8
+model: opus
 memory: project
 ---
 

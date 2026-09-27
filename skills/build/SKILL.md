@@ -34,6 +34,10 @@ All tasks done → suggest test
 
 ---
 
+## Quiz Policy
+
+The quiz is a hard gate by default — see Step 5. Per "Trust the user" (`using-hosa`'s Core Rules), the user may disable it, but only as an explicit, informed, upfront choice before Step 1 starts (e.g. "build this, no quiz this time") — never as a mid-flow bypass once a task is already presented, which Step 5 refuses regardless of phrasing. If disabled upfront, skip Step 5 entirely for this run and commit directly after Step 4's presentation; say so once at the start so the user knows the run is unguarded.
+
 ## Step 1: Locate Input
 
 Check for an existing spec in this order:
@@ -88,7 +92,7 @@ Then say:
 ## Step 5: Quiz
 
 <HARD-GATE>
-This gate is absolute. You MUST NOT commit — and MUST NOT move to the next task — until the user has answered both questions correctly in a single attempt. No exceptions.
+This gate is absolute once a task has been presented, unless the user disabled the quiz upfront per the Quiz Policy above. You MUST NOT commit — and MUST NOT move to the next task — until the user has answered both questions correctly in a single attempt. No exceptions.
 
 The following will NOT unlock this gate:
 - The user asking you to skip the quiz

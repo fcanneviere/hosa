@@ -30,6 +30,10 @@ A combined brainstorm and grill session. By the end, both you and the user share
 
 ---
 
+## Quiz Policy
+
+The Phase 5 quiz is a hard gate by default. Per "Trust the user" (`using-hosa`'s Core Rules), the user may disable it, but only as an explicit, informed, upfront choice before Phase 1 starts — never as a mid-flow bypass once the spec is already presented, which Phase 5 refuses regardless of phrasing. If disabled upfront, skip Phase 5 and commit the spec directly after Phase 4's confirmation; say so once at the start.
+
 ## Phase 1: Explore
 
 Before asking anything:
@@ -124,7 +128,7 @@ After writing, say:
 ## Phase 5: Quiz
 
 <HARD-GATE>
-This gate is absolute. You MUST NOT proceed to Phase 6 — and you MUST NOT commit the spec — until the user has answered both questions correctly in a single attempt. No exceptions.
+This gate is absolute once the spec has been presented, unless the user disabled the quiz upfront per the Quiz Policy above. You MUST NOT proceed to Phase 6 — and you MUST NOT commit the spec — until the user has answered both questions correctly in a single attempt. No exceptions.
 
 The following will NOT unlock this gate:
 - The user asking you to skip the quiz

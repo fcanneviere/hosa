@@ -65,6 +65,48 @@ test('GET /api/concepts/*path returns 404 for a nonexistent concept', async () =
   server.close();
 });
 
+test('PATCH /api/concepts/*path updates frontmatter and preserves body', async () => {
+  const kbRoot = makeFixtureKb();
+  const server = await startTestServer(kbRoot);
+  const { port } = server.address();
+  const res = await fetch(`http://localhost:${port}/api/concepts/tickets/ticket-1.md`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ frontmatter: { state: 'done' } }),
+  });
+  const body = await res.json();
+  assert.equal(res.status, 200);
+  assert.equal(body.frontmatter.state, 'done');
+  assert.match(body.body, /Corps du ticket\./);
+  server.close();
+});
+
+test('PATCH /api/concepts/*path rejects an invalid ticket state', async () => {
+  const kbRoot = makeFixtureKb();
+  const server = await startTestServer(kbRoot);
+  const { port } = server.address();
+  const res = await fetch(`http://localhost:${port}/api/concepts/tickets/ticket-1.md`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ frontmatter: { state: 'not-a-state' } }),
+  });
+  assert.equal(res.status, 400);
+  server.close();
+});
+
+test('PATCH /api/concepts/*path returns 404 for a nonexistent concept', async () => {
+  const kbRoot = makeFixtureKb();
+  const server = await startTestServer(kbRoot);
+  const { port } = server.address();
+  const res = await fetch(`http://localhost:${port}/api/concepts/tickets/does-not-exist.md`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ frontmatter: { state: 'done' } }),
+  });
+  assert.equal(res.status, 404);
+  server.close();
+});
+
 test('startServer binds to localhost only, not all network interfaces', async () => {
   const kbRoot = makeFixtureKb();
   const server = await new Promise((resolve) => {

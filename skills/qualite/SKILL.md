@@ -40,22 +40,13 @@ Scope: if invoked right after a ticket/sprint was implemented, default to the fi
 
 ## Step 2: Audit Checklist
 
-Dispatch `hosa-senior-dev` with the scoped files and this fixed checklist. Don't invent extra items, don't drop any without asking first — same discipline as `fondamentaux`.
+Dispatch `hosa-senior-dev` with the scoped files. Best-practices and performance are its fixed checklist (below) — don't invent extra items, don't drop any without asking first, same discipline as `fondamentaux`. Security is whatever `Security Rule` concepts exist in `kb/rules/security/` — the agent seeds the defaults there itself on first run; from then on that bundle, not this file, is the source of truth for what "security" checks.
 
 **Bonnes pratiques**
 - Lisibilité : nommage clair, fonctions courtes, pas de code mort ou commenté
 - Duplication : logique répétée qui devrait être factorisée
 - Gestion des erreurs : pas d'exception avalée silencieusement, retours cohérents
 - Dépendances : audit natif du gestionnaire de paquets sur le lockfile committé (aucune vulnérabilité critique/haute non mitigée), aucune ajoutée hors `hosa-infra`
-
-**Sécurité (OWASP)**
-- Injection : requêtes SQL paramétrées, aucune commande shell construite par concaténation d'une entrée utilisateur
-- Validation des entrées aux frontières (API publique, formulaires) — jamais côté client seul
-- Authentification/autorisation : contrôle d'accès sur chaque route sensible, pas d'IDOR (un utilisateur authentifié ne doit accéder qu'à ses propres ressources)
-- Secrets : aucune clé, mot de passe ou token en dur dans le code ni dans l'historique git
-- En-têtes et CORS : CSP/HSTS/X-Frame-Options présents, origines CORS explicites (jamais `*` avec credentials)
-- Limitation de débit sur les routes d'authentification, backée par un store partagé si plusieurs instances
-- Données sensibles : pas de PII en log ni en réponse d'erreur ; finalité et durée de rétention définies, suppression effective (y compris backups/caches)
 
 **Performance**
 - Requêtes N+1 : boucle qui déclenche une requête DB par itération au lieu d'un chargement groupé
@@ -71,7 +62,7 @@ For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui 
 
 ## Step 4: Write and Log
 
-Write `hosa/kb/qualite/<slug>.md`:
+Write `.hosa/kb/qualite/<slug>.md`:
 
 ```markdown
 ---
@@ -93,7 +84,7 @@ Log to `kb/qualite/log.md` (create if missing) — OKF §9: chronological, most 
 
 ## Step 5: Route Blocking Findings
 
-Any **Bloquant** anomaly: propose `debug` scoped to that finding. Don't fix it inline from this skill — `qualite` audits, it doesn't patch.
+Any **Bloquant** anomaly: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: hosa-senior-dev/1.0, at: <ISO8601> }` since it's the audit that surfaced it, not the user. Then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise.
 
 ## No Commits
 
@@ -109,6 +100,10 @@ You don't commit. Report what changed in the KB and let the user decide.
 ## Verdict
 [Propre / N anomalie(s) à corriger]
 
+## Tickets créés
+- `kb/tickets/<slug>.md` — [finding] (state: todo)
+[Si aucun Bloquant : "Aucun"]
+
 ## Suite
-[Bloquant présent → "Je lance `debug` sur <finding> ?" / Sinon → "Rien à signaler."]
+[Bloquant présent → "Je lance `debug` sur le ticket <slug> ?" / Sinon → "Rien à signaler."]
 ```

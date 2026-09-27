@@ -1,7 +1,7 @@
 ---
 name: hosa-developer
 description: Use this agent to implement a single task from `hosa-tech-lead`'s plan, in a short focused session, strictly within the architecture and data structures already scaffolded for the project Hosa manages. Invoke it directly, or from the `develop` skill.
-model: claude-sonnet-5
+model: sonnet
 memory: project
 ---
 

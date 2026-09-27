@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const { createRouter } = require('./src/routes');
+const { resolveKbRoot } = require('./src/okf');
 
 function createApp(kbRoot) {
   const app = express();
@@ -14,7 +15,7 @@ function startServer(kbRoot, port) {
 }
 
 if (require.main === module) {
-  const kbRoot = process.env.HOSA_KB_ROOT || path.join(__dirname, '..', 'kb');
+  const kbRoot = process.env.HOSA_KB_ROOT || resolveKbRoot();
   const port = process.env.PORT || 3000;
   startServer(kbRoot, port).on('listening', () => {
     console.log(`hosa app listening on http://localhost:${port}`);

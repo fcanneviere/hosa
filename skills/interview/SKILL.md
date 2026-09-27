@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → relecture → contestation). Doesn't write to `hosa/kb/` — hands structured notes to `redaction`.
+description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → relecture → contestation). Doesn't write to `.hosa/kb/` — hands structured notes to `redaction`.
 ---
 
 # Interview
@@ -41,7 +41,7 @@ Ask: "Quels sont les grands processus métier à couvrir dans le cahier des char
 
 ## Step 2: Per Process — Identify Personas
 
-For each process, check `hosa/kb/personnas/` and ask the user which persona(s) are involved in this specific process (skip asking only if exactly one persona exists and it's an obvious fit — confirm with the user rather than assume for anything less clear-cut).
+For each process, check `.hosa/kb/personnas/` and ask the user which persona(s) are involved in this specific process (skip asking only if exactly one persona exists and it's an obvious fit — confirm with the user rather than assume for anything less clear-cut).
 
 ## Step 3: Per Persona — Dispatch `hosa-key-user`
 

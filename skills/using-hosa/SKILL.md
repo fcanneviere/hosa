@@ -21,7 +21,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `review` | Check implementation against spec → fix gaps → loop until clean |
 | `debug` | Systematic root cause analysis → confirm with user → fix → commit |
 | `status` | Snapshot of project state — spec, progress, tests, next step |
-| `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`hosa/kb/`) |
+| `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`.hosa/kb/`) |
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
 | `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
@@ -39,10 +39,15 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `sprint` | Compose a sprint from the Product Backlog — dispatch tickets in priority order up to a given capacity, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline |
 | `qa-plan` | Prepare a sprint's technical test plan — one `Test Plan` per ticket in `kb/test/`, grounded in the senior dev's recorded stack decisions, identifying which persona(s) must validate it via recette — follow-on to `sprint` |
 | `qa` | Run a sprint's QA — dispatch `hosa-tester` for each ticket's technical test plan and `hosa-key-user` for its required recette, then route failures to the right owner — follow-on to `qa-plan` |
-| `git` | Open a dedicated branch/worktree for a sprint when it starts, or merge it locally back into the managed project once every ticket has a passing QA record — dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `qa` (finish) |
+| `git` | Open a dedicated branch/worktree for a sprint when it starts, or merge it locally back into the managed project once every ticket has a passing QA record — dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `validation` (finish) |
 | `develop` | Implement a single sprint ticket — break it into short sequential tasks (`hosa-tech-lead`) and implement them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Follow-on to `git` Mode 1, precondition for `qa-plan`/`qa` |
+| `validation` | Close a ticket's cycle once implemented and tested — dispatches `hosa-product-owner` to check it against its own acceptance criteria, technical results, and recette verdict, then sets it `done`+`verified` or bounces it back. Follow-on to `qa`, precondition for `git` Mode 2 |
+| `bilan-sprint` | Sprint Review and retro once a sprint merges — dispatches `hosa-product-owner` to judge whether the objective was met, list delivered/deferred tickets, surface recurring friction, and write follow-up tickets or process Design Rules. Follow-on to `git` Mode 2 |
 | `qualite` | Audit the managed project's source code against a fixed checklist of coding best practices and security rules — dispatches `hosa-senior-dev`, classifies findings by severity, records them in `kb/qualite/` — companion check usable anytime |
 | `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
+| `changement` | Handle a change to a `stable` Exigence — impact analysis (tickets/entities/migrations/screens/docs affected), revert to `draft`, a mini relecture/contestation loop, then follow-up tickets. Companion to the CDC pipeline, usable anytime after `contestation` has run once |
+| `livraison` | Release/deploy the managed project — CI pipeline and environments (via `hosa-infra`), release notes drawn from `done` tickets since the last release, optional push/PR (via `hosa-git`). Turns a local merge into something actually shipped. Follow-on to `git` Mode 2 / `validation` |
+| `kb-commit` | Commit whatever's accumulated under `.hosa/kb/` as a dedicated commit in the managed project's own git history, separate from the rest of that project's commits and from Hosa's own tooling commits. Companion skill, usable anytime |
 
 ## Triggering Rules
 
@@ -79,12 +84,19 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Démarre le sprint X", "Commence le sprint X" | `git` (Mode 1) |
 | "Termine le sprint X", "Fusionne le sprint X", "Merge le sprint X" | `git` (Mode 2) |
 | "Développe le ticket X", "Implémente le ticket X" | `develop` |
+| "Valide le ticket X", "Accepte le ticket X" | `validation` |
+| "Fais le bilan du sprint X", "Rétro du sprint X" | `bilan-sprint` |
 | "Audite la qualité du code", "Vérifie les bonnes pratiques", "Fais une revue de sécurité du code" | `qualite` |
 | "Vérifie que la documentation est à jour" | `documentation` |
+| "Cette exigence a changé", "Modifie le cahier des charges sur X (déjà stable)" | `changement` |
+| "Livre le projet", "Déploie", "Prépare la release" | `livraison` |
+| "Committe la KB", "Sauvegarde les changements de la KB" | `kb-commit` |
 
 **Manual trigger**: the user can always invoke a skill directly by naming it or typing `/skill-name`.
 
 **When ambiguous**: if the message could match two skills, pick the one with the stronger signal and invoke it. If you genuinely cannot tell, ask one clarifying question first.
+
+**Generic vs. Hosa variant**: several triggers overlap in shape between a generic lifecycle skill and a Hosa-pipeline skill — "teste le sprint" (`qa`) vs. "test this" (`test`), "implémente le ticket X" (`develop`) vs. "implement this" (`build`), "fais une recette de X" (`recette`) vs. "fais la recette du sprint" (`qa`). Before firing the Hosa variant, check that `.hosa/kb/` actually exists and is populated beyond its example files, and that the sprint/ticket named actually resolves to a file in `kb/sprints/`/`kb/tickets/`. No KB, or nothing resolves → use the generic variant, don't guess a Hosa context that isn't there. Both present and the message still names no sprint/ticket → ask which one.
 
 **For standalone `dispatch`**: the user should provide a list of specific independent tasks. If they say "run in parallel" with vague tasks, ask: "What are the specific tasks you want to run in parallel, and for each — what's the goal and which files are involved?"
 
@@ -92,9 +104,11 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 
 These apply everywhere in Hosa, in every skill, in every agent:
 
+- **KB location.** The KB lives inside the managed project itself, at `.hosa/kb/` — never inside Hosa's own plugin checkout. Resolve it once per session: walk up from the current working directory the same way `.git` is discovered, until a `.hosa/kb/` directory is found. None found anywhere up the tree → this is that project's first run: confirm the project root with the user (default: current working directory; never Hosa's own plugin checkout), then create `.hosa/kb/` there. Every `kb/<bundle>/` reference anywhere in this skill set is relative to that resolved root. This is what lets more than one project be managed, each with its own `.hosa/kb/` versioned alongside it — instead of one KB hardcoded inside Hosa's own repository.
 - **Git commits are always in the user's name only.** Check `git config user.name` and `git config user.email` before committing. Never add Co-Authored-By. Never add any additional author. Zero exceptions.
 - **No forced entry point.** Any skill can start the session. Skills auto-detect prior outputs like spec files.
 - **No guessing.** If you need information to proceed, ask. Don't invent requirements, file paths, or behaviors.
-- **Trust the user.** Don't add steps, gates, or checks they haven't asked for.
-- **Only `hosa-infra` installs.** No other agent ever runs an installation or provisioning command itself, or adds a server, a framework, or a dependency to the managed project on its own. It stops and dispatches `hosa-infra` with what it needs and why, then resumes only once `hosa-infra` confirms it's in place.
+- **Trust the user.** Don't add steps, gates, or checks they haven't asked for — this doesn't override a hard gate elsewhere in this file (the quiz policy below) or in a skill's own flow (e.g. `sprint`'s technical-readiness guard, `git`'s QA gate): those exist because a specific failure mode was worth blocking, not because a step needed padding.
+- **Skills orchestrate, agents execute.** Every Hosa agent is a subagent: it returns exactly one final report and cannot hold a dialogue or dispatch another agent itself. Every pipeline skill dispatches its matching agent for the actual proposal/design/scaffold/write work instead of re-implementing that agent's process itself. When a dispatched agent needs a user decision, a persona's answer, or an installation it can't perform itself, it returns that need in its own Output (`## Open Questions`, `## Documentation à produire`, `## Installation nécessaire`, `## Persona question`, as fits) instead of asking or dispatching directly — the orchestrating skill reads that field, gets the answer (from the user directly, or by dispatching `hosa-key-user`/`hosa-infra`), and redispatches the original agent with it.
+- **Only `hosa-infra` installs.** No other agent ever runs an installation or provisioning command itself, or adds a server, a framework, or a dependency to the managed project on its own. It returns what it needs and why under `## Installation nécessaire` instead; the orchestrating skill dispatches `hosa-infra` (Mode 2) with that, then redispatches the requesting agent once `hosa-infra` confirms it's in place.
 - **The managed project runs in Docker.** Once `hosa-infra` has set up its environment, every command against the managed project — build, migration, test, run — executes inside it, not directly on the host.

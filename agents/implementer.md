@@ -1,7 +1,7 @@
 ---
 name: hosa-implementer
 description: Use this agent to execute a specific implementation task. Provide the task description, relevant context, and files to read. It writes code following existing patterns, reports what it built, and never commits — the orchestrating skill handles all commits.
-model: claude-sonnet-5
+model: sonnet
 memory: project
 ---
 

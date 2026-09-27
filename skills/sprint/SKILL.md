@@ -5,25 +5,21 @@ description: Use to compose a sprint from the Product Backlog — dispatches tic
 
 # Sprint
 
-Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line.
+Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line. This skill is the only one that talks to the user — the actual scoping, classification, and write is `hosa-sprint-planner`'s.
 
 ## Flow
 
 ```
-Lit kb/tickets/ pour les Ticket state: todo sans champ
-sprint déjà rempli
+Dispatch hosa-sprint-planner (Phase 1: scope, priority order,
+classify tickets prêts/écartés)
+        ↓ Open Questions (no capacity, empty backlog, no priority order) → relay to user, stop
+        ↓ Tickets prêts / Tickets écartés
+Présente le résultat à l'utilisateur — propose de combler les
+tickets écartés (stack/architecture/interface) ou de continuer
+sans eux ; demande le nom/objectif du sprint
         ↓
-Si aucun, propose de lancer backlog d'abord
-        ↓
-Reprend l'ordre de priorité tenu par hosa-product-owner
-(demande si pas explicite)
-        ↓
-Pour chaque ticket dans cet ordre, jusqu'à capacité :
-vérifie Note technique + Placement architecture (architecte) +
-Placement interface (UX/UI) ; si ligne de repli, propose de
-combler le manque plutôt que d'engager sans savoir
-        ↓
-Écrit kb/sprints/<slug>.md, state: planned
+Redispatch hosa-sprint-planner (Phase 2) avec le nom/objectif et
+les tickets confirmés → écrit le Sprint
         ↓
 Log kb/sprints/log.md et kb/tickets/log.md
 ```
@@ -34,51 +30,21 @@ Manual: `/sprint [capacité]`. Auto: immediately after `backlog`, or "planifie u
 
 ---
 
-## Step 1: Get the Capacity
+## Step 1: Dispatch to Scope and Classify
 
-If a capacity (ticket count) wasn't given with the trigger, ask the user for one — no complexity-estimation field exists on `Ticket` today, so there's no way to derive a default automatically. A capacity below 1 means there's nothing to plan — say so and ask for a real number rather than composing an empty sprint.
+Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`) with the capacity (ask the user for one first if not given with the trigger — capacity stays a ticket count even when tickets carry an `estimate`, a capacity below 1 means there's nothing to plan).
 
-## Step 2: Scope
+If it returns an Open Question (empty backlog, no priority order) — relay it to the user, propose `backlog` if the backlog itself looks empty, and only redispatch once resolved.
 
-Read `kb/tickets/` for `Ticket`s with `state: todo` and no `sprint` field already filled — a re-run of `sprint` only dispatches gaps, it never re-dispatches a ticket that already carries a `sprint` field. If there are none, say so. If `kb/tickets/` has no `todo` tickets at all, propose running `backlog` first rather than producing an empty sprint.
+## Step 2: Review with the User
 
-## Step 3: Get the Priority Order
+Present `## Tickets prêts` and `## Tickets écartés`. For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise confirm which of `## Tickets prêts` to actually include (the user may drop one to wait for a fuller backlog), and ask for the sprint's name and objective/period if not already given — never invent them.
 
-Read the priority order `hosa-product-owner` currently holds for these tickets (the live state of the backlog, not a stored snapshot). If it isn't explicit — no prior backlog session, no stated order — ask the user for the order rather than inventing one.
+If `## Tickets prêts` is empty and the user has no gap to fill, stop here — report the tickets écartés and their Open Questions, don't write a `Sprint`.
 
-## Step 4: Dispatch Up to Capacity (technical-readiness guard)
+## Step 3: Dispatch to Write
 
-Walk the tickets in that order, up to the capacity from Step 1:
-
-- Read the ticket's `## Note technique (senior dev)`, `## Placement architecture (architecte)`, and `## Placement interface (UX/UI)` sections.
-- If any of the three sections is missing entirely, or still holds `backlog`'s fallback line ("Stack pas encore choisie — faisabilité non évaluée.", "Architecture pas encore scaffoldée — placement non déterminé.", or "Interface pas encore scaffoldée — placement non déterminé."), treat it the same way: say so and propose filling the gap now — running `stack`/`architecture`/`interface`, or getting a real opinion from the senior-dev/architect/UX-UI-designer roles — rather than dispatching the ticket without knowing whether it's actually buildable. A ticket written directly by `hosa-product-owner` without going through `backlog` has no such sections at all — that's the same gap, not a pass.
-- If the user fills the gap, re-read the updated note and re-evaluate this ticket against it. If the gap stays unfilled, this ticket does not enter this sprint — it stays in the backlog, and capacity is not spent on it.
-- Otherwise (all three notes are real), dispatch it: write `sprint: <slug>` into the ticket's frontmatter, add it to the sprint's ticket list.
-- If capacity is reached before the ticket list runs out, stop — the rest stay in the backlog for a future sprint. If fewer eligible tickets exist than the requested capacity, dispatch every eligible one and say so — not an error.
-
-## Step 5: Write the Sprint
-
-If no ticket was dispatched in Step 4 (every eligible ticket hit the guard and the gap stayed unfilled), don't write a `Sprint` at all — report every ticket under "Tickets écartés" and put what's needed to unblock them under "Open Questions", then stop. Otherwise, ask the user for the sprint's name and objective/period if not already given — never invent them — then check `kb/sprints/` for a file with that slug; if one already exists, ask for a different name rather than overwriting it (an existing `Sprint`'s tickets still point back to it).
-
-Write to `kb/sprints/<slug>.md`:
-
-```markdown
----
-type: Sprint
-title: <nom du sprint>
-description: <objectif ou période>
-tags: []
-state: planned
-generated: { by: hosa-sprint-planner/1.0, at: <ISO8601> }
----
-## Tickets
-- [<titre>](../tickets/<slug>.md)
-- [<titre>](../tickets/<slug>.md)
-```
-
-## Step 6: Log
-
-Log the new `Sprint` to `kb/sprints/log.md` (create if missing), and each dispatched ticket's frontmatter change to `kb/tickets/log.md` — chronological, most recent date first, per OKF §9.
+Redispatch `hosa-sprint-planner` (Phase 2) with the sprint's name/objective and the confirmed ticket list. If it returns an Open Question (slug already taken) — ask the user for a different name and redispatch.
 
 ## No Commits
 

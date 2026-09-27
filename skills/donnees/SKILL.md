@@ -5,24 +5,21 @@ description: Use to annotate the origin (générée/fournie/saisie) of each donn
 
 # Données
 
-Qualifies where each piece of data in the cahier des charges actually comes from — a prerequisite before any real data structure can be derived from it.
+Qualifies where each piece of data in the cahier des charges actually comes from — a prerequisite before any real data structure can be derived from it. This skill is the only one that talks to the user or dispatches other agents — the actual scoping and annotation is `hosa-data-engineer`'s.
 
 ## Flow
 
 ```
-Pour chaque Exigence stable de kb/cdc/ (ou celles validées
-par contestation dans cette session, si enchaîné depuis
-contestation/stack) :
+Dispatch hosa-data-engineer (Responsibility 1, Phase 1: scope +
+surface ambiguous items)
+        ↓ Open Questions (no stable Exigence) → relay to user, stop
+        ↓ Personas à interviewer / Open Questions (ambiguous items)
+Dispatch hosa-key-user (process-interview) pour chaque item
+persona-dépendant ; demande à l'utilisateur pour chaque item
+purement technique
         ↓
-Pour chaque item de Données en entrée/sortie déjà annoté : passe
-        ↓
-Pour chaque item non annoté ou ambigu :
-  dépend d'un persona ? → hosa-key-user (mode interview processus)
-  purement technique ?  → demande à l'utilisateur
-        ↓
-Écrit l'annotation en place, préserve le reste du contenu
-        ↓
-Log kb/cdc/log.md
+Redispatch hosa-data-engineer (Phase 2) avec toutes les
+réponses → écrit les annotations
         ↓
 Propose d'enchaîner sur `schema-app`
 ```
@@ -33,32 +30,21 @@ Manual: `/donnees`. Auto: immediately after `infra`, or "précise les données d
 
 ---
 
-## Step 1: Scope
+## Step 1: Dispatch to Scope and Surface
 
-If `contestation` validated one or more `Exigence`s to `stable` earlier in this same session (whether or not `stack` ran in between), work on those just-validated `Exigence`s. Otherwise, read every `stable` `Exigence` in `kb/cdc/`. Skip anything still `draft` — data qualification works from a settled cahier des charges, not one still being contested. If there are no `stable` Exigences at all, say so and stop.
+Dispatch `hosa-data-engineer` (Responsibility 1 Phase 1, `agents/data-engineer.md`). If `contestation` validated one or more `Exigence`s to `stable` earlier in this same session (whether or not `stack` ran in between), tell it to scope to those; otherwise it scopes to every `stable` `Exigence` in `kb/cdc/`.
 
-## Step 2: Per Item — Qualify Origin
+If it returns an Open Question (no `stable` Exigence at all) — relay it to the user and stop.
 
-For each item under `Données en entrée`/`Données en sortie`:
-- Already annotated (`— origine : ...`) → skip.
-- Origin depends on a persona's point of view (who enters it, who hands it off) → dispatch `hosa-key-user` in process-interview mode (`agents/key-user.md`) with the exigence's process and the specific item: does this persona enter it (saisie), receive it from elsewhere (fournie), or does the process generate it (générée)?
-- Purely technical, no persona involved (e.g. a system timestamp, a computed total) → ask the user directly, never force a `hosa-key-user` dispatch for data no persona owns.
+## Step 2: Resolve Ambiguous Items
 
-One item at a time — don't batch multiple ambiguous items into a single question.
+For each item under `## Personas à interviewer` — dispatch `hosa-key-user` in process-interview mode (`agents/key-user.md`) with the exigence's process and the specific item: does this persona enter it (saisie), receive it from elsewhere (fournie), or does the process generate it (générée)? One item at a time — don't batch multiple ambiguous items into a single dispatch.
 
-## Step 3: Write the Annotation
+For each item under `## Open Questions` (purely technical, no persona involved) — ask the user directly, one item at a time.
 
-In place, preserving every other line of the `Exigence`:
+## Step 3: Dispatch to Record
 
-```markdown
-- <donnée> — origine : générée | fournie | saisie (par <persona ou système>)
-```
-
-`générée` and `fournie` name the system/process or the external source in the parenthesis; `saisie` names the persona.
-
-## Step 4: Log
-
-Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date.
+Redispatch `hosa-data-engineer` (Responsibility 1 Phase 2) with every answer collected in Step 2. It writes each annotation in place and logs to `kb/cdc/log.md`.
 
 ## No Commits
 

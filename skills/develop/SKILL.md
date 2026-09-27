@@ -30,7 +30,7 @@ git add (fichiers du ticket) + commit unique, identité utilisateur
         ↓
 Log kb/tickets/log.md
         ↓
-Suite : propose hosa-product-owner (validation) et/ou qa-plan
+Suite : propose qa-plan
 ```
 
 ## Trigger
@@ -92,5 +92,5 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 [Ambiguïté ou déviation structurelle, et ce qui est proposé pour la lever]
 
 ## Suite
-Je lance la validation du ticket par hosa-product-owner (state: done) et/ou qa-plan maintenant ?
+Je prépare les tests du ticket maintenant ? (skill `qa-plan`)
 ```

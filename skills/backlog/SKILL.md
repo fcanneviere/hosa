@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Use to turn every stable cahier des charges Exigence without a ticket yet into a Ticket enriched with a user story (PO), a technical feasibility note (senior dev), an architecture placement note (architect), and an interface placement note (UX/UI designer). Eighth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: Use to turn every stable cahier des charges Exigence without a ticket yet into a Ticket enriched with a user story and Given/When/Then acceptance criteria (PO), a technical feasibility note (senior dev), an architecture placement note (architect), and an interface placement note (UX/UI designer). Eighth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
 ---
 
 # Backlog
@@ -12,7 +12,8 @@ Turns "what the application must do" (the stable cahier des charges) into Produc
 ```
 Pour chaque Exigence stable de kb/cdc/ sans Ticket lié :
         ↓
-Écrit la story (rôle PO) dans un nouveau Ticket, state: todo
+Écrit la story et les critères d'acceptation Given/When/
+Then (rôle PO) dans un nouveau Ticket, state: todo
         ↓
 Ajoute une note technique (rôle senior dev), ou une ligne
 "pas encore évalué" si aucune Stack Decision n'existe
@@ -60,6 +61,15 @@ Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
 ```
 
 If the `Exigence` names no clear persona, ask the user which persona it serves before writing the story — same "no guessing" discipline as every other Hosa skill.
+
+Then append acceptance criteria derived from the `Exigence`'s own text — at least one scenario, more if the `Exigence` describes distinct cases (happy path, error case, edge case):
+
+```markdown
+## Critères d'acceptation
+- Étant donné [contexte], quand [action], alors [résultat attendu]
+```
+
+If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
 
 ## Step 3: Add the Technical Note (senior dev role)
 
@@ -115,9 +125,13 @@ Interface pas encore scaffoldée — placement non déterminé.
 
 Never block ticket creation on a missing interface doc.
 
-## Step 6: Log
+## Step 6: Priority and Estimate
 
-Log each ticket created to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9.
+Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter.
+
+## Step 7: Log
+
+Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9.
 
 ## No Commits
 

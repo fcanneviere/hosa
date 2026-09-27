@@ -5,7 +5,7 @@ description: Use when the user wants business/functional acceptance testing ("re
 
 # Recette
 
-Runs a business acceptance pass on a feature/ticket using `hosa-key-user`, which embodies one persona from `hosa/kb/personnas/`. Distinct from `test`: that skill checks the code works; this skill checks it serves the person it's for.
+Runs a business acceptance pass on a feature/ticket using `hosa-key-user`, which embodies one persona from `.hosa/kb/personnas/`. Distinct from `test`: that skill checks the code works; this skill checks it serves the person it's for.
 
 ## Flow
 
@@ -48,10 +48,10 @@ If the agent enriched the persona, show the diff to the user and confirm before 
 ## Step 3: Write the Test Plan
 
 ```
-mkdir -p hosa/kb/test/
+mkdir -p .hosa/kb/test/
 ```
 
-One file per recette session, `hosa/kb/test/<slug-target>-<slug-persona>.md`:
+One file per recette session, `.hosa/kb/test/<slug-target>-<slug-persona>.md`:
 
 ```markdown
 ---
@@ -75,9 +75,10 @@ Append to `kb/test/log.md` (create if missing, OKF §9 format). If the persona w
 
 Report the agent's verdict, scénarios, pain points, and quick wins in plain language.
 
-- **Échoué scenarios that look like implementation bugs** → suggest `debug` with the specific gap.
-- **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → suggest routing back to `hosa-product-owner` to rework the backlog item.
-- **Accepté** → nothing further; note any quick wins as candidates for new tickets, don't create them unasked.
+- **Échoué scenarios that look like implementation bugs** → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the recette `Test Plan` and the target) with the exact gap, then suggest `debug` on it.
+- **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → dispatch `hosa-product-owner` to create a `Ticket` capturing what's missing, then suggest routing it back for rework.
+- **Quick wins surfaced by the persona** (small, clearly out of this recette's scope) → dispatch `hosa-product-owner` to create one `Ticket` per quick win, `state: todo`, tagged so they're easy to spot in the backlog later.
+- **Accepté with no quick win** → nothing further.
 
 ## No Commits
 

@@ -50,13 +50,15 @@ Before dispatching agents, form your own ranked list of the most likely root cau
 
 ---
 
-## Step 3: Dispatch
+## Step 3: Dispatch Phase 1 (Investigate and Propose)
 
-**Single-area problem** (bug clearly lives in one layer or file): dispatch one `hosa-debugger` agent.
+**Single-area problem** (bug clearly lives in one layer or file): dispatch one `hosa-debugger` agent, Phase 1.
 
-**Multi-area problem** (bug could originate in multiple layers — e.g., frontend and backend, or two independent services): use `dispatch` to fan out multiple `hosa-debugger` agents in parallel, each investigating one hypothesis or area.
+**Multi-area problem** (bug could originate in multiple layers — e.g., frontend and backend, or two independent services): use `dispatch` to fan out multiple `hosa-debugger` agents in parallel, each investigating one hypothesis or area, Phase 1.
 
-Provide each agent with: the symptom, reproduction steps, your hypotheses, and which area they should investigate.
+Provide each agent with: the symptom, reproduction steps, your hypotheses, and which area they should investigate. Each returns a root cause and a proposed fix — never applies anything at this stage.
+
+**Secondary issue found outside scope** (the investigation surfaces a real bug or gap unrelated to the reported symptom): don't fold it into this fix and don't just mention it in passing — if `.hosa/kb/` exists for this project, dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`) for it so it's tracked instead of lost; otherwise note it plainly in the final report for the user to act on.
 
 **Ambiguous root cause (two equally likely causes, no distinguishing evidence from static analysis):** present both hypotheses to the user with your evidence for each:
 > "I've narrowed it down to two equally likely root causes: [A] because [evidence], and [B] because [evidence]. Can you tell me more about [specific question that would distinguish them]?"
@@ -77,16 +79,15 @@ Wait for the user to confirm or redirect. Do not apply the fix without confirmat
 
 ---
 
-## Step 5: Fix and Verify
+## Step 5: Dispatch Phase 2 (Apply and Verify)
 
-After user confirms the fix approach:
-1. **Prove it first.** If the project has a test framework, write a test that reproduces the symptom and confirm it fails for the diagnosed reason — a regression test that will guard against this bug coming back. No test framework in place → say so and skip to step 2.
-2. Apply the fix
-3. Confirm the regression test from step 1 now passes, and run the project's existing test suite
-4. Reproduce the original symptom manually and confirm it no longer occurs
-5. All of the above must succeed before committing
+After the user confirms the fix approach, redispatch the same `hosa-debugger` agent for Phase 2 with that confirmation. It:
+1. **Proves it first.** If the project has a test framework, writes a test that reproduces the symptom and confirms it fails for the diagnosed reason. No test framework in place → says so and skips straight to the fix.
+2. Applies the fix
+3. Confirms the regression test now passes, and runs the project's existing test suite
+4. Reproduces the original symptom manually and confirms it no longer occurs
 
-If any step fails: report what's still broken and return to Step 2 (Hypothesize).
+If it reports any of the above failed: report what's still broken and return to Step 2 (Hypothesize) — don't proceed to commit.
 
 ---
 

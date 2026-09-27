@@ -1,6 +1,6 @@
 ---
 name: git
-description: Use to open a dedicated branch/worktree for a sprint when it starts, or to merge it locally back into the managed project once every ticket has a passing QA record. Dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `qa` (finish).
+description: Use to open a dedicated branch/worktree for a sprint when it starts, or to merge it locally back into the managed project once every ticket has a passing QA record. Dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `validation` (finish).
 ---
 
 # Git
@@ -33,6 +33,11 @@ From the request, determine whether this is a start (Mode 1), a finish (Mode 2),
 ## Step 2: Dispatch `hosa-git`
 
 Dispatch `hosa-git` in the determined mode — with the sprint slug for Mode 1/2, or with the request as given for Mode 3. It reads `kb/sprints/<slug>.md` and the relevant KB when a sprint is involved, performs the worktree creation or QA-gated merge (or handles the ad hoc request directly), and reports back.
+
+If it returns:
+- **`## Installation nécessaire`** — dispatch `hosa-infra` (Mode 2) with it, then redispatch `hosa-git` once confirmed.
+- **`## Open Questions`** with a mode ambiguity — ask the user and redispatch.
+- **`## Open Questions`** with a ticket `Accepté avec réserves` — present the reservations and ask the user (or `hosa-product-owner`) to explicitly accept the risk; only redispatch `hosa-git` to proceed with the merge once they do.
 
 ## Commits
 

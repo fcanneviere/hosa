@@ -38,11 +38,11 @@ The PO always does its own quick pass over `kb/cdc/` first, looking for any need
 
 ## Step 2: `hosa-challenger` Independent Audit
 
-Dispatch `hosa-challenger` with the full content of `hosa/kb/cdc/` and `hosa/kb/personnas/`. Take its verdict and findings as-is — don't pre-filter them before showing the user.
+Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/`, `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists. Take its verdict and findings as-is — don't pre-filter them before showing the user.
 
 ## Step 3: Route Anomalies
 
-Combine anything from Step 1 (needs that didn't hold up) and Step 2 (challenger's findings). For each: route to `redaction` (needs rewriting with information already available) or `interview` (genuinely missing information). After fixes, re-run `relecture` then `contestation` again — repeat until both passes are clean.
+Combine anything from Step 1 (needs that didn't hold up) and Step 2 (challenger's findings). For each: route to `redaction` (needs rewriting with information already available) or `interview` (genuinely missing information) — except an "exigence hors objectifs" finding, which routes to the user directly: confirm whether it's genuinely out of scope (drop it, or move it to `## Non-objectifs`) or whether an objective is simply missing from `kb/project/identity.md` (add it via `hosa`, then re-check clean). After fixes, re-run `relecture` then `contestation` again — repeat until both passes are clean.
 
 If a second full loop still finds anomalies, stop looping silently and tell the user directly: report what's still failing and ask whether to keep iterating or scope the affected exigence(s) down.
 
@@ -69,7 +69,7 @@ This skill doesn't commit. Report what changed (including any `status`/`verified
 [Its full report]
 
 ## Anomalies à router
-- [Exigence] → [redaction / interview] — [pourquoi]
+- [Exigence] → [redaction / interview / utilisateur (hors objectifs)] — [pourquoi]
 - [If none: "Aucune"]
 
 ## Verdict

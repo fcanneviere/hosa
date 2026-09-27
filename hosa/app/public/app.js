@@ -1,5 +1,15 @@
 const state = { view: 'home', allConcepts: [] };
 
+// Views that reuse the KB explorer, pre-filtered to one concept type.
+const KB_TYPE_VIEWS = {
+  personas: 'Persona',
+  sprints: 'Sprint',
+  qa: 'Test Plan',
+  qualite: 'Audit Qualité',
+};
+
+const TICKET_STATE_LABELS = { todo: 'À faire', doing: 'En cours', done: 'Fait', blocked: 'Bloqué' };
+
 const TRUST_LABELS = {
   'human-reviewed': 'vérifié (humain)',
   'machine-confirmed': 'vérifié (machine)',
@@ -9,6 +19,16 @@ const TRUST_LABELS = {
 async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Request failed: ${url}`);
+  return res.json();
+}
+
+async function patchConcept(path, frontmatter) {
+  const res = await fetch(`/api/concepts/${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ frontmatter }),
+  });
+  if (!res.ok) throw new Error(`Request failed: ${path}`);
   return res.json();
 }
 
@@ -53,7 +73,27 @@ function renderTickets(grouped) {
     for (const ticket of grouped[columnState] || []) {
       const card = document.createElement('div');
       card.className = 'card';
-      card.textContent = ticket.frontmatter.title || ticket.path;
+      const title = document.createElement('span');
+      title.textContent = ticket.frontmatter.title || ticket.path;
+      const select = document.createElement('select');
+      select.className = 'card-state';
+      for (const [value, label] of Object.entries(TICKET_STATE_LABELS)) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.appendChild(option);
+      }
+      select.value = columnState;
+      select.addEventListener('click', (e) => e.stopPropagation());
+      select.addEventListener('change', async () => {
+        try {
+          await patchConcept(ticket.path, { state: select.value });
+          await loadTickets();
+        } catch (err) {
+          showError(`Erreur de mise à jour : ${err.message}`);
+        }
+      });
+      card.append(title, select);
       column.appendChild(card);
     }
   }
@@ -191,7 +231,7 @@ function populateTagFilter(concepts) {
 
 function switchView(view) {
   state.view = view;
-  const section = view === 'personas' ? 'kb' : view;
+  const section = KB_TYPE_VIEWS[view] ? 'kb' : view;
   document.getElementById('view-home').hidden = section !== 'home';
   document.getElementById('view-tickets').hidden = section !== 'tickets';
   document.getElementById('view-kb').hidden = section !== 'kb';
@@ -216,8 +256,8 @@ async function refresh() {
       const concepts = await loadKb();
       populateTypeFilter(concepts);
       populateTagFilter(concepts);
-      if (state.view === 'personas') {
-        document.getElementById('type-filter').value = 'Persona';
+      if (KB_TYPE_VIEWS[state.view]) {
+        document.getElementById('type-filter').value = KB_TYPE_VIEWS[state.view];
       }
       renderKbView();
     }

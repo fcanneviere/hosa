@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { listConcepts, getConcept, listTicketsByState } = require('../src/okf');
+const { listConcepts, getConcept, listTicketsByState, updateConcept } = require('../src/okf');
 
 function makeFixtureKb() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'okf-test-'));
@@ -142,4 +142,41 @@ test('getConcept computes trustTier: unverified when verified is absent', () => 
   const root = makeFixtureKb();
   const result = getConcept(root, 'trust-cases/unverified.md');
   assert.equal(result.trustTier, 'unverified');
+});
+
+test('updateConcept merges a frontmatter patch and preserves the body', () => {
+  const root = makeFixtureKb();
+  const result = updateConcept(root, 'tickets/ticket-todo.md', { state: 'doing' });
+  assert.equal(result.frontmatter.state, 'doing');
+  assert.equal(result.frontmatter.title, 'A faire');
+  assert.match(result.body, /Corps\./);
+  const reread = getConcept(root, 'tickets/ticket-todo.md');
+  assert.equal(reread.frontmatter.state, 'doing');
+});
+
+test('updateConcept refuses to change type', () => {
+  const root = makeFixtureKb();
+  const result = updateConcept(root, 'tickets/ticket-todo.md', { type: 'Exigence', state: 'done' });
+  assert.equal(result.frontmatter.type, 'Ticket');
+  assert.equal(result.frontmatter.state, 'done');
+});
+
+test('updateConcept refuses to write outside the kb root', () => {
+  const root = makeFixtureKb();
+  const result = updateConcept(root, '../../../etc/passwd', { state: 'done' });
+  assert.equal(result, null);
+});
+
+test('updateConcept returns null for a nonexistent concept', () => {
+  const root = makeFixtureKb();
+  const result = updateConcept(root, 'tickets/does-not-exist.md', { state: 'done' });
+  assert.equal(result, null);
+});
+
+test('updateConcept logs the change to the bundle log.md', () => {
+  const root = makeFixtureKb();
+  updateConcept(root, 'tickets/ticket-todo.md', { state: 'doing' });
+  const log = fs.readFileSync(path.join(root, 'tickets', 'log.md'), 'utf8');
+  assert.match(log, /ticket-todo/);
+  assert.match(log, /state/);
 });

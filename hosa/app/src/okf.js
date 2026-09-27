@@ -7,6 +7,18 @@ const sanitizeHtml = require('sanitize-html');
 const RESERVED_FILENAMES = new Set(['index.md', 'log.md']);
 const TICKET_STATES = new Set(['todo', 'doing', 'done', 'blocked']);
 
+function resolveKbRoot(startDir) {
+  let dir = path.resolve(startDir || process.cwd());
+  while (true) {
+    const candidate = path.join(dir, '.hosa', 'kb');
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.join(path.resolve(startDir || process.cwd()), '.hosa', 'kb');
+}
+
 function walkConcepts(kbRoot) {
   const results = [];
 
@@ -72,6 +84,61 @@ function getConcept(kbRoot, relPath) {
   };
 }
 
+function appendLogEntry(logDir, bundleLabel, entryLine) {
+  const logPath = path.join(logDir, 'log.md');
+  const date = new Date().toISOString().slice(0, 10);
+  const header = `# Log — ${bundleLabel}\n`;
+  let body = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : header;
+  if (!body.startsWith('#')) body = header + body;
+  const dateHeading = `## ${date}`;
+  if (body.includes(dateHeading)) {
+    body = body.replace(dateHeading, `${dateHeading}\n- ${entryLine}`);
+  } else {
+    const firstLineEnd = body.indexOf('\n') + 1;
+    body = `${body.slice(0, firstLineEnd)}\n${dateHeading}\n- ${entryLine}\n${body.slice(firstLineEnd)}`;
+  }
+  fs.writeFileSync(logPath, body);
+}
+
+function updateConcept(kbRoot, relPath, patch) {
+  const resolvedRoot = path.resolve(kbRoot);
+  const resolvedTarget = path.resolve(kbRoot, relPath);
+  if (resolvedTarget !== resolvedRoot && !resolvedTarget.startsWith(resolvedRoot + path.sep)) {
+    return null; // path traversal outside kb root
+  }
+  if (!fs.existsSync(resolvedTarget) || !fs.statSync(resolvedTarget).isFile()) {
+    return null;
+  }
+  const raw = fs.readFileSync(resolvedTarget, 'utf8');
+  let parsed;
+  try {
+    parsed = matter(raw, {});
+  } catch (err) {
+    return null; // malformed YAML frontmatter
+  }
+  const { type, ...safePatch } = patch; // `type` is immutable — a patch never changes what a concept is
+  const merged = { ...parsed.data, ...safePatch };
+  fs.writeFileSync(resolvedTarget, matter.stringify(parsed.content, merged));
+
+  const changedFields = Object.keys(safePatch).join(', ') || 'aucun champ';
+  const slug = path.basename(relPath, '.md');
+  const bundleRel = path.relative(resolvedRoot, path.dirname(resolvedTarget)).split(path.sep).join('/');
+  appendLogEntry(
+    path.dirname(resolvedTarget),
+    bundleRel ? `kb/${bundleRel}` : 'kb',
+    `process:hosa-app a modifié \`${slug}\` (${changedFields})`
+  );
+
+  const normalizedPath = path.relative(resolvedRoot, resolvedTarget).split(path.sep).join('/');
+  return {
+    path: normalizedPath,
+    frontmatter: merged,
+    body: parsed.content,
+    bodyHtml: sanitizeHtml(marked.parse(parsed.content)),
+    trustTier: trustTier(merged.verified),
+  };
+}
+
 function trustTier(verified) {
   if (!verified || !verified.by) return 'unverified';
   return verified.by.startsWith('human:') ? 'human-reviewed' : 'machine-confirmed';
@@ -87,4 +154,4 @@ function listTicketsByState(kbRoot) {
   return grouped;
 }
 
-module.exports = { walkConcepts, listConcepts, getConcept, listTicketsByState };
+module.exports = { resolveKbRoot, walkConcepts, listConcepts, getConcept, listTicketsByState, updateConcept, TICKET_STATES };

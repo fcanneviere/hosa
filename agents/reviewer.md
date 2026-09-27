@@ -1,7 +1,8 @@
 ---
 name: hosa-reviewer
 description: Use this agent to check whether the implementation satisfies every requirement in the spec. Returns PASS, PASS-WITH-NOTES, or FAIL with a precise gap list. Used by the review skill to drive the react loop until all requirements are met.
-model: claude-opus-4-8
+model: opus
+tools: Read, Grep, Glob
 memory: project
 ---
 

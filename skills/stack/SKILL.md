@@ -5,31 +5,24 @@ description: Use to propose and record the technical stack for the project Hosa 
 
 # Stack
 
-Turns "what the application must do" (the stable cahier des charges) into a chosen technical stack, recorded before any data structure or architecture work begins.
+Turns "what the application must do" (the stable cahier des charges) into a chosen technical stack, recorded before any data structure or architecture work begins. This skill is the only one that talks to the user — the actual analysis, proposal, and recording is `hosa-senior-dev`'s.
 
 ## Flow
 
 ```
-Détermine le projet cible : kb/infra/ existant, sinon
-demande le chemin et l'enregistre
+Dispatch hosa-senior-dev (Stack Process, Steps 1-4: find project,
+derive needs, check existing decisions, propose options)
+        ↓ Open Questions (no stable Exigence, no project path) → relay to user, stop
+        ↓ options returned
+Présente les options à l'utilisateur → il choisit
         ↓
-Lit les Exigence stable de kb/cdc/ → dérive les besoins
-techniques pertinents
+Redispatch hosa-senior-dev avec le choix → il écrit la
+Stack Decision, retourne "Documentation à produire"
         ↓
-Vérifie kb/stack/ (décisions déjà enregistrées) et le code
-existant du projet cible — une catégorie déjà fixée n'est pas
-reproposée
+Dispatch hosa-documentation (Mode 1) avec ce que hosa-senior-dev
+rapporte
         ↓
-Propose 2-3 stacks (langage, framework, BDD, hébergement)
-avec compromis, uniquement pour les catégories encore ouvertes
-        ↓
-Utilisateur choisit
-        ↓
-Écrit chaque décision comme Stack Decision dans kb/stack/
-        ↓
-Dispatch hosa-documentation (Mode 1) → ADR dans le projet géré
-        ↓
-Propose d'enchaîner sur `donnees`
+Propose d'enchaîner sur `infra`
 ```
 
 ## Trigger
@@ -38,71 +31,23 @@ Manual: `/stack`. Auto: immediately after a clean `contestation` sign-off, or "c
 
 ---
 
-## Step 1: Find the Managed Project
+## Step 1: Dispatch for Options
 
-Read `kb/infra/` for an existing `Infra` entry giving the project's root path. If none exists, ask the user for it and write one:
+Dispatch `hosa-senior-dev` (Stack Process, `agents/senior-dev.md`) to find the managed project, derive technical needs from the stable cahier des charges, check `kb/stack/` and the managed project's existing code for decisions already fixed, and propose 2-3 options per still-open category.
 
-```
-mkdir -p hosa/kb/infra/
-```
+If it returns an Open Question (no `stable` `Exigence` yet, no managed-project path) — relay it to the user, get the answer, and only redispatch once you have it. Never guess a path or proceed against a `draft` CDC yourself.
 
-Write to `hosa/kb/infra/projet-gere.md`:
+## Step 2: User Picks
 
-```markdown
----
-type: Infra
-title: Projet géré — chemin racine
-description: Racine du projet applicatif géré par Hosa
-tags: []
-status: stable
-generated: { by: human:<user>, at: <ISO8601> }
----
-## Chemin racine
-<chemin>
-```
+Present the options and trade-offs `hosa-senior-dev` returned. Wait for the user's choice per category.
 
-Log to `kb/infra/log.md` (create if missing) — OKF §9. Never accept `hosa/app` or `hosa/kb` as the path — those are Hosa's own tooling, out of scope; if the user gives one of them, say so and ask again.
+## Step 3: Record the Decision
 
-## Step 2: Derive Technical Needs
+Redispatch `hosa-senior-dev` with the user's choice for each category. It writes the `Stack Decision`(s) to `kb/stack/` and returns a `## Documentation à produire` field (category, choice, justification, options presented and rejected).
 
-Read every `stable` `Exigence` in `kb/cdc/`. If there are none, say so and stop — a stack choice needs a settled cahier des charges. Derive the needs that bear on a stack choice: data volume and shape, external integrations, deployment constraints, anything else named in the CDC.
+## Step 4: Dispatch Documentation
 
-## Step 3: Check for Existing Decisions
-
-Before proposing anything, read `kb/stack/` for `Stack Decision`s already recorded for this project, and the managed project's existing code (if any) for a stack already in use. For each category (language/framework, database, hosting):
-- Already fixed by existing code, or already recorded as a `Stack Decision` → don't re-propose it. State what's already fixed and why, and skip straight to confirming it still holds — a rerun of `stack` isn't a license to pick something new for a category the project already committed to.
-- If the existing code and an existing `Stack Decision` disagree, say so and ask the user which one is authoritative before continuing — don't silently pick one.
-- Genuinely undecided → propose for it in Step 4.
-
-## Step 4: Propose Options
-
-Propose 2-3 stack options — language, framework, database, hosting where relevant, but only for categories Step 3 found undecided — each with its trade-offs. Recommend one and say why.
-
-## Step 5: Record the Decision
-
-Once the user picks, write each newly-decided category as a `Stack Decision` in `kb/stack/` — one file per category, e.g. `hosa/kb/stack/langage-framework-projet-gere.md`, `hosa/kb/stack/base-de-donnees-projet-gere.md`, `hosa/kb/stack/hebergement-projet-gere.md`. Never overwrite a category Step 3 found already fixed — a database migration or scaffolded code may already depend on it.
-
-```markdown
----
-type: Stack Decision
-title: <catégorie> — <projet>
-description: <choix technique et sa catégorie>
-tags: []
-status: stable
-generated: { by: human:<user>, at: <ISO8601> }
----
-## Décision
-<choix>
-
-## Justification
-<pourquoi>
-```
-
-Log to `kb/stack/log.md` (create if missing) — OKF §9.
-
-## Step 6: ADR
-
-For each newly-recorded `Stack Decision`, dispatch `hosa-documentation` (Mode 1) with the category, the choice, the justification, and the options presented in Step 4 (including the ones not chosen) — it writes the matching ADR into the managed project. Wait for its confirmation before reporting the decision as fully recorded.
+Dispatch `hosa-documentation` (Mode 1) with what `hosa-senior-dev` returned under `## Documentation à produire` — it writes the matching ADR into the managed project. Wait for its confirmation before reporting the decision as fully recorded.
 
 ## No Commits
 
@@ -112,11 +57,14 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ```
 ## Stack proposée
-[Options présentées avec compromis]
+[Options présentées avec compromis, depuis hosa-senior-dev]
 
 ## Stack retenue
 - `kb/stack/<slug>.md` — [décision]
 - ADR : `<path docs/decisions/ADR-...>`
+
+## Open Questions
+[Si rien : "None"]
 
 ## Suite
 Je lance `infra` maintenant ?

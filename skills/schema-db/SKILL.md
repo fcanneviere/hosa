@@ -5,26 +5,16 @@ description: Use to write database migrations/DDL for the data entities derived 
 
 # Schema DB
 
-Turns the application-side data structures into real database schema — migrations or DDL, in whatever style the managed project already uses.
+Turns the application-side data structures into real database schema — migrations or DDL, in whatever style the managed project already uses. This skill is the only one that talks to the user — the actual derivation and write is `hosa-data-engineer`'s.
 
 ## Flow
 
 ```
-Lit la Stack Decision base de données (écrite par `stack`,
-ou demandée ici en fallback si absente)
-        ↓
-Détermine le projet cible : kb/infra/ existant, sinon
-demande le chemin et l'enregistre
-        ↓
-Reprend les entités de schema-app (ou les redérive si besoin)
-        ↓
-Lit les conventions de migration déjà en place dans le
-projet cible
-        ↓
-Écrit les fichiers de migration/DDL dans le style déjà en place
-        ↓
-Met à jour l'entrée Infra si le chemin des migrations n'y
-figure pas encore
+Dispatch hosa-data-engineer (Responsibility 3)
+        ↓ Open Question (no Stack Decision, no project path,
+        ↓ unannotated data) → relay to user, stop
+        ↓ migrations écrites
+Met à jour l'entrée Infra avec le chemin des migrations
         ↓
 Propose d'enchaîner sur `architecture`
 ```
@@ -35,53 +25,18 @@ Manual: `/schema-db`. Auto: immediately after `schema-app`, or "génère la stru
 
 ---
 
-## Step 1: Determine the Database Engine
+## Step 1: Dispatch for the Migrations
 
-Read `kb/stack/` for the `Stack Decision` covering the managed project's database — normally already written by the `stack` skill before this pipeline reaches `schema-db`. If none exists (this skill invoked standalone, without `stack` having run), fall back to asking the user and writing one:
+Dispatch `hosa-data-engineer` (Responsibility 3, `agents/data-engineer.md`) to determine the database engine, find the managed project, reuse or re-derive the entities, read existing migration conventions, and write the migrations/DDL.
 
-```
-mkdir -p hosa/kb/stack/
-```
+If it returns an Open Question:
+- **No `Stack Decision` for the database** — ask the user which engine to use, redispatch with the answer (the agent records the `Stack Decision` itself once it has it).
+- **No `Infra` entry** — ask the user for the managed project's root path, redispatch with the answer (the agent writes the `Infra` entry itself once it has it).
+- **An item still missing an origin annotation** — relay it and propose running `donnees` first; don't guess an origin yourself.
 
-Write to `hosa/kb/stack/base-de-donnees-projet-gere.md`:
+## Step 2: Update the `Infra` Entry
 
-```markdown
----
-type: Stack Decision
-title: Base de données — <projet>
-description: Choix du moteur de base de données pour le projet géré
-tags: []
-status: stable
-generated: { by: human:<user>, at: <ISO8601> }
----
-## Décision
-<moteur choisi>
-
-## Justification
-<pourquoi>
-```
-
-Log to `kb/stack/log.md` (create if missing) — OKF §9.
-
-## Step 2: Find the Managed Project
-
-Same as `schema-app` Step 1: read `kb/infra/` for the `Infra` entry giving the project's root path. If none exists, ask the user for it and write one there. Never accept `hosa/app` or `hosa/kb` as the path — those are Hosa's own tooling, out of scope; if the user gives one of them, say so and ask again.
-
-## Step 3: Get the Entities
-
-If `schema-app` just ran in this session, reuse its entities. Otherwise, re-derive them the same way (`donnees`-qualified `Exigence`s + `Persona`s), same rule as `schema-app` Step 2 — stop and ask for `donnees` to run first if any item lacks an origin annotation.
-
-## Step 4: Read Existing Migration Conventions
-
-Before writing anything, read the managed project's existing migration/DDL setup — which tool it uses (if any), naming style, directory layout. Match it exactly. If none exists yet, pick conventions consistent with the chosen database engine and the project's existing stack, and say what you chose and why.
-
-## Step 5: Write the Migrations
-
-One migration/DDL file per entity (or grouped, if the project's existing convention groups them), in the managed project, in its existing style. Never edit an existing migration that may already be applied — write a new one for any change to an entity already covered.
-
-## Step 6: Update the `Infra` Entry
-
-If the migrations' path isn't already recorded in the `Infra` entry (`schema-app`'s Step 1), add it and log the update to `kb/infra/log.md`.
+If the migrations' path isn't already recorded in the `Infra` entry, add it and log the update to `kb/infra/log.md`.
 
 ## No Commits
 
@@ -95,6 +50,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ## Structures créées
 - `<path>` — <entité>
+
+## Open Questions
+[Si rien : "None"]
 
 ## Suite
 Je lance `architecture` maintenant ?

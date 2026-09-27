@@ -13,7 +13,7 @@ auth ni multi-tenant.
 
 Trois livrables, à construire dans cet ordre car chacun dépend du précédent :
 
-1. Format et structure de la base de connaissance (KB) — `hosa/kb/`
+1. Format et structure de la base de connaissance (KB) — `.hosa/kb/`
 2. Skill `hosa` qui lit/écrit la KB avec traçabilité
 3. App de visualisation (lecture seule) — `hosa/app/`
 
@@ -39,7 +39,7 @@ libre. Un dossier peut contenir un `index.md` (listing, sans frontmatter sauf
 
 ### 1.1 Bundles et types
 
-Chaque sous-dossier de `hosa/kb/` est un bundle OKF avec un type de concept dédié :
+Chaque sous-dossier de `.hosa/kb/` est un bundle OKF avec un type de concept dédié :
 
 | Dossier | `type` | Contenu |
 |---|---|---|
@@ -94,11 +94,16 @@ title: <titre court>
 description: <une ligne>
 tags: [<tag>, ...]
 state: todo | doing | done | blocked
+priority: <entier ; 1 = le plus urgent>          # optionnel, ordonne le backlog explicitement
+estimate: <S | M | L | points>                    # optionnel, base du calcul de vélocité
+milestone: <slug>                                 # optionnel, jalon/release auquel le ticket est rattaché
 generated: { by: <acteur qui a créé/demandé le ticket>, at: <ISO8601> }
 verified: { by: <acteur qui a clos/confirmé>, at: <ISO8601> }   # ajouté au passage en "done"
 ---
 <corps: description libre, liens markdown vers les concepts liés (exigence, persona...)>
 ```
+
+`priority`/`estimate`/`milestone` sont absents par défaut (un ticket sans eux reste valide) : `priority` remplace le besoin de redemander l'ordre au PO à chaque `sprint`, `estimate` alimente le calcul de vélocité en `bilan-sprint`, `milestone` regroupe les tickets d'une même release pour `livraison`.
 
 ### 1.4 Journalisation
 
@@ -119,7 +124,7 @@ flux, sections pas-à-pas). Référencé dans le tableau de
 
 ### Responsabilités
 
-- Créer/mettre à jour des concepts OKF dans `hosa/kb/` (`Exigence`, `Persona`,
+- Créer/mettre à jour des concepts OKF dans `.hosa/kb/` (`Exigence`, `Persona`,
   `Stack Decision`, `Ticket`, etc.) à partir d'une demande en langage naturel.
 - Renseigner correctement `generated.by` : `human:<user>` si l'utilisateur
   demande explicitement la création, `<agent>/<version>` si l'agent décide
@@ -144,38 +149,37 @@ flux, sections pas-à-pas). Référencé dans le tableau de
 
 Invocation manuelle : `/hosa`.
 
-## 3. App de pilotage (lecture seule)
+## 3. App de pilotage
 
-Dossier `hosa/app/`. Objectif : visualiser la KB et les tickets, sans écrire
-dans les fichiers (l'écriture reste la responsabilité du skill). Architecture
-choisie pour permettre un passage ultérieur en lecture/écriture sans refonte.
+Dossier `hosa/app/`. Objectif : visualiser la KB et les tickets, et permettre
+un changement d'état de ticket sans repasser par un skill pour ce cas précis.
 
 ### Architecture
 
 - **Backend** : Node + Express, pas de base de données — la KB de fichiers
-  *est* la source de vérité. À chaque requête, parcourt `hosa/kb/`, parse le
+  *est* la source de vérité. À chaque requête, parcourt `.hosa/kb/`, parse le
   frontmatter (`gray-matter`), sert du JSON.
-- **API** (lecture seule) :
+- **API** :
   - `GET /api/concepts?type=<Type>` — liste des concepts d'un type, avec
     frontmatter et chemin
   - `GET /api/concepts/*path` — un concept complet (frontmatter + corps rendu)
   - `GET /api/tickets` — raccourci équivalent à `?type=Ticket`, groupé par `state`
-- **Frontend** : HTML/CSS/JS vanilla, pas de framework. Deux vues :
-  - **Kanban tickets** — colonnes todo/doing/done/blocked, lecture seule
-  - **Explorateur KB** — liste par type/tag avec recherche simple
-  - Pas de live-reload au départ : bouton "rafraîchir" manuel.
-
-### Chemin d'évolution vers l'écriture
-
-L'API et le stockage fichier étant déjà séparés du frontend, ajouter l'écriture
-plus tard = ajouter des routes `PATCH`/`POST` qui réécrivent le frontmatter
-(en préservant le corps) et loggent dans `log.md` — pas de restructuration du
-backend ni du frontend nécessaire.
+  - `PATCH /api/concepts/*path` — `{ frontmatter: {...} }`, fusionné dans le
+    frontmatter existant (`type` immuable), corps préservé, loggé dans le
+    `log.md` du bundle sous l'acteur `process:hosa-app`
+- **Frontend** : HTML/CSS/JS vanilla, pas de framework. Vues :
+  - **Kanban tickets** — colonnes todo/doing/done/blocked, chaque carte a un
+    sélecteur d'état qui appelle `PATCH`
+  - **Explorateur KB** — liste par type/tag avec recherche simple ; Personas,
+    Sprints, QA (`Test Plan`) et Qualité (`Audit Qualité`) sont la même vue
+    pré-filtrée par type
+  - Pas de live-reload : bouton "rafraîchir" manuel.
 
 ## Hors scope (v1)
 
 - Authentification, multi-utilisateur, multi-organisation
 - Org chart, budgets/coûts, heartbeats/scheduling d'agents
-- Écriture depuis l'app (voir chemin d'évolution ci-dessus)
+- Écriture de champs autres que `state` de `Ticket` depuis l'app (le reste
+  passe par les skills — l'API `PATCH` le permettrait déjà si besoin)
 - Live-reload / websocket
 - Attestation de calculs OKF (§10 de la spec) — non pertinent pour ce cas d'usage

@@ -1,11 +1,11 @@
 ---
 name: redaction
-description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
+description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
 ---
 
 # Redaction
 
-Writes one `Exigence` concept per business process into `hosa/kb/cdc/`, using the structured body from the pipeline design (Objectif du processus / Données en entrée / Données en sortie / Qui fait quoi / Responsable / Besoin(s) persona répondu(s)).
+Writes one `Exigence` concept per business process into `.hosa/kb/cdc/`, using the structured body from the pipeline design (Objectif du processus / Données en entrée / Données en sortie / Qui fait quoi / Responsable / Besoin(s) persona répondu(s)).
 
 ## Flow
 
@@ -34,10 +34,10 @@ If `interview` just ran in this session, use its notes directly. Otherwise ask: 
 ## Step 2: Write One `Exigence` Per Process
 
 ```
-mkdir -p hosa/kb/cdc/
+mkdir -p .hosa/kb/cdc/
 ```
 
-For each process, `hosa/kb/cdc/<slug-processus>.md` (slug = kebab-case of the process name):
+For each process, `.hosa/kb/cdc/<slug-processus>.md` (slug = kebab-case of the process name):
 
 ```markdown
 ---
