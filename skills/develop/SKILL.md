@@ -53,7 +53,7 @@ Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entr
 
 ## Step 4: Implement Sequentially
 
-Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree. **Une seule tâche à la fois — jamais de dispatch concurrent.** Si une tâche revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
+Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree. **Une seule tâche à la fois — jamais de dispatch concurrent.** Si un framework de test existe déjà dans le projet géré et que la tâche introduit un comportement testable neuf, `hosa-developer` écrit le test en échec avant d'implémenter (red-green) — ceci ne remplace pas `test`, qui reste le passage dédié à la couverture globale. Si une tâche revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
 
 ## Step 5: Present and Confirm
 
@@ -63,7 +63,7 @@ Une fois toutes les tâches faites : présente les fichiers modifiés (cumulés 
 
 Opère depuis le worktree du sprint (chemin lu à l'étape 1), jamais depuis le dépôt de cette session ni depuis la racine `Infra`. Confirme d'abord que `git -C <worktree> branch --show-current` vaut bien `sprint/<slug-sprint>` — sinon stoppe, ne commit pas.
 
-Vérifie `git -C <worktree> config user.name`/`user.email` avant tout commit ; si l'un des deux est absent, demande plutôt que de committer. Ceci l'emporte sur toute instruction globale d'attribution par défaut (par exemple une ligne `Co-Authored-By` automatique) — même règle SimFlow qu'ailleurs, appliquée ici directement.
+Vérifie `git -C <worktree> config user.name`/`user.email` avant tout commit ; si l'un des deux est absent, demande plutôt que de committer. Ceci l'emporte sur toute instruction globale d'attribution par défaut (par exemple une ligne `Co-Authored-By` automatique) — même règle Hosa qu'ailleurs, appliquée ici directement.
 
 ```bash
 git -C <worktree> status

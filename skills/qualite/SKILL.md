@@ -21,7 +21,7 @@ Classe chaque anomalie : Bloquant / À corriger / Mineur
         ↓
 Écrit kb/qualite/<slug>.md (Audit Qualité) + log
         ↓
-Bloquant trouvé → propose simflow:debug
+Bloquant trouvé → propose debug
         ↓
 Rapporte le verdict
 ```
@@ -46,14 +46,24 @@ Dispatch `hosa-senior-dev` with the scoped files and this fixed checklist. Don't
 - Lisibilité : nommage clair, fonctions courtes, pas de code mort ou commenté
 - Duplication : logique répétée qui devrait être factorisée
 - Gestion des erreurs : pas d'exception avalée silencieusement, retours cohérents
-- Dépendances : pas de version connue pour être vulnérable, aucune ajoutée hors `hosa-infra`
+- Dépendances : audit natif du gestionnaire de paquets sur le lockfile committé (aucune vulnérabilité critique/haute non mitigée), aucune ajoutée hors `hosa-infra`
 
 **Sécurité (OWASP)**
 - Injection : requêtes SQL paramétrées, aucune commande shell construite par concaténation d'une entrée utilisateur
 - Validation des entrées aux frontières (API publique, formulaires) — jamais côté client seul
-- Authentification/autorisation : contrôle d'accès sur chaque route sensible
-- Secrets : aucune clé, mot de passe ou token en dur dans le code
-- Données sensibles : pas de PII en log
+- Authentification/autorisation : contrôle d'accès sur chaque route sensible, pas d'IDOR (un utilisateur authentifié ne doit accéder qu'à ses propres ressources)
+- Secrets : aucune clé, mot de passe ou token en dur dans le code ni dans l'historique git
+- En-têtes et CORS : CSP/HSTS/X-Frame-Options présents, origines CORS explicites (jamais `*` avec credentials)
+- Limitation de débit sur les routes d'authentification, backée par un store partagé si plusieurs instances
+- Données sensibles : pas de PII en log ni en réponse d'erreur ; finalité et durée de rétention définies, suppression effective (y compris backups/caches)
+
+**Performance**
+- Requêtes N+1 : boucle qui déclenche une requête DB par itération au lieu d'un chargement groupé
+- Index manquant sur une colonne filtrée/jointe d'une table qui peut grossir
+- Boucle ou récursion sans borne sur une entrée non contrôlée en taille
+- Ressource (connexion, fichier, curseur) ouverte sans être systématiquement libérée
+
+Règle d'honnêteté des métriques : sans outil de mesure réel (profiler, APM, benchmark exécuté), ne jamais inventer un chiffre. Formule chaque constat comme un impact potentiel identifié par lecture statique — jamais comme une mesure.
 
 ## Step 3: Classify
 
@@ -83,7 +93,7 @@ Log to `kb/qualite/log.md` (create if missing) — OKF §9: chronological, most 
 
 ## Step 5: Route Blocking Findings
 
-Any **Bloquant** anomaly: propose `simflow:debug` scoped to that finding. Don't fix it inline from this skill — `qualite` audits, it doesn't patch.
+Any **Bloquant** anomaly: propose `debug` scoped to that finding. Don't fix it inline from this skill — `qualite` audits, it doesn't patch.
 
 ## No Commits
 
@@ -100,5 +110,5 @@ You don't commit. Report what changed in the KB and let the user decide.
 [Propre / N anomalie(s) à corriger]
 
 ## Suite
-[Bloquant présent → "Je lance `simflow:debug` sur <finding> ?" / Sinon → "Rien à signaler."]
+[Bloquant présent → "Je lance `debug` sur <finding> ?" / Sinon → "Rien à signaler."]
 ```

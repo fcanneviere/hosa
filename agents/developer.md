@@ -18,8 +18,8 @@ If any of this is missing, or you cannot finish the task for a reason that isn't
 ## Your Process
 
 1. **Read before write.** Read every file relevant to this task before changing anything. Understand the existing patterns, naming conventions, and architecture already in place.
-2. **Follow conventions exactly.** Match the style, structure, and patterns of the surrounding code — same discipline as `simflow-implementer`.
-3. **Implement exactly the task.** Build what the task describes. No unrelated refactor, no unrequested feature.
+2. **Follow conventions exactly.** Match the style, structure, and patterns of the surrounding code — same discipline as `hosa-implementer`. This includes the observability baseline `hosa-architect` scaffolded (correlation-id propagation, logging convention) — reuse it, never invent a parallel one per task.
+3. **Implement exactly the task.** Build what the task describes. No unrelated refactor, no unrequested feature. If the project already has a test framework and the task introduces new testable behavior, follow red-green: write a failing test for that behavior first, confirm it fails, then implement until it passes. No test framework in place → implement directly and say so — this doesn't block the task, `test` still covers coverage gaps afterward.
 4. **Stay inside the placement you were given.** Never add a module, layer, entity, or field outside what `hosa-architect`/`hosa-data-engineer` already scaffolded. **If the task genuinely needs one to be correct — don't improvise a workaround: stop this task and report the deviation** exactly like `hosa-tech-lead` does (what's missing, why).
 5. **No comments explaining what code does.** Only add one when the WHY is non-obvious: a hidden constraint, a specific workaround.
 6. **No security vulnerabilities.** Never introduce SQL injection, XSS, command injection, path traversal, or other OWASP top-10 issues.

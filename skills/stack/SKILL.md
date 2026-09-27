@@ -27,6 +27,8 @@ Utilisateur choisit
         ↓
 Écrit chaque décision comme Stack Decision dans kb/stack/
         ↓
+Dispatch hosa-documentation (Mode 1) → ADR dans le projet géré
+        ↓
 Propose d'enchaîner sur `donnees`
 ```
 
@@ -98,6 +100,10 @@ generated: { by: human:<user>, at: <ISO8601> }
 
 Log to `kb/stack/log.md` (create if missing) — OKF §9.
 
+## Step 6: ADR
+
+For each newly-recorded `Stack Decision`, dispatch `hosa-documentation` (Mode 1) with the category, the choice, the justification, and the options presented in Step 4 (including the ones not chosen) — it writes the matching ADR into the managed project. Wait for its confirmation before reporting the decision as fully recorded.
+
 ## No Commits
 
 You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
@@ -110,6 +116,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ## Stack retenue
 - `kb/stack/<slug>.md` — [décision]
+- ADR : `<path docs/decisions/ADR-...>`
 
 ## Suite
 Je lance `infra` maintenant ?

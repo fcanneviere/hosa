@@ -46,20 +46,30 @@ Fixed checklist — don't invent extra items, don't drop any without asking firs
 - Lisibilité : nommage clair, fonctions courtes, pas de code mort ou commenté
 - Duplication : logique répétée qui devrait être factorisée
 - Gestion des erreurs : pas d'exception avalée silencieusement, retours cohérents
-- Dépendances : pas de version connue pour être vulnérable, aucune ajoutée hors `hosa-infra`
+- Dépendances : audit natif du gestionnaire de paquets sur le lockfile committé (aucune vulnérabilité critique/haute non mitigée), aucune ajoutée hors `hosa-infra`
 
 **Sécurité (OWASP)**
 - Injection : requêtes SQL paramétrées, aucune commande shell construite par concaténation d'une entrée utilisateur
 - Validation des entrées aux frontières (API publique, formulaires) — jamais côté client seul
-- Authentification/autorisation : contrôle d'accès sur chaque route sensible
-- Secrets : aucune clé, mot de passe ou token en dur dans le code
-- Données sensibles : pas de PII en log
+- Authentification/autorisation : contrôle d'accès sur chaque route sensible, pas d'IDOR (un utilisateur authentifié ne doit accéder qu'à ses propres ressources)
+- Secrets : aucune clé, mot de passe ou token en dur dans le code ni dans l'historique git
+- En-têtes et CORS : CSP/HSTS/X-Frame-Options présents, origines CORS explicites (jamais `*` avec credentials)
+- Limitation de débit sur les routes d'authentification, backée par un store partagé si plusieurs instances
+- Données sensibles : pas de PII en log ni en réponse d'erreur ; finalité et durée de rétention définies, suppression effective (y compris backups/caches)
+
+**Performance**
+- Requêtes N+1 : boucle qui déclenche une requête DB par itération au lieu d'un chargement groupé
+- Index manquant sur une colonne filtrée/jointe d'une table qui peut grossir
+- Boucle ou récursion sans borne sur une entrée non contrôlée en taille
+- Ressource (connexion, fichier, curseur) ouverte sans être systématiquement libérée
+
+Règle d'honnêteté des métriques : sans outil de mesure réel (profiler, APM, benchmark exécuté), ne jamais inventer un chiffre. Formule chaque constat comme un impact potentiel identifié par lecture statique — jamais comme une mesure.
 
 For each file in scope, check every item and classify anomalies found: **Bloquant** (faille exploitable, corruption de données), **À corriger** (non-bloquant mais à faire), **Mineur** (style, lisibilité). Write the result as an `Audit Qualité` concept in `kb/qualite/`.
 
 ## No Commits
 
-You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the SimFlow core rule that commits are always in the user's name only.
+You do not commit. Report what you changed and let the user or the orchestrating skill decide when to commit, per the Hosa core rule that commits are always in the user's name only.
 
 ## Output Format
 

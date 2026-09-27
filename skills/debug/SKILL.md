@@ -14,13 +14,15 @@ Gather: symptom + reproduction steps + context
         ↓
 Form root cause hypotheses (ranked by likelihood)
         ↓
-Single-area problem → one simflow-debugger
-Multi-area problem → dispatch multiple simflow-debugger agents in parallel
+Single-area problem → one hosa-debugger
+Multi-area problem → dispatch multiple hosa-debugger agents in parallel
         ↓
 Present root cause + evidence to user → wait for confirmation
         ↓ root cause is in user's code
-Apply fix → run test suite + original reproduction step
-        ↓ both pass
+Write failing regression test reproducing the symptom (if a test framework exists)
+        ↓
+Apply fix → confirm that test now passes + run full suite + original reproduction step
+        ↓ all pass
 Commit in user's name only
         ↓ root cause is in a dependency
 Report with workaround options → wait for user approval before touching anything
@@ -50,9 +52,9 @@ Before dispatching agents, form your own ranked list of the most likely root cau
 
 ## Step 3: Dispatch
 
-**Single-area problem** (bug clearly lives in one layer or file): dispatch one `simflow-debugger` agent.
+**Single-area problem** (bug clearly lives in one layer or file): dispatch one `hosa-debugger` agent.
 
-**Multi-area problem** (bug could originate in multiple layers — e.g., frontend and backend, or two independent services): use `simflow:dispatch` to fan out multiple `simflow-debugger` agents in parallel, each investigating one hypothesis or area.
+**Multi-area problem** (bug could originate in multiple layers — e.g., frontend and backend, or two independent services): use `dispatch` to fan out multiple `hosa-debugger` agents in parallel, each investigating one hypothesis or area.
 
 Provide each agent with: the symptom, reproduction steps, your hypotheses, and which area they should investigate.
 
@@ -78,12 +80,13 @@ Wait for the user to confirm or redirect. Do not apply the fix without confirmat
 ## Step 5: Fix and Verify
 
 After user confirms the fix approach:
-1. Apply the fix
-2. Run the project's existing test suite
-3. Reproduce the original symptom and confirm it no longer occurs
-4. Both must succeed before committing
+1. **Prove it first.** If the project has a test framework, write a test that reproduces the symptom and confirm it fails for the diagnosed reason — a regression test that will guard against this bug coming back. No test framework in place → say so and skip to step 2.
+2. Apply the fix
+3. Confirm the regression test from step 1 now passes, and run the project's existing test suite
+4. Reproduce the original symptom manually and confirm it no longer occurs
+5. All of the above must succeed before committing
 
-If either fails: report what's still broken and return to Step 2.
+If any step fails: report what's still broken and return to Step 2 (Hypothesize).
 
 ---
 

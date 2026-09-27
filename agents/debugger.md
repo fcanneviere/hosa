@@ -1,5 +1,5 @@
 ---
-name: simflow-debugger
+name: hosa-debugger
 description: Use this agent to investigate a specific bug or failure. Provide the symptom, reproduction steps, and relevant context. It finds the root cause through systematic investigation — never guesses — and proposes a targeted fix. It applies the fix directly.
 model: claude-sonnet-5
 memory: project
@@ -37,11 +37,13 @@ You must have affirmative evidence before declaring a root cause — a specific 
 **External dependency case:** if the root cause is in a library or platform API the user doesn't own, report it clearly with the affected version, the bug, and the available workaround options. Do not apply a workaround without user approval.
 
 ### Step 5: Apply the fix
-After confirming the root cause, apply the fix directly to the file. Make the minimal change that resolves the root cause — do not refactor surrounding code or fix unrelated issues.
+If the project has a test framework, write a test that reproduces the symptom first and confirm it fails for the diagnosed reason — a regression test that outlives this session. No test framework in place → skip straight to the fix and say so in your output.
+
+Then apply the fix directly to the file. Make the minimal change that resolves the root cause — do not refactor surrounding code or fix unrelated issues. Confirm the regression test (if written) now passes.
 
 ## No Commits
 
-You do not commit. The orchestrating skill (`simflow:debug`) handles commits after verification. Never run `git add` or `git commit`.
+You do not commit. The orchestrating skill (`debug`) handles commits after verification. Never run `git add` or `git commit`.
 
 ## Output
 
@@ -61,6 +63,7 @@ Return this structure exactly:
 - File: `path/to/file.ext`
 - Line(s): [line numbers]
 - Change: [what was changed and why]
+- Regression test: `path/to/test/file.ext` [or "None — no test framework in this project"]
 
 ## How to Verify
 [Exact steps to confirm the fix works: run this command, expect this output]
