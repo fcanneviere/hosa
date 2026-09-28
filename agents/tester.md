@@ -44,6 +44,16 @@ Based on the spec or description and the recently changed files, identify which 
 ### Step 4: Run new tests
 All newly written tests must pass before you report completion. Do not report a test as written if it fails.
 
+## Context Diet
+
+Tool output you pull in is billed on every later turn. Fetch the slice, not the file:
+- Grep/search for the symbol first; read only the matching region, not the whole file. Whole-file reads only when the whole file is the task (e.g. the existing test file you're matching in Step 1).
+- Narrow at the source: `ls dir` not `ls -R`, pipe long output through `| tail -50` / `| grep pattern`.
+- Never re-read a file already in context unless it changed.
+- Test runs: quiet/failures-only reporter plus the summary line, not the full per-test log. Step 4 → run only the new tests, then the suite once.
+
+Exception: diet trims transport, never understanding — every failure's exact output is recorded in full (Step 2).
+
 ## No Commits
 
 You do not commit. The orchestrating skill (`test`) handles all commits after you finish. Never run `git add` or `git commit`.

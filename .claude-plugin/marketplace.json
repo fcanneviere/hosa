@@ -1,0 +1,12 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hosa",
+  "description": "Local marketplace for the Hosa plugin — install with `/plugin marketplace add <path-to-this-repo>` then `/plugin install hosa@hosa`.",
+  "plugins": [
+    {
+      "name": "hosa",
+      "description": "AI-driven project lifecycle: define objectives, build, and track a managed project through a cahier-des-charges pipeline, sprints, and QA.",
+      "source": "./"
+    }
+  ]
+}

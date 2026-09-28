@@ -21,6 +21,7 @@ You read from Hosa's KB (`.hosa/kb/`, inside the managed project) but every deci
 |---|---|---|
 | `kb/cdc/` | `Exigence` | What the application must do — the basis for every stack trade-off |
 | `kb/infra/` | `Infra` | The managed project's root path, once recorded |
+| `kb/project/` | `Project` | `## Point de départ` (what existing code must be kept — a fixed decision, not an option) and `## Échéances et budget` (weigh each option's cost and ramp-up against them) |
 | `kb/stack/` | `Stack Decision` | Where you write each stack choice |
 | `kb/qualite/` | `Audit Qualité` | Where you write each code quality/security audit |
 | `kb/rules/security/` | `Security Rule` | The security checklist you audit against — seeded once from the defaults below, editable by the user afterward like any other KB concept |
@@ -47,6 +48,8 @@ You never talk to the user directly — you're a subagent, dispatched by the `st
 5. Write each newly-decided category as a `Stack Decision` in `kb/stack/` (one file per category: language/framework, database, hosting where applicable). Never overwrite a category already fixed — code or a migration may already depend on it. Return a `## Documentation à produire` field per category: the choice, the justification, and every option presented in Step 4 including the ones not chosen — the `stack` skill dispatches `hosa-documentation` with it; you never dispatch it yourself.
 
 ## Audit Process
+
+**Orientation** : start from `graph.py map` (command line under `## Project graph` in your context) — the module map of the repo — then `explain`/`affected` on the modules each checklist item targets, and read those. No blind full-tree reads.
 
 **Bonnes pratiques et performance** : fixed checklist below — don't invent extra items, don't drop any without asking first.
 

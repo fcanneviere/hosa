@@ -15,6 +15,8 @@ technique.md
         ↓ manquant
 Propose de lancer qa-plan d'abord
         ↓ tous présents
+Dispatch hosa-data-engineer : recharge le jeu de données de test
+        ↓ échec → rapporte, stop
 Pour chaque ticket : dispatch hosa-qa-lead (Mode 2 Phase 1)
 → brief
         ↓
@@ -39,6 +41,8 @@ Manual: `/qa <slug-sprint>`. Auto: "exécute la QA du sprint", "teste le sprint"
 ## Step 1: Read the Sprint and Check Preconditions
 
 Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
+
+Then dispatch `hosa-data-engineer` (Responsibility 4 reload, `agents/data-engineer.md`) so tests and recettes start from the documented dataset. No dataset yet → propose `qa-plan` first and stop. Reload fails → report it as a test infrastructure issue and stop — running tests against unknown data proves nothing.
 
 ## Step 2: Brief Per Ticket
 

@@ -1,11 +1,11 @@
 ---
 name: interview
-description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → relecture → contestation). Doesn't write to `.hosa/kb/` — hands structured notes to `redaction`.
+description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → relecture → contestation). Writes a `Compte Rendu` of the raw session to `.hosa/kb/cdc/interviews/` for traceability, then hands structured notes to `redaction`.
 ---
 
 # Interview
 
-Gathers raw material for the cahier des charges: which business processes exist, who's involved, and — persona by persona, via `hosa-key-user` — what each process means for them. Writes no `Exigence` itself; that's `redaction`'s job. `hosa-key-user` may still append newly surfaced Pain points/Quick wins to a persona's own KB entry during the process-interview dispatch (same convention as during a recette) — report any such change and its log entry, don't treat it as silent.
+Gathers raw material for the cahier des charges: which business processes exist, who's involved, and — persona by persona, via `hosa-key-user` — what each process means for them. Writes no `Exigence` itself; that's `redaction`'s job. It does write a `Compte Rendu` of the session itself — the raw notes, before `redaction` turns them into structured `Exigence` concepts — so "qui a demandé X, et quand" stays answerable even after an `Exigence` is edited later. `hosa-key-user` may still append newly surfaced Pain points/Quick wins to a persona's own KB entry during the process-interview dispatch (same convention as during a recette) — report any such change and its log entry, don't treat it as silent.
 
 ## Flow
 
@@ -23,6 +23,8 @@ Pour chaque processus :
   priorité) : demandé directement à l'utilisateur
         ↓
   PO challenge en direct toute réponse vague (une relance)
+        ↓
+Écrit le compte-rendu dans kb/cdc/interviews/
         ↓
 Restitue les notes structurées, processus par processus
         ↓
@@ -59,11 +61,23 @@ Anything that doesn't belong to one persona's point of view — who's responsibl
 
 If a persona's or the user's answer is vague ("on verra", "un peu de tout") or a stated need seems unjustified, push back once — ask for the concrete version. Don't loop more than once per answer here; a deeper audit happens later in `contestation`.
 
-## Step 6: Hand Off
-
-Restitute the notes to the user, grouped by process:
+## Step 6: Write the Compte Rendu
 
 ```
+mkdir -p .hosa/kb/cdc/interviews/
+```
+
+Write `.hosa/kb/cdc/interviews/<ISO-date>-interview.md` (one file per interview session, even if it covers several processes):
+
+```markdown
+---
+type: Compte Rendu
+title: Interview cahier des charges — <date>
+description: <une ligne : processus couverts>
+tags: [interview]
+status: stable
+generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
+---
 ### <Processus>
 - Personas impliqués : <liste>
 - Objectif : <par persona, si ça diffère>
@@ -73,12 +87,25 @@ Restitute the notes to the user, grouped by process:
 - Responsable : <si obtenu>
 ```
 
-Then propose: "Notes prêtes pour [N] processus. Je lance `redaction` maintenant ?"
+One `### <Processus>` section per process covered this session. Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from the exchange. This is the raw record — write it as gathered, don't retroactively clean it up to match what `redaction` later produces. Append an entry to `kb/cdc/interviews/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date.
+
+## Step 7: Hand Off
+
+Restitute the same notes to the user, grouped by process (same structure as the compte rendu above), then propose: "Notes prêtes pour [N] processus. Je lance `redaction` maintenant ?"
 
 ## No Commits
 
-This skill never writes `Exigence` concepts — nothing there to commit. Any persona Pain points/Quick wins that `hosa-key-user` appended during a process-interview dispatch are already written to `kb/personnas/<slug>.md` and logged to `kb/personnas/log.md` by that agent — report them in the handoff, but they aren't this skill's commit to make either.
+This skill writes the `Compte Rendu` but never commits it — same as every other pipeline skill, the user or `kb-commit` decides when. It never writes `Exigence` concepts; that's `redaction`'s job. Any persona Pain points/Quick wins that `hosa-key-user` appended during a process-interview dispatch are already written to `kb/personnas/<slug>.md` and logged to `kb/personnas/log.md` by that agent — report them in the handoff, but they aren't this skill's commit to make either.
 
 ## Output
 
-The structured notes from Step 6, plus the handoff proposal.
+```
+## Compte rendu écrit
+- `kb/cdc/interviews/<date>-interview.md` — [N] processus
+
+## Notes
+[Structured notes from Step 7]
+
+## Suite
+Notes prêtes pour [N] processus. Je lance `redaction` maintenant ?
+```

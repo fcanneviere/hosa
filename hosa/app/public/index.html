@@ -1,61 +1,58 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Hosa — pilotage de projet</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hosa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header>
-    <h1>Hosa</h1>
-    <nav>
-      <button data-view="home" class="active">Accueil</button>
-      <button data-view="tickets">Tickets</button>
-      <button data-view="personas">Personas</button>
-      <button data-view="sprints">Sprints</button>
-      <button data-view="qa">QA</button>
-      <button data-view="qualite">Qualité</button>
-      <button data-view="kb">Base de connaissance</button>
-    </nav>
-    <button id="refresh">Rafraîchir</button>
-  </header>
+  <aside class="side">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">h</div>
+      <div><b>Hosa</b><small id="root">.hosa/kb</small></div>
+    </div>
+    <button type="button" class="new-btn" id="new"><span class="plus">+</span>New concept<kbd>N</kbd></button>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+    <div class="legend" id="legend"></div>
+    <button type="button" class="refresh" id="refresh">Reload KB</button>
+  </aside>
 
-  <p id="error-banner" hidden></p>
-
-  <main>
-    <section id="view-home">
-      <div id="home-content"></div>
-    </section>
-
-    <section id="view-tickets" hidden>
-      <div class="board">
-        <div class="column" data-state="todo"><h2>À faire</h2><div class="cards"></div></div>
-        <div class="column" data-state="doing"><h2>En cours</h2><div class="cards"></div></div>
-        <div class="column" data-state="done"><h2>Fait</h2><div class="cards"></div></div>
-        <div class="column" data-state="blocked"><h2>Bloqué</h2><div class="cards"></div></div>
-      </div>
-    </section>
-
-    <section id="view-kb" hidden>
-      <div class="kb-toolbar">
-        <label for="type-filter">Type</label>
-        <select id="type-filter">
-          <option value="">Tous</option>
-        </select>
-        <label for="tag-filter">Tag</label>
-        <select id="tag-filter">
-          <option value="">Tous</option>
-        </select>
-        <label for="search-box">Recherche</label>
-        <input type="search" id="search-box" placeholder="titre ou description" />
-      </div>
-      <div class="kb-layout">
-        <ul id="concept-list"></ul>
-        <div id="concept-detail" hidden></div>
-      </div>
-    </section>
+  <main id="main" tabindex="-1">
+    <p id="error" class="error" role="alert" hidden></p>
+    <div id="view"></div>
   </main>
 
-  <script src="app.js"></script>
+  <dialog id="new-dialog">
+    <form id="new-form" novalidate>
+      <header>
+        <h2>New concept</h2>
+        <span>Creates a Markdown file with OKF frontmatter.</span>
+      </header>
+      <div class="fields">
+        <div class="pair">
+          <label>Folder <input name="bundle" class="mono" list="bundles" placeholder="rules/security" autocomplete="off"><span class="hint" data-for="bundle"></span></label>
+          <label>Type <input name="type" list="types" placeholder="Ticket" autocomplete="off"><span class="hint" data-for="type"></span></label>
+        </div>
+        <datalist id="bundles"></datalist>
+        <datalist id="types"></datalist>
+        <label>Title <input name="title"><span class="hint" data-for="title"></span></label>
+        <label>Slug
+          <span class="slug"><span id="prefix">…/</span><input name="slug" placeholder="my-concept" autocomplete="off"><span>.md</span></span>
+          <span class="hint" data-for="slug"></span>
+        </label>
+        <p class="form-error"></p>
+      </div>
+      <footer>
+        <button type="button" class="btn" value="cancel">Cancel</button>
+        <button type="submit" class="btn dark">Create and edit</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <p id="toast" role="status" aria-live="polite"></p>
+  <script src="/app.js"></script>
 </body>
 </html>

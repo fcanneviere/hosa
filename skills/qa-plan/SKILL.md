@@ -18,6 +18,9 @@ existant : dispatch hosa-qa-lead (Mode 1)
         ↓ plan écrit
 Ticket déjà préparé (fichier existe) → passe au suivant,
 ne re-génère pas
+        ↓ tous les plans écrits
+Dispatch hosa-data-engineer (Responsabilité 4) : crée/étend,
+documente et charge le jeu de données de test
         ↓
 Propose de lancer qa une fois le sprint implémenté
 ```
@@ -42,6 +45,10 @@ For each ticket without a plan yet, dispatch `hosa-qa-lead` (Mode 1, `agents/qa-
 
 If it returns an Open Question (the technical note or the stack decisions are missing something needed) — relay it to the user, get the answer, and only redispatch once you have it.
 
+## Step 4: Dispatch for the Test Dataset
+
+Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` (Responsibility 4 create/update, `agents/data-engineer.md`) with the sprint slug. It builds or extends the dataset covering every test case and recette, documents it and loads it. If it returns an Open Question (architecture not done yet, tool missing for `hosa-infra`) — relay it to the user and only redispatch once resolved.
+
 ## No Commits
 
 You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
@@ -55,6 +62,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 ## Tickets déjà préparés (ignorés)
 - `kb/tickets/<slug-ticket>.md` — plan déjà existant
 [Si aucun : "Aucun"]
+
+## Jeu de données de test
+- `<path>` — [créé | mis à jour] — doc : `<path>/README.md`
 
 ## Open Questions
 [Si rien : "None"]

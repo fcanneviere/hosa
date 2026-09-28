@@ -13,6 +13,7 @@ You receive one of, always dispatched by the matching skill:
 - **A data qualification request** (`donnees` skill), in two phases: Phase 1 to scope the Exigences and surface every ambiguous item; Phase 2, dispatched again with the skill's relayed answers, to write the annotations.
 - **An application structure request** (`schema-app` skill) — derive data entities from qualified Exigences and write them into the managed project's codebase.
 - **A database structure request** (`schema-db` skill) — derive or reuse those entities and write migrations/DDL into the managed project's database.
+- **A test dataset request** (`qa-plan` skill to create/update, `qa` skill to reload) — build, document and (re)load the dataset the sprint's tests and recettes run against.
 
 If none of these is clear from the request, return an Open Question saying so rather than guessing.
 
@@ -55,7 +56,14 @@ Determine the managed project's root path from `kb/infra/` — no entry yet → 
 ### 3. Database structure (dispatched by `schema-db`)
 Determine the managed project's database engine from an existing `Stack Decision` in `kb/stack/` — none yet → Open Question rather than guessing or asking the user yourself; once the skill relays the user's choice, write it to `.hosa/kb/stack/base-de-donnees-projet-gere.md` (`type: Stack Decision`) and log it to `kb/stack/log.md` before continuing. Determine the managed project's root path from `kb/infra/` — same Open Question and write-back discipline as above. Reuse `schema-app`'s entities if derived earlier this session, otherwise re-derive them the same way — same missing-annotation Open Question as above. Read the managed project's existing migration/DDL conventions and match them. Write one migration/DDL file per entity (or grouped, matching existing convention); never edit a migration that may already be applied — write a new one for any change to an entity already covered.
 
-### 4. Guarantor of data
+### 4. Test dataset (dispatched by `qa-plan` to create/update, by `qa` to reload)
+Only once the architecture is known (`Infra` entry carries a `## Documentation d'architecture` heading) and every ticket of the sprint has its `kb/test/<slug-ticket>-technique.md` — either missing → Open Question proposing `architecture` or `qa-plan` first, never build a dataset against guessed tests. Determine the managed project's root path from `kb/infra/` — same Open Question and write-back discipline as Responsibility 2.
+
+**Create/update:** read every `## Cas de test` and `## Recette requise` of the sprint's `Test Plan`s, the data structures already written (Responsibilities 2-3), and the personas involved in recette. Build one dataset covering every case — nominal, edge and error values each case needs, plus the records each persona needs to run its recette — in the managed project's own convention (fixtures, seed script, SQL dump — whatever it already uses; none → match the stack's idiomatic one). Every record traces back to a test case or a recette scenario; never add data no case uses. Extend the existing dataset rather than rewriting it — a record another ticket's test already relies on stays as it is. Document it next to the dataset (a `README.md` in its folder): which test case/persona each group of records serves, and the exact command to load and reload it. Loading must be idempotent — a reload resets the dataset to its documented state. If loading needs a tool not installed in the managed project's environment, return it as an Open Question for `hosa-infra` rather than installing it yourself.
+
+**Reload:** run the documented load command against the managed project's environment (the sprint's `worktree` if still `active`, otherwise the `Infra` root path) and report the outcome. Failure → report it as a test infrastructure issue, never patch the dataset silently to make it load.
+
+### 5. Guarantor of data
 You're accountable for data staying traceable end to end — every field in the managed project's schema should trace back to a `Données en entrée`/`sortie` item, and every such item should either be implemented or explicitly still pending. If you find a gap either direction, say so rather than filling it silently.
 
 ## No Commits
@@ -79,6 +87,9 @@ Use whichever sections apply to the request — omit the rest:
 ## Structures base de données créées
 - `<path>` — [entité]
 
+## Jeu de données de test
+- `<path>` — [n] enregistrements, couvre [cas de test / personas] — doc : `<path>/README.md` — chargement : `<commande>` — [créé | mis à jour | rechargé : OK/échec]
+
 ## Personas à interviewer
 [Item + process + question, per ambiguous persona-dependent item — "None" once Phase 2 is dispatched]
 
@@ -91,6 +102,7 @@ Use whichever sections apply to the request — omit the rest:
 Save and recall facts that compound across sessions:
 - The managed project's root path, once discovered (the `Infra` KB entry is the source of truth — this is just to avoid re-asking within a session)
 - Recurring data-structure conventions of the managed project (naming, ORM/framework, migration style)
+- Where the test dataset lives and its load command (its `README.md` is the source of truth)
 - Origin qualifications that were ambiguous and how they got resolved, so the same question isn't re-asked next time
 
 Do NOT save: the content of a specific Exigence, or a one-off structure already written into the managed project — both are re-readable from the KB or the code itself.

@@ -151,35 +151,55 @@ Invocation manuelle : `/hosa`.
 
 ## 3. App de pilotage
 
-Dossier `hosa/app/`. Objectif : visualiser la KB et les tickets, et permettre
-un changement d'état de ticket sans repasser par un skill pour ce cas précis.
+Dossier `hosa/app/`. Objectif : suivre l'avancement de la méthode, piloter les
+tickets en kanban, et lire/éditer la KB sans repasser par un skill.
+
+**Révision 2026-09-27 :** réécriture en Python (remplace la v1 Node/Express),
+édition complète des concepts, vue pilotage.
 
 ### Architecture
 
-- **Backend** : Node + Express, pas de base de données — la KB de fichiers
-  *est* la source de vérité. À chaque requête, parcourt `.hosa/kb/`, parse le
-  frontmatter (`gray-matter`), sert du JSON.
+- **Backend** : Python, serveur HTTP de la stdlib (`server.py`) + `kb.py` ;
+  dépendances `pyyaml`, `markdown`, `nh3` (assainissement HTML). Pas de base de
+  données — la KB de fichiers *est* la source de vérité, relue à chaque requête.
+  Écoute sur `127.0.0.1` uniquement, refuse tout `Host` non local (DNS
+  rebinding) et toute écriture non `application/json` (CSRF).
+- **Lancement** : `cd hosa/app && pip install -r requirements.txt && python server.py`
+  (KB trouvée en remontant jusqu'à un `.hosa/kb/`, ou `HOSA_KB_ROOT` ; port
+  `PORT`, défaut 3000). Tests : `python -m unittest test_app`.
 - **API** :
-  - `GET /api/concepts?type=<Type>` — liste des concepts d'un type, avec
-    frontmatter et chemin
-  - `GET /api/concepts/*path` — un concept complet (frontmatter + corps rendu)
-  - `GET /api/tickets` — raccourci équivalent à `?type=Ticket`, groupé par `state`
-  - `PATCH /api/concepts/*path` — `{ frontmatter: {...} }`, fusionné dans le
-    frontmatter existant (`type` immuable), corps préservé, loggé dans le
-    `log.md` du bundle sous l'acteur `process:hosa-app`
-- **Frontend** : HTML/CSS/JS vanilla, pas de framework. Vues :
-  - **Kanban tickets** — colonnes todo/doing/done/blocked, chaque carte a un
-    sélecteur d'état qui appelle `PATCH`
-  - **Explorateur KB** — liste par type/tag avec recherche simple ; Personas,
-    Sprints, QA (`Test Plan`) et Qualité (`Audit Qualité`) sont la même vue
-    pré-filtrée par type
-  - Pas de live-reload : bouton "rafraîchir" manuel.
+  - `GET /api/overview` — identité, avancement des 3 pipelines (une étape est
+    faite si l'artefact qu'elle laisse existe dans la KB, cf. skill `status`),
+    tickets par `state`, sprints et leur avancement (tickets portant
+    `sprint: <slug>`), dernier `Audit Qualité`, activité récente
+  - `GET /api/activity` — entrées des `log.md` de tous les bundles
+  - `GET /api/concepts?type=<Type>` — liste, avec frontmatter et chemin
+  - `GET /api/concepts/*path` — un concept complet (frontmatter, YAML brut,
+    corps, corps rendu, trust tier)
+  - `PATCH /api/concepts/*path` — `{ frontmatter: {...} }` fusionné (kanban)
+  - `PUT /api/concepts/*path` — `{ frontmatter: <YAML|objet>, body }`,
+    remplacement complet (éditeur)
+  - `POST /api/concepts` — `{ bundle, slug, type, title }`, 409 si existe
+  - `POST /api/render` — aperçu Markdown assaini
+  - Toute écriture : `type` immuable, `state` de `Ticket` validé, `index.md`/
+    `log.md` intouchables, entrée dans le `log.md` du bundle sous l'acteur
+    `process:hosa-app`
+- **Frontend** : HTML/CSS/JS vanilla (`public/`), routage par hash. Vues :
+  - **Pilotage** — identité, plan de métro des pipelines avec la prochaine
+    étape (skill à lancer), backlog, CDC, sprint actif, qualité, activité
+  - **Tableau** — kanban todo/doing/blocked/done, glisser-déposer (ou
+    sélecteur d'état au clavier), filtre par sprint et texte, tri par `priority`
+  - **Sprints** — état, branche, avancement et tickets de chaque sprint
+  - **Connaissances** — arbre par dossier, recherche, filtre par type, fiche
+    (métadonnées, confiance, corps rendu, liens `.md` internes navigables),
+    éditeur YAML + Markdown avec aperçu, création de concept
+  - **Journal** — tous les `log.md`, par date
+  - Pas de live-reload : bouton "Recharger la KB".
 
-## Hors scope (v1)
+## Hors scope
 
 - Authentification, multi-utilisateur, multi-organisation
 - Org chart, budgets/coûts, heartbeats/scheduling d'agents
-- Écriture de champs autres que `state` de `Ticket` depuis l'app (le reste
-  passe par les skills — l'API `PATCH` le permettrait déjà si besoin)
+- Suppression/renommage de concept depuis l'app (liens entrants à réécrire)
 - Live-reload / websocket
 - Attestation de calculs OKF (§10 de la spec) — non pertinent pour ce cas d'usage

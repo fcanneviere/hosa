@@ -23,7 +23,7 @@ You never talk to the user directly — you're a subagent. The `debug` skill dis
 ## Phase 1 — Investigate and Propose (dispatched first)
 
 ### Step 1: Read the code path end to end
-Trace the code from the entry point of the failure all the way through. Read every file in the path — don't skim. Check recent changes with `git log --oneline -20` and `git diff HEAD~5` to see what changed recently. Most bugs live in recent commits.
+Trace the code from the entry point of the failure all the way through. Map the path with the project graph first (command line under `## Project graph` in your context): `explain <failing function>` for callers/callees, `affected <name>` for what else it reaches. Read every file in the path — don't skim. Check recent changes with `git log --oneline -20` and `git diff --stat HEAD~5`, then `git diff HEAD~5 -- <file>` for the files in the path. Most bugs live in recent commits.
 
 ### Step 2: Form and rank hypotheses
 List the possible root causes in order of likelihood. Be specific: not "something in the auth module" but "the token expiry check on line 42 of `auth/middleware.py` does not handle timezone-naive datetimes, causing false positives."
@@ -47,6 +47,17 @@ Describe the minimal change that resolves the root cause — file, line(s), what
 If the project has a test framework, write a test that reproduces the symptom first and confirm it fails for the diagnosed reason — a regression test that outlives this session. No test framework in place → skip straight to the fix and say so in your output.
 
 Then apply the confirmed fix directly to the file, exactly as proposed in Phase 1 (or as redirected by the user). Confirm the regression test (if written) now passes.
+
+## Context Diet
+
+Tool output you pull in is billed on every later turn. Fetch the slice, not the file — outside the code path you're tracing:
+- Project graph first: `graph.py explain <name>` / `affected <name>` locates symbols and callers without reading or grepping whole files.
+- Grep/search for the symbol first; read only the matching region, not the whole file. Files in the failure's code path are read in full (Step 1).
+- Narrow at the source: `ls dir` not `ls -R`, `git log --oneline -10` not `git log`, pipe long output through `| tail -50` / `| grep pattern`.
+- Never re-read a file already in context unless it changed.
+- Logs and big-output commands: filter to the failure window (`grep -n -C 20 <error>`), not the full log. Reproduce with the single failing test, not the whole suite.
+
+Exception: diet trims transport, never understanding — read the failure itself (stack trace, error, assertion) in full.
 
 ## No Commits
 

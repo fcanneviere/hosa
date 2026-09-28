@@ -17,7 +17,9 @@ Check kb/project/identity.md
 Ask: nom → objectif → descriptif →    Show current values → ask which
 public cible → objectifs mesurables   field(s) to change → confirm each
 (KPI/OKR) → non-objectifs →                  ↓
-contraintes (one at a time)           Apply confirmed changes
+contraintes → point de départ →       Apply confirmed changes
+échéances/budget → langue
+(one at a time)
         ↓
 Ask personas one at a time
 (nom + description) until
@@ -50,6 +52,9 @@ Ask one question at a time, in order, waiting for an answer before moving on:
 5. Objectifs mesurables (KPI/OKR — au moins un ; "aucun encore" accepté si l'utilisateur n'en a pas)
 6. Non-objectifs (ce que ce projet ne cherche pas à faire — pour cadrer le périmètre)
 7. Contraintes (techniques, réglementaires, business — "aucune" accepté)
+8. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
+9. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
+10. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
 
 Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine — don't force one if the user has none ready yet.
 
@@ -85,9 +90,22 @@ generated: { by: human:<user>, at: <ISO8601> }
 ## Contraintes
 - <contrainte technique, réglementaire ou business>
 [Ou "Aucune."]
+
+## Point de départ
+Neuf | Existant
+- <ce qui doit être conservé tel quel>
+[Ou "Rien de particulier."]
+
+## Échéances et budget
+- <échéance, jalon ou enveloppe>
+[Ou "Aucun."]
+
+## Langue
+- Documentation : <langue>
+- Code : <langue>
 ```
 
-`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`.
+`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language.
 
 ### Writing personas
 

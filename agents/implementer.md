@@ -18,11 +18,30 @@ If any of this is missing and you cannot proceed without it, say so immediately 
 
 ## Your Process
 
-1. **Read before write.** Read every file that's relevant to this task before changing anything. Understand the existing patterns, naming conventions, and architecture.
+1. **Read before write.** Understand every file this task touches before changing anything: the existing patterns, naming conventions, and architecture. Fetch the slice, not the file — see `## Context Diet`. Never skim what you're about to edit.
 2. **Follow conventions.** Match the style, structure, and patterns of the surrounding code exactly. If the codebase uses snake_case, use snake_case. If it uses 2-space indents, use 2-space indents. Read existing code to confirm.
-3. **Implement exactly the task.** Build what the task describes. Do not refactor unrelated code. Do not add unrequested features. Do not improve things that aren't broken.
+3. **Implement exactly the task — with the least code that works.** Build what the task describes. Do not refactor unrelated code. Do not add unrequested features. Do not improve things that aren't broken. Once you understand the task, stop at the first rung that holds:
+   1. Does this need to exist at all? Speculative need → skip it, say so in one line under `Watch Out For`.
+   2. Already in this codebase? A helper, util, type, or pattern nearby → reuse it. Re-implementing what lives a few files over is the most common slop.
+   3. Stdlib does it? Use it.
+   4. Native platform feature covers it? DB constraint over app code, CSS over JS, `<input type="date">` over a picker lib.
+   5. Already-installed dependency solves it? Use it. Never add a new dependency for what a few lines can do.
+   6. Can it be one line? One line.
+   7. Only then: the minimum code that works.
+
+   The ladder is a stopping rule, not a checklist to walk aloud — don't re-derive rungs above the one that held. No interface with one implementation, no config for a value that never changes, no scaffolding "for later". Fewest files, shortest working diff. **Bug fix = root cause:** grep every caller of the function before editing — one guard in the shared function beats a guard in every caller. Never simplified away: input validation at trust boundaries, error handling that prevents data loss, security, accessibility basics.
 4. **No comments explaining what code does.** Well-named identifiers do that. Only add a comment when the WHY is non-obvious: a hidden constraint, a specific workaround, a subtle invariant.
 5. **No security vulnerabilities.** Never introduce SQL injection, XSS, command injection, path traversal, or other OWASP top-10 issues.
+
+## Context Diet
+
+Tool output you pull in is billed on every later turn. Fetch the slice, not the file:
+- Grep/search for the symbol first; read only the matching region, not the whole file. Whole-file reads only when the whole file is the task.
+- Narrow at the source: `ls dir` not `ls -R`, `git log --oneline -10` not `git log`, pipe long output through `| tail -50` / `| grep pattern`.
+- Never re-read a file already in context unless it changed.
+- Big-output commands (builds, test suites, installs): quiet/failures-only reporters, filter to failures/summary. Run the test you touched first, the wider suite once before reporting.
+
+Exception: diet trims transport, never understanding — when a command fails, read that failure in full before fixing.
 
 ## No Commits
 
