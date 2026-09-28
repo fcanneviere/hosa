@@ -22,7 +22,7 @@ Avantage propre à Hosa : les liens métier sont **déterministes** — `develop
 
 | # | Question | Décision |
 |---|---|---|
-| 1 | Moteur d'extraction | Indexeur propre (~300 lignes) sur `tree-sitter-language-pack` + requêtes `tags.scm` embarquées — pas de dépendance à graphify |
+| 1 | Moteur d'extraction | Indexeur propre sur `tree-sitter-language-pack` + ses requêtes `tags` intégrées — pas de dépendance à graphify |
 | 2 | Fraîcheur | Hook plugin `PostToolUse` (Edit/Write) + rattrapage `SessionStart` + **vérification mtime au moment de chaque requête**. Pas de hook git |
 | 3 | Adoption par les agents | Consignes dans les agents + hook `PreToolUse` Grep/Glob, **un seul rappel par session**, fail-open, jamais bloquant |
 | 4 | Interface | Explorateur centré sur un élément + mini-schéma SVG du voisinage + vue traçabilité. Pas de carte globale |
@@ -66,7 +66,7 @@ Emplacement : `<checkout>/.hosa/graph/graph.json` et `<checkout>/.hosa/graph/man
 ### Code
 
 - **Parsing** : `tree-sitter-language-pack` (ajouté à `hosa/app/requirements.txt`). Détection du langage par extension.
-- **Requêtes** : `hosa/app/queries/<lang>-tags.scm` (définitions `@definition.*` / références `@reference.*`, format des tags tree-sitter) et une capture `@import` par langage. Langages initiaux : Python, JavaScript, TypeScript, PHP, Go, Java, C#, Ruby. Ajouter un langage = déposer son `.scm`.
+- **Requêtes** : les requêtes `tags` fournies par `tree-sitter-language-pack` (`get_tags_query`, définitions `@definition.*` / références `@reference.*`) — TypeScript/TSX y préfixent la requête JavaScript ; les imports viennent de `process()` du même paquet. Code dans `hosa/app/graph_extract.py`, séparé de `graph.py`. Langages initiaux : Python, JavaScript, TypeScript, PHP, Go, Java, C#, Ruby. Ajouter un langage = une ligne dans `LANGS` (+ ses kinds si non standard).
 - **Fichiers parcourus** : fichiers suivis par git (`git ls-files`) — respecte `.gitignore` sans code dédié. `.hosa/` exclu du parsing de code. Fichier d'un langage sans requête : nœud `file` seul.
 - **Résolution** d'une référence `nom` dans le fichier F, dans l'ordre : définition du même nom dans F → dans les fichiers que F importe → dans tout le dépôt. Un seul candidat : `exact`. Plusieurs au dernier niveau : une arête `ambiguous` par candidat. Aucun : pas d'arête (appel vers une bibliothèque externe).
 - **Imports** : chemin d'import résolu vers un fichier du dépôt quand il correspond (relatif ou module → chemin) ; sinon ignoré.
@@ -100,7 +100,7 @@ Emplacement : `<checkout>/.hosa/graph/graph.json` et `<checkout>/.hosa/graph/man
 | Commande | Sortie |
 |---|---|
 | `map` | Contenu de `kb/code/index.md` |
-| `find <texte> [--limit 20]` | Nœuds dont id/label/doc correspondent (score : correspondance exacte du label > préfixe > sous-chaîne ; tokens pondérés) |
+| `find <texte>` | Nœuds dont id/label/doc correspondent (score : correspondance exacte du label > préfixe > sous-chaîne ; tokens pondérés) |
 | `explain <id\|nom>` | Le nœud, puis ses arêtes entrantes et sortantes groupées par `rel` |
 | `affected <id\|nom> [--depth 2]` | Parcours inverse sur `calls`/`imports`/`inherits`/`contains`, + tickets qui touchent les fichiers atteints |
 | `ticket <slug>` | Exigences, fichiers et symboles liés au ticket |
@@ -116,9 +116,11 @@ Emplacement : `<checkout>/.hosa/graph/graph.json` et `<checkout>/.hosa/graph/man
 
 Scripts Node (comme les hooks existants) qui appellent le Python du venv de `hosa/app`. Tous fail-open : toute erreur → `exit 0` sans sortie.
 
-- **`PostToolUse` `Edit|Write|MultiEdit`** — `hooks/graph-update.js` : lit `tool_input.file_path` ; si un `.hosa/graph/` existe dans un ancêtre, lance `graph.py index <fichier>` (synchrone, timeout 10 s).
+Un seul script, `hooks/graph.js`, sert les deux hooks (aiguillage sur `hook_event_name`) et expose `sessionStart()` à `session-start.js`.
+
+- **`PostToolUse` `Edit|Write|MultiEdit`** — `hooks/graph.js` : lit `tool_input.file_path` ; si un `.hosa/graph/` existe dans un ancêtre, lance `graph.py index <fichier>` (synchrone, timeout 10 s).
 - **`SessionStart`** — ajout à `hooks/session-start.js` : si le cwd appartient à un projet ayant `.hosa/kb/`, lance `graph.py index` **détaché** (la première construction complète peut dépasser le timeout de 5 s) et ajoute la ligne de commande du graphe au contexte injecté.
-- **`PreToolUse` `Grep|Glob`** — `hooks/graph-nudge.js` : si `.hosa/graph/graph.json` existe et que `last_query` est absent ou antérieur au début de session (fichier-marqueur `.hosa/graph/session` écrit par `SessionStart`), émet une seule fois `additionalContext` : « Le graphe du projet est disponible : `graph.py explain|affected|ticket|find` avant de grepper. » puis écrit un marqueur pour ne plus le répéter dans la session. Jamais de refus.
+- **`PreToolUse` `Grep|Glob`** — `hooks/graph.js` : si `.hosa/graph/graph.json` existe et que `last_query` est absent ou antérieur au début de session (fichier-marqueur `.hosa/graph/session` écrit par `SessionStart`), émet une seule fois `additionalContext` : « Le graphe du projet est disponible : `graph.py explain|affected|ticket|find` avant de grepper. » puis écrit un marqueur pour ne plus le répéter dans la session. Jamais de refus.
 
 ## 5. Interface web — vue « Graphe »
 
