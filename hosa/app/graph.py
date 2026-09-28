@@ -507,3 +507,87 @@ def fmt(n, prefix=""):
     loc = f"{n['file']}:{n['line']}" if n.get("line") else n.get("file", "")
     extra = n.get("state") or n.get("status") or ""
     return f"{prefix}{n['kind']:<8} {n['id']}  {loc}" + (f"  [{extra}]" if extra else "")
+
+
+def budgeted(lines, budget=BUDGET):
+    out, used = [], 0
+    for k, line in enumerate(lines):
+        used += len(line) + 1
+        if used > budget * 4:
+            out.append(f"… {len(lines) - k} éléments de plus (affiner la requête)")
+            break
+        out.append(line)
+    return "\n".join(out)
+
+
+def _edge_lines(edges, key, arrow):
+    lines = []
+    for rel in sorted({e["rel"] for e in edges}):
+        lines.append(f"{arrow} {rel}")
+        for e in sorted((e for e in edges if e["rel"] == rel), key=lambda e: e[key]["id"]):
+            conf = "  (ambigu)" if e["conf"] == "ambiguous" else ""
+            at = f"  @L{e['line']}" if e.get("line") else ""
+            lines.append(fmt(e[key], "  ") + at + conf)
+    return lines
+
+
+def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET):
+    """Exécute une commande de requête et retourne le texte à afficher."""
+    root = Path(root)
+    if cmd == "map":
+        refresh(root)
+        index = root / ".hosa" / "kb" / "code" / "index.md"
+        return index.read_text(encoding="utf-8") if index.exists() else "Aucune carte (KB absente)."
+    g = Index(refresh(root))
+    (graph_dir(root) / "last_query").write_text(str(time.time()), encoding="utf-8")
+    if cmd == "find":
+        return budgeted([fmt(g.nodes[i]) + (f"  — {g.nodes[i]['doc']}" if g.nodes[i].get("doc") else "")
+                         for i in g.find(arg, limit)] or ["Aucun résultat."], budget)
+    if cmd == "explain":
+        d = g.detail(g.one(arg))
+        head = [fmt(d["node"])] + ([f"  {d['node']['doc']}"] if d["node"].get("doc") else [])
+        return budgeted(head + _edge_lines(d["out"], "node", "→") + _edge_lines(d["in"], "node", "←"), budget)
+    if cmd == "affected":
+        nid = g.one(arg)
+        a = g.affected(nid, depth)
+        lines = [f"Impact de {nid} (profondeur {depth}) :"]
+        lines += [fmt(x["node"], f"  {x['depth']} ") for x in a["nodes"]] or ["  aucun dépendant"]
+        lines += ["Tickets concernés :"] + ([fmt(t, "  ") for t in a["tickets"]] or ["  aucun"])
+        return budgeted(lines, budget)
+    if cmd == "ticket":
+        d = g.detail(g.one(arg if arg.startswith("ticket:") else f"ticket:{arg}"))
+        return budgeted([fmt(d["node"])] + _edge_lines(d["out"], "node", "→"), budget)
+    raise GraphError(f"commande inconnue : {cmd}")
+
+
+def main(argv=None):
+    p =argparse.ArgumentParser(prog="graph.py", description="Graphe du projet géré par Hosa.")
+    p.add_argument("--root", help="checkout à indexer (défaut : racine git du dossier courant)")
+    p.add_argument("--budget", type=int, default=BUDGET, help="plafond de sortie en tokens")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("map", help="carte des modules (kb/code/index.md)")
+    sub.add_parser("find", help="recherche par nom, chemin ou doc").add_argument("text")
+    sub.add_parser("explain", help="un élément et toutes ses relations").add_argument("term")
+    a = sub.add_parser("affected", help="ce qui dépend d'un élément")
+    a.add_argument("term")
+    a.add_argument("--depth", type=int, default=2)
+    sub.add_parser("ticket", help="exigences, fichiers et symboles d'un ticket").add_argument("slug")
+    sub.add_parser("index", help="réindexer tout, ou seulement les fichiers donnés").add_argument("files", nargs="*")
+    args = p.parse_args(argv)
+    root = Path(args.root).resolve() if args.root else checkout_root()
+    try:
+        if args.cmd == "index":
+            g = refresh(root, args.files or None)
+            print(f"{len(g['nodes'])} nœuds, {len(g['edges'])} arêtes — {graph_dir(root) / 'graph.json'}")
+        else:
+            arg = getattr(args, "text", None) or getattr(args, "term", None) or getattr(args, "slug", None)
+            print(run(root, args.cmd, arg, depth=getattr(args, "depth", 2), budget=args.budget))
+    except GraphError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")  # console Windows en cp1252
+    sys.exit(main())

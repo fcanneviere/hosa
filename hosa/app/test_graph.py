@@ -165,6 +165,40 @@ class GraphTest(unittest.TestCase):
         g = graph.refresh(self.root, [str(outside), "README.md"])
         self.assertIn("app/billing.py", {n["id"] for n in g["nodes"]})
 
+    def test_queries_are_fresh_without_explicit_index(self):
+        self.touch("app/util.py", FILES["app/util.py"] + "\ndef extra():\n    pass\n")
+        self.assertIn("app/util.py::extra", graph.run(self.root, "explain", "extra"))
+
+    def test_query_outputs(self):
+        out = graph.run(self.root, "explain", "fmt")
+        self.assertIn("function app/util.py::fmt  app/util.py:1", out)
+        self.assertIn("← calls", out)
+        self.assertIn("app/billing.py::Invoice.total", out)
+        self.assertIn("app/billing.py::export_csv", graph.run(self.root, "affected", "app/util.py::fmt"))
+        self.assertIn("ticket:export-csv", graph.run(self.root, "affected", "app/util.py::fmt"))
+        out = graph.run(self.root, "ticket", "export-csv")
+        self.assertIn("exigence:facturation", out)
+        self.assertIn("app/billing.py", out)
+        self.assertIn("app/util.py::fmt", graph.run(self.root, "find", "fmt"))
+        self.assertTrue((self.root / ".hosa/graph/last_query").exists())
+
+    def test_ambiguous_name_lists_candidates(self):
+        with self.assertRaisesRegex(graph.GraphError, "ambigu"):
+            graph.run(self.root, "explain", "helper")
+
+    def test_budget_truncates(self):
+        out = graph.budgeted([f"ligne {i}" for i in range(1000)], budget=10)
+        self.assertIn("éléments de plus", out)
+        self.assertLess(len(out), 200)
+
+    def test_cli(self):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = graph.main(["--root", str(self.root), "ticket", "export-csv"])
+        self.assertEqual(code, 0)
+        self.assertIn("app/billing.py", buf.getvalue())
+
+
 
 if __name__ == "__main__":
     unittest.main()
