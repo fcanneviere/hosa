@@ -1,0 +1,59 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const { processPayload } = require('./graph');
+
+function project() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-graph-hook-'));
+  fs.mkdirSync(path.join(root, '.hosa', 'graph'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'src'));
+  fs.writeFileSync(path.join(root, '.hosa', 'graph', 'graph.json'), '{}');
+  fs.writeFileSync(path.join(root, '.hosa', 'graph', 'session'), '1');
+  return root;
+}
+
+test('reindexes an edited file of a project that has a graph', () => {
+  const root = project();
+  const calls = [];
+  const file = path.join(root, 'src', 'a.py');
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Edit', tool_input: { file_path: file } }, (...a) => calls.push(a));
+  assert.deepEqual(calls, [[root, ['index', file]]]);
+});
+
+test('ignores edits outside a graphed project', () => {
+  const calls = [];
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-nograph-')), 'a.py');
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: file } }, (...a) => calls.push(a));
+  assert.deepEqual(calls, []);
+});
+
+test('nudges once per session, never blocks', () => {
+  const root = project();
+  const p = { hook_event_name: 'PreToolUse', tool_name: 'Grep', cwd: path.join(root, 'src'), session_id: 's1' };
+  const out = processPayload(p);
+  assert.match(out.hookSpecificOutput.additionalContext, /graph\.py" explain\|affected\|ticket\|find/);
+  assert.equal(out.hookSpecificOutput.permissionDecision, undefined);
+  assert.equal(processPayload(p), null);
+  assert.ok(processPayload({ ...p, session_id: 's2' }));
+});
+
+test('no nudge when the graph was already queried this session', () => {
+  const root = project();
+  const later = new Date(Date.now() + 5000);
+  fs.writeFileSync(path.join(root, '.hosa', 'graph', 'last_query'), '1');
+  fs.utimesSync(path.join(root, '.hosa', 'graph', 'last_query'), later, later);
+  assert.equal(processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Glob', cwd: root, session_id: 's1' }), null);
+});
+
+test('session start marks the session and returns the command line, only inside a Hosa project', () => {
+  const { sessionStart } = require('./graph');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-session-'));
+  assert.equal(sessionStart(root), '');
+  fs.mkdirSync(path.join(root, '.hosa', 'kb'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'src'));
+  assert.match(sessionStart(path.join(root, 'src')), /## Project graph[\s\S]*graph\.py" ticket <slug>/);
+  assert.ok(fs.existsSync(path.join(root, '.hosa', 'graph', 'session')));
+});
