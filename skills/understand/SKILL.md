@@ -34,6 +34,10 @@ A combined brainstorm and grill session. By the end, both you and the user share
 
 The Phase 5 quiz is a hard gate by default. Per "Trust the user" (`using-hosa`'s Core Rules), the user may disable it, but only as an explicit, informed, upfront choice before Phase 1 starts — never as a mid-flow bypass once the spec is already presented, which Phase 5 refuses regardless of phrasing. If disabled upfront, skip Phase 5 and commit the spec directly after Phase 4's confirmation; say so once at the start.
 
+## Phase 0: Hosa Project Check
+
+If `.hosa/kb/` is populated beyond its example files, don't write a spec in `docs/specs/` — follow the redirect in `using-hosa` ("Generic vs. Hosa variant"): the need goes into the cahier des charges via `interview`/`redaction`, or `changement` if it alters a `stable` Exigence. Continue below only if there's no KB or the user explicitly asks to work outside the pipeline.
+
 ## Phase 1: Explore
 
 Before asking anything:

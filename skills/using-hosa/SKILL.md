@@ -99,6 +99,17 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 
 **Generic vs. Hosa variant**: several triggers overlap in shape between a generic lifecycle skill and a Hosa-pipeline skill — "teste le sprint" (`qa`) vs. "test this" (`test`), "implémente le ticket X" (`develop`) vs. "implement this" (`build`), "fais une recette de X" (`recette`) vs. "fais la recette du sprint" (`qa`). Before firing the Hosa variant, check that `.hosa/kb/` actually exists and is populated beyond its example files, and that the sprint/ticket named actually resolves to a file in `kb/sprints/`/`kb/tickets/`. No KB, or nothing resolves → use the generic variant, don't guess a Hosa context that isn't there. Both present and the message still names no sprint/ticket → ask which one.
 
+The reverse holds too: in a project whose `.hosa/kb/` is populated beyond its example files, work must go through the pipeline, or the KB never sees it — no ticket, no QA, no validation, no merge gate. There, the generic `understand`/`build`/`iterate`/`review` don't run as-is; each one's Step 0 redirects:
+
+| Generic | In a Hosa project |
+|---|---|
+| `understand` (new need) | `interview`/`redaction` → `relecture` → `contestation` → `backlog`; `changement` if it alters a `stable` Exigence |
+| `build` (implement) | `develop` on the matching ticket; no ticket yet → create it first (same route as `understand`) |
+| `iterate` (change existing) | `changement` if the behavior is specified by an Exigence; otherwise `hosa-product-owner` creates a `Ticket`, then `sprint`/`develop` |
+| `review` (matches spec?) | `validation` per ticket, `qa` per sprint |
+
+Only skip the redirect when the user explicitly asks to work outside the pipeline (a throwaway script, Hosa's own tooling) — then run the generic skill and say the result won't be tracked in the KB.
+
 **For standalone `dispatch`**: the user should provide a list of specific independent tasks. If they say "run in parallel" with vague tasks, ask: "What are the specific tasks you want to run in parallel, and for each — what's the goal and which files are involved?"
 
 ## Core Rules
