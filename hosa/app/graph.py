@@ -348,8 +348,22 @@ def write_code_map(root, graph, today=None):
             fh.write("* [code](code/) - Carte du code du projet géré (générée par hosa-graph)\n")
 
 
+def _linked_worktree(root):
+    """Dossier git commun si `root` est un worktree lié (celui d'un sprint), sinon None."""
+    try:
+        out = subprocess.run(["git", "-C", str(root), "rev-parse", "--git-dir", "--git-common-dir"],
+                             capture_output=True, text=True, check=True).stdout.splitlines()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    git_dir, common = (Path(root, d.strip()).resolve() for d in out[:2])
+    return common if git_dir != common else None
+
+
 def _ensure_gitignore(root):
-    gi = Path(root) / ".gitignore"
+    common = _linked_worktree(root)
+    # worktree de sprint : exclusion locale, jamais une modif d'un fichier suivi
+    gi = common / "info" / "exclude" if common else Path(root) / ".gitignore"
+    gi.parent.mkdir(parents=True, exist_ok=True)
     text = gi.read_text(encoding="utf-8") if gi.exists() else ""
     if ".hosa/graph/" not in text.splitlines():
         gi.write_text(text + ("" if not text or text.endswith("\n") else "\n") + ".hosa/graph/\n", encoding="utf-8")
@@ -390,6 +404,8 @@ def refresh(root, paths=None):
         for rel in sorted(current):
             st = (root / rel).stat()
             entry = files.get(rel)
+            if entry and "error" in entry["facts"]:  # extraction en échec : on retente à chaque refresh
+                entry = None
             if entry and entry["mtime"] == st.st_mtime:
                 continue
             data = (root / rel).read_bytes()
@@ -412,7 +428,7 @@ def refresh(root, paths=None):
         else:
             graph = old
         _write_json(gdir / "manifest.json", manifest)
-        if changed:
+        if changed and not _linked_worktree(root):  # la KB d'un worktree de sprint reste celle de la base
             write_code_map(root, graph)
     return graph
 
@@ -470,7 +486,9 @@ class Index:
 
     def affected(self, nid, depth=2):
         """Ce qui dépend de `nid` (parcours inverse calls/imports/inherits) + tickets qui touchent ces fichiers."""
-        seeds = [nid] + [e["dst"] for e in self.out.get(nid, []) if e["rel"] == "contains"]
+        seeds = [nid]
+        for s in seeds:  # tout le contenu, méthodes comprises
+            seeds += [e["dst"] for e in self.out.get(s, []) if e["rel"] == "contains"]
         dist = {s: 0 for s in seeds}
         frontier = list(seeds)
         for level in range(1, depth + 1):

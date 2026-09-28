@@ -151,6 +151,23 @@ class GraphTest(unittest.TestCase):
         self.assertIn("app/util.py", ids)
         self.assertNotIn("app/util.py::later", ids)
         self.assertIn("app/billing.py::Invoice", ids)
+        g = graph.refresh(self.root)  # grammaire revenue : le fichier en échec est reparsé
+        self.assertIn("app/util.py::later", {n["id"] for n in g["nodes"]})
+
+    def test_affected_file_reaches_method_callers(self):
+        self.touch("tools/pay.py", "def pay(inv):\n    inv.total()\n")
+        ix = graph.Index(graph.refresh(self.root))
+        hit = {n["node"]["id"] for n in ix.affected("app/billing.py")["nodes"]}
+        self.assertIn("tools/pay.py::pay", hit)
+
+    def test_linked_worktree_stays_clean(self):
+        wt = Path(self.tmp.name) / "wt"
+        git(self.root, "worktree", "add", "-q", str(wt))
+        graph.refresh(wt)
+        status = subprocess.run(["git", "-C", str(wt), "status", "--porcelain"],
+                                capture_output=True, text=True).stdout
+        self.assertEqual(status, "")
+        self.assertTrue((wt / ".hosa/graph/graph.json").exists())
 
     def test_stale_lock_is_taken_over(self):
         lock = self.root / ".hosa/graph/lock"
