@@ -51,6 +51,8 @@ Read every `Ticket` in `kb/tickets/` with a markdown link back to this Exigence,
 
 ## Step 3: Impact — What's Already Built
 
+First, for each of those tickets, run the project graph (command line under `## Project graph` in your context): `graph.py ticket <slug>` for its files and symbols, then `graph.py affected <file-or-symbol>` on each. Hand that output to every agent dispatched below as its starting point — they read those files, not the whole tree.
+
 For each ticket from Step 2 that isn't `state: todo`, dispatch the agent(s) whose layer that ticket actually touched (read its `Note technique`/`Placement architecture`/`Placement interface` sections to know which):
 - `hosa-data-engineer` — does the change alter what data is needed, its origin, or its shape? Scope it to this Exigence and the entities it already derived from it.
 - `hosa-architect` — does the change move a module boundary or invalidate an assumption the architecture made?

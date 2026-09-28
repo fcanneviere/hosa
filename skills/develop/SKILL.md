@@ -68,10 +68,12 @@ Vérifie `git -C <worktree> config user.name`/`user.email` avant tout commit ; s
 ```bash
 git -C <worktree> status
 git -C <worktree> add <uniquement les fichiers listés sous "Files Changed" par hosa-developer pour ce ticket — jamais kb/tickets/ ni un autre fichier de la KB Hosa>
-git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 caractères>"
+git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 caractères>" -m "Hosa-Ticket: <slug-ticket>"
 ```
 
 Un seul commit pour tout le ticket. Aucun `Co-Authored-By`, aucun auteur additionnel — identité git de l'utilisateur uniquement.
+
+Le trailer `Hosa-Ticket:` relie le ticket aux fichiers du commit dans le graphe du projet (relation `touches`) — ne jamais l'omettre.
 
 ## Step 7: Log
 

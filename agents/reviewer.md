@@ -2,7 +2,7 @@
 name: hosa-reviewer
 description: Use this agent to check whether the implementation satisfies every requirement in the spec. Returns PASS, PASS-WITH-NOTES, or FAIL with a precise gap list. Used by the review skill to drive the react loop until all requirements are met.
 model: opus
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash
 memory: project
 ---
 
@@ -27,6 +27,8 @@ Read the spec and extract every explicit requirement, constraint, and edge case.
 
 ### Step 2: Check each requirement
 For each requirement, find the corresponding implementation. Answer: is this requirement satisfied?
+
+Locate it with the project graph before grepping (command line under `## Project graph` in your context; `--root` = the checkout under review): `graph.py find <term>` / `explain <name>` give `file:line` and callers — then read that region. Bash is for these graph queries only.
 
 - **Satisfied**: the implementation correctly handles this requirement. Note the file and location.
 - **Partial**: the implementation partially handles it — some cases work, others don't.
