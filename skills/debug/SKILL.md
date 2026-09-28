@@ -18,6 +18,7 @@ Single-area problem → one hosa-debugger
 Multi-area problem → dispatch multiple hosa-debugger agents in parallel
         ↓
 Present root cause + evidence to user → wait for confirmation
+  (auto mode from qa: skip, apply directly)
         ↓ root cause is in user's code
 Write failing regression test reproducing the symptom (if a test framework exists)
         ↓
@@ -73,6 +74,8 @@ Present the root cause and evidence to the user before applying any fix:
 > "Root cause: [description]. Evidence: [specific file:line or log output]. Proposed fix: [what to change]. Shall I apply it?"
 
 Wait for the user to confirm or redirect. Do not apply the fix without confirmation.
+
+**Auto mode (invoked by `qa` Step 5b):** skip this confirmation when there is one clear root cause in the user's code — go straight to Step 5 with the proposed fix, and report the root cause and evidence in the final output instead. The dependency and ambiguous cases below still stop: return them to `qa`, which escalates to the user.
 
 **If the root cause is in a third-party dependency:** do not apply a workaround without user approval:
 > "The root cause is in `[dependency]` version [X], specifically [behavior]. This is outside your code. Options: [A — upgrade to version Y which has a fix], [B — apply this workaround in your code], [C — open an issue upstream]. Which do you want?"

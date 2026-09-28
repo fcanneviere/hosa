@@ -25,7 +25,11 @@ chaque persona listée
         ↓
 Redispatch hosa-qa-lead (Mode 2 Phase 2) avec les résultats
 → classe, route
-        ↓
+        ↓ échec technique → debug sur ce ticket → reboucle le
+          brief/tests/recette de ce seul ticket
+        ↓ même échec après 2 cycles → stoppe, escalade à
+          l'utilisateur
+        ↓ ticket propre
 Fin de sprint : dispatch hosa-qa-lead (Mode 3) pour la santé
 de l'outillage
         ↓
@@ -50,7 +54,7 @@ For each ticket, dispatch `hosa-qa-lead` (Mode 2 Phase 1, `agents/qa-lead.md`). 
 
 ## Step 3: Run Technical Tests Per Ticket
 
-Dispatch `hosa-tester` with the brief from Step 2. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
+Dispatch `hosa-tester` with the brief from Step 2. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, then hand it to Step 5b once this ticket's results are recorded; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
 
 ## Step 4: Run Recette Per Ticket
 
@@ -60,9 +64,17 @@ For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user
 
 Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every `hosa-key-user` recette result from Steps 3-4. It appends `## Résultats techniques`, records each recette result, refreshes the `Test Plan`'s `generated` frontmatter to this write's timestamp, and logs to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched).
 
+## Step 5b: Correction Loop (Technical Failures Only)
+
+If Step 3 found an implementation bug for this ticket: invoke `debug` in auto mode with the failing test, its output, and the ticket as the symptom — it applies and commits its fix without asking. If `debug` returns a dependency or ambiguous root cause instead, stop the loop for this ticket and escalate to the user. Once `debug` has committed its fix, re-run Steps 2-5 for **this ticket only**, not the whole sprint. Repeat until the ticket's technical tests pass.
+
+Count cycles per ticket. If the same test is still failing for the same reason after 2 `debug` cycles, stop looping and escalate to the user: report what's still failing and what each cycle tried, and ask whether the problem is the ticket itself (`hosa-product-owner`), the structure (`architecture`/`schema-app`/`schema-db`), or the test. A different failure appearing after a fix restarts the count for that failure.
+
+Recette failures never enter this loop — Step 4 already routes them to `hosa-product-owner`, since the ticket needs rework, not the code. Test infrastructure issues don't either — report them as usual.
+
 ## Step 6: Tooling Health
 
-Once every ticket in the sprint has been run through Steps 2-5: dispatch `hosa-qa-lead` (Mode 3 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 3 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
+Once every ticket in the sprint has been run through Steps 2-5b: dispatch `hosa-qa-lead` (Mode 3 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 3 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
 
 ## No Commits
 
@@ -75,7 +87,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel/Non applicable
 
 ## Échecs techniques
-- <ticket> — [détail] → ticket créé : `kb/tickets/<slug>.md` → suggéré : debug
+- <ticket> — [détail] → ticket créé : `kb/tickets/<slug>.md` → corrigé après N cycle(s) debug / escaladé après 2 cycles
 [Si aucun : "Aucun"]
 
 ## Recette à corriger
