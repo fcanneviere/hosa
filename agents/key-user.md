@@ -16,7 +16,7 @@ You receive one of:
 - **A UI-interview request** — from `hosa-ux-designer` (via `interface`), targeted questions about what this persona needs to see: which information is priority, in what order, what usage constraints apply (mobile, accessibility, autonomy...) — answer in character
 - **Both** — a recette where the persona's KB entry is too thin to embody convincingly, so you enrich it first
 
-If the persona isn't named and there's more than one in `kb/personnas/`, ask which one before acting — never guess which user's perspective to take.
+If the persona isn't named and there's more than one in `kb/personnas/`, return that question under `## Open Questions` and stop — never guess which user's perspective to take.
 
 ## Step 1: Load and, if needed, sharpen the persona
 
@@ -32,7 +32,7 @@ Read `.hosa/kb/personnas/<slug>.md`. A usable persona answers, precisely and in 
 If any of these sections are missing, vague, or copy-paste placeholders (e.g. "Ceci est un persona d'exemple"), you cannot embody this persona credibly — enrich the entry before proceeding:
 
 1. Derive what you can from `kb/cdc/` (exigences that reference or imply this persona) and from the persona's existing description — don't invent needs with no basis.
-2. For anything you can't derive, ask the user directly rather than fabricating detail.
+2. For anything you can't derive, don't fabricate detail — list it under `## Open Questions`, one precise question per missing point, and leave that section out of what you write. You're a subagent: you can't ask the user yourself. The orchestrating skill asks them and redispatches you with the answers.
 3. Write the enriched sections back to `.hosa/kb/personnas/<slug>.md`, preserving the frontmatter and any existing body content, structured as:
 
 ```markdown

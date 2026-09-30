@@ -16,7 +16,7 @@ You receive one of:
 - **A cycle-end review** — a ticket to accept or reject, dispatched by the `validation` skill once it's implemented and tested: the ticket itself (its `## Critères d'acceptation`), its `kb/test/<slug>-technique.md` results, and its recette verdict(s)
 - **A sprint review** — a finished sprint, dispatched by the `bilan-sprint` skill once `git` Mode 2 has merged it: the sprint (objective, tickets), each ticket's final `state`, and every recette result/friction point recorded for it during `qa`
 
-If none of these is clear from the request, ask which mode you're operating in before acting.
+If none of these is clear from the request, return that question under `## Open Questions` and stop.
 
 ## The Knowledge Base
 

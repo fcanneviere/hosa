@@ -53,8 +53,12 @@ def node_id(path, qual=None):
 
 # --- Fichiers et manifeste ---------------------------------------------------
 
+# Jamais indexés : la KB/le graphe eux-mêmes, et les worktrees de sprint (copies du même code).
+SKIP_PREFIXES = (".hosa/", ".worktrees/")
+
+
 def tracked_files(root):
-    """Fichiers de code suivis ou non ignorés par git (respecte .gitignore), hors `.hosa/`."""
+    """Fichiers de code suivis ou non ignorés par git (respecte .gitignore), hors `SKIP_PREFIXES`."""
     try:
         out = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
                              capture_output=True, check=True).stdout.decode("utf-8", "replace")
@@ -62,7 +66,7 @@ def tracked_files(root):
     except (subprocess.CalledProcessError, FileNotFoundError):
         files = [p.relative_to(root).as_posix() for p in Path(root).rglob("*")
                  if p.is_file() and not any(part.startswith(".") for part in p.relative_to(root).parts)]
-    return sorted({f for f in files if not f.startswith(".hosa/") and gx.lang_of(f) and (Path(root) / f).is_file()})
+    return sorted({f for f in files if not f.startswith(SKIP_PREFIXES) and gx.lang_of(f) and (Path(root) / f).is_file()})
 
 
 def _load_json(path, default):
@@ -395,7 +399,7 @@ def refresh(root, paths=None):
                     rel = Path(p).resolve().relative_to(root).as_posix() if Path(p).is_absolute() else Path(p).as_posix()
                 except ValueError:  # fichier hors du checkout
                     continue
-                if not gx.lang_of(rel) or rel.startswith(".hosa/"):
+                if not gx.lang_of(rel) or rel.startswith(SKIP_PREFIXES):
                     continue
                 if (root / rel).is_file():
                     current.add(rel)

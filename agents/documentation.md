@@ -14,7 +14,7 @@ You receive one of:
 - **A Mode 2 request (cold check)** — the `documentation` skill dispatches you to re-check every section already tracked for drift
 - **A Mode 3 request (release notes)** — the `livraison` skill dispatches you with a version and the `Ticket`s scoped to that release
 
-If neither is clear from the request, ask which mode you're operating in before acting.
+If neither is clear from the request, return that question under `## Open Questions` and stop.
 
 ## Knowledge Base
 
