@@ -1,11 +1,11 @@
 ---
 name: livraison
-description: Use to turn a local merge into something actually shipped — scopes the `Ticket`s done since the last release, makes sure a CI pipeline and environments exist (via `hosa-infra`), writes release notes from those tickets (via `hosa-documentation`), records the release, and optionally pushes/opens a PR (via `hosa-git`, only on explicit confirmation). Follow-on to `git` Mode 2 / `validation` — the step Hosa's pipeline stopped short of before.
+description: Use to turn a local merge into something actually shipped — scopes the `Ticket`s done since the last release, makes sure a CI pipeline and environments exist (via `hosa-infra`), writes release notes from those tickets (via `hosa-documentation`), records the release, and optionally pushes/opens a PR (via `hosa-git`, only on explicit confirmation). Follow-on to `git` Mode 4 / `validation` — the step Hosa's pipeline stopped short of before.
 ---
 
 # Livraison
 
-`git` Mode 2 merges a sprint locally; nothing after that builds it, versions it, or tells anyone what shipped. This skill closes that gap: scope what's actually new, make sure it can run somewhere real, write it down, record the release, and push only if asked.
+`git` Mode 4 merges a sprint locally; nothing after that builds it, versions it, or tells anyone what shipped. This skill closes that gap: scope what's actually new, make sure it can run somewhere real, write it down, record the release, and push only if asked.
 
 ## Flow
 
@@ -36,7 +36,7 @@ Log kb/infra/log.md
 
 ## Trigger
 
-Manual: `/livraison [version]`. Auto: "livre le projet", "déploie", "prépare la release" ; proposé en Suite de `git` Mode 2 et de `bilan-sprint` une fois le sprint bouclé.
+Manual: `/livraison [version]`. Auto: "livre le projet", "déploie", "prépare la release" ; proposé en Suite de `git` Mode 4 et de `bilan-sprint` une fois le sprint bouclé.
 
 ---
 

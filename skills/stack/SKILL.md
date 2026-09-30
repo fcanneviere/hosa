@@ -10,6 +10,9 @@ Turns "what the application must do" (the stable cahier des charges) into a chos
 ## Flow
 
 ```
+Demande Q1 : open source ou SaaS payant (sauf si déjà dans
+kb/stack/orientation.md)
+        ↓
 Dispatch hosa-senior-dev (Stack Process, Steps 1-4: find project,
 derive needs, check existing decisions, propose options)
         ↓ Open Questions (no stable Exigence, no project path) → relay to user, stop
@@ -31,27 +34,38 @@ Manual: `/stack`. Auto: immediately after a clean `contestation` sign-off, or "c
 
 ---
 
-## Step 1: Dispatch for Options
+## Step 1: Open Source or SaaS
 
-Dispatch `hosa-senior-dev` (Stack Process, `agents/senior-dev.md`) to find the managed project, derive technical needs from the stable cahier des charges, check `kb/stack/` and the managed project's existing code for decisions already fixed, and propose 2-3 options per still-open category.
+Unless `kb/stack/orientation.md` already records it, ask first — it's a budget and dependency choice the user owns:
+
+"Q1. Pour la stack, tu préfères :
+1. Open source, auto-hébergeable, sans abonnement (recommandé)
+2. Services SaaS payants (hébergement géré, auth/BDD en service)
+3. Mixte — open source par défaut, SaaS là où ça fait gagner beaucoup de temps"
+
+Pass the answer to `hosa-senior-dev` with the dispatch below.
+
+## Step 2: Dispatch for Options
+
+Dispatch `hosa-senior-dev` (Stack Process, `agents/senior-dev.md`) with the orientation to find the managed project, derive technical needs from the stable cahier des charges, check `kb/stack/` and the managed project's existing code for decisions already fixed, and propose 2-3 options per still-open category.
 
 If it returns an Open Question (no `stable` `Exigence` yet, no managed-project path) — relay it to the user, get the answer, and only redispatch once you have it. Never guess a path or proceed against a `draft` CDC yourself.
 
-## Step 2: User Picks
+## Step 3: User Picks
 
 Present the options and trade-offs `hosa-senior-dev` returned. Wait for the user's choice per category.
 
-## Step 3: Record the Decision
+## Step 4: Record the Decision
 
 Redispatch `hosa-senior-dev` with the user's choice for each category. It writes the `Stack Decision`(s) to `kb/stack/` and returns a `## Documentation à produire` field (category, choice, justification, options presented and rejected).
 
-## Step 4: Dispatch Documentation
+## Step 5: Dispatch Documentation
 
 Dispatch `hosa-documentation` (Mode 1) with what `hosa-senior-dev` returned under `## Documentation à produire` — it writes the matching ADR into the managed project. Wait for its confirmation before reporting the decision as fully recorded.
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 

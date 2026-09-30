@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → relecture → contestation). Writes a `Compte Rendu` of the raw session to `.hosa/kb/cdc/interviews/` for traceability, then hands structured notes to `redaction`.
+description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → fondamentaux → relecture → contestation). Writes a `Compte Rendu` of the raw session to `.hosa/kb/cdc/interviews/` for traceability, then hands structured notes to `redaction`.
 ---
 
 # Interview
@@ -10,7 +10,8 @@ Gathers raw material for the cahier des charges: which business processes exist,
 ## Flow
 
 ```
-Ask user: quels processus métier à couvrir ? (un à la fois, jusqu'à "terminé")
+Propose les processus métier déduits de l'identité + personas
+→ l'utilisateur confirme/ajuste (rien à déduire → demande un à un)
         ↓
 Pour chaque processus :
   Identifie les personas concernés (demande si ambigu)
@@ -39,7 +40,7 @@ Manual: `/interview`. Auto: "rédige le cahier des charges", "interview les pers
 
 ## Step 1: List the Processes
 
-Ask: "Quels sont les grands processus métier à couvrir dans le cahier des charges ? (un par un, dis 'terminé' quand c'est bon)". One at a time, waiting for each answer. Zero is not a valid end state here — unlike personas, a cahier des charges needs at least one process; if the user says "terminé" immediately, ask once more before accepting it.
+First read `kb/project/identity.md` and `kb/personnas/`, and derive a short list of candidate processes from them — each one a concrete activity a persona carries out end to end (e.g. "préparer la liste", "faire les courses"), not a feature. Propose it: "Voici les processus métier que je déduis du projet et des personas : [liste]. Tu confirmes, tu en retires, ou tu en ajoutes ?" Adjust from the answer until the user confirms. Nothing to derive from (no identity, no personas) → fall back to asking: "Quels sont les grands processus métier à couvrir dans le cahier des charges ? (un par un, dis 'terminé' quand c'est bon)", one at a time. Zero is not a valid end state here — unlike personas, a cahier des charges needs at least one process; if the user says "terminé" immediately, ask once more before accepting it.
 
 ## Step 2: Per Process — Identify Personas
 
@@ -95,7 +96,7 @@ Restitute the same notes to the user, grouped by process (same structure as the 
 
 ## No Commits
 
-This skill writes the `Compte Rendu` but never commits it — same as every other pipeline skill, the user or `kb-commit` decides when. It never writes `Exigence` concepts; that's `redaction`'s job. Any persona Pain points/Quick wins that `hosa-key-user` appended during a process-interview dispatch are already written to `kb/personnas/<slug>.md` and logged to `kb/personnas/log.md` by that agent — report them in the handoff, but they aren't this skill's commit to make either.
+This skill writes the `Compte Rendu` but never commits it — same as every other pipeline skill, The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints". It never writes `Exigence` concepts; that's `redaction`'s job. Any persona Pain points/Quick wins that `hosa-key-user` appended during a process-interview dispatch are already written to `kb/personnas/<slug>.md` and logged to `kb/personnas/log.md` by that agent — report them in the handoff, but they aren't this skill's commit to make either.
 
 ## Output
 

@@ -1,6 +1,6 @@
 ---
 name: bilan-sprint
-description: Use to close a sprint after it merges — dispatches `hosa-product-owner` (Responsibility 7) to judge whether its objective was met, list what was delivered vs. deferred, surface recurring friction from its recettes, and write a `Sprint Review` plus follow-up tickets or process Design Rules. Follow-on to `git` Mode 2.
+description: Use to close a sprint after it merges — dispatches `hosa-product-owner` (Responsibility 7) to judge whether its objective was met, list what was delivered vs. deferred, surface recurring friction from its recettes, and write a `Sprint Review` plus follow-up tickets or process Design Rules. Follow-on to `git` Mode 4.
 ---
 
 # Bilan Sprint
@@ -11,7 +11,7 @@ Sprint Review and retro: not just "which tickets closed", but whether the sprint
 
 ```
 Lit kb/sprints/<slug>.md (state: done attendu) et ses tickets
-        ↓ pas encore fusionné (state != done) → propose git Mode 2
+        ↓ pas encore fusionné (state != done) → propose git Mode 4
           d'abord, stoppe
 Dispatch hosa-product-owner (Responsibility 7)
         ↓
@@ -25,13 +25,13 @@ Rapporte le bilan
 
 ## Trigger
 
-Manual: `/bilan-sprint <slug-sprint>`. Auto: "fais le bilan du sprint X", "rétro du sprint X", "sprint review" ; proposé en Suite de `git` Mode 2.
+Manual: `/bilan-sprint <slug-sprint>`. Auto: "fais le bilan du sprint X", "rétro du sprint X", "sprint review" ; proposé en Suite de `git` Mode 4.
 
 ---
 
 ## Step 1: Read the Sprint and Check Preconditions
 
-Read `kb/sprints/<slug>.md`. If `state` isn't `done` (the sprint hasn't merged yet), say so and propose `git` Mode 2 first — stop, a review before merge is reviewing an unfinished sprint. Read its `## Tickets` list and each linked `kb/tickets/<slug-ticket>.md` for final `state`.
+Read `kb/sprints/<slug>.md`. If `state` isn't `done` (the sprint hasn't merged yet), say so and propose `git` Mode 4 first — stop, a review before merge is reviewing an unfinished sprint. Read its `## Tickets` list and each linked `kb/tickets/<slug-ticket>.md` for final `state`.
 
 ## Step 2: Dispatch `hosa-product-owner`
 
@@ -43,7 +43,7 @@ Confirm `kb/sprints/log.md` was updated for the review, and `kb/tickets/log.md`/
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 

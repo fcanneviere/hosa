@@ -1,6 +1,6 @@
 ---
 name: fondamentaux
-description: Use to check the cahier des charges against a standard checklist of cross-cutting essentials (admin interface, login, rights, settings, import/export, backup, audit log, notifications) that personas rarely think to ask for, and write missing ones as new `Exigence`. Companion check to the CDC pipeline (interview/redaction/relecture/contestation) — usable anytime, not a forced stage.
+description: Use to check the cahier des charges against a standard checklist of cross-cutting essentials (admin interface, login, rights, settings, import/export, backup, audit log, notifications) that personas rarely think to ask for, and write missing ones as new `Exigence`. Mandatory CDC stage owned by `hosa-product-owner`, between `redaction` and `relecture` — also usable anytime after.
 ---
 
 # Fondamentaux
@@ -15,14 +15,14 @@ Lit kb/cdc/ existant
 Pour chaque item de la checklist standard : couvert par une
 Exigence existante, ou manquant ?
         ↓
-Pour chaque item manquant : demande à l'utilisateur si le
-projet en a besoin
+Pour les items manquants : une seule série Q1, Q2…, réponse
+recommandée par le PO selon le projet
         ↓ oui                              ↓ non
 Écrit une Exigence (kb/cdc/, status: draft)   Noté "hors périmètre" dans le rapport
         ↓
 Log kb/cdc/log.md
         ↓
-Propose d'enchaîner sur `relecture`
+Enchaîne sur `relecture`
 ```
 
 ## Trigger
@@ -36,6 +36,7 @@ Manual: `/fondamentaux`. Auto: "Vérifie les fondamentaux du cahier des charges"
 Fixed list — don't invent extra items and don't drop any without asking the user first:
 
 - **Interface d'administration** : back-office pour gérer contenus/utilisateurs/données de référence
+- **Gestion des utilisateurs** : création/invitation, profil, désactivation, suppression d'un compte
 - **Authentification (connexion)** : page de login, gestion de session
 - **Gestion des droits et rôles** : qui peut faire quoi
 - **Récupération de compte** : mot de passe oublié, réinitialisation
@@ -59,7 +60,7 @@ Read every `Exigence` in `kb/cdc/`. For each checklist item, judge — don't pat
 
 ## Step 3: Confirm and Write Missing Items
 
-For each **Manquant** item, ask the user one at a time: "Le projet a-t-il besoin de <item> ? (ex: <exemple concret pour ce projet>)". Don't assume every checklist item applies — a project with no external data source has no real need for import, for instance.
+Act as `hosa-product-owner`: the essentials are the PO's responsibility, not something the user must think of. For each **Manquant** item, decide the recommended answer from the project (`kb/project/identity.md`, personas, existing exigences) — e.g. any app with more than one user needs user management, authentication and rights. Then ask all the Manquant items at once, as one numbered block (`using-hosa` Core Rules, "Question format"): "Q1. <item> — <exemple concret pour ce projet> : oui (recommandé) / non". Don't assume every item applies — a project with no external data source has no real need for import, for instance, and its recommended answer is "non".
 
 - **Non** → note "Hors périmètre (confirmé par l'utilisateur)" in the report, don't write anything.
 - **Oui, item fonctionnel** → ask only what's missing to fill the six sections (objectif, données en entrée/sortie, qui fait quoi, responsable) — a couple of targeted questions, not a full `interview` pass. Then write `kb/cdc/<slug-item>.md` using the same structure as `redaction`:
@@ -101,7 +102,7 @@ Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most r
 
 ## No Commits
 
-You don't commit. Report what changed in the KB and let the user or the orchestrating flow decide when to commit.
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -114,5 +115,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - [If none: "Aucune — tout était déjà couvert ou hors périmètre"]
 
 ## Suite
-Je lance `relecture` maintenant ?
+Fondamentaux couverts — relecture en cours (skill `relecture`).
 ```

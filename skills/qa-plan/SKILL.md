@@ -1,6 +1,6 @@
 ---
 name: qa-plan
-description: Use to prepare a sprint's technical test plan — for each ticket in a composed sprint, defines the technical test cases (grounded in the senior dev's recorded stack decisions) and identifies which persona(s) must validate it via recette. Follow-on to `sprint`, precondition for `qa`.
+description: Use to prepare a sprint's technical test plan — for each ticket in a composed sprint, defines the technical test cases (grounded in the senior dev's recorded stack decisions) and identifies which persona(s) must validate it via recette. Runs right after `sprint`, before the sprint starts (`git` Mode 1) — tests are part of the sprint, not an afterthought. Precondition for `qa`.
 ---
 
 # QA Plan
@@ -22,7 +22,7 @@ ne re-génère pas
 Dispatch hosa-data-engineer (Responsabilité 4) : crée/étend,
 documente et charge le jeu de données de test
         ↓
-Propose de lancer qa une fois le sprint implémenté
+Démarre le sprint (git Mode 1) — qa s'enchaînera après develop
 ```
 
 ## Trigger
@@ -51,7 +51,7 @@ Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` (Res
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -70,5 +70,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Je lance `qa` une fois ce sprint implémenté ?
+Plan de tests prêt — démarrage du sprint (skill `git`, Mode 1). `qa` s'enchaînera automatiquement une fois le sprint développé.
 ```

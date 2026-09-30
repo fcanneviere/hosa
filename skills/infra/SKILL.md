@@ -31,7 +31,7 @@ Manual: `/infra`. Auto: immediately after `stack`, or "mets en place l'environne
 
 ### Step 1: Dispatch for Setup
 
-Dispatch `hosa-infra` (Mode 1, `agents/infra.md`) to find the managed project, check the recorded `Stack Decision`s, read existing infrastructure and non-functional needs, determine the Docker composition, pin versions, write and start the environment, and update `kb/infra/environnement-docker.md`.
+Dispatch `hosa-infra` (Mode 1, `agents/infra.md`) to find the managed project, check the recorded `Stack Decision`s, read existing infrastructure and non-functional needs, determine the Docker composition, pin versions, write and start the environment, install the test framework and the database migration tool (mandatory from day one — never offered as an option), and update `kb/infra/environnement-docker.md`.
 
 If it returns an Open Question (no project path, no `Stack Decision` yet, Docker unavailable) — relay it to the user, get the answer, and only redispatch once you have it. Never guess a path or an installed version yourself.
 
@@ -50,13 +50,14 @@ Any other agent, when it needs a server/framework/dependency it can't provision 
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
 ```
 ## Environnement Docker
 - Services : <service> (<image>:<version épinglée>)
+- Outillage : tests <framework> (`<commande>`), migrations <outil> (`<commande>`)
 - Documentation : `<path>`
 
 ## Open Questions

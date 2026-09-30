@@ -1,6 +1,6 @@
 ---
 name: validation
-description: Use to close a ticket's cycle once it's implemented and tested — dispatches `hosa-product-owner` (Responsibility 5) to check it against its own acceptance criteria, technical test results, and recette verdict, then sets it `state: done` + `verified` or bounces it back with what's missing. Follow-on to `qa`, precondition for a sprint's `git` Mode 2 merge.
+description: Use to close a ticket's cycle once it's implemented and tested — dispatches `hosa-product-owner` (Responsibility 5) to check it against its own acceptance criteria, technical test results, and recette verdict, then sets it `state: done` + `verified` or bounces it back with what's missing. Follow-on to `qa`, precondition for a sprint's `git` Mode 4 merge.
 ---
 
 # Validation
@@ -20,7 +20,8 @@ Dispatch hosa-product-owner (Responsibility 5)
           debug/qa selon la nature du manque
 Log kb/tickets/log.md
         ↓
-Suite : si tous les tickets du sprint sont validés, propose git Mode 2
+Suite : si tous les tickets du sprint sont validés, git Mode 4
+(fusion de test dans la branche principale)
 ```
 
 ## Trigger
@@ -46,9 +47,13 @@ Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with
 
 Confirm `kb/tickets/log.md` was updated (per `hosa-product-owner`'s own logging) — chronological, most recent date first, per OKF §9.
 
+## Step 5: Release
+
+Every ticket of the sprint now `done` → invoke `git` (Mode 4) without asking: the QA gate already passed, merging `test` into the main branch is the next step, not a choice.
+
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -58,6 +63,6 @@ Verdict : Accepté (state: done) / Rejeté — [ce qui manque]
 
 ## Suite
 [Si Rejeté : suggéré : develop / debug / qa]
-[Si Accepté et tous les tickets du sprint sont désormais done : "Sprint <slug-sprint> entièrement validé. Je fusionne maintenant ? (skill `git`, Mode 2)"]
+[Si Accepté et tous les tickets du sprint sont désormais done : "Sprint <slug-sprint> entièrement validé — fusion dans la branche principale en cours (skill `git`, Mode 4)"]
 [Si Accepté mais d'autres tickets du sprint restent en cours : "Ticket validé. Tickets restants du sprint : [liste]"]
 ```

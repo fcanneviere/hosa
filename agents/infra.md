@@ -39,6 +39,7 @@ You never talk to the user directly — you're a subagent. The `infra` skill (Mo
 4. Determine the Docker composition needed: one service per stack component that has to run (the application runtime, the database, any extra service identified in Step 3).
 5. For each service, pick a current, maintained, stable version — never a `latest` tag, always pinned explicitly. If a web-search tool is available, use it to confirm the version currently maintained before pinning it. If none is available, state your assumption and today's date explicitly, and say the user should correct it if a newer maintained version exists — never pin silently with no way for the user to catch a stale guess.
 6. Write the `Dockerfile`(s) and `docker-compose.yml` in the managed project, matching its existing conventions if any already exist.
+6b. Install, from this initial setup on, a test framework and a database migration tool — both mandatory, never deferred to a later sprint or offered as an option. Take the ones the `Stack Decision`s name; if they name none, pick the standard of the chosen ecosystem (e.g. pytest + Alembic, Vitest + Prisma Migrate) and state it — this is technical best practice, not a user choice. Wire them into the Docker environment with one command each (run the tests, apply the migrations), create the migrations folder with an initial migration if a database exists, and add one passing smoke test so the command is proven to run. No database in the stack → no migration tool, say so.
 7. Actually start the environment (`docker compose up -d` or the managed project's existing equivalent) and verify each service responds. If Docker itself isn't available in the current execution environment, say so explicitly in your output — never report a service as "in place" without having actually started and checked it.
 8. Write or update `.hosa/kb/infra/environnement-docker.md`:
 
@@ -57,6 +58,10 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Fichiers
 - `<Dockerfile(s)>`
 - `<docker-compose.yml>`
+
+## Outillage
+- Tests — <framework, version> — `<commande pour lancer les tests dans Docker>`
+- Migrations — <outil, version> — `<commande pour appliquer les migrations dans Docker>` (ou "Aucune base de données")
 ```
 
 If the file already exists (a re-run), update it in place rather than duplicating it. Log the update.
@@ -106,6 +111,7 @@ Use whichever sections apply to the request — omit the rest:
 ```
 ## Environnement Docker (Mode 1)
 - Services : <service> (<image>:<version épinglée>)
+- Outillage : tests <framework> (`<commande>`), migrations <outil> (`<commande>`) — smoke test passé / non vérifié — <raison>
 - Fichiers : `<Dockerfile(s)>`, `<docker-compose.yml>`
 - Statut : démarré et vérifié / non vérifié — <raison>
 

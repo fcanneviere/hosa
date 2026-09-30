@@ -88,7 +88,7 @@ Any **Bloquant** anomaly: dispatch `hosa-product-owner` (Responsibility 2/4) to 
 
 ## No Commits
 
-You don't commit. Report what changed in the KB and let the user decide.
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 

@@ -1,6 +1,6 @@
 ---
 name: redaction
-description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
+description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → fondamentaux → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
 ---
 
 # Redaction
@@ -18,7 +18,7 @@ Pour chaque processus : écrit une Exigence structurée
         ↓
 Log kb/cdc/log.md
         ↓
-Propose d'enchaîner sur `relecture`
+Enchaîne sur `fondamentaux` (obligatoire)
 ```
 
 ## Trigger
@@ -79,7 +79,7 @@ Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most r
 
 ## No Commits
 
-You don't commit. Report what changed in the KB and let the user or the orchestrating flow decide when to commit.
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -88,5 +88,7 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <titre> (status: draft)
 
 ## Suite
-Je lance `relecture` maintenant ?
+Rédaction terminée — vérification des fondamentaux en cours (skill `fondamentaux`).
 ```
+
+Then invoke `fondamentaux` without asking — it's a mandatory stage.

@@ -1,6 +1,6 @@
 ---
 name: develop
-description: Use to implement a single sprint ticket — breaks it into short sequential tasks (`hosa-tech-lead`) and implements them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Never extends that structure itself; stops and reports if a ticket needs one. Follow-on to `git` Mode 1, precondition for `qa-plan`/`qa`.
+description: Use to implement a single sprint ticket — breaks it into short sequential tasks (`hosa-tech-lead`) and implements them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Never extends that structure itself; stops and reports if a ticket needs one. Follow-on to `git` Mode 1; chains to the next ticket, then promotes the sprint to `test` and runs `qa`.
 ---
 
 # Develop
@@ -30,7 +30,8 @@ git add (fichiers du ticket) + commit unique, identité utilisateur
         ↓
 Log kb/tickets/log.md
         ↓
-Suite : propose qa-plan
+Ticket suivant du sprint, ou, s'il n'en reste
+aucun : hosa-git Mode 2 (passage en test) → qa
 ```
 
 ## Trigger
@@ -79,6 +80,14 @@ Le trailer `Hosa-Ticket:` relie le ticket aux fichiers du commit dans le graphe 
 
 Log `kb/tickets/log.md` — chronologique, plus récent en premier, OKF §9.
 
+## Step 8: Enchaîne
+
+Sans demander :
+- Il reste dans le sprint un ticket sans commit `Hosa-Ticket:` sur la branche → relance ce skill sur le suivant (ordre de `## Tickets`).
+- Tous les tickets sont commités → dispatch `hosa-git` (Mode 2, passage en test), puis invoque `qa` sur le sprint. Les tests sont obligatoires : jamais proposés comme une option.
+
+Un blocage (étapes 3-4) ou un rejet à l'étape 5 arrête l'enchaînement.
+
 ## Commits
 
 Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`/`hosa-developer` eux-mêmes — toujours sous l'identité git de l'utilisateur, jamais de co-auteur.
@@ -94,5 +103,5 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 [Ambiguïté ou déviation structurelle, et ce qui est proposé pour la lever]
 
 ## Suite
-Je prépare les tests du ticket maintenant ? (skill `qa-plan`)
+[Ticket suivant : <slug> — en cours] ou [Sprint passé en test — QA en cours (skill `qa`)]
 ```

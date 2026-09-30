@@ -127,7 +127,7 @@ Never block ticket creation on a missing interface doc.
 
 ## Step 6: Priority and Estimate
 
-Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter.
+Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then set each ticket's `estimate` yourself, in the senior dev role: `1` (small, ≤ ½ day), `2` (medium, ≈ 1 day) or `3` (large, 2-3 days) points, from the technical note of Step 3 — the complexity estimate is the senior dev's call, not the user's. A ticket whose note still says "Stack pas encore choisie" gets no `estimate` rather than a guess; anything larger than 3 is a sign the ticket should be split — say so in the report.
 
 ## Step 7: Log
 
@@ -135,7 +135,7 @@ Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 

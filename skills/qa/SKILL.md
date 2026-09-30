@@ -10,11 +10,11 @@ Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical t
 ## Flow
 
 ```
-Vérifie que chaque ticket a un kb/test/<slug-ticket>-
-technique.md
-        ↓ manquant
-Propose de lancer qa-plan d'abord
-        ↓ tous présents
+Vérifie que le sprint est passé en test (test_worktree) et que
+chaque ticket a un kb/test/<slug-ticket>-technique.md
+        ↓ pas en test → hosa-git Mode 2 d'abord
+        ↓ plan manquant → qa-plan d'abord
+        ↓ tout présent
 Dispatch hosa-data-engineer : recharge le jeu de données de test
         ↓ échec → rapporte, stop
 Pour chaque ticket : dispatch hosa-qa-lead (Mode 2 Phase 1)
@@ -44,13 +44,13 @@ Manual: `/qa <slug-sprint>`. Auto: "exécute la QA du sprint", "teste le sprint"
 
 ## Step 1: Read the Sprint and Check Preconditions
 
-Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
+Read `kb/sprints/<slug>.md` for its `## Tickets` list and `test_worktree`. No `test_worktree` → the sprint hasn't been promoted: dispatch `hosa-git` (Mode 2) first, and stop if it blocks. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, run `qa-plan` for the sprint first (it should have run before the sprint started — say so in the report), then continue.
 
 Then dispatch `hosa-data-engineer` (Responsibility 4 reload, `agents/data-engineer.md`) so tests and recettes start from the documented dataset. No dataset yet → propose `qa-plan` first and stop. Reload fails → report it as a test infrastructure issue and stop — running tests against unknown data proves nothing.
 
 ## Step 2: Brief Per Ticket
 
-For each ticket, dispatch `hosa-qa-lead` (Mode 2 Phase 1, `agents/qa-lead.md`). It returns the brief for `hosa-tester` (`## Cas de test`, recently changed files, the managed project's root path — the sprint's `worktree` path from `kb/sprints/<slug>.md` if it's still `active`, otherwise the root path from `Infra`) and, for each persona under `## Recette requise`, the brief for `hosa-key-user`.
+For each ticket, dispatch `hosa-qa-lead` (Mode 2 Phase 1, `agents/qa-lead.md`). It returns the brief for `hosa-tester` (`## Cas de test`, recently changed files, the managed project's root path — the sprint's `test_worktree` from `kb/sprints/<slug>.md` (the `test` branch, where Docker runs), otherwise the root path from `Infra`) and, for each persona under `## Recette requise`, the brief for `hosa-key-user`.
 
 ## Step 3: Run Technical Tests Per Ticket
 
@@ -66,7 +66,7 @@ Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every
 
 ## Step 5b: Correction Loop (Technical Failures Only)
 
-If Step 3 found an implementation bug for this ticket: invoke `debug` in auto mode with the failing test, its output, and the ticket as the symptom — it applies and commits its fix without asking. If `debug` returns a dependency or ambiguous root cause instead, stop the loop for this ticket and escalate to the user. Once `debug` has committed its fix, re-run Steps 2-5 for **this ticket only**, not the whole sprint. Repeat until the ticket's technical tests pass.
+If Step 3 found an implementation bug for this ticket: invoke `debug` in auto mode with the failing test, its output, the ticket as the symptom, and the sprint's `worktree` as the place to fix — it applies and commits its fix on `sprint/<slug>` (never on `test`, which only receives merges) without asking. If `debug` returns a dependency or ambiguous root cause instead, stop the loop for this ticket and escalate to the user. Once `debug` has committed its fix, dispatch `hosa-git` (Mode 2) to promote it to `test` again, then re-run Steps 2-5 for **this ticket only**, not the whole sprint. Repeat until the ticket's technical tests pass.
 
 Count cycles per ticket. If the same test is still failing for the same reason after 2 `debug` cycles, stop looping and escalate to the user: report what's still failing and what each cycle tried, and ask whether the problem is the ticket itself (`hosa-product-owner`), the structure (`architecture`/`schema-app`/`schema-db`), or the test. A different failure appearing after a fix restarts the count for that failure.
 
@@ -78,7 +78,7 @@ Once every ticket in the sprint has been run through Steps 2-5b: dispatch `hosa-
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -98,6 +98,8 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Proposition et justification, ou "Rien à signaler"]
 
 ## Suite
-[Si tout est propre : "QA propre. Je lance la validation des tickets maintenant ? (skill `validation`)"]
-[Sinon : liste des actions suggérées ci-dessus — pas d'offre de validation tant que le verdict n'est pas propre]
+[Si tout est propre : "QA propre — validation des tickets en cours (skill `validation`)"]
+[Sinon : liste des actions suggérées ci-dessus — pas de validation tant que le verdict n'est pas propre]
 ```
+
+QA clean → invoke `validation` on each ticket of the sprint without asking.

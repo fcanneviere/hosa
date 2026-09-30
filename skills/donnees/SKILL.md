@@ -48,7 +48,7 @@ Redispatch `hosa-data-engineer` (Responsibility 1 Phase 2) with every answer col
 
 ## No Commits
 
-You don't commit. Report what changed in the KB and let the user or the orchestrating flow decide when to commit.
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
