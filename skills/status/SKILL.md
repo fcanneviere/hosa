@@ -40,6 +40,8 @@ Read directly — no agent dispatch, this is a read-only snapshot:
 
 **Sécurité:** `kb/securite/modele-menaces.md` present or not ("pas de modèle de menaces" once `architecture` is done is a gap to report), and the most recent `kb/securite/log.md` audit or gate entry with its verdict. No `kb/securite/` yet → "jamais audité".
 
+**Retours Hosa:** number of entries under `## Ouverts` in `kb/retours-hosa/journal.md`, and the three with the highest `(×N)` — omit the line when the file is absent or empty.
+
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
 
 **Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
