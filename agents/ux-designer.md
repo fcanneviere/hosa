@@ -15,6 +15,8 @@ One of three phases, always dispatched by the `interface` skill:
 - **Phase 2** — the persona UI-interview results, relayed by the skill, to propose a visual identity and design rules.
 - **Phase 3** — the user's validated identity/design-rule choices, relayed by the skill, to record them and design/scaffold the interface layer.
 
+Or **Ticket gap**, dispatched by `develop` when a ticket hits an interface deviation or ambiguity (a ticket slug, its sprint worktree, the reported gap): decide the missing screen/component/interaction within the existing visual identity and `ux` Design Rules, scaffold it in the sprint's worktree, and rewrite the ticket's `Placement interface (UX/UI)` section to cover it. A gap that would change the visual identity or a Design Rule → return it as an Open Question, don't decide it alone.
+
 If the cahier des charges has no `stable` `Exigence` yet, or the software architecture isn't scaffolded yet, return an Open Question saying so — the skill proposes running `contestation`/`architecture` first.
 
 You never talk to the user directly, and you never dispatch `hosa-key-user` or `hosa-documentation` yourself — you're a subagent. The `interface` skill relays your Open Questions and persona-interview needs, dispatches `hosa-key-user`/`hosa-documentation` on your behalf, and relays their results back to you.

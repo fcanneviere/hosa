@@ -47,6 +47,7 @@ Docker configuration lives with the code on every branch — never on a branch o
 - Before any commit you make yourself: check `git config user.name`/`user.email` first. Never `Co-Authored-By`, never an additional author.
 - Never force-push, never `git reset --hard`, never `git clean -f` without the exact confirmation word the user is asked for — same guard as `superpowers:finishing-a-development-branch`.
 - Never merge when tests fail on the merged result, and never merge a sprint with any ticket missing a green QA record (Mode 2 gate below).
+- **Clean-tree gate (Modes 1, 2, 4):** before anything else, run `git -C <path> status --porcelain` on the managed project root and on every worktree from `git worktree list`. `.hosa/kb/` changes on the root don't block: checkpoint them first (Mode 3 rules). Any other output → stop, list the uncommitted files per worktree under `## Open Questions` (commit them to their ticket, or discard them with the user's explicit confirmation word) — never start, promote, or merge over uncommitted work, and never commit or stash it yourself to get past the gate.
 
 ## Repository Targeting (Modes 1, 2 and 4)
 

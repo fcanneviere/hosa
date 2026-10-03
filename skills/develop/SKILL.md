@@ -16,9 +16,9 @@ Lit kb/tickets/<slug>.md et son kb/sprints/<slug-sprint>.md
 Écrit state: doing sur le ticket, log kb/tickets/log.md
         ↓
 Dispatch hosa-tech-lead → plan de tâches séquentiel
-        ↓ ambiguïté ou déviation → rapporte, propose de combler le
-          manque (utilisateur, `architecture`/`schema-app`/`schema-db`,
-          ou hosa-architect/hosa-data-engineer directement), stoppe
+        ↓ ambiguïté ou déviation → rapporte, route vers son propriétaire
+          (utilisateur, `architecture`/`schema-app`/`schema-db`/`interface`,
+          ou hosa-architect/hosa-data-engineer/hosa-ux-designer), stoppe
         ↓ plan clair
 Pour chaque tâche, dans l'ordre : dispatch hosa-developer (une à la fois)
         ↓ déviation détectée en cours de tâche → même arrêt/rapport,
@@ -50,7 +50,7 @@ Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe �
 
 ## Step 3: Break Down
 
-Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entrée sous `Ambiguities` ou `Structural Deviation` : rapporte-la telle quelle à l'utilisateur, propose la suite adaptée — combler l'ambiguïté avec l'utilisateur, ou lancer `architecture`/`schema-app`/`schema-db` (ou dispatcher `hosa-architect`/`hosa-data-engineer` directement) pour la déviation — ne dispatche aucune tâche, stoppe. Le ticket reste `state: doing`.
+Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entrée sous `Ambiguities` ou `Structural Deviation` : rapporte-la telle quelle à l'utilisateur, propose la suite adaptée — combler l'ambiguïté avec l'utilisateur, ou, pour la déviation, la router vers son propriétaire : `architecture`/`hosa-architect` (module/couche), `schema-app`/`schema-db`/`hosa-data-engineer` (entité/champ), `interface`/`hosa-ux-designer` (écran/composant/interaction) — ne dispatche aucune tâche, stoppe. **Une ambiguïté ou déviation qui touche l'interface (écran, parcours, composant, libellé visible) passe toujours par `hosa-ux-designer` (dispatch « Ticket gap » avec le slug, le worktree et le manque rapporté), jamais tranchée par toi ni par l'utilisateur seul** : il met à jour le `Placement interface` du ticket, puis seulement on relance l'étape 3. Le ticket reste `state: doing`.
 
 ## Step 4: Implement Sequentially
 
@@ -73,6 +73,8 @@ git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 car
 ```
 
 Un seul commit pour tout le ticket. Aucun `Co-Authored-By`, aucun auteur additionnel — identité git de l'utilisateur uniquement.
+
+Puis `git -C <worktree> status --porcelain` : toute sortie restante est du travail du ticket que `Files Changed` a omis — liste ces fichiers à l'utilisateur et demande s'ils appartiennent au ticket (→ `git commit --amend` en les ajoutant) ou sont à jeter (confirmation explicite). Ne passe jamais à l'étape 8 avec un worktree non propre.
 
 Le trailer `Hosa-Ticket:` relie le ticket aux fichiers du commit dans le graphe du projet (relation `touches`) — ne jamais l'omettre.
 
