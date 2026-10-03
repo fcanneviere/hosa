@@ -2,7 +2,8 @@
 // Hosa — graph hooks. PostToolUse (Edit|Write|MultiEdit): reindexes the edited
 // file in the project graph (.hosa/graph/). PreToolUse (Grep|Glob): reminds the
 // agent once per session that the graph answers "where is X / what does it
-// impact" before grepping. Fail-open: never blocks, never errors out.
+// impact" before grepping, and refuses once a tree-wide Grep for an identifier
+// the graph already locates (answer in the refusal). Fail-open: never errors out.
 // Also used by session-start.js (graph command line + detached catch-up index).
 
 const fs = require('fs');
@@ -32,6 +33,41 @@ function runGraph(root, args) {
   spawnSync(python(), [GRAPH_PY, '--root', root, ...args], { timeout: 10000, stdio: 'ignore', windowsHide: true });
 }
 
+// `graph.py find` output, or '' on failure/no hit. Stays under the 5 s hook timeout.
+function queryGraph(root, text) {
+  const r = spawnSync(python(), [GRAPH_PY, '--root', root, '--budget', '500', 'find', text],
+    { timeout: 4000, encoding: 'utf8', windowsHide: true });
+  const out = (r.status === 0 && r.stdout || '').trim();
+  return out === 'Aucun résultat.' ? '' : out;
+}
+
+// Grep over a whole tree for a bare identifier: the graph already knows where it
+// lives. Refused once per pattern (token-optimizer-mcp's zero-turn refusal: the
+// reason carries the answer); a retry passes, regexes and single-file greps too.
+const IDENT_RE = /^[A-Za-z_][\w.]{2,}$/;
+function broadIdentGrep(p) {
+  const i = p.tool_input || {};
+  if (p.tool_name !== 'Grep' || !IDENT_RE.test(i.pattern || '')) return false;
+  try { return !i.path || fs.statSync(path.resolve(p.cwd || '.', i.path)).isDirectory(); } catch (e) { return false; }
+}
+
+function guardGrep(p, gdir, root, query) {
+  const file = path.join(gdir, 'refused');
+  let s = {};
+  try { s = JSON.parse(fs.readFileSync(file, 'utf8')) || {}; } catch (e) {}
+  if (s.session !== p.session_id) s = { session: p.session_id, keys: [] };
+  const key = `${p.agent_id || ''}:${p.tool_input.pattern}`;
+  if (s.keys.includes(key)) return null;
+  s.keys.push(key);
+  fs.writeFileSync(file, JSON.stringify(s));
+  const hits = query(root, p.tool_input.pattern);
+  if (!hits) return null;
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason:
+    `[hosa] The project graph already locates "${p.tool_input.pattern}":\n${hits}\n` +
+    `Read only those regions; \`${commandLine()} explain|affected <name>\` gives callers and impact. ` +
+    'Need raw text matches anyway? Retry the Grep (it will pass), or scope it to a file.' } };
+}
+
 // SessionStart: marks the session start and rebuilds the graph in the background
 // (a full first build can exceed the hook timeout). Returns the context line, or ''.
 function sessionStart(cwd) {
@@ -48,7 +84,7 @@ function sessionStart(cwd) {
 const mtime = (p) => { try { return fs.statSync(p).mtimeMs; } catch (e) { return 0; } };
 
 // Hook payload → hook output object, or null.
-function processPayload(p, run = runGraph) {
+function processPayload(p, run = runGraph, query = queryGraph) {
   if (!p) return null;
   if (p.hook_event_name === 'PostToolUse') {
     const file = p.tool_input && p.tool_input.file_path;
@@ -60,6 +96,10 @@ function processPayload(p, run = runGraph) {
     const root = findUp(p.cwd || process.cwd(), path.join('.hosa', 'graph', 'graph.json'));
     if (!root) return null;
     const gdir = path.join(root, '.hosa', 'graph');
+    if (broadIdentGrep(p)) {
+      const refused = guardGrep(p, gdir, root, query);
+      if (refused) return refused;
+    }
     const nudged = path.join(gdir, 'nudged');
     const already = fs.existsSync(nudged) && fs.readFileSync(nudged, 'utf8') === String(p.session_id);
     if (already || mtime(path.join(gdir, 'last_query')) > mtime(path.join(gdir, 'session'))) return null;
