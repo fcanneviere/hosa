@@ -49,6 +49,7 @@ For each exigence, check every section against these standards — mark **OK** o
 Check pairs of exigences that plausibly connect (one's output feeds another's input, or they share a responsable):
 - Does a claimed `Données en entrée` actually get produced somewhere as `Données en sortie`, or is it assumed from nowhere?
 - Do two exigences assign the same responsibility to different responsables?
+- **Vocabulary:** does an exigence use a word `kb/cdc/glossaire.md` lists under "Pas" for another term, or a business term with no glossary entry that two exigences use with different meanings? → **Anomalie** (rewrite, route to `redaction`). No glossary yet → one anomaly asking `redaction` to start it, not one per term.
 
 ## Step 4: Report and Route
 

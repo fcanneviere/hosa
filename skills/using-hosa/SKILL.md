@@ -33,7 +33,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 3 |
 | `schema-app` | Derive data entities and write application-side data structures + documentation into the managed project — data-structuring pipeline stage 4 |
 | `schema-db` | Write database migrations/DDL into the managed project — data-structuring pipeline stage 5 |
-| `architecture` | Design and scaffold the software architecture of the managed project, consistent with the CDC, the stack, and the data structures — data-structuring pipeline stage 6 |
+| `architecture` | Design and scaffold the software architecture of the managed project, consistent with the CDC, the stack, and the data structures — data-structuring pipeline stage 6; chains `securite` (Menaces) without asking |
 | `interface` | Interview each persona, propose a visual identity and design rules, then design and scaffold the interface layer (UX/UI) of the managed project, consistent with the CDC and the software architecture — data-structuring pipeline stage 7 |
 | `backlog` | Turn every stable cahier des charges Exigence without a ticket yet into a Product Backlog Ticket carrying the story, a technical feasibility note with its complexity estimate, an architecture placement note, and an interface placement note — data-structuring pipeline stage 8 |
 | `sprint` | Compose a sprint from the Product Backlog — `hosa-sprint-planner` proposes name, objective and capacity for the user to validate, dispatches tickets in priority order, guarding against dispatching one whose technical feasibility, architecture placement, or interface placement was never actually evaluated — follow-on to the data-structuring pipeline; blocked until `infra` installed tests and migrations; chains to `qa-plan` then `git` Mode 1 |
@@ -43,10 +43,11 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `develop` | Implement a single sprint ticket — break it into short sequential tasks (`hosa-tech-lead`) and implement them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Follow-on to `git` Mode 1; chains to the next ticket, then `git` Mode 2 and `qa` without asking |
 | `validation` | Close a ticket's cycle once implemented and tested — dispatches `hosa-product-owner` to check it against its own acceptance criteria, technical results, and recette verdict, then sets it `done`+`verified` or bounces it back. Follow-on to `qa`, precondition for `git` Mode 4 |
 | `bilan-sprint` | Sprint Review and retro once a sprint merges — dispatches `hosa-product-owner` to judge whether the objective was met, list delivered/deferred tickets, surface recurring friction, and write follow-up tickets or process Design Rules. Follow-on to `git` Mode 4 |
-| `qualite` | Audit the managed project's source code against a fixed checklist of coding best practices and security rules — dispatches `hosa-senior-dev`, classifies findings by severity, records them in `kb/qualite/` — companion check usable anytime |
+| `qualite` | Audit the managed project's source code against a fixed checklist of coding best practices and performance — dispatches `hosa-senior-dev`, classifies findings by severity, records them in `kb/qualite/` — companion check usable anytime |
+| `securite` | Own the managed project's security — threat model right after `architecture` (trust boundaries, STRIDE, abuse cases, `Security Rule` checklist), audit the code against OWASP / LLM / supply-chain / RGPD rules, Go/No-Go gate inside `livraison` — dispatches `hosa-security`, records in `kb/securite/` |
 | `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
 | `changement` | Handle a change to a `stable` Exigence — impact analysis (tickets/entities/migrations/screens/docs affected), revert to `draft`, a mini relecture/contestation loop, then follow-up tickets. Companion to the CDC pipeline, usable anytime after `contestation` has run once |
-| `livraison` | Release/deploy the managed project — CI pipeline and environments (via `hosa-infra`), release notes drawn from `done` tickets since the last release, optional push/PR (via `hosa-git`). Turns a local merge into something actually shipped. Follow-on to `git` Mode 4 / `validation` |
+| `livraison` | Release/deploy the managed project — CI pipeline with quality gates and environments (via `hosa-infra`), security gate (`securite`), rollback plan, release notes drawn from `done` tickets since the last release, optional push/PR (via `hosa-git`). Turns a local merge into something actually shipped. Follow-on to `git` Mode 4 / `validation` |
 | `kb-commit` | Commit whatever's accumulated under `.hosa/kb/` as a dedicated commit in the managed project's own git history, separate from the rest of that project's commits and from Hosa's own tooling commits. Companion skill, usable anytime |
 | `okf` | Rules every file under `.hosa/kb/` must follow (Open Knowledge Format 0.2) and the validator run that closes every KB write. Companion skill, applied by every skill or agent that writes the KB |
 
@@ -88,7 +89,8 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Développe le ticket X", "Implémente le ticket X" | `develop` |
 | "Valide le ticket X", "Accepte le ticket X" | `validation` |
 | "Fais le bilan du sprint X", "Rétro du sprint X" | `bilan-sprint` |
-| "Audite la qualité du code", "Vérifie les bonnes pratiques", "Fais une revue de sécurité du code" | `qualite` |
+| "Audite la qualité du code", "Vérifie les bonnes pratiques" | `qualite` |
+| "Fais une revue de sécurité", "Audite la sécurité du code", "Modèle de menaces", "Est-ce que c'est sécurisé ?" | `securite` |
 | "Vérifie que la documentation est à jour" | `documentation` |
 | "Cette exigence a changé", "Modifie le cahier des charges sur X (déjà stable)" | `changement` |
 | "Livre le projet", "Déploie", "Prépare la release" | `livraison` |

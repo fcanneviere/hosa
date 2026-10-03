@@ -62,6 +62,12 @@ Anything that doesn't belong to one persona's point of view — who's responsibl
 
 If a persona's or the user's answer is vague ("on verra", "un peu de tout") or a stated need seems unjustified, push back once — ask for the concrete version. Don't loop more than once per answer here; a deeper audit happens later in `contestation`.
 
+How every question in this skill is asked:
+- **Look it up before asking.** Anything the KB already answers (identity, personas, an earlier compte rendu) is read, not asked — the user's time goes to decisions only they can make.
+- **One question at a time, numbered, with a recommended answer** — "Q1. <question> — je propose : <réponse> (recommandé), parce que <raison>". The user confirms or corrects; a recommendation turns an open question into a quick check.
+- **Walk the decision tree.** Settle a decision before the ones that depend on it (who validates an order comes before what happens when they refuse it); don't ask a downstream question whose answer the upstream one may make moot.
+- **Pin the vocabulary.** When the user and a persona name the same thing differently ("commande" / "panier"), or a word is ambiguous, ask once which term the project uses and what it means — the answer goes to the glossary `redaction` maintains.
+
 ## Step 6: Write the Compte Rendu
 
 ```

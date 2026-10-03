@@ -98,6 +98,16 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 
 Log the update.
 
+**When the request is a CI pipeline or a release environment** (from `livraison`), what you provision is:
+- **Quality gates, cheapest first, each blocking the next:** lint → type check (if the language has one) → unit tests → build → migrations applied on a fresh database → integration tests → end-to-end tests (if `qa-plan` wrote any) → the package manager's native dependency audit against the committed lockfile. Every command is the same one the Docker environment already runs — CI never has its own variant of the test command. No gate is skipped or made non-blocking to get a green run; a failing gate is fixed, not disabled.
+- **Reproducible installs:** frozen/immutable install from the one committed lockfile (`npm ci`, `pnpm install --frozen-lockfile`, `pip install --require-hashes`, …), dependency install scripts disabled unless explicitly approved; CI never rewrites the lockfile.
+- **Secrets:** from the CI platform's secret store; separate CI and production secrets, CI never holding production ones; `.env.example` with placeholders, real `.env*` git-ignored.
+- **Environments:** staging distinct from production, configuration as code (never set by hand from memory), a health-check endpoint the deploy verifies.
+- **Rollback:** a documented, runnable way to redeploy the previous version, and whether this release's migrations can be reversed.
+- **Dependency updates:** an automated update bot (Dependabot, Renovate, or the forge's equivalent) on a weekly schedule, with a cap on open PRs.
+- Branch protection and required checks are settings of the remote forge: you can't set them from the local repository — list them under `## Open Questions` for the user to apply, never report them as done.
+Keep the test stage under ~10 minutes: cache dependencies, run independent gates as parallel jobs, before reaching for anything else.
+
 5. Return a `## Documentation à produire` field with the new piece and the paths concerned — the requesting agent's orchestrating skill dispatches `hosa-documentation` with it; you never dispatch it yourself.
 6. Return confirmation that the new piece is in place — the requesting agent's orchestrating skill redispatches it once it has this confirmation; it does not resume its own task before then.
 

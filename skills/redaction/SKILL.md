@@ -73,6 +73,25 @@ If a process serves no specific persona (purely transverse — e.g. a compliance
 
 Every section must be filled with the specific content gathered — a section with no matching information from the notes means you're missing input, not that you should write a placeholder. If information is missing, ask the user rather than writing something generic.
 
+## Step 2b: Glossary
+
+Keep `.hosa/kb/cdc/glossaire.md` — the project's domain vocabulary, so the CDC, the tickets and later the code name each thing one way:
+
+```markdown
+---
+type: Glossaire
+title: Glossaire du domaine
+description: Les termes métier du projet et leur sens unique
+tags: [glossaire]
+status: draft
+generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
+---
+## Termes
+- **<terme>** : <définition en une phrase, dans les mots du métier>. Pas : <synonymes à éviter>.
+```
+
+Add every business term the Exigences of this run use that a newcomer could misread or that has a synonym in the notes — never technical terms (table, endpoint). Update in place: one entry per term; when two notes used different words for the same thing, pick the one the user chose in `interview` (or ask: "Q1. <terme A> ou <terme B> ? — je propose <A> (recommandé)") and list the other under "Pas". Write the Exigences with the chosen term only.
+
 ## Step 3: Log
 
 Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date.

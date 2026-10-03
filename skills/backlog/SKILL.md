@@ -69,6 +69,17 @@ Then append acceptance criteria derived from the `Exigence`'s own text — at le
 - Étant donné [contexte], quand [action], alors [résultat attendu]
 ```
 
+**Vertical slices.** A ticket delivers something a persona can actually exercise end to end — a thin path through every layer it needs (data, logic, interface), not one layer of many features ("toutes les tables", "toute l'API"). An `Exigence` too big for one such slice becomes several tickets, the first one the thinnest path that works (the tracer bullet), the next ones widening it.
+
+**Blocking edges.** Once every ticket of this run is written, add to each ticket that can't start before another one is `done`:
+
+```markdown
+## Bloqué par
+- [<titre>](<slug>.md) — <ce qu'il attend de lui>
+```
+
+Only a real dependency (needs its data, its screen, its endpoint) — never "plus logique après". No such section = can start anytime. A cycle between tickets means the split is wrong: re-slice rather than write it.
+
 If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
 
 ## Step 3: Add the Technical Note (senior dev role)
@@ -127,7 +138,7 @@ Never block ticket creation on a missing interface doc.
 
 ## Step 6: Priority and Estimate
 
-Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then set each ticket's `estimate` yourself, in the senior dev role: `1` (small, ≤ ½ day), `2` (medium, ≈ 1 day) or `3` (large, 2-3 days) points, from the technical note of Step 3 — the complexity estimate is the senior dev's call, not the user's. A ticket whose note still says "Stack pas encore choisie" gets no `estimate` rather than a guess; anything larger than 3 is a sign the ticket should be split — say so in the report.
+Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then set each ticket's `estimate` yourself, in the senior dev role: `1` (small, ≤ ½ day), `2` (medium, ≈ 1 day) or `3` (large, 2-3 days) points, from the technical note of Step 3 — the complexity estimate is the senior dev's call, not the user's. A ticket whose note still says "Stack pas encore choisie" gets no `estimate` rather than a guess; anything larger than 3 is a sign the ticket should be split into vertical slices (Step 2) — say so in the report.
 
 ## Step 7: Log
 

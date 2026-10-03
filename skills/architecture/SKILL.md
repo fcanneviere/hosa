@@ -19,6 +19,8 @@ Dispatch hosa-documentation (Mode 1) avec le
         ↓
 Met à jour l'entrée Infra avec le chemin confirmé
         ↓
+Enchaîne sur `securite` (mode Menaces) sans demander
+        ↓
 Propose d'enchaîner sur `interface`
 ```
 
@@ -41,6 +43,10 @@ Dispatch `hosa-documentation` (Mode 1) with what `hosa-architect` returned under
 ## Step 3: Update the `Infra` Entry
 
 Add the confirmed architecture documentation path to the `Infra` entry under its own `## Documentation d'architecture` heading — a fixed heading, not a bare line, so a later reader (e.g. `backlog`) can tell it apart from the data dictionary or migrations paths `schema-app`/`schema-db` also record there. Log the update to `kb/infra/log.md`.
+
+## Step 4: Threat Model
+
+Invoke `securite` in Menaces mode without asking — the trust boundaries of an application only exist once its layers do, and every control added after the code is written costs more than one designed in now. It's a chained step, not a numbered pipeline stage: `securite` reports its own results, then this skill's Suite applies.
 
 ## No Commits
 

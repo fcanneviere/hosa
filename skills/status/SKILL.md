@@ -38,11 +38,13 @@ Read directly — no agent dispatch, this is a read-only snapshot:
 
 **Qualité:** the most recent `kb/qualite/log.md` entry's file — read its `## Verdict`. No `kb/qualite/` yet → "jamais audité".
 
+**Sécurité:** `kb/securite/modele-menaces.md` present or not ("pas de modèle de menaces" once `architecture` is done is a gap to report), and the most recent `kb/securite/log.md` audit or gate entry with its verdict. No `kb/securite/` yet → "jamais audité".
+
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
 
 **Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
 1. CDC: `hosa` (identity) → `interview` → `redaction` → `relecture` → `contestation` (needs ≥1 `stable` Exigence to move on)
-2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `interface` → `backlog`
+2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (Menaces) → `interface` → `backlog`
 3. Delivery cycle (needs a non-empty backlog): `sprint` → `git` (M1) → `develop` → `qa-plan` → `qa` → `validation` → `git` (M2) → `bilan-sprint`
 
 If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stable CDC yet, so data-structuring can't start), say so explicitly rather than reporting a false gap further down.

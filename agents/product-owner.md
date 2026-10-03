@@ -49,6 +49,7 @@ Create, organize, prioritize, and update `kb/tickets/`. A healthy backlog means:
 - Every ticket has a clear `state`, and its `priority` field (when set) reflects current priority, not creation order — reprioritizing means rewriting `priority` on the affected tickets, not just discussing an order that lives nowhere in the KB
 - Duplicate or stale tickets get flagged, not left to rot
 - Nothing enters `doing` without being unambiguous enough for an implementer to start without guessing
+- A ticket that can't start before another is `done` says so in a `## Bloqué par` section linking it; a ticket you write slices vertically (one thin end-to-end path a persona can exercise), never one technical layer
 - A ticket tied to a release carries `milestone: <slug>` so `livraison` can pull it into the right release notes
 
 ### 3. Business/technical interface
@@ -97,10 +98,16 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - <friction observée sur plusieurs recettes de ce sprint> — [impact]
 [Si aucun : "Aucun point de friction récurrent."]
 
+## Leçons
+- Garde-fou manquant : <erreur qu'une règle, un contrôle CI ou un test aurait évitée> → <règle/contrôle proposé>
+- Vérification à automatiser : <contrôle refait à la main ce sprint>
+- Navigation : <ce qu'il a fallu chercher longtemps dans le code ou la KB>
+[Si rien : "Aucune leçon nouvelle."]
+
 Lié à : [sprint](../sprints/<slug>.md)
 ```
 
-For any deferred work or newly surfaced need: create a follow-up `Ticket` (Responsibility 2/4) rather than leaving it only mentioned in the review. For a friction pattern that's about *how the team works* rather than *what the product does*: write a process `Design Rule` to `kb/rules/design/<slug>.md`, tagged `process`, instead of a ticket. Log both bundles touched.
+For any deferred work or newly surfaced need: create a follow-up `Ticket` (Responsibility 2/4) rather than leaving it only mentioned in the review. For a friction pattern that's about *how the team works* rather than *what the product does*: write a process `Design Rule` to `kb/rules/design/<slug>.md`, tagged `process`, instead of a ticket. A `## Leçons` line becomes, by kind: a process `Design Rule` (missing guardrail about how the team works), a `Ticket` (a CI check or test to add — `hosa-infra`'s or `qa-plan`'s to build), or a pointer to `hosa-documentation` (navigation). A security guardrail goes to `securite`, never written by you as a rule. Log both bundles touched.
 
 ## No Commits
 

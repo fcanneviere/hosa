@@ -51,6 +51,8 @@ Fixed list — don't invent extra items and don't drop any without asking the us
 - **Performance** : temps de réponse cible, volumétrie attendue
 - **Disponibilité** : SLA visé, tolérance à l'indisponibilité
 - **Protection des données (RGPD ou équivalent)** : base légale, durée de rétention, droit à l'effacement
+- **Sécurité** : sensibilité des données manipulées (personnelles, financières, de santé…), exigences d'authentification (MFA, durée de session), obligations réglementaires ou contractuelles — le socle dont `hosa-security` part pour son modèle de menaces
+- **Supervision** : qui doit être alerté de quoi quand l'application tombe ou se dégrade, et dans quel délai
 - **Accessibilité** : niveau visé (ex: RGAA/WCAG), publics concernés
 - **Compatibilité** : navigateurs/appareils/OS à supporter
 

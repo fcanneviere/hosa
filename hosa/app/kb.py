@@ -214,6 +214,7 @@ PIPELINES = [
         ("schema-app", "Schéma app", lambda cs: _any_body(cs, "Infra", r"dictionnaire")),
         ("schema-db", "Schéma BDD", lambda cs: _any_body(cs, "Infra", r"migration")),
         ("architecture", "Architecture", lambda cs: _any_body(cs, "Infra", r"^## Documentation d'architecture")),
+        ("securite", "Menaces", lambda cs: bool(_of(cs, "Modèle de Menaces"))),
         ("interface", "Interface", lambda cs: _any_body(cs, "Infra", r"^## Documentation d'interface")),
         ("backlog", "Backlog", lambda cs: bool(_of(cs, "Ticket"))),
     ]),
