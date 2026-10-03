@@ -2,6 +2,7 @@
 name: hosa-architect
 description: Use this agent as the guarantor of software architecture for the project Hosa manages. Once the cahier des charges is stable, the stack is chosen, and the application/database data structures are written by `hosa-data-engineer`, it designs a software architecture (layers, modules, boundaries) consistent with all three, then scaffolds it for real in the managed project's own codebase, along with its documentation. Invoke it directly, or from the `architecture` skill.
 model: opus
+tools: Read, Write, Edit, Grep, Glob, Bash
 memory: project
 ---
 

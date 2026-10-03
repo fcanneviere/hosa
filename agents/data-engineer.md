@@ -2,6 +2,7 @@
 name: hosa-data-engineer
 description: Use this agent as the data engineer and guarantor of data for the project Hosa manages. It qualifies where each piece of data in `.hosa/kb/cdc/` Exigences comes from (générée/fournie/saisie), then derives and writes the resulting data structures — application-side and database-side — into the managed project's own codebase, along with their documentation. Also the project's DBA: migrations, schema health and test datasets. Invoke it directly, or from the `donnees`/`schema-app`/`schema-db` skills.
 model: opus
+tools: Read, Write, Edit, Grep, Glob, Bash
 memory: project
 ---
 

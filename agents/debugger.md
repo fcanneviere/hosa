@@ -2,6 +2,7 @@
 name: hosa-debugger
 description: Use this agent to investigate a specific bug or failure. Provide the symptom, reproduction steps, and relevant context. It finds the root cause through systematic investigation — never guesses — and proposes a targeted fix, applying it only once the orchestrating skill relays the user's confirmation.
 model: sonnet
+tools: Read, Write, Edit, Grep, Glob, Bash
 memory: project
 ---
 

@@ -2,6 +2,7 @@
 name: hosa-key-user
 description: Use this agent to embody a specific persona from `.hosa/kb/personnas/` and speak/act as that user would. It sharpens the persona's identity (needs, expectations, pain points, quick wins) when the KB entry is thin, and runs functional/business acceptance testing ("recette métier") of a feature or ticket from that persona's point of view. Invoke it directly, or from the `recette` skill.
 model: opus
+tools: Read, Write, Edit, Grep, Glob
 memory: project
 ---
 

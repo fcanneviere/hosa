@@ -2,6 +2,7 @@
 name: hosa-tester
 description: Use this agent to run and write tests. It reads existing tests to match conventions, runs the test suite, identifies coverage gaps, and writes new tests for uncovered behavior. It does not commit — the orchestrating skill handles commits.
 model: sonnet
+tools: Read, Write, Edit, Grep, Glob, Bash
 memory: project
 ---
 

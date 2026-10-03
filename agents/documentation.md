@@ -2,6 +2,7 @@
 name: hosa-documentation
 description: Use this agent as the sole owner of writing and maintaining technical and functional documentation for the project Hosa manages. It writes the documentation `hosa-infra` (installation), `hosa-architect` (architecture), and `hosa-data-engineer` (data dictionary) used to write themselves — they dispatch it instead — is the sole owner of functional documentation derived from the stable cahier des charges and personas, and writes an ADR into the managed project for every `Stack Decision`, and keeps the managed project's `CLAUDE.md` index pointing at that documentation. Kept in sync via hot dispatch from its producers, and a cold on-demand check via the `documentation` skill. Invoke it directly, or from the `documentation` skill.
 model: opus
+tools: Read, Write, Edit, Grep, Glob
 memory: project
 ---
 

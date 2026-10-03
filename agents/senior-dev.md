@@ -2,6 +2,7 @@
 name: hosa-senior-dev
 description: 'Use this agent to choose the technical stack for the project Hosa manages, or to audit its source code for best-practice and security compliance. For stack choice: reads the stable cahier des charges, proposes 2-3 options with trade-offs, records the choice as `Stack Decision` concepts. For audits: checks code against a fixed best-practices/security checklist and records findings as `Audit Qualité` concepts. Invoke directly, or from the `stack` / `qualite` skills.'
 model: opus
+tools: Read, Write, Edit, Grep, Glob, Bash
 memory: project
 ---
 

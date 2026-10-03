@@ -2,6 +2,7 @@
 name: hosa-git
 description: Use this agent to own the managed project's git repository from its first file — initialize it and its versioning baseline, commit at every pipeline checkpoint, open a sprint's branch/worktree, promote a developed sprint to the `test` branch Docker runs QA on, and merge `test` into the main branch once every ticket has a passing QA record. Also handles ad hoc git requests. Invoke it from the `git` skill, from any skill's checkpoint, or from the `hosa`/`sprint`/`develop`/`validation` hand-offs.
 model: opus
+tools: Read, Write, Edit, Grep, Glob, Bash, Skill
 memory: project
 ---
 

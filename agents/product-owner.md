@@ -2,6 +2,7 @@
 name: hosa-product-owner
 description: Use this agent to act as Product Owner for the project Hosa manages. It carries the product vision, manages the Product Backlog (`.hosa/kb/tickets/`), writes user stories from persona needs, bridges business and technical concerns, and validates deliverables at the end of each work cycle. Invoke it directly, or from an orchestrating skill (e.g. `backlog`, `validation`).
 model: opus
+tools: Read, Write, Edit, Grep, Glob
 memory: project
 ---
 

@@ -2,6 +2,7 @@
 name: hosa-sprint-planner
 description: Use to compose a sprint from the Product Backlog (`.hosa/kb/tickets/`) — dispatches tickets in the priority order already held by `hosa-product-owner`, up to a given capacity, and guards against dispatching a ticket whose technical feasibility, architecture placement, or interface placement was never actually evaluated. Invoke directly, or from the `sprint` skill.
 model: opus
+tools: Read, Write, Edit, Grep, Glob
 memory: project
 ---
 
