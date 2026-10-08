@@ -36,6 +36,7 @@ Dispatch `hosa-git` in the determined mode — with the sprint slug for Mode 1/2
 
 If it returns:
 - **`## Installation nécessaire`** — dispatch `hosa-infra` (Mode 2) with it, then redispatch `hosa-git` once confirmed.
+- **`## Base de données nécessaire`** — dispatch `hosa-dba` (Mode 3, via `bdd`) with it and the sprint's environment, then redispatch `hosa-git` from where it stopped.
 - **`## Open Questions`** with a mode ambiguity — ask the user and redispatch.
 - **`## Open Questions`** with a ticket `Accepté avec réserves` — present the reservations and ask the user (or `hosa-product-owner`) to explicitly accept the risk; only redispatch `hosa-git` to proceed with the merge once they do.
 

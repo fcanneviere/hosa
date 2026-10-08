@@ -45,6 +45,10 @@ For each ticket without a plan yet, dispatch `hosa-qa-lead` (Mode 1, `agents/qa-
 
 If it returns an Open Question (the technical note or the stack decisions are missing something needed) — relay it to the user, get the answer, and only redispatch once you have it.
 
+## Step 3b: Test Database
+
+If `kb/infra/base-de-donnees.md` has no `## Tests` section yet (or doesn't exist), dispatch `hosa-dba` (Mode 2 Tests, `agents/dba.md`) first: the isolated test database, the isolation between tests, and the *réinitialiser la base de test* command the dataset's reset will call. No database in the project → skip.
+
 ## Step 4: Dispatch for the Test Dataset
 
 Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` (Responsibility 4 create/update, `agents/data-engineer.md`) with the sprint slug. It builds or extends the dataset covering every test case and recette, documents it and loads it. If it returns an Open Question (architecture not done yet, tool missing for `hosa-infra`) — relay it to the user and only redispatch once resolved.

@@ -41,7 +41,7 @@ Scope: if invoked right after a ticket/sprint was implemented, default to the fi
 
 ## Step 2: Audit Checklist
 
-Dispatch, on the same scope and in parallel, `hosa-senior-dev` (best practices and performance — its fixed checklist below; don't invent extra items, don't drop any without asking first) and `hosa-security` (Mode 2, `agents/security.md`): conformity to the `Security Rule`s and security exigences set during the cahier des charges, then the unforeseen holes. Security constraints were designed in from the start (`securite`); this audit is the safety net for what nobody could foresee. If `kb/rules/security/` is empty because `securite` never ran, say so — the audit still runs on the baseline rules, but propose `securite` so the next features are built with them.
+Dispatch, on the same scope and in parallel, `hosa-senior-dev` (best practices and performance — its fixed checklist below; don't invent extra items, don't drop any without asking first) and — when the project has a database (`kb/infra/base-de-donnees.md`) — `hosa-dba` (Mode 4 Audit, `agents/dba.md`: migrations reversible and conflict-free, indexes against the queries actually run, least-privilege account, backups and their last restore test), and `hosa-security` (Mode 2, `agents/security.md`): conformity to the `Security Rule`s and security exigences set during the cahier des charges, then the unforeseen holes. Security constraints were designed in from the start (`securite`); this audit is the safety net for what nobody could foresee. If `kb/rules/security/` is empty because `securite` never ran, say so — the audit still runs on the baseline rules, but propose `securite` so the next features are built with them.
 
 **Bonnes pratiques**
 - Lisibilité : nommage clair, fonctions courtes, pas de code mort ou commenté
@@ -63,7 +63,7 @@ For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui 
 
 ## Step 4: Write and Log
 
-`hosa-senior-dev` writes `.hosa/kb/qualite/<slug>.md`, `hosa-security` writes `.hosa/kb/qualite/<slug>-securite.md` (same structure, `tags: [securite]`, each finding marked prévisible/imprévisible):
+`hosa-senior-dev` writes `.hosa/kb/qualite/<slug>.md`, `hosa-dba` writes `.hosa/kb/qualite/<slug>-bdd.md`, `hosa-security` writes `.hosa/kb/qualite/<slug>-securite.md` (same structure, `tags: [securite]`, each finding marked prévisible/imprévisible):
 
 ```markdown
 ---

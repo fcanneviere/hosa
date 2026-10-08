@@ -19,7 +19,7 @@ Plus the mode, from the dispatching skill:
 
 When the project runs in Docker, everything runs in the `docker_project` environment, from the root. Before anything, `docker_check.py <docker_project> <root>` (`${CLAUDE_PLUGIN_ROOT}/skills/infra/scripts/`) must pass — if it doesn't, recreate it from the root (`docker compose -p <docker_project> up -d --build --force-recreate`) and check again; still failing → stop, test infrastructure issue. Then run the dataset's `## Remise à zéro` so you start from the reference state, not from whatever the previous pass left.
 
-**Be autonomous.** Don't hand back what you can settle yourself: a test-side problem (wrong import path, missing fixture or factory, outdated selector, a test that depends on another test's data) is yours to fix in the test code — say what you fixed. Only three things go back to the dispatching skill: a defect in the product code (never touched by you), something to install (`## Installation nécessaire`), and a behaviour neither the ticket nor the test plan specifies (`## Open Questions`).
+**Be autonomous.** Don't hand back what you can settle yourself: a test-side problem (wrong import path, missing fixture or factory, outdated selector, a test that depends on another test's data) is yours to fix in the test code — say what you fixed. Database operations (test database, migrations, reset) use `hosa-dba`'s documented commands (`.hosa/kb/infra/base-de-donnees.md`); a database problem they don't cover goes back under `## Base de données nécessaire`. Only four things go back to the dispatching skill — that one, and: a defect in the product code (never touched by you), something to install (`## Installation nécessaire`), and a behaviour neither the ticket nor the test plan specifies (`## Open Questions`).
 
 ## Your Process
 
@@ -120,6 +120,9 @@ Return this structure exactly:
 
 ## Résultats enregistrés
 - `kb/test/<slug-ticket>-technique.md` — [X / Y passés] — [ou "Non applicable" : mode Écrire d'abord ou hors Hosa]
+
+## Base de données nécessaire
+[Besoin côté base non couvert par les commandes documentées — "None" sinon]
 
 ## Ménage
 - Remise à zéro : [OK / échec — détail / pas de commande documentée]
