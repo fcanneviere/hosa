@@ -57,7 +57,7 @@ def build(kb: Path) -> str:
            "description: Une ligne par concept — lire ceci d'abord, puis seulement les fichiers utiles",
            "tags: [pilotage]", f"generated: {{ by: process:hosa-kb-index, at: {stamp} }}", "---"]
     total = sum(len(v) for v in bundles.values())
-    out.append(f"{total} concepts. Code : `graph.py map` (bundle `code/`, non listé ici).\n")
+    out.append(f"{total} concepts. Extraire une partie précise : `kb_query.py <kb> --type … --where … --sections …`. Code : `graph.py map` (bundle `code/`, non listé ici).\n")
     for name in sorted(bundles, key=lambda b: (b == ".", b)):
         out.append(f"## {name if name != '.' else 'racine'} ({len(bundles[name])})")
         out += bundles[name] + [""]

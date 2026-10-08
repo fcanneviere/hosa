@@ -75,4 +75,6 @@ Then refresh the KB summary — one line per concept, the file every agent reads
 
 The hooks also refresh it after each Edit/Write in the KB and at session start; running it here covers writes made by scripts.
 
+To **read** precise parts of the KB without opening whole files, use `kb_query.py` (same folder): filter by `--type`, `--bundle`, `--where key=value` / `key~text`, `--slug`, `--grep`, then show `--fields`, `--sections "<heading prefix>"`, `--full` or `--count`. Exact text, no summary.
+
 `<python>` is the Hosa app's venv interpreter (`hosa/app/.venv/Scripts/python.exe` on Windows, `hosa/app/.venv/bin/python` elsewhere) or any Python with PyYAML. Exit code `0` = conformant; `1` = errors listed (fix them, rerun); `2` = bad invocation. Warnings are not blocking but mention them in your report. `--json` gives machine-readable output.

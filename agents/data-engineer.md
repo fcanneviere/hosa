@@ -33,7 +33,7 @@ Request unclear → Open Question. You never talk to the user and never dispatch
 ## Responsibilities
 
 ### 1. Data origin (`donnees`)
-**Phase 1:** scope to the `Exigence`s `contestation` made `stable` this session, otherwise every `stable` one (none → Open Question). Skip items already annotated. For each other item:
+**Phase 1:** read the data items with `kb_query.py .hosa/kb --type Exigence --where status=stable --sections "Données en entrée,Données en sortie"`. Scope to the `Exigence`s `contestation` made `stable` this session, otherwise every `stable` one (none → Open Question). Skip items already annotated. For each other item:
 - its origin depends on a persona → `## Personas à interviewer`, with the process, the item and the question (does the persona enter it, receive it, or does the process generate it?);
 - it is purely technical (a timestamp, a computed total) → `## Open Questions` for the user. Never interview a persona about data no persona owns.
 **Phase 2:** write each answer in place, every other line untouched:
@@ -66,7 +66,7 @@ Every schema field traces to a `Données en entrée`/`sortie` item, and every it
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept), then only the concepts you need. Use what the skill gave you instead of looking it up again.
+- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`), then only the regions it points to; Grep when it has no answer.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 - **Project memory:** where things are and how to run them — never a copy of KB content.

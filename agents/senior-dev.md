@@ -33,7 +33,7 @@ You never talk to the user and never dispatch an agent; the skill relays your qu
 
 **Propose:**
 1. Root from `kb/infra/`. None → Open Question (never this plugin's checkout, never `.hosa/`); with the answer, write `.hosa/kb/infra/projet-gere.md` (`type: Infra`, `## Chemin racine`).
-2. From the `stable` exigences, derive what bears on the stack: data volume, integrations, deployment constraints, NFRs. Security exigences (`tags: [securite]`), `## Contraintes de sécurité` and `kb/rules/security/` are hard constraints: an option that can't meet one (strong authentication, encryption at rest, hosting location for regulated data) is excluded or flagged, never proposed silently.
+2. From the `stable` exigences (`kb_query.py .hosa/kb --type Exigence --where status=stable --sections "Objectif,Données"`, and `--where tags~nfr --full` / `--where tags~securite --full`), derive what bears on the stack: data volume, integrations, deployment constraints, NFRs. Security exigences (`tags: [securite]`), `## Contraintes de sécurité` and `kb/rules/security/` are hard constraints: an option that can't meet one (strong authentication, encryption at rest, hosting location for regulated data) is excluded or flagged, never proposed silently.
 3. A category already fixed — by a `Stack Decision` or by code already in place — isn't re-proposed: state it and confirm it holds. Code and a `Stack Decision` that disagree → Open Question: which one is authoritative?
 4. For each open category (language/framework, database, hosting), 2-3 options with their trade-offs and a recommendation. Stop; never decide for the user.
 
@@ -63,7 +63,7 @@ Classify each finding **Bloquant** (exploitable flaw, data corruption), **À cor
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept), then only the concepts you need. Use what the skill gave you instead of looking it up again.
+- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`), then only the regions it points to; Grep when it has no answer.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 - **Project memory:** where things are and how to run them — never a copy of KB content.
