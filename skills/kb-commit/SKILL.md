@@ -9,62 +9,60 @@ Commits whatever has piled up under `.hosa/kb/` since the last KB commit — ins
 
 ## Repository Targeting
 
-Runs from the managed project's root — the parent of the resolved `.hosa/` directory — never from Hosa's own plugin checkout, even if this session started there. Same targeting discipline as `hosa-git`.
+Runs on the managed project's root — the parent of the resolved `.hosa/` — never on Hosa's own plugin checkout. The KB lives on its own orphan branch `hosa-kb`, checked out at `<root>/.hosa/kb` (`using-hosa`, KB location): its commits never land on a code branch.
 
 ## Flow
 
 ```
-Résout .hosa/kb/ (using-hosa) → se place à la racine du projet géré
-        ↓
-git status --short .hosa/kb/
-        ↓ rien                              ↓ des changements
-Rapporte "rien à committer"            Résume les bundles touchés
-                                              ↓
-                                        Confirme user.name/user.email
-                                              ↓
-                                        git add .hosa/kb/ (rien d'autre)
-                                              ↓
-                                        git commit (message résumant les
-                                        bundles, nom de l'utilisateur seul)
+kb_branch.py status <root>
+        ↓ KB encore suivie dans les branches du code → Migration
+          (plan montré, --yes sur accord de l'utilisateur)
+        ↓ branche présente mais pas extraite → ensure
+        ↓ en place
+Résume les bundles touchés (git -C .hosa/kb status --short)
+        ↓ rien → "Rien à committer dans la KB."
+kb_branch.py commit <root> -m "kb: <bundles touchés>"
+(identité de l'utilisateur seule, + Hosa-Code-Commit)
 ```
 
 ## Trigger
 
-Manual: `/kb-commit`. Auto: never — this skill doesn't fire on natural-language triggers, since "commit" alone is too ambiguous between the managed project, the KB, and Hosa's own tooling. Proposed as a Suite step by pipeline skills once a bundle write lands (`hosa`, `backlog`, `sprint`, `validation`, `bilan-sprint`, `qa`, `qualite`, `changement`), but only run when the user confirms.
+Manual: `/kb-commit`, `/kb-commit migrer`. Auto: never on natural language alone ("commit" is too ambiguous). Proposed as a Suite step by pipeline skills once a bundle write lands (`hosa`, `backlog`, `sprint`, `validation`, `bilan-sprint`, `qa`, `qualite`, `changement`) — run only when the user confirms.
 
 ---
 
-## Step 1: Scope the Diff
+## Step 1: Where the KB Lives
 
 ```bash
-git status --short .hosa/kb/
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py" status <root>
 ```
 
-Nothing under `.hosa/kb/` → report "Rien à committer dans la KB." and stop. Anything else in the working tree (skill/agent edits, app code) is out of scope — never staged by this skill.
+- **In place** → Step 2.
+- **Branch present, not checked out** (a fresh clone) → `ensure <root>`, then Step 2.
+- **Still tracked in the code branches** (a project started before this layout) → **Migration** below, then Step 2.
 
-## Step 2: Confirm Identity
+## Step 2: Commit
 
-Same as every Hosa commit: check `git config user.name` and `git config user.email` first. Never add `Co-Authored-By` or any additional author — zero exceptions, per the Hosa core rule.
-
-## Step 3: Stage and Commit
+`git -C <root>/.hosa/kb status --short` → nothing → "Rien à committer dans la KB." Otherwise summarize the bundles touched, then:
 
 ```bash
-git add .hosa/kb/
-git commit -m "kb: <résumé des bundles touchés, ex: update tickets, sprints>"
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py" commit <root> -m "kb: <résumé des bundles touchés, ex: update tickets, sprints>"
 ```
 
-One commit for the whole pending KB diff — don't split it bundle by bundle unless the user asks for that granularity.
+It checks `user.name`/`user.email` first and commits under the user's identity only — never `Co-Authored-By`, never another author. It adds `Hosa-Code-Commit: <sha>`, the code commit the KB was written against. One commit for the whole pending diff unless the user asks for finer grain.
+
+## Migration (once per project)
+
+Run `migrate <root>` without `--yes` and show the user its plan: create `hosa-kb` with the KB's current content (uncommitted changes included), untrack `.hosa/kb` and ignore `.hosa/` in the current code branch (one commit, the user's identity), replace the folder by the branch's checkout after a byte-for-byte check. It refuses while a sprint worktree is open — finish the sprint first. On the user's yes, run it with `--yes`. Nothing is deleted before the check passes; on any failure the original folder is restored.
 
 ## No Other Commits
 
-This skill never touches anything outside `.hosa/kb/` — no skill/agent file, no app code, no managed-project file. Those follow their own commit path (`hosa-git` for the managed project, a plain `git commit` for Hosa's own tooling).
+This skill only commits on `hosa-kb`, plus the migration's single `.gitignore`/untrack commit. Code commits are `develop`'s and `hosa-git`'s; Hosa's own tooling is committed separately.
 
 ## Output
 
 ```
 ## KB committée
-- Bundles touchés : [liste, ex: tickets, sprints]
-- Commit : <message>
-
-[Si rien à committer : "Rien à committer dans la KB."]
+- Bundles touchés : [liste] — Commit : <sha court> sur hosa-kb (code : <sha>)
+[Ou : "Rien à committer dans la KB." / "KB migrée sur la branche hosa-kb, contenu vérifié."]
 ```

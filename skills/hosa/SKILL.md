@@ -60,6 +60,8 @@ Then ask for personas one at a time: "Un persona à ajouter ? (nom + description
 
 ### Writing `kb/project/identity.md`
 
+The KB is on its branch (`using-hosa`, KB location): on a first run, `${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py init <root>` has created it; otherwise `status` must say it's in place. Then:
+
 ```
 mkdir -p .hosa/kb/project/
 ```

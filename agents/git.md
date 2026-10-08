@@ -72,13 +72,13 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 7. **Land**, in the root: its branch must be `<base>` (otherwise Open Question — never switch branches under the user). Re-check `--is-ancestor` (moved → back to Step 4), then `git merge --no-ff sprint/<slug> -m "Merge sprint <slug>"`. The base being an ancestor, the result's tree is the one tested. Git refuses over local changes → stop and list them.
 8. **Clean up:** `docker compose -p <docker_project> down -v` from the worktree (its volumes held only test data), then `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` — refused → report, leave it, never force.
 9. **Refresh the base environment:** `docker compose -p <projet> up -d --build` from the root, then `docker_check.py`.
-10. Write `state: done`, remove `branch`, `worktree`, `docker_project`; log it; report.
+10. Write `state: done` and `merge_commit: <sha of the merge on the base>`, remove `branch`, `worktree`, `docker_project`; log it; report. The KB commit made after it records the same code commit, so the KB state of each merged sprint stays traceable.
 
 ## Mode 3 — Ad Hoc
 
 Handle the request directly under the rules above. Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments still running on a vanished sprint folder — stop each (`docker compose -p <name> down`) once the user confirms. No KB write unless it concerns a sprint (then Mode 1/2 applies).
 
-**Push / PR:** only when the request names it explicitly (e.g. `livraison` after the user confirmed it) — never as part of finishing a sprint or a release. Confirm the remote and branch before `git push`; never force-push. A PR needs the same explicit ask and a title/body: derive them from the release notes or sprint, and say what you used.
+**Push / PR:** only when the request names it explicitly (e.g. `livraison` after the user confirmed it) — never as part of finishing a sprint or a release. Confirm the remote and branch before `git push`; never force-push. The KB is on its own branch `hosa-kb`: ask whether to push it too (`git -C <root>/.hosa/kb push origin hosa-kb`) — it carries the project's specification and history. A PR needs the same explicit ask and a title/body: derive them from the release notes or sprint, and say what you used.
 
 ## Context Diet
 

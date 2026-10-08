@@ -83,7 +83,7 @@ Overwrite the previous version of this file — it's a pointer to "the last rele
 
 ## Step 6: Push / PR (Optional)
 
-Ask the user explicitly: "Je pousse et j'ouvre une PR maintenant, ou ça reste local ?" Never assume yes because a release was just cut. On yes, dispatch `hosa-git` Mode 3 with that exact request (remote, branch, PR title/body drawn from the release notes) — `hosa-git` confirms the remote/branch back before pushing, per its own Mode 3 discipline.
+Ask the user explicitly, as numbered questions: "Je pousse et j'ouvre une PR maintenant, ou ça reste local ?" and, when pushing, "Je pousse aussi la branche de la KB (`hosa-kb`) ?" Never assume yes because a release was just cut. On yes, dispatch `hosa-git` Mode 3 with that exact request (remote, branch, PR title/body drawn from the release notes) — `hosa-git` confirms the remote/branch back before pushing, per its own Mode 3 discipline.
 
 ## Step 7: Log
 

@@ -43,3 +43,11 @@ test('ignores the stale KB copy inside a sprint worktree', () => {
   assert.match(ctx, /vraie KB/);
   assert.doesNotMatch(ctx, /copie périmée/);
 });
+
+test('asks to migrate a KB still tracked in the code branches', () => {
+  const root = kb();
+  const { spawnSync } = require('child_process');
+  const g = (...a) => spawnSync('git', ['-C', root, ...a], { encoding: 'utf8' });
+  g('init', '-q'); fs.writeFileSync(path.join(root, '.hosa', 'kb', 'x.md'), '---\ntype: x\n---\n'); g('add', '.hosa/kb/x.md');
+  assert.match(resumeContext(root), /still tracked in the code branches/);
+});
