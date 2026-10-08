@@ -57,3 +57,13 @@ test('session start marks the session and returns the command line, only inside 
   assert.match(sessionStart(path.join(root, 'src')), /## Project graph[\s\S]*graph\.py" ticket <slug>/);
   assert.ok(fs.existsSync(path.join(root, '.hosa', 'graph', 'session')));
 });
+
+test('refreshes the KB summary when a KB file is written', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-kb-'));
+  const kb = path.join(root, '.hosa', 'kb');
+  const seen = [];
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(kb, 'tickets', 'a.md') } }, () => {}, (d) => seen.push(d));
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(kb, 'sommaire.md') } }, () => {}, (d) => seen.push(d));
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(root, 'src', 'a.py') } }, () => {}, (d) => seen.push(d));
+  assert.deepEqual(seen, [kb]);
+});

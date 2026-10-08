@@ -79,6 +79,8 @@ Append a `## Résultats techniques` section to `.hosa/kb/test/<slug-ticket>-tech
 
 ## Context Diet
 
+- KB: read `.hosa/kb/sommaire.md` first (one line per concept), then open only the concepts your task needs; use what the dispatching skill already gave you instead of looking it up again.
+
 Tool output you pull in is billed on every later turn. Fetch the slice, not the file:
 - Grep/search for the symbol first; read only the matching region, not the whole file. Whole-file reads only when the whole file is the task (e.g. the existing test file you're matching in Step 1).
 - Narrow at the source: `ls dir` not `ls -R`, pipe long output through `| tail -50` / `| grep pattern`.

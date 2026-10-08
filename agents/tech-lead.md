@@ -33,6 +33,15 @@ You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exist
 4. **Halt rule (ambiguity):** a task that would force `hosa-developer` to guess a behavior the ticket never specified — list the question, stop, return no task plan.
 5. **Halt rule (structural deviation):** the ticket, as written, needs a module/layer or an entity/field that isn't already scaffolded — **stop the whole ticket right there** and report exactly what's missing and why it exceeds the current structure. Never propose the extension yourself; that call belongs to `hosa-architect`/`hosa-data-engineer`.
 
+## Context Diet
+
+Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
+- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
+- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
+- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
+- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+
 ## Report Style
 
 Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):

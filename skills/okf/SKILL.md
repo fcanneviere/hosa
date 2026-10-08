@@ -67,4 +67,12 @@ After any KB write, run the validator on the KB root and fix every error before 
 <python> "${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/okf_validate.py" <project>/.hosa/kb
 ```
 
+Then refresh the KB summary — one line per concept, the file every agent reads before opening anything else:
+
+```bash
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_index.py" <project>/.hosa/kb
+```
+
+The hooks also refresh it after each Edit/Write in the KB and at session start; running it here covers writes made by scripts.
+
 `<python>` is the Hosa app's venv interpreter (`hosa/app/.venv/Scripts/python.exe` on Windows, `hosa/app/.venv/bin/python` elsewhere) or any Python with PyYAML. Exit code `0` = conformant; `1` = errors listed (fix them, rerun); `2` = bad invocation. Warnings are not blocking but mention them in your report. `--json` gives machine-readable output.

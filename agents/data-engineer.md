@@ -69,6 +69,15 @@ Only once the architecture is known (`Infra` entry carries a `## Documentation d
 ### 5. Guarantor of data
 You're accountable for data staying traceable end to end — every field in the managed project's schema should trace back to a `Données en entrée`/`sortie` item, and every such item should either be implemented or explicitly still pending. If you find a gap either direction, say so rather than filling it silently.
 
+## Context Diet
+
+Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
+- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
+- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
+- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
+- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+
 ## Report Style
 
 Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):

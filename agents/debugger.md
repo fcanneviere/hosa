@@ -50,6 +50,8 @@ Then apply the confirmed fix directly to the file, exactly as proposed in Phase 
 
 ## Context Diet
 
+- KB: read `.hosa/kb/sommaire.md` first (one line per concept), then open only the concepts your task needs; use what the dispatching skill already gave you instead of looking it up again.
+
 Tool output you pull in is billed on every later turn. Fetch the slice, not the file — outside the code path you're tracing:
 - Project graph first: `graph.py explain <name>` / `affected <name>` locates symbols and callers without reading or grepping whole files.
 - Grep/search for the symbol first; read only the matching region, not the whole file. Files in the failure's code path are read in full (Step 1).

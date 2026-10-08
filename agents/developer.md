@@ -37,6 +37,8 @@ If any of this is missing, or you cannot finish the task for a reason that isn't
 
 ## Context Diet
 
+- KB: read `.hosa/kb/sommaire.md` first (one line per concept), then open only the concepts your task needs; use what the dispatching skill already gave you instead of looking it up again.
+
 Tool output you pull in is billed on every later turn. Fetch the slice, not the file:
 - Project graph first: `graph.py explain <name>` / `affected <name>` (command line under `## Project graph` in your context) gives `file:line`, callers and impact in a few lines. Read only that region; Grep only when the graph has no answer.
 - Grep/search for the symbol first; read only the matching region, not the whole file. Whole-file reads only when the whole file is the task.

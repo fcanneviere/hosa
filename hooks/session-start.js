@@ -19,6 +19,14 @@ try {
   context += require('./graph').sessionStart(process.cwd());
 } catch (e) {} // graphe optionnel — never block session start
 try {
+  const g = require('./graph');
+  const root = g.findUp(process.cwd(), path.join('.hosa', 'kb'));
+  if (root) {
+    g.refreshSummary(path.join(root, '.hosa', 'kb'));
+    context += '\n\n## Sommaire de la KB\n\nRead `.hosa/kb/sommaire.md` first (one line per concept, kept current), then open only the files you need.';
+  }
+} catch (e) {} // sommaire optionnel — never block session start
+try {
   context += require('./avancement').resumeContext(process.cwd());
 } catch (e) {} // plan d'avancement optionnel — never block session start
 

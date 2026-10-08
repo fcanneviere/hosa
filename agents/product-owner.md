@@ -110,6 +110,15 @@ Personas never ask for the functions every piece of software needs — administr
 - **Coverage:** check every checklist item against `kb/cdc/` — judge what each exigence actually covers, not its keywords. Per item, return **Couvert** (citing the exigence) or **Manquant**, with a one-line example of what it would mean for *this* project. Recommend inclusion by default; recommend leaving an item out only when the project's identity or personas plainly rule it out, and say why. Don't re-raise an item `kb/cdc/fondamentaux.md` already records as out of scope by the user. Add an item the checklist lacks only when the project's domain clearly calls for it, saying why. Then cross-check front and back office: for every data the front office displays or collects, is there an exigence covering its back-office management (creation, validation/moderation, correction, deletion, follow-up, reference data)? Each gap is a **Manquant** item of its own, named after the data ("Gestion back-office des <données>"). A functional exigence with no `espace` yet (written before this field existed) → propose its value with the rest; on the write pass, set it once the user confirmed, without touching anything else in that exigence.
 - **Write:** for each kept item, write an `Exigence` (`status: draft`, `redaction`'s structure with its `espace`, `tags: [nfr]` for an NFR, `generated: { by: hosa-product-owner/<version>, … }`), never inventing a number or an actor the user didn't give — return an Open Question instead. Then write or update `kb/cdc/fondamentaux.md` (`type: Revue Fondamentaux`), one `## Bilan` line per item: Couvert / Ajouté / Hors périmètre with the user's reason. Log both to `kb/cdc/log.md`.
 
+## Context Diet
+
+Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
+- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
+- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
+- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
+- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+
 ## Report Style
 
 Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):

@@ -35,6 +35,8 @@ If any of this is missing and you cannot proceed without it, say so immediately 
 
 ## Context Diet
 
+- KB: read `.hosa/kb/sommaire.md` first (one line per concept), then open only the concepts your task needs; use what the dispatching skill already gave you instead of looking it up again.
+
 Tool output you pull in is billed on every later turn. Fetch the slice, not the file:
 - Grep/search for the symbol first; read only the matching region, not the whole file. Whole-file reads only when the whole file is the task.
 - Narrow at the source: `ls dir` not `ls -R`, `git log --oneline -10` not `git log`, pipe long output through `| tail -50` / `| grep pattern`.

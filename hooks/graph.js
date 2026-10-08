@@ -12,6 +12,13 @@ const { spawn, spawnSync } = require('child_process');
 const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..');
 const APP = path.join(pluginRoot, 'hosa', 'app');
 const GRAPH_PY = path.join(APP, 'graph.py');
+const KB_INDEX_PY = path.join(pluginRoot, 'skills', 'okf', 'scripts', 'kb_index.py');
+
+// Rewrites `.hosa/kb/sommaire.md` (one line per KB concept) in the background.
+function refreshSummary(kbDir) {
+  spawn(python(), [KB_INDEX_PY, kbDir], { detached: true, stdio: 'ignore', windowsHide: true })
+    .on('error', () => {}).unref();
+}
 
 function python() {
   const venv = process.platform === 'win32' ? path.join(APP, '.venv', 'Scripts', 'python.exe') : path.join(APP, '.venv', 'bin', 'python');
@@ -48,12 +55,17 @@ function sessionStart(cwd) {
 const mtime = (p) => { try { return fs.statSync(p).mtimeMs; } catch (e) { return 0; } };
 
 // Hook payload → hook output object, or null.
-function processPayload(p, run = runGraph) {
+function processPayload(p, run = runGraph, summarize = refreshSummary) {
   if (!p) return null;
   if (p.hook_event_name === 'PostToolUse') {
     const file = p.tool_input && p.tool_input.file_path;
     const root = file && findUp(path.dirname(file), path.join('.hosa', 'graph', 'graph.json'));
     if (root) run(root, ['index', file]);
+    const parts = file ? path.resolve(file).split(path.sep) : [];
+    const i = parts.indexOf('.hosa');
+    if (i >= 0 && parts[i + 1] === 'kb' && path.basename(file) !== 'sommaire.md') {
+      summarize(parts.slice(0, i + 2).join(path.sep) || path.sep);
+    }
     return null;
   }
   if (p.hook_event_name === 'PreToolUse') {
@@ -81,4 +93,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { processPayload, sessionStart, findUp, commandLine };
+module.exports = { processPayload, sessionStart, findUp, commandLine, refreshSummary };

@@ -106,6 +106,15 @@ Log the update.
 5. Return a `## Documentation à produire` field with the new piece and the paths concerned — the requesting agent's orchestrating skill dispatches `hosa-documentation` with it; you never dispatch it yourself.
 6. Return confirmation that the new piece is in place — the requesting agent's orchestrating skill redispatches it once it has this confirmation; it does not resume its own task before then.
 
+## Context Diet
+
+Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
+- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
+- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
+- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
+- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+
 ## Report Style
 
 Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):

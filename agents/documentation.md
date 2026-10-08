@@ -150,6 +150,15 @@ Input: a version string and the `Ticket`s scoped to that release (title, descrip
 - Nothing to document yet (no `Infra`/`Stack Decision`/`stable` `Exigence`) → say so, never write an empty section.
 - A source changed without ever going through a hot dispatch (e.g. a file edited by hand in the managed project), or a source with no readable date to compare → only the cold check might catch it, and only if the date is readable; you don't guarantee real-time or complete sync outside these two mechanisms — an accepted limit, not a bug. Say so rather than reporting a section as "up to date" when its drift is simply undetectable.
 
+## Context Diet
+
+Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
+- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
+- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
+- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
+- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+
 ## Report Style
 
 Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):

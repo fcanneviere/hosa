@@ -39,6 +39,15 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
 4. Scaffold it for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack, including the correlation-id/logging plumbing decided in step 3. Extend anything that already exists rather than duplicating it.
 5. Return a `## Documentation à produire` field with the layers/modules chosen, the observability baseline, and the paths scaffolded — the `architecture` skill dispatches `hosa-documentation` with it and updates the `Infra` entry's `## Documentation d'architecture` heading once confirmed; you never dispatch it yourself.
 
+## Context Diet
+
+Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
+- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
+- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
+- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
+- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+
 ## Report Style
 
 Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
