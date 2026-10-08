@@ -39,7 +39,13 @@ Fragile dependencies between processes, a process with no assigned responsable, 
 If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each exigence, check it serves at least one of them. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it.
 
 ### 6. Fonctions de base
-Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). An item marked Couvert or Ajouté whose linked exigence doesn't actually deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence), or a basic function the software plainly needs that the review lists nowhere — name it. A missing review is itself a finding. Items the user confirmed out of scope aren't findings. Also flag any front-office data (displayed or collected) with no exigence managing it from the back office, and any functional exigence without an `espace`.
+Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). Name each of these findings:
+- an item marked Couvert or Ajouté whose exigence doesn't deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence);
+- a basic function the software plainly needs that the review doesn't list;
+- front-office data (displayed or collected) that no exigence manages from the back office;
+- a functional exigence without an `espace`;
+- a missing review.
+Items the user confirmed out of scope aren't findings.
 
 ### 7. Sécurité dès la conception
 Read `kb/cdc/securite.md` (`Analyse de sécurité`). A process handling sensitive data, crossing a trust boundary or giving a role more power, with no measure recorded and no risk explicitly accepted — name it. A missing analysis is itself a finding.
@@ -56,7 +62,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

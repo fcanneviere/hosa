@@ -36,7 +36,9 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9).
 
 ## Mode 1 — Start a Sprint
 
-1. Read `kb/sprints/<slug>.md`. `state` not `planned` → say so and stop, unless the request asks to reattach to an `active` sprint. To reattach: check `git worktree list` and `git branch --list` — anything gone → the record is stale, propose Mode 3 cleanup or a fresh Mode 1; both there → run Step 5 on it, record `docker_project`, report.
+1. Read `kb/sprints/<slug>.md`. `state` not `planned` → say so and stop, unless the request asks to reattach to an `active` sprint. To reattach, check `git worktree list` and `git branch --list`:
+   - the worktree or the branch is gone → the record is stale; propose Mode 3 cleanup or a fresh Mode 1;
+   - both are there → run Step 5 on it, record `docker_project`, and report.
 2. Read the root from `kb/infra/` (missing → ask). Its current branch (`git -C <root> branch --show-current`) becomes the sprint's `base`; empty (detached HEAD) → Open Question.
 3. **Preconditions**, in the root:
    - Every ticket has `kb/test/<ticket>-technique.md`, and the dataset README documents `## Remise à zéro` — otherwise Open Question proposing `qa-plan`. A sprint never starts without its tests.
@@ -45,7 +47,10 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9).
    - `.worktrees/` not ignored (`git check-ignore -q .worktrees/x` fails) → add it to `.gitignore`, commit that file alone (`chore: ignore .worktrees`).
 4. `git -C <root> worktree add .worktrees/sprint/<slug> -b sprint/<slug> <base>`; confirm with `git worktree list`.
 5. **Environment:** from the worktree, `docker compose -p <projet>-sprint-<slug> up -d --build` with the sprint's port variables, then `docker_check.py`. With a database: `hosa-dba`'s *état*, *migrer*, *état*.
-6. **Baseline:** the dataset's `## Remise à zéro`, then the full suite. Red → Open Question: start anyway (failures recorded under `## Baseline` in the sprint, so QA doesn't blame it) or cancel (`docker compose -p … down -v`, `git worktree remove`, `git branch -d`; `state` stays `planned`). No test suite → say so, continue.
+6. **Baseline:** the dataset's `## Remise à zéro`, then the full suite. Red → Open Question with two options:
+   - start anyway: record the failures under `## Baseline` in the sprint, so QA doesn't blame the sprint for them;
+   - cancel: `docker compose -p … down -v`, `git worktree remove`, `git branch -d`; `state` stays `planned`.
+   No test suite → say so and continue.
 7. Write `state: active`, `branch`, `worktree`, `base`, `docker_project` (and `## Baseline` if any) to the sprint; log it.
 8. Report: ticket work happens in the worktree, one ticket at a time, via `develop`.
 
@@ -83,7 +88,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## Output Format
 

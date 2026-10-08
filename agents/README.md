@@ -21,7 +21,7 @@ Project-specific agents for the Hosa cahier-des-charges and data-structuring pip
 | Agent | Model | Role |
 |---|---|---|
 | [`hosa-product-owner`](product-owner.md) | sonnet | Acts as Product Owner for Hosa — carries the product vision, manages the Product Backlog (`.hosa/kb/tickets/`), writes user stories from persona needs, validates deliverables. |
-| [`hosa-key-user`](key-user.md) | sonnet | Embodies a specific persona from `.hosa/kb/personnas/` — sharpens thin persona entries, runs functional/business acceptance testing ("recette métier") from that persona's point of view. |
+| [`hosa-key-user`](key-user.md) | sonnet | Embodies a specific persona from `.hosa/kb/personnas/` — sharpens thin persona entries, runs the recette (business acceptance test) from that persona's point of view. |
 | [`hosa-challenger`](challenger.md) | opus | Audits the assembled cahier des charges (`.hosa/kb/cdc/`) for contradictions, blind spots, unstated assumptions, and risks — an independent read, never a self-check. |
 | [`hosa-senior-dev`](senior-dev.md) | opus | Chooses the technical stack for the managed project — proposes stack options based on the stable cahier des charges (security constraints included), with trade-offs, and records the choice. Also audits the managed project's source code for best practices and performance. |
 | [`hosa-security`](security.md) | opus | Cybersecurity expert, security by design — analyses data sensitivity and threats during the cahier des charges and writes security exigences and the project's `Security Rule`s; at the end, audits the code for conformity and for the holes nobody could foresee. |

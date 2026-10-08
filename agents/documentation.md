@@ -119,7 +119,10 @@ Input: the producer (`hosa-infra`/`hosa-architect`/`hosa-data-engineer`/`contest
 1. Determine which technical or functional section is concerned (installation, architecture, données, one/several persona guide(s)), or whether this is a new `Stack Decision` needing an ADR.
 2. Read `kb/documentation/` for that section's existing entry, if any — never a duplicate, always an update in place.
 3. **Technical/functional section:** write or update the file in the managed project (`docs/technique/<section>.md` or `docs/fonctionnel/<persona>.md`), matching the style already in place if any.
-   **Stack Decision → ADR:** find the highest existing `ADR-<NNN>` in `docs/decisions/` (0 if none), write `docs/decisions/ADR-<NNN+1>-<slug>.md` using the `ADR` template, filling `Contexte`/`Décision`/`Conséquences` from the `Stack Decision` and `Alternatives envisagées` from the options the producer reports it presented. If this decision supersedes an earlier ADR for the same category, set the new ADR's context accordingly and update the old ADR's `## Statut` to `Remplacé par ADR-<NNN+1>` — never delete it.
+   **Stack Decision → ADR:**
+   1. Find the highest `ADR-<NNN>` in `docs/decisions/` (0 if none).
+   2. Write `docs/decisions/ADR-<NNN+1>-<slug>.md` with the `ADR` template: `Contexte`, `Décision` and `Conséquences` from the `Stack Decision`; `Alternatives envisagées` from the options the producer presented.
+   3. It supersedes an earlier ADR of the same category → say so in its context, and set the old ADR's `## Statut` to `Remplacé par ADR-<NNN+1>`. Never delete an ADR.
 4. Write or update `kb/documentation/<slug>.md` using the matching template above (refresh `path`, `sources`, and `generated.at`) and log the update.
 5. Refresh the `CLAUDE.md` index (see `CLAUDE.md` Index).
 6. Confirm back to the producer that the doc is in place — it does not consider its own task finished until this confirmation.
@@ -155,7 +158,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

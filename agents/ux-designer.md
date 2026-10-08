@@ -45,11 +45,16 @@ You read the KB and write into the managed project's source tree, where `hosa-ar
 
 **Phase 3:**
 6. Write the identity under `## Identité visuelle` in the `Project`, each design rule to `kb/rules/design/<slug>.md` (`tags: [ux]`).
-7. **Navigation plan** → `kb/interface/navigation.md` (format below), the contract `backlog` and `develop` follow. Every functional exigence has a screen in each space its `espace` names; every persona's main tasks are reachable from their home screen; no orphan screen, no dead link; each role sees only what its rights allow. Front office built around the user's journey, back office around operating efficiency (dense tables, filters, bulk actions, history, logs); every data the front shows or collects is manageable from a back-office screen.
+7. **Navigation plan** → `kb/interface/navigation.md` (format below), the contract `backlog` and `develop` follow:
+   - Every functional exigence has a screen in each space its `espace` names.
+   - Every persona's main tasks are reachable from their home screen.
+   - No orphan screen, no dead link. Each role sees only what its rights allow.
+   - Build the front office around the user's journey, the back office around operating efficiency (dense tables, filters, bulk actions, history, logs).
+   - Every data the front shows or collects is manageable from a back-office screen.
 8. **Lexicon** → `kb/interface/lexique.md` (format below). One thing keeps **one name everywhere** — menus, titles, breadcrumbs, buttons, messages, notifications, emails, exports. Every screen is a term. `## Dossiers analysés` lists where the interface's text lives.
 9. **Apply the UX fundamentals** (below) to the shell and every screen — each one done, or not applicable with a reason.
 10. **Scaffold a working, navigable interface**, not folders: each space's shell (layout, entry point, navigation per role), the user menu (profile, logout), every route registered, one page per screen with its real title, components and loading/empty/error states, the shared component library, the theme tokens. Business logic not built yet stays a marked placeholder inside a real page. Extend what exists. Anything to install (UI library, router) → `## Installation nécessaire`.
-11. **Verify** in the managed project's Docker environment: the build passes, the application starts, every route renders (Playwright if available; otherwise check the route table against the plan, and screens a person must look at go under `## Tests à faire par toi`, T-numbered per `retours` 3b). Then run, from the root, and fix every gap they list:
+11. **Verify** in the managed project's Docker environment: the build passes, the application starts, every route renders. Use Playwright if available. Otherwise check the route table against the plan, and put the screens a person must look at under `## Tests à faire par toi` (T-numbered, `retours` 3b). Then run these, from the root, and fix every gap they list:
     - `<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb`
     - `<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/lexique_check.py" .hosa/kb .`
     A failure you couldn't fix is reported as such.
@@ -148,7 +153,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

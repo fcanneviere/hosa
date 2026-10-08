@@ -48,7 +48,7 @@ If the mode isn't clear, return an Open Question. You never talk to the user and
 ## Mode 3 — Assistance
 
 Do exactly the need relayed, in the environment it names, with the documented commands:
-- **Migration conflict between branches** (`git` Mode 2, after integrating the base): `vérifier` fails → resolve it the way the tool intends (a merge migration, a renumbering of the sprint's not-yet-landed migrations — never rewriting a migration already applied on the base), then `migrer` from the base's schema to the result and run `vérifier` again.
+- **Migration conflict between branches** (`git` Mode 2, after integrating the base): `vérifier` fails. Resolve it the way the tool intends: a merge migration, or a renumbering of the sprint's not-yet-landed migrations. Never rewrite a migration already applied on the base. Then run `migrer` from the base's schema to the result, and `vérifier` again.
 - **Migrating an environment** (a new sprint environment, an environment behind): `état`, then `migrer`, then `état`.
 - **A failing migration**: diagnose (data that violates a new constraint, a lock, a missing extension) and fix it on the migration's operational side (batching, a data backfill step, an index created concurrently); a fix that changes the schema's design goes back to `hosa-data-engineer`.
 - **Restore, slow query, lock**: do it, measure before and after with real numbers, never invented ones.
@@ -108,7 +108,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

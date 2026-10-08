@@ -29,7 +29,7 @@ Something missing, or a reason to stop that isn't a structural deviation (an uns
    7. Only then: the minimum code that works.
 
    The ladder is a stopping rule, not a checklist to walk aloud — don't re-derive rungs above the one that held. No interface with one implementation, no config for a value that never changes, no scaffolding "for later". Fewest files, shortest working diff. **Bug fix = root cause:** grep every caller of the function before editing — one guard in the shared function beats a guard in every caller. Never simplified away: input validation at trust boundaries, error handling that prevents data loss, security, accessibility basics. Behaviour the ticket's tests don't cover → your own failing test first, then the code (red-green). No test framework → implement and say so.
-4. **The database is `hosa-dba`'s.** Never apply, roll back or edit a migration, never change the schema or a database setting by hand: use the documented commands of `.hosa/kb/infra/base-de-donnees.md`, and anything they don't cover goes under `Blocked` as a database need.
+4. **The database is `hosa-dba`'s.** Never apply, roll back or edit a migration. Never change the schema or a database setting by hand. Use the documented commands of `.hosa/kb/infra/base-de-donnees.md`; a need they don't cover goes under `Blocked`.
 5. **Interface text uses the lexicon.** Every label, title, button, message or notification you write takes its words from `.hosa/kb/interface/lexique.md` and follows its conventions. A thing the lexicon doesn't name yet → `Blocked`, never a name of your own.
 6. **Stay inside the placement you were given.** Never add a module, layer, entity, or field outside what `hosa-architect`/`hosa-data-engineer` already scaffolded. **If the task genuinely needs one to be correct — don't improvise a workaround: stop this task and report the deviation** exactly like `hosa-tech-lead` does (what's missing, why).
 7. **No comments explaining what code does.** Only add one when the WHY is non-obvious: a hidden constraint, a specific workaround.
@@ -45,7 +45,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

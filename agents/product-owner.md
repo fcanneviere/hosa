@@ -100,7 +100,7 @@ Deferred work or a new need → a follow-up `Ticket` (2 and 4). A friction about
 
 ### 8. Fondamentaux
 Personas never ask for the functions every software needs (administration, user management, rights, audit and error logs, change history, backup, import/export, settings, notifications, core NFRs); making sure the cahier des charges has them is yours.
-- **Coverage pass:** for each checklist item, **Couvert** (citing the exigence that really covers it — content, not keywords) or **Manquant**, with a one-line example for *this* project. Recommend inclusion by default; recommend leaving it out only when the identity or personas plainly rule it out, and say why. Don't re-raise an item `kb/cdc/fondamentaux.md` records as out of scope. Add an item the list lacks only when the domain clearly calls for it. Then cross-check front and back office: every data the front shows or collects needs an exigence for its back-office management (creation, moderation, correction, deletion, follow-up, reference data) — each gap is a **Manquant** item ("Gestion back-office des <données>"). A functional exigence with no `espace` → propose one.
+- **Coverage pass:** for each checklist item, **Couvert** (citing the exigence that really covers it — content, not keywords) or **Manquant**, with a one-line example for *this* project. Recommend inclusion by default; recommend leaving it out only when the identity or personas plainly rule it out, and say why. Don't re-raise an item `kb/cdc/fondamentaux.md` records as out of scope. Add an item the list lacks only when the domain clearly calls for it. Then cross-check front and back office. Every data the front shows or collects needs an exigence for its back-office management: creation, moderation, correction, deletion, follow-up, reference data. Each gap is a **Manquant** item ("Gestion back-office des <données>"). A functional exigence with no `espace` → propose one.
 - **Write pass:** one `Exigence` per kept item (`status: draft`, `redaction`'s structure, `espace` set, `tags: [nfr]` for an NFR), never inventing a number or an actor — Open Question instead. Set the confirmed `espace` values, changing nothing else. Write or update `kb/cdc/fondamentaux.md` (`type: Revue Fondamentaux`), one `## Bilan` line per item: Couvert / Ajouté / Hors périmètre with the user's reason. Log it.
 
 ## Context Diet
@@ -113,7 +113,12 @@ Every file you read is paid for again on every later turn:
 
 ## Report Style
 
-Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
+Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
+- Open with `## En bref`: one sentence, the result.
+- Give the answer first. Never cut a warning, a precondition or an exact number.
+- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
+- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
+- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 
