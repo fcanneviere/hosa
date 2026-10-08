@@ -75,7 +75,7 @@ Run the checker yourself, from the managed project's root:
 <python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb
 ```
 
-Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Don't move on to documentation with an incomplete interface: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
+Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. A gap on an exigence's missing `espace` isn't the designer's to fix: propose `fondamentaux`, where `hosa-product-owner` sets it with the user, then come back. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Don't move on to documentation with an incomplete interface: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
 
 ## Step 5: Dispatch Documentation
 

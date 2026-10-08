@@ -38,6 +38,8 @@ Manual: `/fondamentaux`. Auto: immediately after `redaction` (every time it writ
 The standard list `hosa-product-owner` checks against — pass it as is. Don't drop an item without the user striking it out; an item this list doesn't name can be added by the PO when the project's domain clearly calls for it (it says why).
 
 **Fonctionnel — administration et exploitation**
+- **Front office et back office** : deux espaces distincts — celui des utilisateurs finaux et celui de l'équipe qui exploite l'application — avec leurs accès, leurs rôles et leur point d'entrée
+- **Gestion back-office de chaque donnée du front** : pour tout ce que le front office affiche ou collecte, qui le crée, le valide/modère, le corrige, le supprime et le suit, depuis le back office
 - **Interface d'administration** : back-office pour gérer contenus, données de référence, paramètres
 - **Gestion des utilisateurs** : création/invitation, modification, désactivation et suppression de comptes, profil utilisateur
 - **Authentification** : connexion, déconnexion, gestion et expiration de session
@@ -79,12 +81,14 @@ Dispatch `hosa-product-owner` (Responsibility 8, `agents/product-owner.md`) with
 
 Show the user every **Manquant** item at once, as one list: "Voici les fonctions de base absentes du cahier des charges. Je les ajoute toutes, sauf celles que tu rayes :" — each with the PO's project-specific example. One answer, not one question per item. An item struck out needs a one-line reason ("pas de données externes", "application mono-utilisateur"…), recorded as is. Silence on an item means it stays in.
 
+With the same list, show the `espace` the PO proposes for any functional exigence that doesn't have one yet — confirmed together, corrected if wrong.
+
 Then ask, grouped, only what's needed to write the items kept: the actor or rule the PO couldn't derive, and the concrete target for each NFR (number, level, threshold — "pas encore de chiffre" is a valid answer, never invented).
 
 ## Step 4: Write (PO)
 
 Redispatch `hosa-product-owner` with the kept items and the user's answers. It writes:
-- one `Exigence` per kept item, `status: draft`, in `redaction`'s structure (`tags: [nfr]` for an NFR), linking a matching persona if one exists (e.g. an "Administrateur" for admin items), otherwise `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` — expected for most of this list, not a gap;
+- one `Exigence` per kept item, `status: draft`, in `redaction`'s structure — `espace` set (most basics are `back-office`; login, account recovery, notifications or user help are usually `front-office` too), `tags: [nfr]` for an NFR — linking a matching persona if one exists (e.g. an "Administrateur" for admin items), otherwise `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` — expected for most of this list, not a gap;
 - `kb/cdc/fondamentaux.md`, the record `contestation` checks for:
 
 ```markdown

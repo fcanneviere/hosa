@@ -42,6 +42,7 @@ For each exigence, check every section against these standards — mark **OK** o
 - `Données en entrée` / `Données en sortie`: named data, not "les infos nécessaires" or other placeholders
 - `Qui fait quoi`: names an actual persona/rôle for every action listed, not "l'utilisateur" generically when a specific persona applies
 - `Responsable`: exactly one clear owner, not "l'équipe" or left implicit
+- `espace` (frontmatter, functional exigences — not `nfr`): `front-office`, `back-office` or both, consistent with the roles in `Qui fait quoi`
 - `Besoin(s) persona répondu(s)`: a real link to a `kb/personnas/` file, or an explicit "Aucun — exigence transverse"
 
 ## Step 3: Cross-Exigence Consistency

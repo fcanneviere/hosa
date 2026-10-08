@@ -2,9 +2,10 @@
 """Check that the interface design is complete — `kb/interface/navigation.md`.
 
   - every functional `stable` Exigence (not tagged `nfr`) is served by a screen
-    listed in `## Écrans`;
-  - every screen has a route and an entry point ("Accès depuis"), so none is
-    orphaned;
+    listed in `## Écrans`, in each space (front-office / back-office) its
+    `espace` names;
+  - every screen has a route, an entry point ("Accès depuis") so none is
+    orphaned, and a space; both spaces exist;
   - every item of the UX fundamentals checklist (read from the `## UX
     Fundamentals` section of `agents/ux-designer.md`, the single source) is
     marked "Fait" or "Non applicable : <raison>" in `## Fondamentaux UX`.
@@ -18,6 +19,7 @@ import re
 import sys
 from pathlib import Path
 
+SPACES = re.compile(r"\b(front-office|back-office)\b")
 AGENT = Path(__file__).resolve().parents[3] / "agents" / "ux-designer.md"
 
 
@@ -58,22 +60,38 @@ def gaps(kb: Path) -> list[str]:
             if r.strip().startswith("|") and not re.match(r"^\s*\|[\s|:-]+\|\s*$", r)][1:]
     if not rows:
         out.append("aucun écran listé dans `## Écrans`")
+    served: dict[str, set[str]] = {}
     for r in rows:
         cells = [c.strip() for c in r.strip().strip("|").split("|")]
-        name = cells[0] if cells else "?"
-        if len(cells) < 5 or not cells[1]:
+        cells += [""] * (6 - len(cells))
+        name = cells[0] or "?"
+        space = set(SPACES.findall(cells[5]))
+        if not cells[1]:
             out.append(f"écran « {name} » sans route")
-        elif not cells[4]:
+        if not cells[4]:
             out.append(f"écran « {name} » orphelin — rien n'y mène (« Accès depuis » vide)")
-    linked = {Path(t).stem for t in re.findall(r"\]\(([^)\s]*cdc/[^)\s]+\.md)\)", screens)}
+        if not space:
+            out.append(f"écran « {name} » sans espace (front-office / back-office)")
+        for t in re.findall(r"\]\(([^)\s]*cdc/[^)\s]+\.md)\)", cells[3]):
+            served.setdefault(Path(t).stem, set()).update(space)
+    all_spaces = set(SPACES.findall(screens))
+    for needed in ("front-office", "back-office"):
+        if rows and needed not in all_spaces:
+            out.append(f"aucun écran {needed} — les deux espaces sont attendus")
     for ex in sorted((kb / "cdc").glob("*.md")):
         f, _ = split(ex.read_text(encoding="utf-8"))
         if field(f, "type") != "Exigence" or field(f, "status") != "stable":
             continue
         if re.search(r"^tags:.*\bnfr\b", f, re.M) or re.search(r"^\s*-\s*nfr\s*$", f, re.M):
             continue
-        if ex.stem not in linked:
+        wanted = set(SPACES.findall(field(f, "espace")))
+        if not wanted:
+            out.append(f"exigence `{ex.stem}` sans `espace` (front-office / back-office) — à préciser par le PO")
+        if ex.stem not in served:
             out.append(f"exigence `{ex.stem}` servie par aucun écran")
+        else:
+            for sp in sorted(wanted - served[ex.stem]):
+                out.append(f"exigence `{ex.stem}` sans écran {sp}")
 
     review = section(body, "Fondamentaux UX")
     if review is None:

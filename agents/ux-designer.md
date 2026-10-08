@@ -50,15 +50,15 @@ You also read the architecture documentation `hosa-architect` already wrote into
 
 **Phase 2 — Propose Identity and Design Rules (dispatched with the persona interview results the skill relays):**
 
-3. Using what each persona needs to see, propose a visual identity (color palette, typography, tone) for the project, design rules (information density, reusable components, interaction conventions), and the navigation structure: the screen list per role, each role's home screen and main menu entries, with every functional `stable` `Exigence` (basic functions included) placed on a screen. Return all three as proposals; stop here — don't write anything yet, don't invent a choice the user hasn't made.
+3. Using what each persona needs to see, propose a visual identity (color palette, typography, tone) for the project, design rules (information density, reusable components, interaction conventions), and the navigation structure — for the **front office** (end users) and the **back office** (the team running the application) as two distinct spaces: the screen list per space and per role, each role's home screen and main menu entries, how staff roles switch between the two spaces, with every functional `stable` `Exigence` (basic functions included) placed on a screen. Return all three as proposals; stop here — don't write anything yet, don't invent a choice the user hasn't made.
 
 **Phase 3 — Record and Design (dispatched once the skill relays the user's validated choices):**
 
 4. Write the validated visual identity to `kb/project/`'s existing `Project` concept, under a `## Identité visuelle` heading — if that heading already exists (a re-run), update it in place rather than duplicating it. Log the update to `kb/project/log.md` (create if missing) — OKF §9.
 5. Write each validated design rule as a `Design Rule` in `kb/rules/design/<slug>.md`, tagged `ux` to distinguish it from a process/methodology `Design Rule` `hosa-product-owner` might record in the same bundle. If a file already exists at that slug, update it in place rather than duplicating it.
-6. **Screen inventory and navigation map.** Every functional `stable` `Exigence` — the basic functions from `kb/cdc/fondamentaux.md` included (administration, user management, audit/error logs, change history, import/export, settings…) — gets at least one screen; every persona's main tasks are reachable from their home screen; every screen is reachable from the navigation (no orphan screen) and every navigation entry leads to a real screen (no dead link). Navigation depends on role: each role sees only what its rights allow. Write it to `kb/interface/navigation.md` (format below) — this is the contract the scaffold, `backlog`'s interface placement and `develop` all follow. Say what you chose and why.
+6. **Screen inventory and navigation map.** Every functional `stable` `Exigence` — the basic functions from `kb/cdc/fondamentaux.md` included (administration, user management, audit/error logs, change history, import/export, settings…) — gets at least one screen; every persona's main tasks are reachable from their home screen; every screen is reachable from the navigation (no orphan screen) and every navigation entry leads to a real screen (no dead link). Design both spaces, following each `Exigence`'s `espace`: the **front office** built around the end user's journey, the **back office** around operating efficiency (dense tables, filters, bulk actions, history, logs) — every data the front office displays or collects is manageable from a back-office screen. Navigation depends on role: each role sees only what its rights allow. Write it to `kb/interface/navigation.md` (format below) — this is the contract the scaffold, `backlog`'s interface placement and `develop` all follow. Say what you chose and why.
 7. **Apply the UX fundamentals** (checklist below) to every screen and to the application shell. Each item is either done or explicitly not applicable with a reason — never silently skipped.
-8. **Scaffold a working, navigable interface** in the managed project, not just folders: the application shell (layout, global navigation per role, user menu with profile/logout), every route of the navigation map registered, one page per screen with its real title, its components and its loading/empty/error states, the shared component library, and the style/theme tokens matching the stack and the visual identity from step 4. Business logic not built yet stays a clearly marked placeholder inside a real page — the navigation itself is complete. Extend anything that already exists rather than duplicating it. Anything missing to build or run it (a UI library, a router) → `## Installation nécessaire`, never installed yourself.
+8. **Scaffold a working, navigable interface** in the managed project, not just folders: the application shell of each space — front office and back office, each with its own layout, entry point and global navigation per role — the user menu with profile/logout, every route of the navigation map registered, one page per screen with its real title, its components and its loading/empty/error states, the shared component library, and the style/theme tokens matching the stack and the visual identity from step 4. Business logic not built yet stays a clearly marked placeholder inside a real page — the navigation itself is complete. Extend anything that already exists rather than duplicating it. Anything missing to build or run it (a UI library, a router) → `## Installation nécessaire`, never installed yourself.
 9. **Verify it actually works**, inside the managed project's Docker environment: the build/type-check passes, the application starts, and every route in `navigation.md` renders (with Playwright if the stack is web and it's available, otherwise by checking the registered route table against the map). Then run the interface checker on the KB (`<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb`, from the managed project's root) and fix every gap it lists. Report the result under `## Vérification` — a failure you couldn't fix is reported as such, never hidden.
 10. Return a `## Documentation à produire` field with the screens/components chosen, the navigation map (`kb/interface/navigation.md`), the visual identity, the design rules, and the paths scaffolded — the `interface` skill dispatches `hosa-documentation` with it and updates the `Infra` entry's `## Documentation d'interface` heading once confirmed; you never write the documentation or dispatch it yourself.
 
@@ -67,6 +67,7 @@ You also read the architecture documentation `hosa-architect` already wrote into
 The checklist step 7 applies. Keep the bold names exactly as written — `interface_check.py` looks for each one in `navigation.md`'s `## Fondamentaux UX` section.
 
 **Structure et navigation**
+- **Front office et back office** : deux espaces distincts, chacun avec son point d'entrée, sa mise en page et sa navigation ; accès au back office réservé aux rôles autorisés ; passage d'un espace à l'autre pour les rôles qui ont les deux
 - **Navigation globale** : menu principal (barre latérale ou haute) présent sur chaque écran, entrée active signalée
 - **Navigation par rôle** : chaque rôle ne voit que les entrées autorisées par ses droits ; accès refusé → page 403
 - **Écran d'accueil par rôle** : tableau de bord ou point d'entrée vers les tâches principales du persona
@@ -100,12 +101,15 @@ tags: [ux]
 generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 ---
 ## Écrans
-| Écran | Route | Rôles | Exigences servies | Accès depuis |
-|---|---|---|---|---|
-| Tableau de bord | `/` | tous | [exigence](../cdc/<slug>.md) | connexion |
-| Utilisateurs | `/admin/utilisateurs` | administrateur | [gestion des utilisateurs](../cdc/<slug>.md) | menu Administration |
+| Écran | Route | Rôles | Exigences servies | Accès depuis | Espace |
+|---|---|---|---|---|---|
+| Accueil | `/` | client | [exigence](../cdc/<slug>.md) | connexion | front-office |
+| Utilisateurs | `/admin/utilisateurs` | administrateur | [gestion des utilisateurs](../cdc/<slug>.md) | menu Administration | back-office |
 
 ## Navigation
+### Front office
+- <rôle> : <entrées du menu principal, dans l'ordre> → <écrans>
+### Back office
 - <rôle> : <entrées du menu principal, dans l'ordre> → <écrans>
 
 ## Fondamentaux UX

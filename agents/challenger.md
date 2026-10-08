@@ -39,7 +39,7 @@ Fragile dependencies between processes, a process with no assigned responsable, 
 If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each exigence, check it serves at least one of them. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it.
 
 ### 6. Fonctions de base
-Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). An item marked Couvert or Ajouté whose linked exigence doesn't actually deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence), or a basic function the software plainly needs that the review lists nowhere — name it. A missing review is itself a finding. Items the user confirmed out of scope aren't findings.
+Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). An item marked Couvert or Ajouté whose linked exigence doesn't actually deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence), or a basic function the software plainly needs that the review lists nowhere — name it. A missing review is itself a finding. Items the user confirmed out of scope aren't findings. Also flag any front-office data (displayed or collected) with no exigence managing it from the back office, and any functional exigence without an `espace`.
 
 Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it.
 

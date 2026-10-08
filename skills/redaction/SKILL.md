@@ -45,6 +45,7 @@ type: Exigence
 title: <nom du processus>
 description: <une ligne : ce que ce processus accomplit>
 tags: []
+espace: [front-office]   # [back-office], ou [front-office, back-office]
 status: draft
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
@@ -66,6 +67,8 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ## Besoin(s) persona répondu(s)
 - [<persona>](../personnas/<slug>.md) : <besoin précis>
 ```
+
+`espace` says where the process lives: **front-office** (the application's end users — clients, citizens, members…), **back-office** (the people who run it — administrators, staff, operators, moderators), or both when a process has a user-facing side and a management side. Every front-office process implies back-office work (who creates, validates, moderates, corrects or deletes what end users see or submit): if the notes don't say who does it, ask — never leave the back-office side implicit.
 
 Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from interview notes.
 
