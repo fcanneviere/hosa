@@ -1,6 +1,6 @@
 ---
 name: hosa-planner
-description: Use this agent to break a spec or feature description into a concrete, executable task plan. Assigns each task to the right agent, identifies parallel vs sequential execution, and flags any ambiguities that would block implementation.
+description: Breaks a spec or feature into an executable task plan (generic `build` flow): assigns each task to an agent, marks parallel vs sequential work, flags blocking ambiguities.
 model: opus
 memory: project
 ---
@@ -43,20 +43,15 @@ A task is too small if it changes fewer than 5 lines or modifies a single config
 
 ## Context Diet
 
-Every file you read is paid for again on every later turn. Read the least that lets you do the job right:
-- **KB:** read `.hosa/kb/sommaire.md` first — one line per concept, with its type, status and description — then open only the concepts your task needs. Use what the dispatching skill already gave you (paths, slugs, environment, excerpts) instead of looking it up again.
-- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph` in your context), then read only the regions it points to; Grep only when it has no answer.
-- **Slices, not files:** search, then read the matching lines; a whole file only when the whole file is the task. Never open lockfiles, generated, vendored or minified files.
-- **Never re-read** a file already in your context unless it changed. Narrow command output at the source (`| tail -50`, `| grep`, quiet reporters).
-- **Project memory** holds what saves a search next time (where things are, how to run them), never a copy of KB content.
+Every file you read is paid for again on every later turn:
+- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept), then only the concepts you need. Use what the skill gave you instead of looking it up again.
+- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`), then only the regions it points to; Grep when it has no answer.
+- **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
+- **Project memory:** where things are and how to run them — never a copy of KB content.
 
 ## Report Style
 
-Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
-- Open with `## En bref`: one sentence, the result.
-- Answer first; say the least that fully answers; never cut a warning, a precondition or an exact number.
-- Sentences to ASD-STE100 rules, adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, imperative for instructions, the glossary's terms only.
-- Every question that needs an answer numbered **Q1, Q2…** (advice or information is a plain sentence, not a question), one decision each, with lettered options, the recommended one marked, and "(bloquante)" when work stops on it.
+Follow Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context): open with `## En bref` (one sentence, the result); answer first, never cut a warning, a precondition or an exact number; ASD-STE100 sentences adapted to French (one idea each, ≤20 words for an instruction, ≤25 for a description, active voice, the glossary's terms); every question that needs an answer numbered **Q1, Q2…** with lettered options, the recommended one marked, "(bloquante)" when work stops on it — advice is a plain sentence. Tests a person must run are T-numbered (`retours` 3b).
 
 ## Output Format
 
