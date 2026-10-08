@@ -63,6 +63,25 @@ class GraphTest(unittest.TestCase):
         future = time.time() + 5
         os.utime(p, (future, future))
 
+    def test_find_filters_and_pages(self):
+        self.assertEqual({self.ix.nodes[i]["file"] for i in self.ix.find("helper", path="lib/*")}, {"lib/other.py"})
+        self.assertTrue(all(self.ix.nodes[i]["kind"] == "function" for i in self.ix.find("app", kind="function")))
+        both = self.ix.find("helper", limit=2)
+        self.assertEqual(self.ix.find("helper", limit=1) + self.ix.find("helper", limit=1, offset=1), both)
+
+    def test_status_reports_freshness_and_exclusions(self):
+        self.assertIn("à jour", graph.status(self.root))
+        (self.root / "app/util.py").write_text(FILES["app/util.py"] + "\n# v3\n", encoding="utf-8")
+        os.utime(self.root / "app/util.py", (time.time() + 5, time.time() + 5))
+        self.assertIn("1 modifié(s)", graph.status(self.root))
+        old = graph.MAX_FILE_BYTES
+        graph.MAX_FILE_BYTES = 10
+        try:
+            self.assertIn("Exclus (> 0 Ko", graph.status(self.root))
+            self.assertNotIn("app/billing.py", graph.tracked_files(self.root))
+        finally:
+            graph.MAX_FILE_BYTES = old
+
     def test_definitions_with_lines_kinds_and_docs(self):
         n = self.ix.nodes
         self.assertEqual((n["app/billing.py::Invoice"]["kind"], n["app/billing.py::Invoice"]["line"]), ("class", 4))

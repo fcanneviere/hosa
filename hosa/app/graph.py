@@ -1,5 +1,6 @@
 """Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents."""
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -17,6 +18,8 @@ import kb
 VERSION = 1
 ACTOR = "process:hosa-graph"
 BUDGET = 2000  # tokens, estimés à 4 caractères/token
+# Fichiers plus gros que ça (générés, empaquetés, minifiés) : hors du graphe. HOSA_GRAPH_MAX_KB pour changer.
+MAX_FILE_BYTES = int(os.environ.get("HOSA_GRAPH_MAX_KB", "512")) * 1024
 MAX_CANDIDATES = 5  # au-delà, un nom est trop générique (get, run, __init__) pour produire des arêtes utiles
 IMPACT_RELS = ("calls", "imports", "inherits")
 KIND_ORDER = {"exigence": 0, "ticket": 1, "file": 2, "class": 3, "function": 4, "method": 5}
@@ -62,7 +65,14 @@ def tracked_files(root):
     except (subprocess.CalledProcessError, FileNotFoundError):
         files = [p.relative_to(root).as_posix() for p in Path(root).rglob("*")
                  if p.is_file() and not any(part.startswith(".") for part in p.relative_to(root).parts)]
-    return sorted({f for f in files if not f.startswith(".hosa/") and gx.lang_of(f) and (Path(root) / f).is_file()})
+    return sorted({f for f in files if not f.startswith(".hosa/") and gx.lang_of(f) and _indexable(Path(root) / f)})
+
+
+def _indexable(path):
+    try:
+        return path.is_file() and path.stat().st_size <= MAX_FILE_BYTES
+    except OSError:
+        return False
 
 
 def _load_json(path, default):
@@ -397,7 +407,7 @@ def refresh(root, paths=None):
                     continue
                 if not gx.lang_of(rel) or rel.startswith(".hosa/"):
                     continue
-                if (root / rel).is_file():
+                if _indexable(root / rel):
                     current.add(rel)
                 else:
                     files.pop(rel, None)
@@ -463,10 +473,14 @@ class Index:
             raise GraphError(f"« {term} » est ambigu :\n" + "\n".join(fmt(self.nodes[h]) for h in hits[:20]))
         return hits[0]
 
-    def find(self, text, limit=20):
+    def find(self, text, limit=20, path=None, kind=None, offset=0):
         tokens = [t for t in re.split(r"[\s/.:_-]+", text.lower()) if t]
         scored = []
         for i, n in self.nodes.items():
+            if path and not fnmatch.fnmatch(n.get("file", ""), path):
+                continue
+            if kind and n["kind"] != kind:
+                continue
             label, hay = n["label"].lower(), f"{i} {n.get('doc', '')}".lower()
             score = 0
             for t in tokens:
@@ -477,7 +491,7 @@ class Index:
             else:
                 if tokens:
                     scored.append((-score, KIND_ORDER[n["kind"]], i))
-        return [i for *_, i in sorted(scored)[:limit]]
+        return [i for *_, i in sorted(scored)[offset:offset + limit]]
 
     def detail(self, nid):
         return {"node": self.nodes[nid],
@@ -549,9 +563,48 @@ def _edge_lines(edges, key, arrow):
     return lines
 
 
-def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET):
+def status(root):
+    """État de l'index, sans le reconstruire : taille, fraîcheur, fichiers à réindexer ou exclus."""
+    root = Path(root).resolve()
+    gdir = graph_dir(root)
+    graph, manifest = _load_json(gdir / "graph.json", {}), _load_json(gdir / "manifest.json", {})
+    if not graph:
+        return "Pas encore d'index — `graph.py index` le construit (le hook de démarrage aussi)."
+    files = manifest.get("files", {})
+    stale, missing, langs, errors = [], [], {}, []
+    for rel in tracked_files(root):
+        entry = files.get(rel)
+        if not entry:
+            missing.append(rel)
+        elif entry["mtime"] != (root / rel).stat().st_mtime:
+            stale.append(rel)
+        langs[gx.lang_of(rel)] = langs.get(gx.lang_of(rel), 0) + 1
+    errors = [r for r, e in files.items() if "error" in e.get("facts", {})]
+    big = []
+    try:
+        out = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                             capture_output=True, check=True).stdout.decode("utf-8", "replace").split("\0")
+        big = [f for f in out if f and gx.lang_of(f) and not f.startswith(".hosa/")
+               and (root / f).is_file() and (root / f).stat().st_size > MAX_FILE_BYTES]
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        pass
+    kinds = {}
+    for n in graph.get("nodes", []):
+        kinds[n["kind"]] = kinds.get(n["kind"], 0) + 1
+    lines = [f"Index : {gdir / 'graph.json'} — construit le {graph.get('built_at', '?')}",
+             f"Fichiers indexés : {len(files)} — " + ", ".join(f"{l} {c}" for l, c in sorted(langs.items(), key=lambda x: -x[1])),
+             "Nœuds : " + ", ".join(f"{k} {c}" for k, c in sorted(kinds.items())) + f" — arêtes : {len(graph.get('edges', []))}",
+             f"À réindexer : {len(stale)} modifié(s), {len(missing)} nouveau(x)" + (" → `graph.py index`" if stale or missing else " — à jour"),
+             f"Exclus (> {MAX_FILE_BYTES // 1024} Ko, HOSA_GRAPH_MAX_KB) : {len(big)}" + (f" — {', '.join(big[:5])}" if big else ""),
+             f"Extraction en échec : {len(errors)}" + (f" — {', '.join(errors[:5])}" if errors else "")]
+    return "\n".join(lines)
+
+
+def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET, path=None, kind=None, offset=0):
     """Exécute une commande de requête et retourne le texte à afficher."""
     root = Path(root)
+    if cmd == "status":
+        return status(root)
     if cmd == "map":
         refresh(root)
         index = root / ".hosa" / "kb" / "code" / "index.md"
@@ -560,7 +613,7 @@ def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET):
     (graph_dir(root) / "last_query").write_text(str(time.time()), encoding="utf-8")
     if cmd == "find":
         return budgeted([fmt(g.nodes[i]) + (f"  — {g.nodes[i]['doc']}" if g.nodes[i].get("doc") else "")
-                         for i in g.find(arg, limit)] or ["Aucun résultat."], budget)
+                         for i in g.find(arg, limit, path, kind, offset)] or ["Aucun résultat."], budget)
     if cmd == "explain":
         d = g.detail(g.one(arg))
         head = [fmt(d["node"])] + ([f"  {d['node']['doc']}"] if d["node"].get("doc") else [])
@@ -584,7 +637,13 @@ def main(argv=None):
     p.add_argument("--budget", type=int, default=BUDGET, help="plafond de sortie en tokens")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("map", help="carte des modules (kb/code/index.md)")
-    sub.add_parser("find", help="recherche par nom, chemin ou doc").add_argument("text")
+    f = sub.add_parser("find", help="recherche par nom, chemin ou doc")
+    f.add_argument("text")
+    f.add_argument("--path", help="glob sur le fichier, ex. 'src/api/*'")
+    f.add_argument("--kind", choices=sorted(KIND_ORDER), help="type d'élément")
+    f.add_argument("--limit", type=int, default=20)
+    f.add_argument("--offset", type=int, default=0, help="page suivante : --offset 20")
+    sub.add_parser("status", help="état de l'index : taille, fraîcheur, exclus, échecs (sans réindexer)")
     sub.add_parser("explain", help="un élément et toutes ses relations").add_argument("term")
     a = sub.add_parser("affected", help="ce qui dépend d'un élément")
     a.add_argument("term")
@@ -599,7 +658,9 @@ def main(argv=None):
             print(f"{len(g['nodes'])} nœuds, {len(g['edges'])} arêtes — {graph_dir(root) / 'graph.json'}")
         else:
             arg = getattr(args, "text", None) or getattr(args, "term", None) or getattr(args, "slug", None)
-            print(run(root, args.cmd, arg, depth=getattr(args, "depth", 2), budget=args.budget))
+            print(run(root, args.cmd, arg, depth=getattr(args, "depth", 2), budget=args.budget,
+                      limit=getattr(args, "limit", 20), path=getattr(args, "path", None),
+                      kind=getattr(args, "kind", None), offset=getattr(args, "offset", 0)))
     except GraphError as e:
         print(str(e), file=sys.stderr)
         return 1

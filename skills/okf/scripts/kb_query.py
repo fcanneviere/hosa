@@ -16,6 +16,7 @@ What to show (default: one line per concept, like the summary):
   --sections "A,B"    body sections whose `## ` heading starts with A or B (case-insensitive)
   --full              the whole body
   --count             only the number of matches
+  --offset N          skip the first N matches (next page)
   --max-chars N       cap the output (default 15000), with a note of what was cut
 
 Examples:
@@ -97,6 +98,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--sections")
     ap.add_argument("--full", action="store_true")
     ap.add_argument("--count", action="store_true")
+    ap.add_argument("--offset", type=int, default=0)
     ap.add_argument("--max-chars", type=int, default=15000)
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -121,6 +123,8 @@ def main(argv: list[str]) -> int:
     if not hits:
         print("Aucun concept ne correspond.")
         return 0
+    total = len(hits)
+    hits = hits[a.offset:]
 
     wanted = [w.strip() for w in a.sections.split(",")] if a.sections else []
     fields = [x.strip() for x in a.fields.split(",")] if a.fields else []
@@ -143,7 +147,9 @@ def main(argv: list[str]) -> int:
         out.append(b)
         used += len(b) + 2
         shown += 1
-    print(f"{len(hits)} concept(s)." + (f" Affichés : {shown} — {len(hits) - shown} coupé(s) par --max-chars ; affine le filtre." if shown < len(hits) else ""))
+    first = a.offset + 1
+    print(f"{total} concept(s)." + (f" Affichés : {first} à {a.offset + shown}." if a.offset or shown < len(hits) else "")
+          + (f" Suite : --offset {a.offset + shown}." if shown < len(hits) else ""))
     print("\n\n".join(out))
     return 0
 

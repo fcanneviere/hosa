@@ -62,7 +62,7 @@ function sessionStart(cwd) {
   fs.writeFileSync(path.join(gdir, 'session'), String(Date.now()));
   spawn(python(), [GRAPH_PY, '--root', root, 'index'], { detached: true, stdio: 'ignore', windowsHide: true })
     .on('error', () => {}).unref(); // python introuvable : pas de graphe, la session démarre quand même
-  return `\n\n## Project graph\n\nQuery it before grepping: \`${commandLine()} ticket <slug> | explain <name> | affected <name> | find <text> | map\``;
+  return `\n\n## Project graph\n\nQuery it before grepping: \`${commandLine()} ticket <slug> | explain <name> | affected <name> | find <text> [--path <glob>] [--kind <kind>] [--offset <n>] | map | status\``;
 }
 
 const mtime = (p) => { try { return fs.statSync(p).mtimeMs; } catch (e) { return 0; } };
