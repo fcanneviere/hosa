@@ -1,6 +1,6 @@
 ---
 name: git
-description: Use to open a dedicated branch/worktree for a sprint when it starts, or to merge it locally back into the managed project once every ticket has a passing QA record. Dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `validation` (finish).
+description: Use to start a sprint (branch, worktree, its own Docker environment and database, baseline tests) once its tests are prepared, or to merge it locally once every ticket is validated (base integrated and tested first, then landed), or for any other git request on the managed project. Dispatches `hosa-git`. Proposed by `sprint`/`qa-plan` (start), `validation` (merge), `develop`/`qa` when the sprint isn't running, and `livraison` (push/PR).
 ---
 
 # Git
@@ -29,6 +29,10 @@ Manual: `/git demarre <slug>`, `/git termine <slug>`, or any other git request a
 ## Step 1: Determine the Mode and Target
 
 From the request, determine whether this is a start (Mode 1), a finish (Mode 2), or an ad hoc git request (Mode 3). Modes 1 and 2 need a `Sprint` slug — if it's unclear which one, ask rather than guess. Mode 3 doesn't require one; it can be any other git request against the managed project's repo.
+
+## Step 1b: Progress Plan
+
+Mode 1 is stage `git-demarrage`, Mode 2 is `git-fusion` (`avancement.py <root>/.hosa/kb start|done <stage> --sprint <slug>`). `start` refuses Mode 1 before `qa-plan` is done, and Mode 2 before `validation` is done — do those first, or use `--force` only once the user has confirmed going out of order. Mark `done` only when `hosa-git` reports success; `block` with its reason otherwise.
 
 ## Step 2: Dispatch `hosa-git`
 

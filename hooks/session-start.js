@@ -20,7 +20,7 @@ try {
 } catch (e) {} // graphe optionnel — never block session start
 try {
   const g = require('./graph');
-  const root = g.findUp(process.cwd(), path.join('.hosa', 'kb'));
+  const root = g.findKbRoot(process.cwd());
   if (root) {
     g.refreshSummary(path.join(root, '.hosa', 'kb'));
     context += '\n\n## Sommaire de la KB\n\nRead `.hosa/kb/sommaire.md` first (one line per concept, kept current), then open only the files you need.';

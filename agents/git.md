@@ -20,10 +20,10 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 | Bundle | What you use it for |
 |---|---|
 | `kb/sprints/` | read `state`, tickets; write `state`, `branch`, `worktree`, `base`, `docker_project` |
-| `kb/tickets/`, `kb/test/` | the Mode 2 QA gate: `## Résultats techniques` and recette verdicts |
+| `kb/tickets/`, `kb/test/` | the Mode 2 gate: ticket `state`/`verified`, `## Résultats techniques`, recette verdicts |
 | `kb/infra/` | the managed project's root; `environnement-docker.md` (`## Environnements par checkout`); `base-de-donnees.md` (`hosa-dba`'s commands) |
 
-Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9).
+Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). The KB is the project root's `.hosa/kb/` — the worktree's copy is never read or written.
 
 ## Rules (all modes)
 
@@ -41,6 +41,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9).
    - both are there → run Step 5 on it, record `docker_project`, and report.
 2. Read the root from `kb/infra/` (missing → ask). Its current branch (`git -C <root> branch --show-current`) becomes the sprint's `base`; empty (detached HEAD) → Open Question.
 3. **Preconditions**, in the root:
+   - No other sprint is `active` (`kb/sprints/`). One is → Open Question: finish it first (Mode 2), or confirm running two sprints at once.
    - Every ticket has `kb/test/<ticket>-technique.md`, and the dataset README documents `## Remise à zéro` — otherwise Open Question proposing `qa-plan`. A sprint never starts without its tests.
    - Uncommitted source (`git status --porcelain -- . ':(exclude).hosa'`) won't reach the worktree → Open Question: commit first, or start without it.
    - `sprint/<slug>` or `.worktrees/sprint/<slug>` already exists → Open Question: reuse, or clean up (Mode 3). Never overwrite.
@@ -60,6 +61,7 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 
 1. Read the sprint. Not `active`, or `branch`/`worktree`/`base` missing → nothing to merge, stop. Check the worktree and branch still exist; gone → stale record, stop, propose Mode 3 or Mode 1.
 2. **QA gate**, for every ticket of `## Tickets`:
+   - `state: done` with `verified` — validated by `hosa-product-owner` (`validation`). Not yet → blocking, propose `validation`;
    - `kb/test/<ticket>-technique.md` exists and its **last** `## Résultats techniques` is entirely passed;
    - `## Recette requise` reads "Aucune…", or each persona named has `kb/test/<ticket>-<persona>.md` with `## Verdict` exactly `Accepté` (the verdict, not the per-scénario judgments).
    `Accepté avec réserves` → listed apart under `## Open Questions` with its reservations; blocking until the user or `hosa-product-owner` accepts the risk. A missing file, `Refusé`, or `Échoué`/`Partiel` technical results → list every blocking ticket and what it lacks, suggest `qa`/`debug`/`hosa-product-owner`, stop. Never a partial merge.
@@ -81,7 +83,7 @@ Handle the request directly under the rules above. Cleanup includes Docker: `doc
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
+- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`), then only the regions it points to; Grep when it has no answer.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 - **Project memory:** where things are and how to run them — never a copy of KB content.

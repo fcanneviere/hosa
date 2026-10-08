@@ -11,8 +11,9 @@ Implémente un ticket de sprint (`kb/tickets/<slug>.md`) dans le worktree déjà
 
 ```
 Lit kb/tickets/<slug>.md et son kb/sprints/<slug-sprint>.md
-        ↓ sprint pas active / pas de worktree → propose `git` Mode 1
-          d'abord, stoppe
+        ↓ sprint pas active / pas de worktree → Q : je démarre le
+          sprint maintenant (`git` Mode 1) ? oui → le démarre, puis
+          reprend ce ticket ; non → stoppe
 Écrit state: doing sur le ticket, log kb/tickets/log.md
         ↓
 Dispatch hosa-tech-lead → plan de tâches séquentiel
@@ -45,7 +46,7 @@ Manual: `/develop <slug-ticket>`. Auto: "développe le ticket X", "implémente l
 
 ## Step 1: Read the Ticket and Sprint
 
-Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe — ce champ n'appartient qu'à `hosa-product-owner` ; un nouveau passage ici l'écraserait.** Lit son champ `sprint`, puis `kb/sprints/<slug-sprint>.md` : **si le champ `sprint` est absent, si `state` n'est pas `active`, ou si `worktree` est absent, le dit et propose `git` Mode 1 — stoppe, ne travaille jamais sur la branche de base.**
+Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe — ce champ n'appartient qu'à `hosa-product-owner` ; un nouveau passage ici l'écraserait.** Lit son champ `sprint`, puis `kb/sprints/<slug-sprint>.md` : **si le champ `sprint` est absent → le dit et stoppe (le ticket n'est dans aucun sprint). Si le sprint est `planned`, ou `active` sans `worktree` → pose la question numérotée « Je démarre le sprint maintenant ? (`git` Mode 1) » ; oui → lance `git`, puis reprend ce ticket une fois le sprint démarré ; non → stoppe. Ne travaille jamais sur la branche de base.**
 
 ## Step 2: Mark In Progress
 

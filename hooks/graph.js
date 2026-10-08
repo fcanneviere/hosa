@@ -33,6 +33,19 @@ function findUp(dir, marker) {
   }
 }
 
+// The managed project's real KB root: a sprint worktree (`.worktrees/…`) carries a stale,
+// committed copy of `.hosa/kb` — skip it and keep walking up to the project root.
+function findKbRoot(dir) {
+  let root = findUp(dir, path.join('.hosa', 'kb'));
+  while (root) {
+    const parts = path.resolve(root).split(path.sep);
+    const i = parts.lastIndexOf('.worktrees');
+    if (i < 0) return root;
+    root = findUp(parts.slice(0, i).join(path.sep) || path.sep, path.join('.hosa', 'kb'));
+  }
+  return null;
+}
+
 const commandLine = () => `"${python()}" "${GRAPH_PY}"`;
 
 function runGraph(root, args) {
@@ -93,4 +106,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { processPayload, sessionStart, findUp, commandLine, refreshSummary };
+module.exports = { processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary };

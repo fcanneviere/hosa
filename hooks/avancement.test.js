@@ -33,3 +33,13 @@ test('points to the status skill when there is no plan yet', () => {
 test('says nothing outside a Hosa project', () => {
   assert.equal(resumeContext(fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-none-'))), '');
 });
+
+test('ignores the stale KB copy inside a sprint worktree', () => {
+  const root = kb(['---', 'type: Plan d\'avancement', '---', '## Point de reprise', '- Prochaine action : vraie KB', ''].join('\n'));
+  const wt = path.join(root, '.worktrees', 'sprint', 's1');
+  fs.mkdirSync(path.join(wt, '.hosa', 'kb', 'project'), { recursive: true });
+  fs.writeFileSync(path.join(wt, '.hosa', 'kb', 'project', 'avancement.md'), '---\ntype: x\n---\n## Point de reprise\n- Prochaine action : copie périmée\n');
+  const ctx = resumeContext(path.join(wt, 'src'));
+  assert.match(ctx, /vraie KB/);
+  assert.doesNotMatch(ctx, /copie périmée/);
+});

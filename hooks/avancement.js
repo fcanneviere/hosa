@@ -4,12 +4,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { findUp } = require('./graph');
+const { findKbRoot } = require('./graph');
 
 const SCRIPT = path.join(process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..'), 'skills', 'status', 'scripts', 'avancement.py');
 
 function resumeContext(cwd) {
-  const root = findUp(cwd, path.join('.hosa', 'kb'));
+  const root = findKbRoot(cwd);
   if (!root) return '';
   const kb = path.join(root, '.hosa', 'kb');
   const file = path.join(kb, 'project', 'avancement.md');

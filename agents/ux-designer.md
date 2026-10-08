@@ -146,7 +146,7 @@ generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** read `.hosa/kb/sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
+- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`), then only the regions it points to; Grep when it has no answer.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 - **Project memory:** where things are and how to run them — never a copy of KB content.
