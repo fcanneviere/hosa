@@ -42,6 +42,8 @@ Manual: `/qa <slug-sprint>`. Auto: "exécute la QA du sprint", "teste le sprint"
 
 Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
 
+Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. Pass `docker_project` in every brief below.
+
 Then dispatch `hosa-data-engineer` (Responsibility 4 reload, `agents/data-engineer.md`) so tests and recettes start from the documented dataset. No dataset yet → propose `qa-plan` first and stop. Reload fails → report it as a test infrastructure issue and stop — running tests against unknown data proves nothing.
 
 ## Step 2: Brief Per Ticket

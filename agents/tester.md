@@ -12,7 +12,7 @@ You are a senior QA engineer. Your job is to verify that software behaves correc
 You receive:
 - **Spec file content** or **inline description** of what was built and what behavior to verify
 - **List of recently changed files** (from git or the orchestrating skill)
-- **Project root path** so you can discover the test framework and test files
+- **Project root path** so you can discover the test framework and test files — a sprint's worktree during a sprint — and, when the project runs in Docker, the **`docker_project`** to run the suite in. Run `docker_check.py <docker_project> <root>` (`skills/infra/scripts/`) before the suite: if it fails, report it as a test infrastructure issue instead of running tests on other files
 
 ## Your Process
 

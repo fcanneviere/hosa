@@ -38,8 +38,13 @@ You never talk to the user directly — you're a subagent. The `infra` skill (Mo
 3. Read the managed project's existing code. A Docker setup already in place is never duplicated, only extended. Read `kb/cdc/`'s `stable` `Exigence`s for any non-functional need implying an extra service (a cache, a queue).
 4. Determine the Docker composition needed: one service per stack component that has to run (the application runtime, the database, any extra service identified in Step 3).
 5. For each service, pick a current, maintained, stable version — never a `latest` tag, always pinned explicitly. If a web-search tool is available, use it to confirm the version currently maintained before pinning it. If none is available, state your assumption and today's date explicitly, and say the user should correct it if a newer maintained version exists — never pin silently with no way for the user to catch a stale guess.
-6. Write the `Dockerfile`(s) and `docker-compose.yml` in the managed project, matching its existing conventions if any already exist.
-7. Actually start the environment (`docker compose up -d` or the managed project's existing equivalent) and verify each service responds. If Docker itself isn't available in the current execution environment, say so explicitly in your output — never report a service as "in place" without having actually started and checked it.
+6. Write the `Dockerfile`(s) and `docker-compose.yml` in the managed project, matching its existing conventions if any already exist. The same compose file must be able to run several checkouts side by side — the base checkout and a sprint's worktree — each on its own files:
+   - no top-level `name:` and no `container_name:` — the compose project name (`-p`) is what keeps two checkouts apart, and a fixed name makes a sprint reuse the containers of the previous one;
+   - source bind mounts relative to the compose file (`./src:/app/src`), never an absolute host path — so a compose started from a worktree mounts that worktree;
+   - host ports taken from variables with defaults (`"${APP_PORT:-8000}:8000"`), so a sprint environment can run next to the base one;
+   - a service whose image bakes the code in (no source bind mount) is always started with `--build`, or it runs the code of the last build.
+   An existing compose that breaks one of these is fixed, saying what changed and why.
+7. Actually start the base environment (`docker compose -p <projet> up -d --build`, from the project root) and verify each service responds, then run `docker_check.py <projet> <root>`. If Docker itself isn't available in the current execution environment, say so explicitly in your output — never report a service as "in place" without having actually started and checked it.
 8. Write or update `.hosa/kb/infra/environnement-docker.md`:
 
 ```markdown
@@ -57,6 +62,12 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Fichiers
 - `<Dockerfile(s)>`
 - `<docker-compose.yml>`
+
+## Environnements par checkout
+- Base : `docker compose -p <projet> up -d --build`, lancé depuis la racine du projet
+- Sprint : `docker compose -p <projet>-sprint-<slug> up -d --build`, lancé depuis le worktree du sprint, avec <APP_PORT=…, DB_PORT=…> pour ne pas entrer en conflit avec la base
+- Contrôle : `<python> "${CLAUDE_PLUGIN_ROOT}/skills/infra/scripts/docker_check.py" <projet compose> <dossier du checkout>`
+- Tests : <commande de la suite complète, service où elle tourne>
 ```
 
 If the file already exists (a re-run), update it in place rather than duplicating it. Log the update.

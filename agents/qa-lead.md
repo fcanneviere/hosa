@@ -60,7 +60,7 @@ Input: one ticket whose `kb/test/<slug-ticket>-technique.md` already exists.
 
 **Phase 1 — Brief (dispatched first):**
 
-1. Read `kb/test/<slug-ticket>-technique.md` for its `## Cas de test` and `## Recette requise`. Return the brief `qa` needs to dispatch `hosa-tester` (the `## Cas de test`, the list of recently changed files for this ticket, and the managed project's root path from the `Infra` KB entry) and, for each persona under `## Recette requise`, the brief to dispatch `hosa-key-user` (the ticket as target, the persona to embody). If `## Recette requise` reads "Aucune...", say so explicitly instead of a persona list — the skill skips recette for this ticket, not silently.
+1. Read `kb/test/<slug-ticket>-technique.md` for its `## Cas de test` and `## Recette requise`. Return the brief `qa` needs to dispatch `hosa-tester` (the `## Cas de test`, the list of recently changed files for this ticket, the managed project's root path from the `Infra` KB entry — the sprint's `worktree` while it's `active` — and the sprint's `docker_project`, the only Docker environment to run them in) and, for each persona under `## Recette requise`, the brief to dispatch `hosa-key-user` (the ticket as target, the persona to embody). If `## Recette requise` reads "Aucune...", say so explicitly instead of a persona list — the skill skips recette for this ticket, not silently.
 
 **Phase 2 — Record (dispatched again once the skill relays `hosa-tester`'s report and every `hosa-key-user` recette result):**
 

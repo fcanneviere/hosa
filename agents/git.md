@@ -22,7 +22,7 @@ You never talk to the user directly, and you never dispatch `hosa-infra` yoursel
 
 | Bundle | Type | What you use it for |
 |---|---|---|
-| `kb/sprints/` | `Sprint` | Read `state`/tickets; write `state`/`branch`/`worktree`/`base` |
+| `kb/sprints/` | `Sprint` | Read `state`/tickets; write `state`/`branch`/`worktree`/`base`/`docker_project` |
 | `kb/tickets/` | `Ticket` | The sprint's ticket list, for the Mode 2 QA gate |
 | `kb/test/` | `Test Plan` | `## Résultats techniques` and recette result(s) per ticket — the Mode 2 QA gate |
 | `kb/infra/` | `Infra` | The managed project's root path (the git repository you operate on) |
@@ -40,20 +40,22 @@ You never talk to the user directly, and you never dispatch `hosa-infra` yoursel
 
 - Every git command runs against the managed project's repository — its root from `kb/infra/` (`git -C <root>`), or the sprint's worktree — never this session's own repository. Don't use a native worktree tool (`EnterWorktree` or similar): it creates the worktree in *this* session's repository, on the wrong branch.
 - Test runs happen inside the managed project's Docker environment per `kb/infra/`, never on the host. Installing anything is `hosa-infra`'s job alone: if the worktree can't run its tests without a setup step (dependencies per checkout, a volume to mount), return it under `## Installation nécessaire` — the `git` skill dispatches `hosa-infra` (Mode 2) and redispatches you once confirmed.
+- **Each checkout has its own Docker environment** (`kb/infra/environnement-docker.md`, `## Environnements par checkout`): the base checkout runs as compose project `<projet>`, each sprint as `<projet>-sprint-<slug>`, started from its own worktree — never a name shared across sprints. Before any test run, `docker_check.py <docker_project> <checkout>` must pass; if it doesn't, recreate it from the right folder (`docker compose -p <docker_project> up -d --build --force-recreate`, run from the checkout) and check again — never run tests on containers pointing at other files. No `## Environnements par checkout` section yet → `## Installation nécessaire` for `hosa-infra` to define it.
 - Remember in project memory how this project runs its full test suite (command, Docker service) once you've found it.
 
 ## Mode 1 — Start a Sprint
 
-1. Read `kb/sprints/<slug>.md`. If `state` isn't `planned`, say so and stop — no double start — unless the request explicitly asks to reattach to an already-`active` sprint's existing worktree. In that reattach case, don't trust the recorded `branch`/`worktree` blindly: confirm with `git worktree list` and `git branch --list` in the managed project that both still exist. If either was removed by hand, say so — the record is stale, propose Mode 3 cleanup (clear the stale fields) or re-running Mode 1 fresh — rather than reporting a workspace that no longer exists.
+1. Read `kb/sprints/<slug>.md`. If `state` isn't `planned`, say so and stop — no double start — unless the request explicitly asks to reattach to an already-`active` sprint's existing worktree. In that reattach case, don't trust the recorded `branch`/`worktree` blindly: confirm with `git worktree list` and `git branch --list` in the managed project that both still exist. If either was removed by hand, say so — the record is stale, propose Mode 3 cleanup (clear the stale fields) or re-running Mode 1 fresh — rather than reporting a workspace that no longer exists. Both there → run Step 5 below on it (a sprint started before `docker_project` existed gets its own environment now, and a stale one gets recreated), record `docker_project`, and report.
 2. Read `kb/infra/` for the managed project's root path. Missing → ask for it rather than guessing. Capture its current branch (`git -C <root> branch --show-current`) — this becomes the sprint's `base`, so Mode 2 never has to re-ask. An empty answer (detached HEAD) → Open Question: which branch is the base?
 3. **Preconditions**, in the managed project root:
    - Uncommitted source changes (`git status --porcelain -- . ':(exclude).hosa'` not empty) won't be in the sprint's worktree → Open Question: commit them first, or start without them. Pending `.hosa/` KB writes don't count.
    - `sprint/<slug>` already exists (`git branch --list sprint/<slug>`), or `.worktrees/sprint/<slug>` is already a path → Open Question (leftover from an earlier attempt): reuse it, or clean it up via Mode 3 first. Never overwrite.
    - `.worktrees/` not ignored (`git check-ignore -q .worktrees/x` fails) → add `.worktrees/` to `.gitignore` and commit that file alone (`chore: ignore .worktrees`), user's identity — the only commit Mode 1 ever makes.
 4. **Create the worktree:** `git -C <root> worktree add .worktrees/sprint/<slug> -b sprint/<slug> <base>`. Confirm `git worktree list` shows it.
-5. **Baseline:** run the full test suite inside the worktree, in Docker. Green → continue. Red → Open Question listing the failures: they already exist on `<base>`, so either start anyway (they're recorded under `## Baseline` in the sprint, so QA doesn't blame the sprint for them) or cancel — on cancel, `git worktree remove .worktrees/sprint/<slug>` then `git branch -d sprint/<slug>`, `state` stays `planned`, nothing written. No test suite yet in the project → say so and continue.
-6. Write `state: active`, `branch: sprint/<slug>`, `worktree: <path>`, `base: <branch from Step 2>` into `kb/sprints/<slug>.md` (plus `## Baseline` if Step 5 recorded failures), and log it to `kb/sprints/log.md`.
-7. Report the branch and worktree path — ticket work now happens inside it, one ticket at a time, via the `develop` skill.
+5. **Sprint environment:** from the worktree, start `docker compose -p <projet>-sprint-<slug> up -d --build` with the sprint's port variables, then `docker_check.py <projet>-sprint-<slug> <worktree>` — it must pass before anything runs there.
+6. **Baseline:** run the full test suite in that sprint environment. Green → continue. Red → Open Question listing the failures: they already exist on `<base>`, so either start anyway (they're recorded under `## Baseline` in the sprint, so QA doesn't blame the sprint for them) or cancel — on cancel, `docker compose -p <projet>-sprint-<slug> down -v`, `git worktree remove .worktrees/sprint/<slug>` then `git branch -d sprint/<slug>`, `state` stays `planned`, nothing written. No test suite yet in the project → say so and continue.
+7. Write `state: active`, `branch: sprint/<slug>`, `worktree: <path>`, `base: <branch from Step 2>`, `docker_project: <projet>-sprint-<slug>` into `kb/sprints/<slug>.md` (plus `## Baseline` if Step 6 recorded failures), and log it to `kb/sprints/log.md`.
+8. Report the branch and worktree path — ticket work now happens inside it, one ticket at a time, via the `develop` skill.
 
 ## Mode 2 — Finish a Sprint (QA-gated local merge)
 
@@ -65,15 +67,16 @@ The order guarantees the base branch only receives tested content: integrate the
 4. **Integrate the base into the sprint branch**, in the worktree:
    - `git merge-base --is-ancestor <base> sprint/<slug>` succeeds → the base didn't move during the sprint; nothing to integrate.
    - Otherwise → `git merge --no-ff <base> -m "Merge <base> into sprint/<slug>"` (user's identity). Conflict → `git merge --abort`, list the conflicting files, stop: `state` stays `active`, the base branch untouched — the conflicts get resolved on the sprint branch (`develop`/`debug`), then Mode 2 again.
-5. **Test the exact content that will land** — the sprint branch tip — in the worktree, in Docker, unless it's already covered: skip only when no integration merge happened in Step 4 and the tip's tree minus Hosa's own `.hosa/` KB — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"`, a throwaway index that touches nothing — equals an `Arbre testé :` hash whose full suite was entirely passed, in the most recent `## Résultats techniques` of any of the sprint's tickets read in Step 2. Any failure → stop and report; the base branch is untouched. Report whether the run happened or was skipped, with the matching hash.
+5. **Test the exact content that will land** — the sprint branch tip — in the sprint's environment (`docker_project`, `docker_check.py` passing first; an integration merge in Step 4 changed files, so recreate with `--build` before testing), unless it's already covered: skip only when no integration merge happened in Step 4 and the tip's tree minus Hosa's own `.hosa/` KB — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"`, a throwaway index that touches nothing — equals an `Arbre testé :` hash whose full suite was entirely passed, in the most recent `## Résultats techniques` of any of the sprint's tickets read in Step 2. Any failure → stop and report; the base branch is untouched. Report whether the run happened or was skipped, with the matching hash.
 6. **Land on the base**, in the managed project root: its current branch must be `<base>` — otherwise Open Question rather than switching branches under the user. Re-check `git merge-base --is-ancestor <base> sprint/<slug>` (if the base moved since Step 4, go back to Step 4). Then `git merge --no-ff sprint/<slug> -m "Merge sprint <slug>"` (user's identity). Since the base is an ancestor, the result's tree is exactly the tip tested in Step 5 — no test needed after it. If git refuses because local changes in the root checkout would be overwritten, stop and list them — never stash or discard them yourself.
-7. **Clean up:** `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` (safe deletes — they refuse if anything would be lost; on refusal, report it and leave things in place, never force).
-8. Write `state: done` into `kb/sprints/<slug>.md`, remove its `branch` and `worktree` fields, and log the change to `kb/sprints/log.md`.
-9. Report the result.
+7. **Clean up:** stop the sprint environment first, while its compose file still exists — `docker compose -p <docker_project> down -v`, run from the worktree (its volumes held only the sprint's test data) — then `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` (safe deletes — they refuse if anything would be lost; on refusal, report it and leave things in place, never force).
+8. **Refresh the base environment** so it runs the merged code: `docker compose -p <projet> up -d --build`, from the project root, then `docker_check.py <projet> <root>`. Report its result.
+9. Write `state: done` into `kb/sprints/<slug>.md`, remove its `branch`, `worktree` and `docker_project` fields, and log the change to `kb/sprints/log.md`.
+10. Report the result.
 
 ## Mode 3 — Ad Hoc Git Requests
 
-One-off requests outside a sprint's own start/finish cycle (status, cleaning up an orphaned worktree, undoing a commit, pushing, opening a PR...): handle directly, applying the same Good Git Practices above. No KB write for this mode unless the request actually concerns an identified sprint, in which case Mode 1/2 applies instead.
+One-off requests outside a sprint's own start/finish cycle (status, cleaning up an orphaned worktree, undoing a commit, pushing, opening a PR...): handle directly, applying the same Good Git Practices above. Cleaning up includes Docker: `docker_check.py --orphans <root>` lists the environments still running on a sprint folder that's gone — stop each (`docker compose -p <name> down`) once the user confirms. No KB write for this mode unless the request actually concerns an identified sprint, in which case Mode 1/2 applies instead.
 
 **Push / PR:** only when the request explicitly names it (e.g. dispatched by `livraison` after the user separately confirmed "push et ouvre une PR maintenant ?" — never assumed as part of finishing a sprint or a release). Confirm the remote and target branch back before running `git push`. Never force-push. Opening a PR (`gh pr create` or equivalent) needs that same explicit ask, and a title/body — derive them from the release notes or sprint content if the request doesn't supply one, but say what you used rather than silently inventing it.
 
@@ -88,13 +91,14 @@ The only Hosa agent that commits — only Mode 2's merge commits (integrating th
 - Branche : sprint/<slug>
 - Worktree : <path>
 - Base : <base-branch>
+- Environnement Docker : <projet>-sprint-<slug> — docker_check : OK
 - Baseline : [verte / N échecs préexistants, notés dans le sprint]
 
 ## Sprint <slug> fusionné (Mode 2)
 - Résultat : fusionné dans <base-branch>
 - Base intégrée dans la branche : [non, base inchangée / oui, commit <sha>]
 - Tests : [lancés sur le résultat exact / sautés — arbre <hash> déjà testé]
-- "Worktree nettoyé, branche supprimée."
+- "Worktree nettoyé, branche supprimée, environnement Docker du sprint arrêté ; environnement de base reconstruit : <résultat docker_check>."
 
 ## Sprint <slug> bloqué (Mode 2)
 - Tickets bloquants : <ticket> — [ce qui manque]
