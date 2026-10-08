@@ -135,7 +135,7 @@ Objectifs / Besoins / Attentes / Pain points / Quick wins to
 — don't batch the interrogation across personas.
 
 Once every persona in this session has been enriched, propose the next
-stage: "Personas prêts. Lancer l'interview du cahier des charges
+stage, as a numbered question (`retours`): "Personas prêts. Lancer l'interview du cahier des charges
 maintenant ? (skill `interview`)". Yes → invoke the `interview` skill. No →
 finish normally; `interview` stays invocable manually later. Skip this
 proposal entirely if zero personas were created or enriched this session —

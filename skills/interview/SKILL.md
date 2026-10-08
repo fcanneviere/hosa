@@ -91,7 +91,11 @@ One `### <Processus>` section per process covered this session. Use `generated: 
 
 ## Step 7: Hand Off
 
-Restitute the same notes to the user, grouped by process (same structure as the compte rendu above), then propose: "Notes prêtes pour [N] processus. Je lance `redaction` maintenant ?"
+Restitute the same notes to the user, grouped by process (same structure as the compte rendu above), then propose: "Notes prêtes pour [N] processus.
+
+**Q1 — Je lance `redaction` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là."
 
 ## No Commits
 

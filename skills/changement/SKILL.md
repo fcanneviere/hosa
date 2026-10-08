@@ -110,5 +110,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB.
 [Si aucun : "Aucun — rien n'était encore construit contre cette Exigence"]
 
 ## Suite
-Je lance `sprint` pour prioriser ces tickets de rattrapage ?
+**Q1 — Je lance `sprint` pour prioriser ces tickets de rattrapage ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

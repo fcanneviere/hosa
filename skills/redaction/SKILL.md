@@ -91,5 +91,7 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <titre> (status: draft)
 
 ## Suite
-Je vérifie les fonctions de base (administration, utilisateurs, logs, sauvegarde…) maintenant ? (skill `fondamentaux`)
+**Q1 — Je vérifie les fonctions de base (administration, utilisateurs, logs, sauvegarde…) maintenant ? (skill `fondamentaux`)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

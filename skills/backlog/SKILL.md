@@ -194,5 +194,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - `kb/tickets/<slug>.md` — [titre] (state: todo) — [ligne du checker : complet / ce qui manque]
 
 ## Suite
-Je lance `sprint` maintenant ?
+**Q1 — Je lance `sprint` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

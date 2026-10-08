@@ -58,5 +58,7 @@ You don't commit. Report what changed in the KB and let the user decide.
 - `kb/cdc/securite.md`
 
 ## Suite
-Je lance `relecture` maintenant ?
+**Q1 — Je lance `relecture` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

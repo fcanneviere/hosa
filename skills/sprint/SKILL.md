@@ -76,5 +76,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Sprint prêt, tests compris. Je démarre le sprint maintenant (ouvre la branche/worktree dédiée et son environnement — skill `git`) ? Une fois démarré, je lance `develop` sur son premier ticket.
+Sprint prêt, tests compris. Une fois démarré, je lance `develop` sur son premier ticket.
+
+**Q1 — Je démarre le sprint maintenant ? (skill `git` : branche, worktree et environnement du sprint)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

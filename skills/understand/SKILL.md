@@ -147,17 +147,17 @@ Generate **2 MCQs** testing whether the user understood the spec's key decisions
 
 Format:
 ```
-Q1. [Question testing a key decision or constraint]
-A) Option
-B) Option
-C) Option
-D) Option
+**Q1 — [Question testing a key decision or constraint]**
+  a) Option
+  b) Option
+  c) Option
+  d) Option
 
-Q2. [Question testing an edge case or integration point]
-A) Option
-B) Option
-C) Option
-D) Option
+**Q2 — [Question testing an edge case or integration point]**
+  a) Option
+  b) Option
+  c) Option
+  d) Option
 ```
 
 **Both must be correct — in the same attempt — to proceed.**

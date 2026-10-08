@@ -110,5 +110,9 @@ You don't commit. Report what changed in the KB and let the user decide.
 [Si aucun Bloquant : "Aucun"]
 
 ## Suite
-[Bloquant présent → "Je lance `debug` sur le ticket <slug> ?" / Sinon → "Rien à signaler."]
+[Bloquant présent :]
+**Q1 — Je lance `debug` sur le ticket <slug> ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
+[Sinon :] Rien à signaler.
 ```

@@ -121,5 +121,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Je lance `backlog` maintenant ?
+**Q1 — Je lance `backlog` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

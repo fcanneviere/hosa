@@ -111,17 +111,17 @@ Generate **2 MCQs** about this specific task or group — testing understanding 
 
 Format:
 ```
-Q1. [Question about a key decision in this task/group]
-A) Option
-B) Option
-C) Option
-D) Option
+**Q1 — [Question about a key decision in this task/group]**
+  a) Option
+  b) Option
+  c) Option
+  d) Option
 
-Q2. [Question about integration, a constraint, or an edge case]
-A) Option
-B) Option
-C) Option
-D) Option
+**Q2 — [Question about integration, a constraint, or an edge case]**
+  a) Option
+  b) Option
+  c) Option
+  d) Option
 ```
 
 **Both must be correct — in the same attempt — to commit.**

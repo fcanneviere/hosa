@@ -57,5 +57,7 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <n> items annotés
 
 ## Suite
-Je lance `schema-app` maintenant ?
+**Q1 — Je lance `schema-app` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

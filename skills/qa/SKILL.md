@@ -94,6 +94,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Proposition et justification, ou "Rien à signaler"]
 
 ## Suite
-[Si tout est propre : "QA propre. Je lance la validation des tickets maintenant ? (skill `validation`)"]
+[Si tout est propre :] QA propre.
+**Q1 — Je lance la validation des tickets maintenant ? (skill `validation`)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 [Sinon : liste des actions suggérées ci-dessus — pas d'offre de validation tant que le verdict n'est pas propre]
 ```

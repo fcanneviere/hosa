@@ -58,6 +58,9 @@ Verdict : Accepté (state: done) / Rejeté — [ce qui manque]
 
 ## Suite
 [Si Rejeté : suggéré : develop / debug / qa]
-[Si Accepté et tous les tickets du sprint sont désormais done : "Sprint <slug-sprint> entièrement validé. Je fusionne maintenant ? (skill `git`, Mode 2)"]
+[Si Accepté et tous les tickets du sprint sont désormais done :] Sprint <slug-sprint> entièrement validé.
+**Q1 — Je fusionne le sprint maintenant ? (skill `git`, Mode 2)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 [Si Accepté mais d'autres tickets du sprint restent en cours : "Ticket validé. Tickets restants du sprint : [liste]"]
 ```

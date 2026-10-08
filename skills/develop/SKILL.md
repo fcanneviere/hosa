@@ -106,5 +106,12 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 [Ambiguïté ou déviation structurelle, et ce qui est proposé pour la lever]
 
 ## Suite
-Je passe au ticket suivant du sprint ? (skill `develop`) — ou, s'ils sont tous faits, je lance la QA du sprint ? (skill `qa`)
+[Tickets restants :]
+**Q1 — Je passe au ticket suivant, <ticket> ? (skill `develop`)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
+[Tous les tickets faits :]
+**Q1 — Je lance la QA du sprint ? (skill `qa`)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

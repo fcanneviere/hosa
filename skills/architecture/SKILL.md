@@ -63,5 +63,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Je lance `interface` maintenant ?
+**Q1 — Je lance `interface` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```

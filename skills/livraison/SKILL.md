@@ -103,5 +103,5 @@ You don't commit — neither in the managed project (that's `hosa-git`'s call, o
 - Push/PR : [effectué (remote, branche, PR) / resté local]
 
 ## Suite
-[Si push/PR fait : rien de plus. Sinon : "Reste local — je pousse quand tu veux."]
+[Si push/PR fait : rien de plus. Sinon :] Reste local. Pour publier, demande « pousse et ouvre une PR ».
 ```

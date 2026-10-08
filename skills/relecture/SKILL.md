@@ -72,5 +72,9 @@ This skill only reads and reports — it doesn't edit `kb/cdc/` itself. Fixes ha
 [Propre / N anomalie(s) à corriger]
 
 ## Suite
-[Propre → "Je lance `contestation` maintenant ?" / Sinon → liste des exigences à renvoyer et vers quel skill]
+[Propre :]
+**Q1 — Je lance `contestation` maintenant ?**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
+[Sinon :] liste des exigences à renvoyer et vers quel skill.
 ```

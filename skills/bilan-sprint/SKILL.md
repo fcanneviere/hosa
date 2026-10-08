@@ -59,5 +59,8 @@ You don't commit — neither in the managed project nor in Hosa's own KB.
 - Tickets de suivi / Design Rules : [liste, ou "Aucun"]
 
 ## Suite
-[Si des tickets de suivi ont été créés : "Je les priorise dans le backlog maintenant ? (skill `sprint` au prochain cycle)"]
+[Si des tickets de suivi ont été créés :]
+**Q1 — Je les priorise dans le backlog maintenant ? (skill `sprint` au prochain cycle)**
+  a) Oui, maintenant. (recommandé)
+  b) Non, on s'arrête là.
 ```
