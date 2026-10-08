@@ -47,9 +47,11 @@ The reader is a person with limited time and attention. A report succeeds when t
 | base (branche) | the branch the sprint merges into |
 | base de données | the database — never "la base" alone |
 
-## 3. Questions — always numbered
+## 3. Questions — numbered when they need an answer
 
-Every question to the user, and every `## Open Questions` item an agent returns, follows this format:
+Number **only the questions whose answer you need** — the answer changes what you or an agent does next. Everything else is not a question: advice on what the user can do on their own ("Lance `/interface` pour créer le lexique."), information, an option they may take later — write it as a plain sentence, without a number and without a question mark.
+
+Every question that needs an answer, and every `## Open Questions` item an agent returns, follows this format:
 
 ```
 **Q1 — <la question, une phrase>** (bloquante)
