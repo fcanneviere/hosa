@@ -1,11 +1,11 @@
 ---
 name: qa-plan
-description: Use to prepare a sprint's technical test plan — for each ticket in a composed sprint, defines the technical test cases (grounded in the senior dev's recorded stack decisions) and identifies which persona(s) must validate it via recette. Follow-on to `sprint`, precondition for `qa`.
+description: Use to add the tests to a sprint before it starts — for each ticket of a composed sprint, defines the technical test cases (grounded in the senior dev's recorded stack decisions) and the persona(s) who must validate it via recette, then has the test dataset built with its reset command. Chained by `sprint` right after composing it; precondition for starting the sprint (`git` Mode 1), for `develop`'s tests-first step and for `qa`.
 ---
 
 # QA Plan
 
-Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, so `qa` has something concrete to execute once the sprint is implemented. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
+Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, before the sprint starts — so `develop` can write each ticket's tests before its code, and `qa` has something concrete to execute. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
 
 ## Flow
 
@@ -22,12 +22,12 @@ ne re-génère pas
 Dispatch hosa-data-engineer (Responsabilité 4) : crée/étend,
 documente et charge le jeu de données de test
         ↓
-Propose de lancer qa une fois le sprint implémenté
+Propose de démarrer le sprint (git Mode 1)
 ```
 
 ## Trigger
 
-Manual: `/qa-plan <slug-sprint>`. Auto: immediately after `sprint`, or "prépare les tests du sprint", "planifie les tests techniques du sprint".
+Manual: `/qa-plan <slug-sprint>`. Auto: immediately after `sprint` (part of composing it), and for any ticket added to a sprint later, or "prépare les tests du sprint", "planifie les tests techniques du sprint".
 
 ---
 
@@ -70,5 +70,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Je lance `qa` une fois ce sprint implémenté ?
+Les tests sont dans le sprint. Je le démarre maintenant ? (skill `git`)
 ```

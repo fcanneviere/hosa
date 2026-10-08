@@ -43,7 +43,7 @@ Read directly — no agent dispatch, this is a read-only snapshot:
 **Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
 1. CDC: `hosa` (identity) → `interview` → `redaction` → `fondamentaux` → `securite` → `relecture` → `contestation` (needs ≥1 `stable` Exigence to move on)
 2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `interface` → `backlog`
-3. Delivery cycle (needs a non-empty backlog): `sprint` → `git` (M1) → `develop` → `qa-plan` → `qa` → `validation` → `git` (M2) → `bilan-sprint`
+3. Delivery cycle (needs a non-empty backlog): `sprint` → `qa-plan` → `git` (M1) → `develop` (tests d'abord) → `qa` → `validation` → `git` (M2) → `bilan-sprint`
 
 If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stable CDC yet, so data-structuring can't start), say so explicitly rather than reporting a false gap further down.
 

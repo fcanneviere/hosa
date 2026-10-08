@@ -5,7 +5,7 @@ description: Use to run a sprint's QA once it's implemented — dispatches `hosa
 
 # QA
 
-Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical tests via `hosa-tester`, business recette via `hosa-key-user`, one pass per ticket, plus a tooling-health check at the end. This skill is the only one that talks to the user or dispatches other agents — the actual briefing, classification, and routing is `hosa-qa-lead`'s.
+Runs the QA pass for an implemented sprint (`kb/sprints/<slug>.md`): technical tests via `hosa-tester`, business recette via `hosa-key-user`, one pass per ticket, plus a tooling-health check at the end. This skill is the only one that talks to the user or dispatches other agents — `hosa-tester` runs each ticket's tests on its own and records the results; `hosa-qa-lead` only looks after the tooling at the end.
 
 ## Flow
 
@@ -15,18 +15,19 @@ technique.md
         ↓ manquant
 Propose de lancer qa-plan d'abord
         ↓ tous présents
-Dispatch hosa-data-engineer : recharge le jeu de données de test
-        ↓ échec → rapporte, stop
-Pour chaque ticket : dispatch hosa-qa-lead (Mode 2 Phase 1)
-→ brief
+Vérifie l'environnement Docker du sprint et la remise à zéro
+documentée du jeu de données
+        ↓ manquant → propose qa-plan / git, stop
+Pour chaque ticket : dispatch hosa-tester (Exécuter) avec le
+slug — il trouve tout, teste, corrige le côté tests, enregistre
+ses résultats et fait le ménage
         ↓
-Dispatch hosa-tester avec le brief, puis hosa-key-user pour
-chaque persona listée
+Dispatch hosa-key-user pour chaque persona de « Recette
+requise », écrit chaque résultat de recette
         ↓
-Redispatch hosa-qa-lead (Mode 2 Phase 2) avec les résultats
-→ classe, route
+Route les échecs (ticket + debug / hosa-product-owner)
         ↓
-Fin de sprint : dispatch hosa-qa-lead (Mode 3) pour la santé
+Fin de sprint : dispatch hosa-qa-lead (Mode 2) pour la santé
 de l'outillage
         ↓
 Rapporte le verdict global du sprint
@@ -42,25 +43,21 @@ Manual: `/qa <slug-sprint>`. Auto: "exécute la QA du sprint", "teste le sprint"
 
 Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
 
-Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. Pass `docker_project` in every brief below.
+Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. 
 
-Then dispatch `hosa-data-engineer` (Responsibility 4 reload, `agents/data-engineer.md`) so tests and recettes start from the documented dataset. No dataset yet → propose `qa-plan` first and stop. Reload fails → report it as a test infrastructure issue and stop — running tests against unknown data proves nothing.
-
-## Step 2: Brief Per Ticket
-
-For each ticket, dispatch `hosa-qa-lead` (Mode 2 Phase 1, `agents/qa-lead.md`). It returns the brief for `hosa-tester` (`## Cas de test`, recently changed files, the managed project's root path — the sprint's `worktree` path from `kb/sprints/<slug>.md` if it's still `active`, otherwise the root path from `Infra`) and, for each persona under `## Recette requise`, the brief for `hosa-key-user`.
+The test dataset must exist with its documented `## Remise à zéro` (prepared by `qa-plan` before the sprint started) — `hosa-tester` and `hosa-key-user` reset to it at the start and end of every pass. No dataset, or no reset command → propose `qa-plan` first and stop: running tests against unknown data proves nothing.
 
 ## Step 3: Run Technical Tests Per Ticket
 
-Dispatch `hosa-tester` with the brief from Step 2. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, run `backlog`'s Single-Ticket Mode on it so it's complete, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
+For each ticket, dispatch `hosa-tester` (Exécuter mode) with just the ticket slug — it finds the test plan, the worktree, the `docker_project` and the ticket's changed files itself, runs and completes the tests, fixes test-side problems on its own, appends `## Résultats techniques` (with its `Arbre testé`, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time) and resets the environment. Relay `## Installation nécessaire` to `hosa-infra` and `## Open Questions` to the user, then redispatch. Route what it classified: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, run `backlog`'s Single-Ticket Mode on it so it's complete, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
 
 ## Step 4: Run Recette Per Ticket
 
-For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) capturing exactly what the persona rejected — the ticket itself needs rework, not a code fix. Then run `backlog`'s Single-Ticket Mode on it, so it's complete before you report it.
+For each persona under the ticket's `## Recette requise` (in `kb/test/<slug-ticket>-technique.md`): dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) capturing exactly what the persona rejected — the ticket itself needs rework, not a code fix. Then run `backlog`'s Single-Ticket Mode on it, so it's complete before you report it.
 
-## Step 5: Dispatch to Record
+## Step 5: Record the Recettes
 
-Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every `hosa-key-user` recette result from Steps 3-4. It appends `## Résultats techniques` (with `hosa-tester`'s `Arbre testé` fingerprint, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time), records each recette result, refreshes the `Test Plan`'s `generated` frontmatter to this write's timestamp, and logs to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched).
+Write each `hosa-key-user` result to `.hosa/kb/test/<slug-ticket>-<slug-persona>.md` in the exact format `recette` uses, and log it to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched). The technical results are already recorded by `hosa-tester` — check its `## Résultats enregistrés` points at the plan; missing → redispatch it rather than writing them yourself.
 
 ## Step 5b: Environment Left Clean
 
@@ -68,7 +65,7 @@ Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every
 
 ## Step 6: Tooling Health
 
-Once every ticket in the sprint has been run through Steps 2-5: dispatch `hosa-qa-lead` (Mode 3 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs, and every residue reported under `## Ménage` — data a test or a recette leaves that the reset doesn't cover gets a concrete fix (test isolation, or extending the documented reset), not a note. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 3 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
+Once every ticket in the sprint has been run through Steps 3-5: dispatch `hosa-qa-lead` (Mode 2 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs, and every residue reported under `## Ménage` — data a test or a recette leaves that the reset doesn't cover gets a concrete fix (test isolation, or extending the documented reset), not a note. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 2 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
 
 ## No Commits
 

@@ -20,7 +20,11 @@ Dispatch hosa-tech-lead → plan de tâches séquentiel
           manque (utilisateur, `architecture`/`schema-app`/`schema-db`,
           ou hosa-architect/hosa-data-engineer directement), stoppe
         ↓ plan clair
+Tests d'abord : dispatch hosa-tester (Écrire d'abord) avec le
+slug — un test automatisé par cas du plan, en échec
+        ↓
 Pour chaque tâche, dans l'ordre : dispatch hosa-developer (une à la fois)
+jusqu'à ce que ces tests passent
         ↓ déviation détectée en cours de tâche → même arrêt/rapport,
           stoppe la boucle
         ↓ toutes les tâches faites
@@ -30,7 +34,7 @@ git add (fichiers du ticket) + commit unique, identité utilisateur
         ↓
 Log kb/tickets/log.md
         ↓
-Suite : propose qa-plan
+Suite : ticket suivant du sprint, ou `qa` quand tous sont faits
 ```
 
 ## Trigger
@@ -51,9 +55,13 @@ Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe �
 
 Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entrée sous `Ambiguities` ou `Structural Deviation` : rapporte-la telle quelle à l'utilisateur, propose la suite adaptée — combler l'ambiguïté avec l'utilisateur, ou lancer `architecture`/`schema-app`/`schema-db` (ou dispatcher `hosa-architect`/`hosa-data-engineer` directement) pour la déviation — ne dispatche aucune tâche, stoppe. Le ticket reste `state: doing`.
 
+## Step 3b: Tests First
+
+Dispatch `hosa-tester` in **Écrire d'abord** mode with the ticket slug: from the ticket's test plan (`kb/test/<slug-ticket>-technique.md`, written by `qa-plan` before the sprint started), it writes one automated test per test case in the worktree and checks each fails for the right reason. No test plan → stop and propose `qa-plan` for this ticket. No test framework in the project → it says so; carry on without, `qa` covers it. Pass its test files to every `hosa-developer` dispatch: the ticket is done when they pass.
+
 ## Step 4: Implement Sequentially
 
-Avant la première tâche : lit le `docker_project` du sprint (absent → `git` Mode 1 en rattachement, qui démarre l'environnement du sprint) et vérifie `docker_check.py <docker_project> <worktree>` — une commande lancée dans un environnement pointant sur un autre dossier teste un autre code. Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree et le `docker_project`. **Une seule tâche à la fois — jamais de dispatch concurrent.** Si un framework de test existe déjà dans le projet géré et que la tâche introduit un comportement testable neuf, `hosa-developer` écrit le test en échec avant d'implémenter (red-green) — ceci ne remplace pas `test`, qui reste le passage dédié à la couverture globale. Si une tâche revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
+Avant la première tâche : lit le `docker_project` du sprint (absent → `git` Mode 1 en rattachement, qui démarre l'environnement du sprint) et vérifie `docker_check.py <docker_project> <worktree>` — une commande lancée dans un environnement pointant sur un autre dossier teste un autre code. Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree et le `docker_project`. **Une seule tâche à la fois — jamais de dispatch concurrent.** Les tests écrits à l'étape 3b sont la cible : `hosa-developer` implémente jusqu'à ce qu'ils passent, sans les affaiblir ni les supprimer — un test qui lui paraît faux est un `Blocked`, pas une modification silencieuse. Pour un comportement que ces tests ne couvrent pas, il écrit son propre test en échec d'abord (red-green). Si une tâche revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
 
 ## Step 5: Present and Confirm
 
@@ -67,7 +75,7 @@ Vérifie `git -C <worktree> config user.name`/`user.email` avant tout commit ; s
 
 ```bash
 git -C <worktree> status
-git -C <worktree> add <uniquement les fichiers listés sous "Files Changed" par hosa-developer pour ce ticket — jamais kb/tickets/ ni un autre fichier de la KB Hosa>
+git -C <worktree> add <uniquement les fichiers listés sous "Files Changed" par hosa-developer et sous "New Tests Written" par hosa-tester (étape 3b) pour ce ticket — jamais kb/tickets/ ni un autre fichier de la KB Hosa>
 git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 caractères>" -m "Hosa-Ticket: <slug-ticket>"
 ```
 
@@ -94,5 +102,5 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 [Ambiguïté ou déviation structurelle, et ce qui est proposé pour la lever]
 
 ## Suite
-Je prépare les tests du ticket maintenant ? (skill `qa-plan`)
+Je passe au ticket suivant du sprint ? (skill `develop`) — ou, s'ils sont tous faits, je lance la QA du sprint ? (skill `qa`)
 ```

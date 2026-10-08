@@ -180,7 +180,7 @@ Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `rec
 2. Story, `Lié à :` or `## Critères d'acceptation` missing → dispatch `hosa-product-owner` (Responsibility 4) to add them, with the concept that surfaced the ticket. It returns an Open Question instead of guessing a persona or a scenario — ask the user and redispatch.
 3. Each of the four notes missing or still on its fallback line → write it as in Steps 3-5b. If the stage it depends on still hasn't run (no `Stack Decision`, no architecture or interface doc, no security analysis), keep the fallback line and say which stage is missing — that's the only case where a ticket legitimately stays incomplete.
 4. No `priority` → ask the user where it goes in the current backlog ("avant/après quel ticket ?", or "pas encore"). Given a rank, write it and shift every other `todo` ticket at that rank or below by one, so ranks stay unique. Then ask for an `estimate`, same rules as Step 6.
-5. If the ticket was created during an `active` sprint, ask whether it joins that sprint now or waits for the next one; only write `sprint: <slug>` (and add it to the sprint's `## Tickets`) on an explicit yes — `sprint`'s readiness guard is what this mode just satisfied.
+5. If the ticket was created during an `active` sprint, ask whether it joins that sprint now or waits for the next one; only write `sprint: <slug>` (and add it to the sprint's `## Tickets`) on an explicit yes — `sprint`'s readiness guard is what this mode just satisfied. Then run `qa-plan` for it: a ticket joins a sprint with its tests, like every other.
 6. Log every change to `kb/tickets/log.md` (and `kb/sprints/log.md` if Step 5 added it), then rerun the checker and report its line for this ticket.
 
 ## No Commits

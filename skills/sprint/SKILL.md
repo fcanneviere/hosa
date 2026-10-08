@@ -22,6 +22,9 @@ Redispatch hosa-sprint-planner (Phase 2) avec le nom/objectif et
 les tickets confirmés → écrit le Sprint
         ↓
 Log kb/sprints/log.md et kb/tickets/log.md
+        ↓
+Enchaîne sur `qa-plan` : plan de test de chaque ticket + jeu de
+données — les tests font partie du sprint avant son démarrage
 ```
 
 ## Trigger
@@ -46,6 +49,10 @@ If `## Tickets prêts` is empty and the user has no gap to fill, stop here — r
 
 Redispatch `hosa-sprint-planner` (Phase 2) with the sprint's name/objective and the confirmed ticket list. If it returns an Open Question (slug already taken) — ask the user for a different name and redispatch.
 
+## Step 4: Add the Tests to the Sprint
+
+A sprint isn't ready to start until its tests are part of it. Run `qa-plan` on the sprint now: one technical test plan per ticket (`hosa-qa-lead`) and the test dataset with its reset command (`hosa-data-engineer`). `git` Mode 1 refuses to start a sprint whose tickets don't all have their plan.
+
 ## No Commits
 
 You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
@@ -59,6 +66,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 ## Tickets inclus
 - `kb/tickets/<slug>.md` — [titre]
 
+## Tests du sprint
+- [N plans de test écrits par `qa-plan`, jeu de données : <path>]
+
 ## Tickets écartés (manque technique)
 - `kb/tickets/<slug>.md` — [ce qui manque, proposé et décliné/différé]
 
@@ -66,5 +76,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Sprint prêt. Je démarre le sprint maintenant (ouvre la branche/worktree dédiée — skill `git`) ? Une fois démarré, je peux lancer `develop` sur son premier ticket. Sinon, je lance un autre sprint pour le reste du backlog, je lance `qa-plan` pour préparer les tests de ce sprint, ou on s'arrête là ?
+Sprint prêt, tests compris. Je démarre le sprint maintenant (ouvre la branche/worktree dédiée et son environnement — skill `git`) ? Une fois démarré, je lance `develop` sur son premier ticket.
 ```
