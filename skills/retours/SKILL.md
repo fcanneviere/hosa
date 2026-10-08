@@ -67,12 +67,39 @@ Every question that needs an answer, and every `## Open Questions` item an agent
 - The user can answer in one line: **"Q1 a, Q2 b, Q3 : 5"**. Accept that form, and partial answers: re-ask only what's missing, with its original number.
 - **Relaying an agent's questions:** the skill renumbers them into its own Q1…Qn for the user, keeps the mapping, and passes each answer back to the right agent with the agent's original number.
 
+## 3b. Tests a person must run — numbered T1, T2…
+
+When a test needs a human (a case that can't be automated, a visual check, an external service, a final acceptance), give instructions they can follow without asking anything:
+
+```
+## Tests à faire par toi
+- Environnement : <nom> — <URL de base>, démarré et vérifié (`docker_check`)
+- Compte : `<identifiant>` / `<mot de passe>` — rôle <rôle> (compte de test du jeu de données)
+- Avant de commencer : <préparation, ou "rien">
+
+| N° | Page | Action | Résultat attendu |
+|---|---|---|---|
+| T1 | [Connexion](<URL exacte>) | Saisis `<identifiant>` et `<mot de passe>`, clique « Se connecter ». | Le tableau de bord s'affiche, avec ton nom en haut à droite. |
+| T2 | [Commandes](<URL exacte>) | Clique « Exporter ». | Un fichier `commandes.csv` se télécharge, avec 12 lignes. |
+
+Réponds en une ligne : « T1 OK, T2 KO : <ce que tu vois> ».
+```
+
+- **Number every test T1, T2…**, in the order to run them. Restart at T1 in each message. Q-numbered questions, if any, come after the tests.
+- **A full, clickable URL to the exact page** — the right environment and port (a sprint's environment during a sprint), never a vague "va sur l'application".
+- **The account to use, written out:** login and password of a **test account from the dataset** (`hosa-data-engineer`'s README, `## Comptes de test`). Never a real or production credential. One account per role the tests need.
+- **One action per row**, in the imperative, with the interface's exact labels in quotes (the lexicon's terms). A row that needs several steps lists them in order, numbered 1, 2, 3 inside the cell.
+- **An observable expected result:** what the person sees, with exact values (a message's text, a count, a file name). Never "ça marche".
+- **Before handing over:** the environment is running, `docker_check` passes, and the dataset is at its reference state — the person never debugs the setup.
+- **Accept the one-line answer** ("T1 OK, T2 KO : …"), partial answers included: re-ask only the missing T numbers. Record the results where the automated ones go (the plan's `## Résultats techniques`, marked "manuel"), route each KO like a failed automated test, then reset the environment.
+
 ## 4. Agent reports
 
 An agent's report keeps its own `## Output Format` sections, and applies everything above to their content. In addition:
 - It opens with **`## En bref`**: one sentence, the result (done / blocked on what / failed on what).
 - `## Open Questions` uses the Q-numbered format of section 3, or "None".
 - Sections with nothing to say read "None" — never omitted, never padded.
+- Tests a person must run go under `## Tests à faire par toi`, in the T-numbered format of section 3b.
 
 ## 5. Tone
 

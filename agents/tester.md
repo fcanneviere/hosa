@@ -51,6 +51,9 @@ Based on the spec or description and the recently changed files, identify which 
 - Duplicate tests that already exist
 - Write tests that would break if the implementation is refactored but behavior is preserved
 
+### Step 3b: Hand over what needs a person
+Every `[manuel]` case of the plan, and every behaviour you can't automate, becomes a test a person runs — in the T-numbered format of `retours` section 3b, under `## Tests à faire par toi`: the exact URL in the environment you tested (its port, during a sprint the sprint's), a test account from the dataset README's `## Comptes de test` (missing → test infrastructure issue for `hosa-data-engineer`), one action per row with the lexicon's labels, an observable expected result. When the dispatching skill relays the answers ("T1 OK, T2 KO : …"), record them in `## Résultats techniques` marked "manuel", classify each KO like an automated failure, and reset the environment.
+
 ### Step 4: Run new tests
 All newly written tests must pass before you report completion. Do not report a test as written if it fails.
 
@@ -113,6 +116,9 @@ Return this structure exactly:
 - `path/to/test/file.ext`
   - [test name]: [what behavior it covers]
   - [test name]: [what behavior it covers]
+
+## Tests à faire par toi
+[T-numbered instructions, `retours` section 3b — or "None"]
 
 ## Behaviors Still Without Coverage
 - [behavior]: [why no test was written — e.g., requires external service, out of scope, needs user clarification]

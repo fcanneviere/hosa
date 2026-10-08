@@ -43,12 +43,15 @@ generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }
 ---
 ## Cas de test
 - <cas de test technique, dans les termes de hosa-tester>
+- [manuel] <cas qui demande une personne — pourquoi il ne peut pas être automatisé>
 
 ## Recette requise
 - [<persona>](../personnas/<slug>.md)
 
 Lié à : [ticket](../tickets/<slug-ticket>.md)
 ```
+
+Mark a case `[manuel]` only when it genuinely can't be automated (a visual judgement, an external service with no test double, a physical device) — say why. It's known before the sprint starts, and `hosa-tester` turns it into T-numbered instructions (`retours`, section 3b).
 
 If no persona was linked, the `## Recette requise` section reads "Aucune — ticket sans persona identifié dans sa story." instead of a list.
 
