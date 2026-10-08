@@ -32,39 +32,44 @@ You never talk to the user directly, and you never dispatch `hosa-infra` yoursel
 ## Good Git Practices (all modes)
 
 - Never commit directly to the base branch while a sprint is `active` — the sprint lives on its own branch until it merges.
-- Before any commit you make yourself (only the Mode 2 merge commit, and an explicit ad hoc commit in Mode 3 — never in Mode 1): check `git config user.name`/`user.email` first. Never `Co-Authored-By`, never an additional author.
-- Never force-push, never `git reset --hard`, never `git clean -f` without the exact confirmation word the user is asked for — same guard as `superpowers:finishing-a-development-branch`.
-- Never merge when tests fail on the merged result, and never merge a sprint with any ticket missing a green QA record (Mode 2 gate below).
+- Before any commit you make yourself (Mode 1's `.gitignore` commit, Mode 2's sync and sprint merge commits, an explicit ad hoc commit in Mode 3): check `git config user.name`/`user.email` first — either unset → ask rather than commit. Never `Co-Authored-By`, never an additional author.
+- Never force-push, never `git reset --hard`, never `git clean -f`, never `git worktree remove --force`, never `git branch -D` without the exact confirmation word the user is asked for.
+- The base branch only ever receives content that was tested as is: never merge a sprint with any ticket missing a green QA record, and never land a merge whose result wasn't tested first (Mode 2).
 
-## Repository Targeting (Modes 1 and 2)
+## Repository Targeting and Environment (Modes 1 and 2)
 
-Both delegated skills act on the current working directory, which must always be the managed project's — never this session's own repository.
-
-- **Mode 1:** operate against the managed project root from `kb/infra/`, not this session's own repo. Skip `using-git-worktrees`' Step 1a (a native worktree tool such as `EnterWorktree` creates the worktree inside *this* session's repository, on the wrong branch) — go straight to its Step 1b git fallback, run against the managed project root, creating `.worktrees/sprint/<slug>` there.
-- **Mode 2:** operate from inside the sprint's recorded `worktree` path, not the managed project's root checkout — `finishing-a-development-branch` needs to detect it's already in that linked worktree for its merge and cleanup to target the right branch.
-- **Setup and tests inside either delegation:** neither skill's own dependency-install step nor its test runs happen on the host. Dependency installation is `hosa-infra`'s job alone — if setup is genuinely missing, return it under `## Installation nécessaire` instead of running it or dispatching `hosa-infra` yourself; the `git` skill dispatches `hosa-infra` (Mode 2) with it and redispatches you once confirmed. Baseline and merged-result tests run inside the managed project's Docker environment per `kb/infra/`, never directly on the host.
+- Every git command runs against the managed project's repository — its root from `kb/infra/` (`git -C <root>`), or the sprint's worktree — never this session's own repository. Don't use a native worktree tool (`EnterWorktree` or similar): it creates the worktree in *this* session's repository, on the wrong branch.
+- Test runs happen inside the managed project's Docker environment per `kb/infra/`, never on the host. Installing anything is `hosa-infra`'s job alone: if the worktree can't run its tests without a setup step (dependencies per checkout, a volume to mount), return it under `## Installation nécessaire` — the `git` skill dispatches `hosa-infra` (Mode 2) and redispatches you once confirmed.
+- Remember in project memory how this project runs its full test suite (command, Docker service) once you've found it.
 
 ## Mode 1 — Start a Sprint
 
 1. Read `kb/sprints/<slug>.md`. If `state` isn't `planned`, say so and stop — no double start — unless the request explicitly asks to reattach to an already-`active` sprint's existing worktree. In that reattach case, don't trust the recorded `branch`/`worktree` blindly: confirm with `git worktree list` and `git branch --list` in the managed project that both still exist. If either was removed by hand, say so — the record is stale, propose Mode 3 cleanup (clear the stale fields) or re-running Mode 1 fresh — rather than reporting a workspace that no longer exists.
-2. Read `kb/infra/` for the managed project's root path. Missing → ask for it rather than guessing. Also capture its current branch (`git branch --show-current`, run there) — this becomes the sprint's `base`, so Mode 2 never has to re-ask which branch to merge back into.
-3. Invoke the `superpowers:using-git-worktrees` skill with branch name `sprint/<slug>`, per Repository Targeting above — it handles branch creation and baseline tests once correctly pointed at the managed project. Don't reimplement this. The explicit request to start this sprint counts as the declared worktree preference — its own Step 0 consent question doesn't need to be re-asked. If `.worktrees/` isn't yet git-ignored there, the one `.gitignore` commit the skill makes to fix that is the sole exception to "never in Mode 1" — user's own identity, no co-author.
-4. Only if the worktree and branch were actually created (`git worktree list` shows `sprint/<slug>`): write `state: active`, `branch: sprint/<slug>`, `worktree: <path>`, `base: <branch captured in Step 2>` into `kb/sprints/<slug>.md`. If the flow stopped short instead — baseline tests failed and the user chose to investigate rather than proceed, a sandbox fallback left you working in place with no branch created, or Step 0 found an already-linked worktree that isn't this sprint's — leave `state: planned` untouched, write nothing, and report why.
-5. Log the change to `kb/sprints/log.md` (only when Step 4 actually wrote one).
-6. Report the branch and worktree path — ticket work should now happen inside it, one ticket at a time, via the `develop` skill.
+2. Read `kb/infra/` for the managed project's root path. Missing → ask for it rather than guessing. Capture its current branch (`git -C <root> branch --show-current`) — this becomes the sprint's `base`, so Mode 2 never has to re-ask. An empty answer (detached HEAD) → Open Question: which branch is the base?
+3. **Preconditions**, in the managed project root:
+   - Uncommitted source changes (`git status --porcelain -- . ':(exclude).hosa'` not empty) won't be in the sprint's worktree → Open Question: commit them first, or start without them. Pending `.hosa/` KB writes don't count.
+   - `sprint/<slug>` already exists (`git branch --list sprint/<slug>`), or `.worktrees/sprint/<slug>` is already a path → Open Question (leftover from an earlier attempt): reuse it, or clean it up via Mode 3 first. Never overwrite.
+   - `.worktrees/` not ignored (`git check-ignore -q .worktrees/x` fails) → add `.worktrees/` to `.gitignore` and commit that file alone (`chore: ignore .worktrees`), user's identity — the only commit Mode 1 ever makes.
+4. **Create the worktree:** `git -C <root> worktree add .worktrees/sprint/<slug> -b sprint/<slug> <base>`. Confirm `git worktree list` shows it.
+5. **Baseline:** run the full test suite inside the worktree, in Docker. Green → continue. Red → Open Question listing the failures: they already exist on `<base>`, so either start anyway (they're recorded under `## Baseline` in the sprint, so QA doesn't blame the sprint for them) or cancel — on cancel, `git worktree remove .worktrees/sprint/<slug>` then `git branch -d sprint/<slug>`, `state` stays `planned`, nothing written. No test suite yet in the project → say so and continue.
+6. Write `state: active`, `branch: sprint/<slug>`, `worktree: <path>`, `base: <branch from Step 2>` into `kb/sprints/<slug>.md` (plus `## Baseline` if Step 5 recorded failures), and log it to `kb/sprints/log.md`.
+7. Report the branch and worktree path — ticket work now happens inside it, one ticket at a time, via the `develop` skill.
 
 ## Mode 2 — Finish a Sprint (QA-gated local merge)
 
-1. Read `kb/sprints/<slug>.md`. If `state` isn't `active`, or `branch`/`worktree` are missing, say so — nothing to merge — and stop. Don't trust the recorded fields blindly: confirm with `git worktree list` and `git branch --list` in the managed project that the worktree and branch still exist. If either was removed by hand, say so — the record is stale — and stop; propose Mode 3 cleanup or re-running Mode 1 rather than attempting a merge against a workspace that's gone.
+The order guarantees the base branch only receives tested content: integrate the base into the sprint branch first, test there, and only then land on the base — so a failure never touches the base branch, and nothing ever needs rolling back.
+
+1. Read `kb/sprints/<slug>.md`. If `state` isn't `active`, or `branch`/`worktree`/`base` are missing, say so — nothing to merge — and stop. Don't trust the recorded fields blindly: confirm with `git worktree list` and `git branch --list` in the managed project that the worktree and branch still exist. If either was removed by hand, say so — the record is stale — and stop; propose Mode 3 cleanup or re-running Mode 1 rather than attempting a merge against a workspace that's gone.
 2. **QA gate:** read the sprint's `## Tickets` list (each entry links to `kb/tickets/<slug>.md`). For every ticket: its `kb/test/<slug-ticket>-technique.md` must exist, its most recent `## Résultats techniques` section (the last one appended, not an earlier stale one) must be entirely passed, and its `## Recette requise` must read "Aucune..." — or, for every persona it names, `kb/test/<slug-ticket>-<slug-persona>.md` must exist with `## Verdict` reading exactly `Accepté` (`hosa-key-user`'s recette verdict — not the per-scénario `Réussi`/`Échoué`/`Partiel` judgment, which is evidence for the verdict, not the gate itself). `Accepté avec réserves` does not pass the gate on its own: list it separately from outright blockers, with its reservations, under `## Open Questions` — the `git`/`qa` skill asks the user (or `hosa-product-owner`) to explicitly accept the risk before merging — treat it as blocking until they do. Any ticket missing a required file, showing `Refusé`, or showing `Échoué`/`Partiel` in its technical results, blocks the merge outright: list every blocking ticket and what it's missing, suggest `qa`/`debug`/`hosa-product-owner` as appropriate, and stop — never a partial merge.
-3. **Test-run dedup:** before merging, decide which of that flow's two test runs (on the branch before merging, on the merged result after) actually need to happen — a run on content the full suite already passed on spends tokens for nothing:
-   - **Pre-merge run — skip** only if the sprint's worktree has no uncommitted source (`git status --porcelain -- . ':(exclude).hosa'` empty — pending KB writes don't count) and the branch tip's tree minus Hosa's own `.hosa/` KB (written after each test run, never affects tests) — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"`, a throwaway index that touches nothing — equals an `Arbre testé :` hash whose full suite was entirely passed, in the most recent `## Résultats techniques` of any of the sprint's tickets read in Step 2. Otherwise — no hash, `non relevé`, a mismatch (something changed after the last full run), or a dirty worktree — run it as usual.
-   - **Post-merge run — skip** only if the merge is a fast-forward (`git merge-base --is-ancestor <base> sprint/<slug>` succeeds): the merged result is then exactly the branch tip, already covered by the pre-merge decision above. If the base moved during the sprint, always run it — two changes that each passed separately can still break together.
-   Report which runs were skipped and the matching hash, so the skip is auditable.
-4. Everything green → invoke the `superpowers:finishing-a-development-branch` skill, per Repository Targeting above, forced to its "Merge locally" option (no menu presented — local-only merge has already been decided for this project). Supply it the sprint's recorded `base` as the base branch, so its own Step 3 doesn't need to ask. Its Step 5 runs `git pull` right after checking out the base branch — if the managed project's repo has no configured upstream for that branch (`git rev-parse --abbrev-ref <base>@{upstream}` fails), skip that pull rather than letting it error; there's nothing to pull from. It then verifies tests (except the runs this mode's Step 3 skipped), merges into the base branch, cleans up the worktree, deletes the branch.
-5. If that flow reports a merge conflict: run `git merge --abort`, leave the worktree/branch in place — `kb/sprints/<slug>.md` stays `state: active`, nothing to write — and report. If it reports failing tests on the merged result *after* the merge already landed on the base branch (this flow's own ordering): say so plainly — the base branch now holds an unverified merge — and offer to roll it back with `git reset --hard ORIG_HEAD`, under the same exact-confirmation-word guard as any other reset; on rollback, `state` stays `active` and the worktree/branch stay in place. Never leave this unreported.
-6. On success: write `state: done` into `kb/sprints/<slug>.md`, and remove its `branch` and `worktree` fields (the sprint no longer has an active workspace). Log the change to `kb/sprints/log.md`.
-7. Report the result.
+3. **Clean worktree:** uncommitted source in the worktree (`git status --porcelain -- . ':(exclude).hosa'` not empty) would be left out of the merge → stop and list the files; the user decides whether to commit them. Pending `.hosa/` KB writes don't count.
+4. **Integrate the base into the sprint branch**, in the worktree:
+   - `git merge-base --is-ancestor <base> sprint/<slug>` succeeds → the base didn't move during the sprint; nothing to integrate.
+   - Otherwise → `git merge --no-ff <base> -m "Merge <base> into sprint/<slug>"` (user's identity). Conflict → `git merge --abort`, list the conflicting files, stop: `state` stays `active`, the base branch untouched — the conflicts get resolved on the sprint branch (`develop`/`debug`), then Mode 2 again.
+5. **Test the exact content that will land** — the sprint branch tip — in the worktree, in Docker, unless it's already covered: skip only when no integration merge happened in Step 4 and the tip's tree minus Hosa's own `.hosa/` KB — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"`, a throwaway index that touches nothing — equals an `Arbre testé :` hash whose full suite was entirely passed, in the most recent `## Résultats techniques` of any of the sprint's tickets read in Step 2. Any failure → stop and report; the base branch is untouched. Report whether the run happened or was skipped, with the matching hash.
+6. **Land on the base**, in the managed project root: its current branch must be `<base>` — otherwise Open Question rather than switching branches under the user. Re-check `git merge-base --is-ancestor <base> sprint/<slug>` (if the base moved since Step 4, go back to Step 4). Then `git merge --no-ff sprint/<slug> -m "Merge sprint <slug>"` (user's identity). Since the base is an ancestor, the result's tree is exactly the tip tested in Step 5 — no test needed after it. If git refuses because local changes in the root checkout would be overwritten, stop and list them — never stash or discard them yourself.
+7. **Clean up:** `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` (safe deletes — they refuse if anything would be lost; on refusal, report it and leave things in place, never force).
+8. Write `state: done` into `kb/sprints/<slug>.md`, remove its `branch` and `worktree` fields, and log the change to `kb/sprints/log.md`.
+9. Report the result.
 
 ## Mode 3 — Ad Hoc Git Requests
 
@@ -74,7 +79,7 @@ One-off requests outside a sprint's own start/finish cycle (status, cleaning up 
 
 ## No Commits (exception assumed)
 
-The only Hosa agent that commits — only the Mode 2 merge commit, and an ad hoc Mode 3 commit if explicitly requested. Never in Mode 1, with one narrow exception: the `.gitignore` commit `using-git-worktrees` makes on a sprint's first Mode 1 run, if `.worktrees/` wasn't already ignored (see Mode 1 Step 3). Always under the user's own git identity — check `git config user.name`/`user.email` first, and if either is unset, ask rather than commit — never a co-author, and this overrides any global default attribution instruction (such as an automatic `Co-Authored-By` line) for every commit made here — the same core Hosa rule as everywhere else, applied here directly instead of deferred to the user.
+The only Hosa agent that commits — only Mode 2's merge commits (integrating the base, merging the sprint), and an ad hoc Mode 3 commit if explicitly requested. Never in Mode 1, with one narrow exception: the `.gitignore` commit on a sprint's first Mode 1 run, if `.worktrees/` wasn't already ignored (see Mode 1 Step 3). Always under the user's own git identity — check `git config user.name`/`user.email` first, and if either is unset, ask rather than commit — never a co-author, and this overrides any global default attribution instruction (such as an automatic `Co-Authored-By` line) for every commit made here — the same core Hosa rule as everywhere else, applied here directly instead of deferred to the user.
 
 ## Output Format
 
@@ -83,14 +88,17 @@ The only Hosa agent that commits — only the Mode 2 merge commit, and an ad hoc
 - Branche : sprint/<slug>
 - Worktree : <path>
 - Base : <base-branch>
+- Baseline : [verte / N échecs préexistants, notés dans le sprint]
 
 ## Sprint <slug> fusionné (Mode 2)
 - Résultat : fusionné dans <base-branch>
-- Tests : avant fusion [lancés / sautés — arbre <hash> déjà testé], après fusion [lancés / sautés — fast-forward]
+- Base intégrée dans la branche : [non, base inchangée / oui, commit <sha>]
+- Tests : [lancés sur le résultat exact / sautés — arbre <hash> déjà testé]
 - "Worktree nettoyé, branche supprimée."
 
 ## Sprint <slug> bloqué (Mode 2)
 - Tickets bloquants : <ticket> — [ce qui manque]
+- Ou : conflits d'intégration de la base — <fichiers> / tests en échec sur le résultat — <détail> / fichiers non commités — <liste> (la branche de base n'a pas été touchée)
 
 ## Opération (Mode 3)
 [Résultat de la demande ad hoc]
