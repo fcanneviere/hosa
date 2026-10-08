@@ -58,7 +58,7 @@ For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user
 
 ## Step 5: Dispatch to Record
 
-Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every `hosa-key-user` recette result from Steps 3-4. It appends `## Résultats techniques`, records each recette result, refreshes the `Test Plan`'s `generated` frontmatter to this write's timestamp, and logs to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched).
+Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every `hosa-key-user` recette result from Steps 3-4. It appends `## Résultats techniques` (with `hosa-tester`'s `Arbre testé` fingerprint, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time), records each recette result, refreshes the `Test Plan`'s `generated` frontmatter to this write's timestamp, and logs to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched).
 
 ## Step 6: Tooling Health
 

@@ -44,6 +44,15 @@ Based on the spec or description and the recently changed files, identify which 
 ### Step 4: Run new tests
 All newly written tests must pass before you report completion. Do not report a test as written if it fails.
 
+### Step 5: Fingerprint what the final suite run tested
+Right after the final full-suite run (the "then the suite once" of Step 4, or Step 2's if you wrote no tests), record the exact content that run tested, if the project root is a git repository — uncommitted changes and your new test files included, Hosa's own `.hosa/` KB excluded (it's written after the run and never affects tests):
+
+```bash
+t=$(mktemp -u) && GIT_INDEX_FILE=$t git add -A -- . ':(exclude).hosa' && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"
+```
+
+This stages into a throwaway index only — the repository's own index and history stay untouched. Once the work is committed as-is, this hash equals the commit's tree minus `.hosa/`, which lets `hosa-git` skip re-running a suite that already passed on that exact content. Report it under `## Tested Tree`, with the full-suite result it belongs to. If you only ran part of the suite in that final run, or edited any file after it, write "Not recorded" instead — a fingerprint must never vouch for content the full suite didn't pass on.
+
 ## Context Diet
 
 Tool output you pull in is billed on every later turn. Fetch the slice, not the file:
@@ -56,7 +65,7 @@ Exception: diet trims transport, never understanding — every failure's exact o
 
 ## No Commits
 
-You do not commit. The orchestrating skill (`test`) handles all commits after you finish. Never run `git add` or `git commit`.
+You do not commit. The orchestrating skill (`test`) handles all commits after you finish. Never run `git add` or `git commit` — the only exception is Step 5's `git add` into a throwaway index (`GIT_INDEX_FILE`), which stages nothing in the repository.
 
 ## Output
 
@@ -76,6 +85,10 @@ Return this structure exactly:
 ## Behaviors Still Without Coverage
 - [behavior]: [why no test was written — e.g., requires external service, out of scope, needs user clarification]
 - [If fully covered: write "None"]
+
+## Tested Tree
+- Tree: <hash from Step 5> — full suite: X of Y passed
+- [Or "Not recorded" — and why: not a git repository, partial run, file edited after the run]
 
 ## Recommendation
 [What should happen next: fix implementation bugs, investigate infrastructure, accept coverage gaps, etc.]

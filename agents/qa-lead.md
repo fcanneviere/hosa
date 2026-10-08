@@ -64,7 +64,7 @@ Input: one ticket whose `kb/test/<slug-ticket>-technique.md` already exists.
 
 **Phase 2 — Record (dispatched again once the skill relays `hosa-tester`'s report and every `hosa-key-user` recette result):**
 
-2. Append a `## Résultats techniques` section to `kb/test/<slug-ticket>-technique.md` with what `hosa-tester` reported (passed/failed counts, the nature of each failure).
+2. Append a `## Résultats techniques` section to `kb/test/<slug-ticket>-technique.md` with what `hosa-tester` reported (passed/failed counts, the nature of each failure), plus an `Arbre testé :` line copying `hosa-tester`'s `## Tested Tree` verbatim — the tree hash and the full-suite result it belongs to, or `non relevé` if it reported "Not recorded". Never fill in a hash yourself; `hosa-git` relies on it to skip re-running a suite that already passed on exactly that content.
 3. Record each recette result the skill relayed, in the exact format `recette` already uses, at `.hosa/kb/test/<slug-ticket>-<slug-persona>.md` (the skill writes the file directly from `hosa-key-user`'s own output — you only confirm it's in the expected format and flag it if not).
 4. Log every file touched to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched during recette).
 
