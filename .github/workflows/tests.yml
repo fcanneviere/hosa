@@ -24,3 +24,6 @@ jobs:
           python -m unittest
       - name: Scripts compile
         run: python -m py_compile skills/*/scripts/*.py
+      - name: Vendored oil-ui tools
+        working-directory: skills/interface/vendor/oil-ui
+        run: python -m unittest discover -s tests

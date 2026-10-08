@@ -1,6 +1,6 @@
 ---
 name: interface
-description: "Use to design and scaffold a complete, navigable interface: identity, design rules, front/back office navigation, lexicon, UX fundamentals, verified scaffold; also completes an existing one. Structuration stage 7. Triggers: \"conçois l'interface\", \"la navigation manque\"."
+description: "Use to design and scaffold a complete, navigable interface: style cards, layout directions and pages on comparison pages, front/back office navigation, lexicon, UX fundamentals, screenshot-verified scaffold with an independent review; also completes an existing one. Structuration stage 7. Triggers: \"conçois l'interface\", \"la navigation manque\"."
 ---
 
 # Interface
@@ -17,17 +17,18 @@ personas to interview)
 Dispatch hosa-key-user (UI-interview) pour chaque persona,
 un à la fois
         ↓
-Redispatch hosa-ux-designer (Phase 2) avec les besoins
-surfacés → propose identité visuelle + règles de design +
-structure de navigation par rôle
-        ↓
-Présente les propositions à l'utilisateur → il valide/ajuste
+Redispatch hosa-ux-designer (Phase 2), trois manches :
+styles (cartes de style) → directions (navigation, lexique,
+2–3 mises en page) → page (pages complètes front/back)
+        ↓ chaque manche : page de comparaison → l'utilisateur choisit
         ↓
 Redispatch hosa-ux-designer (Phase 3) avec les choix validés
 → plan de navigation, fondamentaux UX, scaffold navigable,
-vérification (build, routes, interface_check)
+vérification (build, routes, interface_check, captures)
         ↓ Installation nécessaire → hosa-infra, redispatch
         ↓ manques → redispatch avec la liste, jusqu'à complet
+Dispatch hosa-ux-designer (Review), sans le raisonnement :
+note /10 et problèmes → redispatch Phase 3 si < 8
         ↓
 Dispatch hosa-documentation (Mode 1) avec le
 "Documentation à produire" retourné
@@ -57,9 +58,15 @@ If it returns an Open Question (no `Infra`/architecture doc, no `stable` `Exigen
 
 For each persona under `## Personas à interviewer`, dispatch `hosa-key-user` as a UI-interview request: what this persona needs to see, in what order, which information is priority, what usage constraints apply (mobile, accessibility, autonomy...). One persona at a time — don't batch multiple personas into a single dispatch.
 
-## Step 3: Dispatch for Proposals
+## Step 3: Dispatch for Proposals, Round by Round
 
-Redispatch `hosa-ux-designer` (Phase 2) with every persona's needs surfaced in Step 2. It returns a proposed visual identity, design rules, and the navigation structure (screens per role, each role's home screen and main menu, every functional `stable` `Exigence` placed on a screen) — present all three to the user and wait for their validation or adjustments per item. The navigation is the part the user will live with every day: show it as a readable tree per role, not a paragraph. Show the lexicon as its table — each term with what it names and the synonyms it rules out — so the user fixes the words now, not screen by screen later.
+Redispatch `hosa-ux-designer` (Phase 2) three times, with every persona's needs from Step 2 and the user's previous choice. Each round returns a comparison page (`## Pages de comparaison`): give the user its path as a link (`file://<absolute path>`) and tell them to open it in a browser. Ask the choice as one numbered question, the options lettered as on the page. Mixing two options or asking for a change is an answer too.
+
+1. **`round: styles`** — 4–6 style cards: the visual identity and the design rules each implies. The user picks one.
+2. **`round: directions`** — the navigation structure, the lexicon and 2–3 layout directions of the main screen in that style. The navigation is the part the user will live with every day: show it as a readable tree per role, not a paragraph. Show the lexicon as its table — each term with what it names and the synonyms it rules out — so the user fixes the words now, not screen by screen later. The user validates each item and picks a direction.
+3. **`round: page`** — one complete page per space in that direction. The user validates it, or asks for changes (redispatch the same round).
+
+After each answer: `avancement.py … progress interface --detail "manche <round> choisie" --reprise "interface, manche <suivante>"`. The comparison pages are working files under `<root>/.hosa/design/`, ignored by git; what is chosen goes into the KB in Phase 3. An existing interface whose identity the user keeps → skip `styles`.
 
 ## Step 4: Dispatch to Record and Design
 
@@ -76,7 +83,9 @@ Run the checker yourself, from the managed project's root:
 <python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/lexique_check.py" .hosa/kb .
 ```
 
-Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. A gap on an exigence's missing `espace` isn't the designer's to fix: propose `fondamentaux`, where `hosa-product-owner` sets it with the user, then come back. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Don't move on to documentation with an incomplete or inconsistently named interface — a forbidden synonym in the code, a screen missing from the lexicon: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
+Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. A gap on an exigence's missing `espace` isn't the designer's to fix: propose `fondamentaux`, where `hosa-product-owner` sets it with the user, then come back. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Then dispatch a **fresh** `hosa-ux-designer` in **Review** mode, with only the screenshot paths from `## Vérification`, the identity, the design rules and each persona's main tasks — not the Phase 3 report: the review stays independent. A score under 8, or any issue that blocks a task, → redispatch Phase 3 with the numbered issues, then review again. After two review rounds, show the user the score and the remaining issues, and let them decide. No screenshots (no Node or Chrome) → the T-tests replace the review; say so.
+
+Don't move on to documentation with an incomplete or inconsistently named interface — a forbidden synonym in the code, a screen missing from the lexicon: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
 
 ## Step 5: Dispatch Documentation
 
@@ -113,6 +122,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ## Vérification
 - Build : [OK / échec] — routes rendues : [X / Y] — interface_check : [complet / manques]
+
+## Revue visuelle
+- Note : [N/10] — [problèmes restants, ou "aucun"] — captures : `<dossier>`
 
 ## Documentation
 - `<path>`

@@ -68,6 +68,17 @@ ccc init && ccc index
 (cd .hosa/kb && ccc init && ccc index)
 ```
 
+## L'interface : choisir sur des pages de comparaison
+
+Le skill `interface` ne te décrit pas l'interface en paragraphes. Il te la montre, en trois manches, chacune sur une page de comparaison à ouvrir dans ton navigateur :
+1. **Styles** — 4 à 6 cartes de style sur le vrai contenu du projet. Tu en choisis une.
+2. **Directions** — la navigation, le lexique et 2 ou 3 mises en page vraiment différentes de l'écran principal.
+3. **Pages** — une page complète par espace (front office, back office), à valider avant la construction.
+
+L'interface construite est ensuite vérifiée sur des captures (ordinateur et mobile), puis notée par une revue indépendante. Pour les captures, le poste a besoin de Node 22 et d'un Chrome ou Chromium. Sans eux, Hosa te donne des tests à faire toi-même.
+
+La méthode et les outils viennent d'[oil-ui](https://github.com/oil-oil/oil-ui) (licence MIT), copiés dans `skills/interface/vendor/oil-ui/`.
+
 ## Commandes utiles
 
 | Tu veux… | Demande ou tape |
