@@ -25,6 +25,9 @@ n'existe
 Ajoute un placement interface (rôle UX/UI designer), ou une
 ligne "pas encore déterminé" si aucune doc d'interface n'existe
         ↓
+Ajoute une note sécurité (rôle expert cybersécurité), ou une
+ligne "pas encore faite" si aucune analyse de sécurité n'existe
+        ↓
 Log kb/tickets/log.md
         ↓
 Propose de lancer sprint
@@ -41,7 +44,7 @@ Single-ticket mode: `/backlog <slug-ticket>`, or chained by any skill that just 
 A ticket is ready to be planned (`sprint`) and executed (`develop`, `qa-plan`) when it has all of:
 - a story (`En tant que … je veux … afin de …`) and a `Lié à :` line — to its `Exigence`, or, for a ticket born outside the cahier des charges (bug, recette gap, audit finding, change impact, sprint follow-up), to the concept that surfaced it;
 - `## Critères d'acceptation` with at least one Given/When/Then scenario;
-- real `## Note technique (senior dev)`, `## Placement architecture (architecte)` and `## Placement interface (UX/UI)` notes — not the fallback lines below;
+- real `## Note technique (senior dev)`, `## Placement architecture (architecte)`, `## Placement interface (UX/UI)` and `## Note sécurité (expert cybersécurité)` notes — not the fallback lines below;
 - a `priority`, unless the user explicitly answered "pas encore".
 
 The checker is the source of truth — run it from the managed project's root, with any Python 3.9+:
@@ -143,6 +146,24 @@ Interface pas encore scaffoldée — placement non déterminé.
 
 Never block ticket creation on a missing interface doc.
 
+## Step 5b: Add the Security Note (cybersecurity expert role)
+
+Read `kb/cdc/securite.md`, the `Security Rule`s in `kb/rules/security/`, and the linked `Exigence`'s `## Contraintes de sécurité` and security exigences. If the analysis exists, append the constraints this ticket must meet — so they're built in, not retrofitted:
+
+```markdown
+## Note sécurité (expert cybersécurité)
+[Contraintes applicables à ce ticket — données sensibles touchées, contrôle d'accès attendu, journalisation, règles `kb/rules/security/` concernées — ou "Aucune contrainte propre à ce ticket — règles générales de `kb/rules/security/` applicables." quand c'est le cas]
+```
+
+If `kb/cdc/securite.md` doesn't exist yet (`securite` never ran), append instead:
+
+```markdown
+## Note sécurité (expert cybersécurité)
+Analyse de sécurité pas encore faite — contraintes non déterminées.
+```
+
+Never block ticket creation on a missing analysis.
+
 ## Step 6: Priority and Estimate
 
 Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter.
@@ -157,7 +178,7 @@ Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `rec
 
 1. Run the checker on the ticket. Already complete → say so and stop.
 2. Story, `Lié à :` or `## Critères d'acceptation` missing → dispatch `hosa-product-owner` (Responsibility 4) to add them, with the concept that surfaced the ticket. It returns an Open Question instead of guessing a persona or a scenario — ask the user and redispatch.
-3. Each of the three notes missing or still on its fallback line → write it as in Steps 3-5. If the stage it depends on still hasn't run (no `Stack Decision`, no architecture or interface doc), keep the fallback line and say which stage is missing — that's the only case where a ticket legitimately stays incomplete.
+3. Each of the four notes missing or still on its fallback line → write it as in Steps 3-5b. If the stage it depends on still hasn't run (no `Stack Decision`, no architecture or interface doc, no security analysis), keep the fallback line and say which stage is missing — that's the only case where a ticket legitimately stays incomplete.
 4. No `priority` → ask the user where it goes in the current backlog ("avant/après quel ticket ?", or "pas encore"). Given a rank, write it and shift every other `todo` ticket at that rank or below by one, so ranks stay unique. Then ask for an `estimate`, same rules as Step 6.
 5. If the ticket was created during an `active` sprint, ask whether it joins that sprint now or waits for the next one; only write `sprint: <slug>` (and add it to the sprint's `## Tickets`) on an explicit yes — `sprint`'s readiness guard is what this mode just satisfied.
 6. Log every change to `kb/tickets/log.md` (and `kb/sprints/log.md` if Step 5 added it), then rerun the checker and report its line for this ticket.

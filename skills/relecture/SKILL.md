@@ -1,6 +1,6 @@
 ---
 name: relecture
-description: Use to check every `Exigence` in `.hosa/kb/cdc/` for precision, completeness, and internal consistency. Fourth stage of the CDC pipeline (interview → redaction → fondamentaux → relecture → contestation). Routes gaps back to `redaction` or `interview`.
+description: Use to check every `Exigence` in `.hosa/kb/cdc/` for precision, completeness, and internal consistency. Fifth stage of the CDC pipeline (interview → redaction → fondamentaux → securite → relecture → contestation). Routes gaps back to `redaction` or `interview`.
 ---
 
 # Relecture
@@ -27,7 +27,7 @@ Propre → propose d'enchaîner sur `contestation`
 
 ## Trigger
 
-Manual: `/relecture`. Auto: immediately after `fondamentaux`, or "relis le cahier des charges".
+Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier des charges".
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: contestation
-description: Use for the final challenge pass on the cahier des charges — `hosa-product-owner` re-questions personas on weak points via `hosa-key-user`, and `hosa-challenger` independently audits the assembled `kb/cdc/` for contradictions, blind spots, and risks. Fifth and last stage of the CDC pipeline (after `fondamentaux` and `relecture`, which it checks ran); loops back to `redaction`/`interview` until clean, then asks the user for final sign-off.
+description: Use for the final challenge pass on the cahier des charges — `hosa-product-owner` re-questions personas on weak points via `hosa-key-user`, and `hosa-challenger` independently audits the assembled `kb/cdc/` for contradictions, blind spots, and risks. Sixth and last stage of the CDC pipeline (after `fondamentaux`, `securite` and `relecture`, which it checks ran); loops back to `redaction`/`interview` until clean, then asks the user for final sign-off.
 ---
 
 # Contestation
@@ -34,7 +34,7 @@ Manual: `/contestation`. Auto: immediately after a clean `relecture`, or "challe
 
 ## Step 0: Fondamentaux Gate
 
-`kb/cdc/fondamentaux.md` must exist, and be at least as recent (`generated.at`) as the newest `Exigence` in `kb/cdc/` — otherwise the basics haven't been checked against what the cahier des charges now says. Missing or older → say so and run `fondamentaux` first, then `relecture`, then come back. A cahier des charges is never signed off without its basic functions checked.
+`kb/cdc/fondamentaux.md` must exist, and be at least as recent (`generated.at`) as the newest `Exigence` in `kb/cdc/` — otherwise the basics haven't been checked against what the cahier des charges now says. Missing or older → say so and run `fondamentaux` first, then `relecture`, then come back. Same for `kb/cdc/securite.md` (`Analyse de sécurité`) — missing or older than the newest `Exigence` → run `securite`, then `relecture`. A cahier des charges is never signed off without its basic functions and its security constraints in it.
 
 ## Step 1: PO → Personas Challenge
 
@@ -42,7 +42,7 @@ The PO always does its own quick pass over `kb/cdc/` first, looking for any need
 
 ## Step 2: `hosa-challenger` Independent Audit
 
-Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md` included), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists. Take its verdict and findings as-is — don't pre-filter them before showing the user.
+Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md` and `securite.md` included), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists. Take its verdict and findings as-is — don't pre-filter them before showing the user.
 
 ## Step 3: Route Anomalies
 

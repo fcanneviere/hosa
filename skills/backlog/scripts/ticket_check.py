@@ -4,8 +4,9 @@
 A ticket is complete when it has, in its body:
   - a user story ("En tant que ...") and a "Lié à :" line,
   - a "## Critères d'acceptation" section with at least one scenario,
-  - "## Note technique (senior dev)", "## Placement architecture (architecte)"
-    and "## Placement interface (UX/UI)" sections holding a real note, not
+  - "## Note technique (senior dev)", "## Placement architecture (architecte)",
+    "## Placement interface (UX/UI)" and "## Note sécurité (expert
+    cybersécurité)" sections holding a real note, not
     `backlog`'s "pas encore évalué/déterminé" fallback line.
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
@@ -24,6 +25,7 @@ SECTIONS = {
     "## Note technique (senior dev)": "Stack pas encore choisie",
     "## Placement architecture (architecte)": "Architecture pas encore scaffoldée",
     "## Placement interface (UX/UI)": "Interface pas encore scaffoldée",
+    "## Note sécurité (expert cybersécurité)": "Analyse de sécurité pas encore faite",
 }
 
 

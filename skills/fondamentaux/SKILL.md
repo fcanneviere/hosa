@@ -1,6 +1,6 @@
 ---
 name: fondamentaux
-description: Use to make sure the cahier des charges contains every basic function of a software product that personas never think to ask for (administration, user management, rights, logs, error log, change history, backup, import/export, settings, notifications…) plus the core non-functional requirements. `hosa-product-owner` checks coverage against a standard checklist, includes every missing item by default, and the user only strikes out what the project genuinely doesn't need. CDC pipeline stage 3 (interview → redaction → fondamentaux → relecture → contestation) — mandatory: `contestation` won't sign off without it. Also usable anytime.
+description: Use to make sure the cahier des charges contains every basic function of a software product that personas never think to ask for (administration, user management, rights, logs, error log, change history, backup, import/export, settings, notifications…) plus the core non-functional requirements. `hosa-product-owner` checks coverage against a standard checklist, includes every missing item by default, and the user only strikes out what the project genuinely doesn't need. CDC pipeline stage 3 (interview → redaction → fondamentaux → securite → relecture → contestation) — mandatory: `contestation` won't sign off without it. Also usable anytime.
 ---
 
 # Fondamentaux
@@ -24,7 +24,7 @@ Redispatch hosa-product-owner : écrit une Exigence (draft)
 par item retenu + kb/cdc/fondamentaux.md (le bilan, item
 par item)
         ↓
-Log kb/cdc/log.md → enchaîne sur `relecture`
+Log kb/cdc/log.md → enchaîne sur `securite`
 ```
 
 ## Trigger
@@ -65,8 +65,7 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 - **Messages d'erreur compréhensibles** : l'utilisateur sait ce qui s'est passé et quoi faire
 - **Aide et documentation utilisateur** : aide en ligne, guide, contact support
 
-**Non fonctionnel (NFR)** — contraintes chiffrées, `tags: [nfr]` :
-- **Sécurité** : stockage des mots de passe, chiffrement des échanges, protection contre les attaques courantes
+**Non fonctionnel (NFR)** — contraintes chiffrées, `tags: [nfr]` (la sécurité a sa propre étape juste après : `securite`) :
 - **Performance** : temps de réponse cible, volumétrie attendue
 - **Disponibilité** : SLA visé, tolérance à l'indisponibilité, objectifs de reprise (RPO/RTO)
 - **Protection des données (RGPD ou équivalent)** : base légale, durée de rétention, droit d'accès et à l'effacement
@@ -126,5 +125,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - [If none: "Aucune — tout était déjà couvert ou hors périmètre"]
 
 ## Suite
-Je lance `relecture` maintenant ?
+J'analyse la sécurité du cahier des charges maintenant ? (skill `securite`)
 ```

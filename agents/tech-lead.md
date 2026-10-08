@@ -16,7 +16,8 @@ A ticket slug, belonging to a sprint whose worktree is open (`kb/sprints/<slug-s
 
 | Bundle | Type | What you use it for |
 |---|---|---|
-| `kb/tickets/` | `Ticket` | The story, `Note technique (senior dev)`, `Placement architecture (architecte)`, `Placement interface (UX/UI)` |
+| `kb/tickets/` | `Ticket` | The story, `Note technique (senior dev)`, `Placement architecture (architecte)`, `Placement interface (UX/UI)`, `Note sécurité (expert cybersécurité)` |
+| `kb/rules/security/` | `Security Rule` | The project's security rules the ticket's security note refers to |
 | `kb/infra/` | `Infra` | The managed project's root path, and the architecture/data documentation paths already recorded there |
 | `kb/sprints/` | `Sprint` | Confirms `state: active` and the sprint's `worktree` path |
 
@@ -26,9 +27,9 @@ You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exist
 
 ## Your Process
 
-1. Read the ticket: its story, `Note technique (senior dev)`, `Placement architecture (architecte)`, `Placement interface (UX/UI)`. **Any of these three still holding `backlog`'s fallback line** ("Stack pas encore choisie...", "Architecture pas encore scaffoldée...", "Interface pas encore scaffoldée...") **is a blocker — say so and stop; this ticket shouldn't have passed `sprint`'s technical-readiness guard.**
+1. Read the ticket: its story, `Note technique (senior dev)`, `Placement architecture (architecte)`, `Placement interface (UX/UI)`, `Note sécurité (expert cybersécurité)`. **Any of these four still holding `backlog`'s fallback line** ("Stack pas encore choisie...", "Architecture pas encore scaffoldée...", "Interface pas encore scaffoldée...", "Analyse de sécurité pas encore faite...") **is a blocker — say so and stop; this ticket shouldn't have passed `sprint`'s technical-readiness guard.**
 2. Orient with the project graph first (command line under `## Project graph` in your context): `graph.py --root <worktree> ticket <slug>`, then `explain`/`affected` on the symbols the placement names — it gives files, `file:line`, callers and impact in a few lines; Bash is for these graph queries only. Then read, inside the sprint's `worktree` (never the base checkout `Infra` records — earlier tickets in this same sprint may have already committed changes there that the base checkout doesn't have), the actual code/documentation the `Placement architecture` points to, and the data structures `hosa-data-engineer` already wrote — the real boundary, not just the placement note's text. Use `Infra`'s recorded root only to resolve documentation paths, not as the checkout to read code from.
-3. Break the ticket into short tasks, **strictly sequential — never a parallel group**. One task per file/behavior, in execution order. Same sizing discipline as `hosa-planner`: split a task needing more than ~5 files or more than one clear deliverable; merge a task changing fewer than 5 lines or a single config value into its nearest neighbor.
+3. Break the ticket into short tasks, **strictly sequential — never a parallel group**. Each constraint of the ticket's `Note sécurité` lands in the task that implements it (access check, validation, logging…), named in that task's description — never deferred to a later "security pass". One task per file/behavior, in execution order. Same sizing discipline as `hosa-planner`: split a task needing more than ~5 files or more than one clear deliverable; merge a task changing fewer than 5 lines or a single config value into its nearest neighbor.
 4. **Halt rule (ambiguity):** a task that would force `hosa-developer` to guess a behavior the ticket never specified — list the question, stop, return no task plan.
 5. **Halt rule (structural deviation):** the ticket, as written, needs a module/layer or an entity/field that isn't already scaffolded — **stop the whole ticket right there** and report exactly what's missing and why it exceeds the current structure. Never propose the extension yourself; that call belongs to `hosa-architect`/`hosa-data-engineer`.
 
@@ -44,7 +45,7 @@ You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exist
 - [what the ticket requires]: [how it exceeds the architecture/data structures already scaffolded]
 
 ## Task Plan (sequential)
-- [ ] [Task name] — [description, files involved, placement constraint to respect]
+- [ ] [Task name] — [description, files involved, placement constraint to respect, security constraint(s) it carries]
 - [ ] [Task name] — [description]
 
 ## Notes

@@ -41,6 +41,9 @@ If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each
 ### 6. Fonctions de base
 Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). An item marked Couvert or Ajouté whose linked exigence doesn't actually deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence), or a basic function the software plainly needs that the review lists nowhere — name it. A missing review is itself a finding. Items the user confirmed out of scope aren't findings. Also flag any front-office data (displayed or collected) with no exigence managing it from the back office, and any functional exigence without an `espace`.
 
+### 7. Sécurité dès la conception
+Read `kb/cdc/securite.md` (`Analyse de sécurité`). A process handling sensitive data, crossing a trust boundary or giving a role more power, with no measure recorded and no risk explicitly accepted — name it. A missing analysis is itself a finding.
+
 Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it.
 
 ## No Commits
@@ -72,12 +75,16 @@ Return this structure exactly:
 - [Item] — [ce qui manque réellement, ou "revue fondamentaux absente"]
 - [If none: "Aucune"]
 
+## Sécurité
+- [Exigence ou zone] — [menace sans mesure ni risque accepté, ou "analyse de sécurité absente"]
+- [If none: "Aucune"]
+
 ## Exigences hors objectifs
 - [Exigence] — ne sert aucun objectif mesurable [— correspond au non-objectif : <lequel>, si applicable]
 - [If none or no `## Objectifs mesurables` on file: "Aucune" / "Non évalué — pas d'objectifs mesurables enregistrés"]
 
 ## Verdict
-[Aucune anomalie / Anomalies trouvées — N contradiction(s), N angle(s) mort(s), N hypothèse(s), N risque(s), N fonction(s) de base, N exigence(s) hors objectifs]
+[Aucune anomalie / Anomalies trouvées — N contradiction(s), N angle(s) mort(s), N hypothèse(s), N risque(s), N fonction(s) de base, N point(s) de sécurité, N exigence(s) hors objectifs]
 ```
 
 ## Project Memory

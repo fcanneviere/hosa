@@ -1,6 +1,6 @@
 ---
 name: redaction
-description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → fondamentaux → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
+description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → fondamentaux → securite → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
 ---
 
 # Redaction

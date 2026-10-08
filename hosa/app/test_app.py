@@ -105,7 +105,7 @@ class AppTest(unittest.TestCase):
         self.assertEqual(status, 200)
         stages = {s["skill"]: s["done"] for p in ov["pipelines"] for s in p["stages"]}
         self.assertTrue(stages["hosa"] and stages["contestation"] and stages["donnees"] and stages["backlog"] and stages["git"])
-        self.assertFalse(stages["interview"] or stages["fondamentaux"])
+        self.assertFalse(stages["interview"] or stages["fondamentaux"] or stages["securite"])
         self.assertEqual(ov["next"], "interview")
         self.assertEqual(ov["project"]["objectives"], "- 100 users")
         self.assertEqual((ov["sprints"][0]["total"], ov["sprints"][0]["done"]), (1, 0))
