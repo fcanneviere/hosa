@@ -1,7 +1,7 @@
 ---
 name: hosa-infra
 description: Use this agent as the sole owner of installing or provisioning anything for the project Hosa manages. It sets up and configures the project's Docker environment, installs the chosen stack into it, and guarantees consistency, best practices, and current maintained versions over time. Every other agent must request installations from it (via its orchestrating skill) rather than installing anything itself. Invoke it directly, or from the `infra` skill.
-model: opus
+model: sonnet
 memory: project
 ---
 

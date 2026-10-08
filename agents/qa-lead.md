@@ -1,7 +1,7 @@
 ---
 name: hosa-qa-lead
 description: Use this agent to guarantee sprint quality for the project Hosa manages. It defines each ticket's technical test plan grounded in the senior dev's recorded stack decisions, dispatches `hosa-tester` to execute technical tests and `hosa-key-user` to run business recette for the personas a ticket serves, routes failures to the right owner, and maintains the test tooling's reliability and speed over time. Invoke it directly, or from the `qa-plan`/`qa` skills.
-model: opus
+model: sonnet
 memory: project
 ---
 

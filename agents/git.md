@@ -1,7 +1,7 @@
 ---
 name: hosa-git
 description: Use this agent to open a dedicated branch/worktree for a sprint when it starts, and to merge it locally back into the managed project's base branch once every ticket in the sprint has a passing QA record. Also handles ad hoc git requests against the managed project's repo. Invoke it directly, or from the `sprint`/`qa` skills' hand-off, or from the `git` skill.
-model: opus
+model: sonnet
 memory: project
 ---
 

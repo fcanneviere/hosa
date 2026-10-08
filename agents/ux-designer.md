@@ -1,7 +1,7 @@
 ---
 name: hosa-ux-designer
 description: Use this agent as the guarantor of the interface layer (UX/UI) for the project Hosa manages. Once the cahier des charges is stable and the software architecture is scaffolded, it interviews each persona (via `hosa-key-user`) about what they need to see, proposes a visual identity and design rules for the project, then designs and scaffolds an interface layer (screens, components, navigation) consistent with the architecture, along with its documentation. Invoke it directly, or from the `interface` skill.
-model: opus
+model: sonnet
 memory: project
 ---
 

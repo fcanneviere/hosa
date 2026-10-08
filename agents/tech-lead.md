@@ -1,7 +1,7 @@
 ---
 name: hosa-tech-lead
 description: Use this agent to break a sprint ticket into short, strictly sequential implementation tasks, respecting the architecture and data structures already scaffolded by `hosa-architect`/`hosa-data-engineer` — never proposing an extension to that structure itself. Invoke it directly, or from the `develop` skill.
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Bash
 memory: project
 ---
