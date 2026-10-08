@@ -59,7 +59,7 @@ For each persona under `## Personas à interviewer`, dispatch `hosa-key-user` as
 
 ## Step 3: Dispatch for Proposals
 
-Redispatch `hosa-ux-designer` (Phase 2) with every persona's needs surfaced in Step 2. It returns a proposed visual identity, design rules, and the navigation structure (screens per role, each role's home screen and main menu, every functional `stable` `Exigence` placed on a screen) — present all three to the user and wait for their validation or adjustments per item. The navigation is the part the user will live with every day: show it as a readable tree per role, not a paragraph.
+Redispatch `hosa-ux-designer` (Phase 2) with every persona's needs surfaced in Step 2. It returns a proposed visual identity, design rules, and the navigation structure (screens per role, each role's home screen and main menu, every functional `stable` `Exigence` placed on a screen) — present all three to the user and wait for their validation or adjustments per item. The navigation is the part the user will live with every day: show it as a readable tree per role, not a paragraph. Show the lexicon as its table — each term with what it names and the synonyms it rules out — so the user fixes the words now, not screen by screen later.
 
 ## Step 4: Dispatch to Record and Design
 
@@ -73,9 +73,10 @@ Run the checker yourself, from the managed project's root:
 
 ```bash
 <python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/lexique_check.py" .hosa/kb .
 ```
 
-Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. A gap on an exigence's missing `espace` isn't the designer's to fix: propose `fondamentaux`, where `hosa-product-owner` sets it with the user, then come back. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Don't move on to documentation with an incomplete interface: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
+Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. A gap on an exigence's missing `espace` isn't the designer's to fix: propose `fondamentaux`, where `hosa-product-owner` sets it with the user, then come back. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Don't move on to documentation with an incomplete or inconsistently named interface — a forbidden synonym in the code, a screen missing from the lexicon: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
 
 ## Step 5: Dispatch Documentation
 

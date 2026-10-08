@@ -134,7 +134,7 @@ Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading 
 
 ```markdown
 ## Placement interface (UX/UI)
-[Écran(s) du plan de navigation, avec leur route, composant(s) concerné(s), et pourquoi — un écran absent du plan est à ajouter via `interface`, pas à inventer ici]
+[Écran(s) du plan de navigation, avec leur route, composant(s) concerné(s), et pourquoi — nommés avec les termes de `kb/interface/lexique.md` ; un écran ou un terme absent est à ajouter via `interface`, pas à inventer ici]
 ```
 
 If no interface documentation path is recorded yet (this skill invoked standalone, before `interface` ran), append instead:
