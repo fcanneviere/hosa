@@ -12,16 +12,18 @@ const SCRIPT = path.join(process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, 
 // tracked in the code branches (to migrate). Fast, read-only, never blocks.
 function kbLayoutNote(root) {
   const kb = path.join(root, '.hosa', 'kb');
-  if (fs.existsSync(path.join(kb, '.git'))) return '';
   if (fs.existsSync(path.join(root, '.claude-plugin', 'plugin.json'))) return ''; // Hosa's own checkout: its sample KB stays as is
   const { spawnSync } = require('child_process');
+  const isWorktree = fs.existsSync(path.join(kb, '.git'));
   const run = (...a) => spawnSync('git', ['-C', root, ...a], { encoding: 'utf8', timeout: 2000, windowsHide: true });
-  const tracked = (run('ls-files', '--', '.hosa/kb').stdout || '').trim();
-  const branch = run('show-ref', '--verify', '--quiet', 'refs/heads/hosa-kb').status === 0
-    || run('show-ref', '--verify', '--quiet', 'refs/remotes/origin/hosa-kb').status === 0;
-  if (tracked) return `\n\nThe KB is still tracked in the code branches: propose its migration to the \`hosa-kb\` branch (\`/kb-commit migrer\`, \`kb_branch.py migrate\` — plan first, \`--yes\` on the user's go-ahead).`;
-  if (branch) return `\n\nThe KB branch \`hosa-kb\` exists but isn't checked out: run \`kb_branch.py ensure <root>\` before reading the KB.`;
-  return '';
+  const tracked = isWorktree ? '' : (run('ls-files', '--', '.hosa/kb').stdout || '').trim();
+  const branch = !isWorktree && (run('show-ref', '--verify', '--quiet', 'refs/heads/hosa-kb').status === 0
+    || run('show-ref', '--verify', '--quiet', 'refs/remotes/origin/hosa-kb').status === 0);
+  const oldMemory = fs.existsSync(path.join(root, '.claude', 'agent-memory'))
+    ? `\n\nAgent memories are still under \`.claude/agent-memory/\` (old \`project\` scope): propose \`kb_branch.py memoire <root>\` (plan first, \`--yes\` on the user's go-ahead).` : '';
+  if (tracked) return oldMemory + `\n\nThe KB is still tracked in the code branches: propose its migration to the \`hosa-kb\` branch (\`/kb-commit migrer\`, \`kb_branch.py migrate\` — plan first, \`--yes\` on the user's go-ahead).`;
+  if (branch) return oldMemory + `\n\nThe KB branch \`hosa-kb\` exists but isn't checked out: run \`kb_branch.py ensure <root>\` before reading the KB.`;
+  return oldMemory;
 }
 
 function resumeContext(cwd) {

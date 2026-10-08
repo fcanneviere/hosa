@@ -1,6 +1,6 @@
 {
   "name": "hosa",
   "description": "AI-driven project lifecycle: define objectives, build, and track a managed project through a cahier-des-charges pipeline, sprints, and QA.",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "hooks": "./hooks/hooks.json"
 }

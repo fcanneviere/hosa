@@ -55,6 +55,10 @@ It checks `user.name`/`user.email` first and commits under the user's identity o
 
 Run `migrate <root>` without `--yes` and show the user its plan: create `hosa-kb` with the KB's current content (uncommitted changes included), untrack `.hosa/kb` and ignore `.hosa/` in the current code branch (one commit, the user's identity), replace the folder by the branch's checkout after a byte-for-byte check. It refuses while a sprint worktree is open — finish the sprint first. On the user's yes, run it with `--yes`. Nothing is deleted before the check passes; on any failure the original folder is restored.
 
+## Agent Memories (once per project)
+
+Agents used to keep their memory under `.claude/agent-memory/`, inside the code repository. `kb_branch.py memoire <root>` shows the plan, then with `--yes` moves the 12 agents that keep a memory to `.claude/agent-memory-local/` (ignored by git), archives the others' under `_archive/` (their facts are in the KB), and untracks the old folder if it was committed. Nothing is deleted.
+
 ## No Other Commits
 
 This skill only commits on `hosa-kb`, plus the migration's single `.gitignore`/untrack commit. Code commits are `develop`'s and `hosa-git`'s; Hosa's own tooling is committed separately.

@@ -51,3 +51,9 @@ test('asks to migrate a KB still tracked in the code branches', () => {
   g('init', '-q'); fs.writeFileSync(path.join(root, '.hosa', 'kb', 'x.md'), '---\ntype: x\n---\n'); g('add', '.hosa/kb/x.md');
   assert.match(resumeContext(root), /still tracked in the code branches/);
 });
+
+test('asks to move agent memories left under the old project scope', () => {
+  const root = kb();
+  fs.mkdirSync(path.join(root, '.claude', 'agent-memory', 'hosa-tester'), { recursive: true });
+  assert.match(resumeContext(root), /kb_branch\.py memoire/);
+});

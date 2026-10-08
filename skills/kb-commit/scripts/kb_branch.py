@@ -12,6 +12,7 @@ answerable.
   kb_branch.py migrate <root> [--yes]           move a KB tracked in the code branches to the branch
   kb_branch.py ensure  <root>                   check out the branch at .hosa/kb if it isn't (new clone)
   kb_branch.py commit  <root> -m <message>      commit every KB change on the branch
+  kb_branch.py memoire <root> [--yes]           move agent memories from the old `project` scope to `local`
 
 `migrate` without --yes only says what it would do. It keeps the KB's current
 content, uncommitted changes included, and checks the result byte for byte
@@ -54,14 +55,58 @@ def tracked_kb(root: Path) -> bool:
     return bool(git(root, "ls-files", "--", ".hosa/kb", check=False))
 
 
+IGNORED = {".hosa/": "# Hosa : KB sur la branche hosa-kb, graphe régénéré",
+           ".claude/agent-memory-local/": "# Hosa : mémoire des agents, propre à cette machine"}
+KEEP_MEMORY = {"hosa-tester", "hosa-debugger", "hosa-challenger", "hosa-reviewer", "hosa-key-user",
+               "hosa-product-owner", "hosa-qa-lead", "hosa-dba", "hosa-tech-lead", "hosa-developer",
+               "hosa-implementer", "hosa-planner"}
+
+
 def ignore_hosa(root: Path) -> bool:
-    """Add `.hosa/` to the code branch's .gitignore. True if the file changed."""
+    """Make the code branch's .gitignore cover `.hosa/` and the agents' local memory. True if it changed."""
     gi = root / ".gitignore"
     lines = gi.read_text(encoding="utf-8").splitlines() if gi.exists() else []
-    if any(l.strip() in (".hosa/", ".hosa", "/.hosa/", "/.hosa") for l in lines):
+    have = {l.strip().strip("/") for l in lines}
+    add = [x for e, c in IGNORED.items() if e.strip("/") not in have for x in (c, e)]
+    if not add:
         return False
-    gi.write_text("\n".join(lines + ["# Hosa : KB sur la branche hosa-kb, graphe régénéré", ".hosa/"]) + "\n", encoding="utf-8")
+    gi.write_text("\n".join(lines + add) + "\n", encoding="utf-8")
     return True
+
+
+def memoire(root: Path, yes: bool) -> int:
+    """Move agent memories written under the old `project` scope to the `local` one."""
+    old = root / ".claude" / "agent-memory"
+    new = root / ".claude" / "agent-memory-local"
+    dirs = sorted(d for d in old.iterdir() if d.is_dir()) if old.is_dir() else []
+    if not dirs:
+        changed = ignore_hosa(root)
+        print("✓ rien à déplacer" + (" — .gitignore complété (à committer)" if changed else ""))
+        return 0
+    plan = [f"- {d.name} → " + (f".claude/agent-memory-local/{d.name}" if d.name in KEEP_MEMORY
+            else f".claude/agent-memory-local/_archive/{d.name} (agent sans mémoire désormais : ses faits sont dans la KB)") for d in dirs]
+    tracked = bool(git(root, "ls-files", "--", ".claude/agent-memory", check=False))
+    if not yes:
+        print("Déplacement prévu (relance avec --yes pour l'exécuter, rien n'est supprimé) :\n" + "\n".join(plan)
+              + ("\n- .claude/agent-memory retiré du suivi git, .gitignore complété, dans un commit à ton nom" if tracked else "\n- .gitignore complété"))
+        return 0
+    for d in dirs:
+        target = new / d.name if d.name in KEEP_MEMORY else new / "_archive" / d.name
+        if target.exists():
+            print(f"✗ {target} existe déjà — fusionne-le à la main avec {d}, puis relance")
+            return 1
+        target.parent.mkdir(parents=True, exist_ok=True)
+        d.rename(target)
+    ignore_hosa(root)
+    if tracked:
+        identity(root)
+        git(root, "rm", "-r", "--cached", "--quiet", ".claude/agent-memory")
+        git(root, "add", ".gitignore")
+        git(root, "commit", "-m", "chore: mémoire des agents Hosa locale, hors du suivi git")
+    if old.is_dir() and not any(old.iterdir()):
+        old.rmdir()
+    print(f"✓ {len(dirs)} mémoire(s) déplacée(s) vers .claude/agent-memory-local/")
+    return 0
 
 
 def identity(root: Path) -> None:
@@ -213,7 +258,7 @@ def commit(root: Path, message: str) -> int:
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("action", choices=["status", "init", "migrate", "ensure", "commit"])
+    ap.add_argument("action", choices=["status", "init", "migrate", "ensure", "commit", "memoire"])
     ap.add_argument("root", type=Path)
     ap.add_argument("-m", "--message")
     ap.add_argument("--yes", action="store_true")
@@ -226,7 +271,8 @@ def main(argv: list[str]) -> int:
         print("error: commit needs -m", file=sys.stderr)
         return 2
     return {"status": lambda: status(root), "init": lambda: init(root), "ensure": lambda: ensure(root),
-            "migrate": lambda: migrate(root, a.yes), "commit": lambda: commit(root, a.message)}[a.action]()
+            "migrate": lambda: migrate(root, a.yes), "commit": lambda: commit(root, a.message),
+            "memoire": lambda: memoire(root, a.yes)}[a.action]()
 
 
 if __name__ == "__main__":
