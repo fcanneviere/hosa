@@ -55,6 +55,14 @@ These are non-blocking. They do not affect the PASS/FAIL verdict.
 
 **FAIL**: one or more requirements are not satisfied (gap or conflict). The react loop continues. Each gap must include exactly what the implementer needs to build to fix it.
 
+## Report Style
+
+Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
+- Open with `## En bref`: one sentence, the result.
+- Answer first; say the least that fully answers; never cut a warning, a precondition or an exact number.
+- Sentences to ASD-STE100 rules, adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, imperative for instructions, the glossary's terms only.
+- Every question numbered **Q1, Q2…**, one decision each, with lettered options, the recommended one marked, and "(bloquante)" when work stops on it.
+
 ## Output
 
 Return this structure exactly:

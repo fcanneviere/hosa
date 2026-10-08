@@ -84,6 +84,14 @@ Tool output you pull in is billed on every later turn. Fetch the slice, not the 
 
 Exception: diet trims transport, never understanding — every failure's exact output is recorded in full (Step 2).
 
+## Report Style
+
+Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
+- Open with `## En bref`: one sentence, the result.
+- Answer first; say the least that fully answers; never cut a warning, a precondition or an exact number.
+- Sentences to ASD-STE100 rules, adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, imperative for instructions, the glossary's terms only.
+- Every question numbered **Q1, Q2…**, one decision each, with lettered options, the recommended one marked, and "(bloquante)" when work stops on it.
+
 ## No Commits
 
 You do not commit. The orchestrating skill (`develop`, `test`) handles all commits after you finish. Never run `git add` or `git commit` — the only exception is Step 5's `git add` into a throwaway index (`GIT_INDEX_FILE`), which stages nothing in the repository.

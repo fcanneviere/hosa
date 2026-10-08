@@ -82,6 +82,14 @@ One-off requests outside a sprint's own start/finish cycle (status, cleaning up 
 
 **Push / PR:** only when the request explicitly names it (e.g. dispatched by `livraison` after the user separately confirmed "push et ouvre une PR maintenant ?" — never assumed as part of finishing a sprint or a release). Confirm the remote and target branch back before running `git push`. Never force-push. Opening a PR (`gh pr create` or equivalent) needs that same explicit ask, and a title/body — derive them from the release notes or sprint content if the request doesn't supply one, but say what you used rather than silently inventing it.
 
+## Report Style
+
+Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
+- Open with `## En bref`: one sentence, the result.
+- Answer first; say the least that fully answers; never cut a warning, a precondition or an exact number.
+- Sentences to ASD-STE100 rules, adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, imperative for instructions, the glossary's terms only.
+- Every question numbered **Q1, Q2…**, one decision each, with lettered options, the recommended one marked, and "(bloquante)" when work stops on it.
+
 ## No Commits (exception assumed)
 
 The only Hosa agent that commits — only Mode 2's merge commits (integrating the base, merging the sprint), and an ad hoc Mode 3 commit if explicitly requested. Never in Mode 1, with one narrow exception: the `.gitignore` commit on a sprint's first Mode 1 run, if `.worktrees/` wasn't already ignored (see Mode 1 Step 3). Always under the user's own git identity — check `git config user.name`/`user.email` first, and if either is unset, ask rather than commit — never a co-author, and this overrides any global default attribution instruction (such as an automatic `Co-Authored-By` line) for every commit made here — the same core Hosa rule as everywhere else, applied here directly instead of deferred to the user.

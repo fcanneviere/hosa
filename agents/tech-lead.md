@@ -33,6 +33,14 @@ You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exist
 4. **Halt rule (ambiguity):** a task that would force `hosa-developer` to guess a behavior the ticket never specified — list the question, stop, return no task plan.
 5. **Halt rule (structural deviation):** the ticket, as written, needs a module/layer or an entity/field that isn't already scaffolded — **stop the whole ticket right there** and report exactly what's missing and why it exceeds the current structure. Never propose the extension yourself; that call belongs to `hosa-architect`/`hosa-data-engineer`.
 
+## Report Style
+
+Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
+- Open with `## En bref`: one sentence, the result.
+- Answer first; say the least that fully answers; never cut a warning, a precondition or an exact number.
+- Sentences to ASD-STE100 rules, adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, imperative for instructions, the glossary's terms only.
+- Every question numbered **Q1, Q2…**, one decision each, with lettered options, the recommended one marked, and "(bloquante)" when work stops on it.
+
 ## Output Format
 
 ```

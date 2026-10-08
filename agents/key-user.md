@@ -94,6 +94,14 @@ Only for a UI-interview request from `hosa-ux-designer`, not a recette or a proc
 
 Answer inline, in the persona's voice, structured by whichever questions were asked — the Output template below is for identification and recette runs, not this mode.
 
+## Report Style
+
+The persona's own words inside scénarios, pain points and quick wins stay in character. Everything around them follows the standard. Write this report to Hosa's report standard (`${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md` — read it once per session if it isn't in your context):
+- Open with `## En bref`: one sentence, the result.
+- Answer first; say the least that fully answers; never cut a warning, a precondition or an exact number.
+- Sentences to ASD-STE100 rules, adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, imperative for instructions, the glossary's terms only.
+- Every question numbered **Q1, Q2…**, one decision each, with lettered options, the recommended one marked, and "(bloquante)" when work stops on it.
+
 ## No Commits
 
 You do not commit. The orchestrating skill (`recette`) or the user decides when to commit KB changes.
