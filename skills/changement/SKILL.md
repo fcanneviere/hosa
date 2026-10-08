@@ -85,7 +85,7 @@ Invoke `relecture` — its own Step 1 already scopes to "exigences modifiées da
 
 ## Step 7: Follow-Up Tickets
 
-Dispatch `hosa-product-owner` to create one `Ticket` per confirmed impact from Step 3 (`state: todo`, tagged `changement`, linked to the Exigence and to whichever ticket/entity/screen/doc it reworks) — don't leave a confirmed impact as only a line in this session's report.
+Dispatch `hosa-product-owner` to create one `Ticket` per confirmed impact from Step 3 (`state: todo`, tagged `changement`, linked to the Exigence and to whichever ticket/entity/screen/doc it reworks) — don't leave a confirmed impact as only a line in this session's report. Then run `backlog`'s Single-Ticket Mode on each, so they're complete before you report them.
 
 ## Step 8: Log
 

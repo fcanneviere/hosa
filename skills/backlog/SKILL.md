@@ -34,6 +34,24 @@ Propose de lancer sprint
 
 Manual: `/backlog`. Auto: immediately after `interface`, or "crée le product backlog", "génère les tickets à partir du cahier des charges".
 
+Single-ticket mode: `/backlog <slug-ticket>`, or chained by any skill that just created a `Ticket` — see **Single-Ticket Mode** below. A ticket is born complete: no skill reports a new ticket before this mode has run on it.
+
+## Ticket complet
+
+A ticket is ready to be planned (`sprint`) and executed (`develop`, `qa-plan`) when it has all of:
+- a story (`En tant que … je veux … afin de …`) and a `Lié à :` line — to its `Exigence`, or, for a ticket born outside the cahier des charges (bug, recette gap, audit finding, change impact, sprint follow-up), to the concept that surfaced it;
+- `## Critères d'acceptation` with at least one Given/When/Then scenario;
+- real `## Note technique (senior dev)`, `## Placement architecture (architecte)` and `## Placement interface (UX/UI)` notes — not the fallback lines below;
+- a `priority`, unless the user explicitly answered "pas encore".
+
+The checker is the source of truth — run it from the managed project's root, with any Python 3.9+:
+
+```bash
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/backlog/scripts/ticket_check.py" .hosa/kb [.hosa/kb/tickets/<slug>.md ...]
+```
+
+No ticket given → every `state: todo` ticket. Exit `0` = all complete, `1` = gaps listed per ticket.
+
 ---
 
 ## Step 1: Scope
@@ -129,9 +147,20 @@ Never block ticket creation on a missing interface doc.
 
 Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter.
 
-## Step 7: Log
+## Step 7: Log and Check
 
-Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9.
+Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9. Then run the checker (see **Ticket complet**) on the tickets just written and report any gap it lists.
+
+## Single-Ticket Mode
+
+Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already holds a real note.
+
+1. Run the checker on the ticket. Already complete → say so and stop.
+2. Story, `Lié à :` or `## Critères d'acceptation` missing → dispatch `hosa-product-owner` (Responsibility 4) to add them, with the concept that surfaced the ticket. It returns an Open Question instead of guessing a persona or a scenario — ask the user and redispatch.
+3. Each of the three notes missing or still on its fallback line → write it as in Steps 3-5. If the stage it depends on still hasn't run (no `Stack Decision`, no architecture or interface doc), keep the fallback line and say which stage is missing — that's the only case where a ticket legitimately stays incomplete.
+4. No `priority` → ask the user where it goes in the current backlog ("avant/après quel ticket ?", or "pas encore"). Given a rank, write it and shift every other `todo` ticket at that rank or below by one, so ranks stay unique. Then ask for an `estimate`, same rules as Step 6.
+5. If the ticket was created during an `active` sprint, ask whether it joins that sprint now or waits for the next one; only write `sprint: <slug>` (and add it to the sprint's `## Tickets`) on an explicit yes — `sprint`'s readiness guard is what this mode just satisfied.
+6. Log every change to `kb/tickets/log.md` (and `kb/sprints/log.md` if Step 5 added it), then rerun the checker and report its line for this ticket.
 
 ## No Commits
 
@@ -141,7 +170,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ```
 ## Tickets créés
-- `kb/tickets/<slug>.md` — [titre] (state: todo)
+- `kb/tickets/<slug>.md` — [titre] (state: todo) — [ligne du checker : complet / ce qui manque]
 
 ## Suite
 Je lance `sprint` maintenant ?

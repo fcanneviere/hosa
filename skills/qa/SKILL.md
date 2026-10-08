@@ -50,11 +50,11 @@ For each ticket, dispatch `hosa-qa-lead` (Mode 2 Phase 1, `agents/qa-lead.md`). 
 
 ## Step 3: Run Technical Tests Per Ticket
 
-Dispatch `hosa-tester` with the brief from Step 2. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
+Dispatch `hosa-tester` with the brief from Step 2. Classify any failure the same way the `test` skill already does: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, run `backlog`'s Single-Ticket Mode on it so it's complete, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
 
 ## Step 4: Run Recette Per Ticket
 
-For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) capturing exactly what the persona rejected — the ticket itself needs rework, not a code fix.
+For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) capturing exactly what the persona rejected — the ticket itself needs rework, not a code fix. Then run `backlog`'s Single-Ticket Mode on it, so it's complete before you report it.
 
 ## Step 5: Dispatch to Record
 

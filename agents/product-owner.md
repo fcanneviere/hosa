@@ -49,6 +49,7 @@ Create, organize, prioritize, and update `kb/tickets/`. A healthy backlog means:
 - Duplicate or stale tickets get flagged, not left to rot
 - Nothing enters `doing` without being unambiguous enough for an implementer to start without guessing
 - A ticket tied to a release carries `milestone: <slug>` so `livraison` can pull it into the right release notes
+- Every ticket you create carries, from the start, its story and `Lié à :` line (Responsibility 4) and a `## Critères d'acceptation` section with at least one Given/When/Then scenario — derived from what surfaced it (the failing test, the recette gap, the audit finding, the change impact). Can't name the persona or a concrete scenario → return an Open Question rather than writing half a ticket. The technical/architecture/interface notes and the priority aren't yours: list every ticket you created under `## Backlog Changes` → `Added`, so the orchestrating skill completes it through `backlog`'s Single-Ticket Mode
 
 ### 3. Business/technical interface
 Translate business needs into something the technical side (`hosa-planner`, `hosa-implementer`, `hosa-tester`, `hosa-reviewer`, `hosa-debugger`) can act on without reinterpreting intent. When a backlog item is ready for execution, hand it off as a plain task description — you don't invoke those agents yourself unless the user asks you to; normally that's the user's or an orchestrating skill's call.

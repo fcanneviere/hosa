@@ -58,7 +58,7 @@ Before dispatching agents, form your own ranked list of the most likely root cau
 
 Provide each agent with: the symptom, reproduction steps, your hypotheses, and which area they should investigate. Each returns a root cause and a proposed fix — never applies anything at this stage.
 
-**Secondary issue found outside scope** (the investigation surfaces a real bug or gap unrelated to the reported symptom): don't fold it into this fix and don't just mention it in passing — if `.hosa/kb/` exists for this project, dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`) for it so it's tracked instead of lost; otherwise note it plainly in the final report for the user to act on.
+**Secondary issue found outside scope** (the investigation surfaces a real bug or gap unrelated to the reported symptom): don't fold it into this fix and don't just mention it in passing — if `.hosa/kb/` exists for this project, dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`) for it so it's tracked instead of lost, then run `backlog`'s Single-Ticket Mode on it so it's complete; otherwise note it plainly in the final report for the user to act on.
 
 **Ambiguous root cause (two equally likely causes, no distinguishing evidence from static analysis):** present both hypotheses to the user with your evidence for each:
 > "I've narrowed it down to two equally likely root causes: [A] because [evidence], and [B] because [evidence]. Can you tell me more about [specific question that would distinguish them]?"

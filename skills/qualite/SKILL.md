@@ -84,7 +84,7 @@ Log to `kb/qualite/log.md` (create if missing) — OKF §9: chronological, most 
 
 ## Step 5: Route Blocking Findings
 
-Any **Bloquant** anomaly: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: hosa-senior-dev/1.0, at: <ISO8601> }` since it's the audit that surfaced it, not the user. Then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise.
+Any **Bloquant** anomaly: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: hosa-senior-dev/1.0, at: <ISO8601> }` since it's the audit that surfaced it, not the user. Run `backlog`'s Single-Ticket Mode on it so it's complete, then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise.
 
 ## No Commits
 

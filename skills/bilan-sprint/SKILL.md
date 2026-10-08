@@ -35,7 +35,7 @@ Read `kb/sprints/<slug>.md`. If `state` isn't `done` (the sprint hasn't merged y
 
 ## Step 2: Dispatch `hosa-product-owner`
 
-Dispatch `hosa-product-owner` (Responsibility 7, `agents/product-owner.md`) with the sprint, its tickets' final states, and every `kb/test/` result/recette verdict recorded for those tickets during `qa`. It judges the objective, writes `kb/sprints/<slug>-review.md`, and creates any follow-up `Ticket`/`Design Rule` the review surfaces.
+Dispatch `hosa-product-owner` (Responsibility 7, `agents/product-owner.md`) with the sprint, its tickets' final states, and every `kb/test/` result/recette verdict recorded for those tickets during `qa`. It judges the objective, writes `kb/sprints/<slug>-review.md`, and creates any follow-up `Ticket`/`Design Rule` the review surfaces. Run `backlog`'s Single-Ticket Mode on each follow-up `Ticket` it lists, so the next sprint can plan it as is.
 
 ## Step 3: Log
 

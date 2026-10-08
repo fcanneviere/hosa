@@ -78,6 +78,7 @@ Report the agent's verdict, scénarios, pain points, and quick wins in plain lan
 - **Échoué scenarios that look like implementation bugs** → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the recette `Test Plan` and the target) with the exact gap, then suggest `debug` on it.
 - **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → dispatch `hosa-product-owner` to create a `Ticket` capturing what's missing, then suggest routing it back for rework.
 - **Quick wins surfaced by the persona** (small, clearly out of this recette's scope) → dispatch `hosa-product-owner` to create one `Ticket` per quick win, `state: todo`, tagged so they're easy to spot in the backlog later.
+- **Every ticket created above** → run `backlog`'s Single-Ticket Mode on it before reporting, so it's complete.
 - **Accepté with no quick win** → nothing further.
 
 ## No Commits

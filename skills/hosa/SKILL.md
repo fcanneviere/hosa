@@ -175,7 +175,7 @@ Use this when a request names a concept type this skill doesn't already have a d
 Steps:
 1. Identify the concept type and bundle from the table above (or ask if the request is genuinely ambiguous between two).
 2. Write the minimal valid frontmatter for that type (`type`, `title`, `description`, `tags`, `status`/`state` as the type requires) plus whatever body content the request actually gave — never pad it with invented detail. `generated: { by: human:<user>, at: <ISO8601> }` when the user asked directly; `{ by: hosa/1.0, at: <ISO8601> }` only if you're the one deciding to capture something the user just mentioned in passing, without them asking for a concept to be written.
-3. Log to the bundle's `log.md`.
+3. Log to the bundle's `log.md`. For a `Ticket`, then run `backlog`'s Single-Ticket Mode on it — it asks for whatever the request didn't give, instead of padding it.
 4. If invoked from inside another skill's session (e.g. `build` hits an out-of-scope need mid-task) rather than the user directly: report the new `Ticket`/concept back to that skill instead of switching to Hosa mid-task — the calling skill decides whether to pause or continue.
 
 ## Traceability questions
