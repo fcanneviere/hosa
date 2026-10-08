@@ -62,9 +62,13 @@ For each persona under `## Recette requise` from Step 2: dispatch `hosa-key-user
 
 Redispatch `hosa-qa-lead` (Mode 2 Phase 2) with `hosa-tester`'s report and every `hosa-key-user` recette result from Steps 3-4. It appends `## Résultats techniques` (with `hosa-tester`'s `Arbre testé` fingerprint, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time), records each recette result, refreshes the `Test Plan`'s `generated` frontmatter to this write's timestamp, and logs to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched).
 
+## Step 5b: Environment Left Clean
+
+`hosa-tester` and every `hosa-key-user` end their pass with the dataset's reset and verification (their `## Ménage`). Check every report has it: a missing or failed `## Ménage`, or residues named there, means the next ticket would start on polluted data — redispatch `hosa-data-engineer` (Responsibility 4 reload) before the next ticket, and hand the residue to Step 6 as a tooling issue.
+
 ## Step 6: Tooling Health
 
-Once every ticket in the sprint has been run through Steps 2-5: dispatch `hosa-qa-lead` (Mode 3 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 3 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
+Once every ticket in the sprint has been run through Steps 2-5: dispatch `hosa-qa-lead` (Mode 3 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs, and every residue reported under `## Ménage` — data a test or a recette leaves that the reset doesn't cover gets a concrete fix (test isolation, or extending the documented reset), not a note. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 3 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
 
 ## No Commits
 
@@ -83,6 +87,9 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 ## Recette à corriger
 - <ticket>/<persona> — [ce qui a échoué] → ticket créé : `kb/tickets/<slug>.md`
 [Si aucun : "Aucun"]
+
+## Ménage
+[Environnement remis à l'état de référence après chaque passage — ou résidus et action]
 
 ## Outillage
 [Proposition et justification, ou "Rien à signaler"]

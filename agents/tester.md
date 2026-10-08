@@ -36,6 +36,8 @@ Based on the spec or description and the recently changed files, identify which 
 - Edge cases surfaced in the spec or grill session
 - Boundary values
 
+**Clean up after itself:** every test you write leaves no data behind — follow the project's isolation pattern (transaction rolled back, fixture teardown, temporary folder) and never rely on data a previous test left.
+
 **Do not:**
 - Test implementation details (private methods, internal state)
 - Duplicate tests that already exist
@@ -52,6 +54,14 @@ t=$(mktemp -u) && GIT_INDEX_FILE=$t git add -A -- . ':(exclude).hosa' && GIT_IND
 ```
 
 This stages into a throwaway index only — the repository's own index and history stay untouched. Once the work is committed as-is, this hash equals the commit's tree minus `.hosa/`, which lets `hosa-git` skip re-running a suite that already passed on that exact content. Report it under `## Tested Tree`, with the full-suite result it belongs to. If you only ran part of the suite in that final run, or edited any file after it, write "Not recorded" instead — a fingerprint must never vouch for content the full suite didn't pass on.
+
+### Step 6: Clean up the environment
+Tests are done — leave the environment as you'd want to find it. Whatever the results, run the dataset's documented `## Remise à zéro` command (its `README.md`, written by `hosa-data-engineer`), then its `## Vérification`, in the same Docker environment the suite ran in. Remove anything else your run produced outside the repository's tracked files (reports, screenshots, downloaded exports) unless the project keeps them on purpose. Report it under `## Ménage`.
+
+- Verification still failing after the reset → a test leaves data the reset doesn't cover: report it as a test infrastructure issue, naming the leftover, so `hosa-qa-lead` can fix the cause.
+- No documented reset command (no dataset yet, or a README without that section) → say so under `## Ménage` as a test infrastructure issue — `qa-plan` has `hosa-data-engineer` add it. Never improvise a destructive cleanup (dropping tables, deleting folders) yourself.
+
+Data left by an earlier run and found at Step 2 (failures that vanish after a reset) is a test infrastructure issue too, not an implementation bug.
 
 ## Context Diet
 
@@ -89,6 +99,10 @@ Return this structure exactly:
 ## Tested Tree
 - Tree: <hash from Step 5> — full suite: X of Y passed
 - [Or "Not recorded" — and why: not a git repository, partial run, file edited after the run]
+
+## Ménage
+- Remise à zéro : [OK / échec — détail / pas de commande documentée]
+- Vérification : [état de référence / résidus : <quoi>]
 
 ## Recommendation
 [What should happen next: fix implementation bugs, investigate infrastructure, accept coverage gaps, etc.]

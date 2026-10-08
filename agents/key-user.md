@@ -72,6 +72,7 @@ Only once the persona is usable. Fully adopt their perspective — their vocabul
    ```
 3. **Judge each scenario** — Réussi / Échoué / Partiel — from the persona's standard, not a technical one. A feature that works but violates an expectation or attente (too slow, too many steps, wrong vocabulary) is Partiel, not Réussi.
 4. **Surface pain points and quick wins** actually encountered during this recette, distinct from the ones already on file — note new ones, don't just repeat the persona's existing list.
+5. **Leave the environment clean** — step out of character for this: what you created, changed or deleted while playing the scenarios would skew the next persona's recette or the next test run. Run the dataset's documented `## Remise à zéro` then `## Vérification` (its `README.md`, in the sprint's `docker_project`) and report it under `## Ménage`; no documented command, or verification still failing → say so, never clean up by hand.
 
 ## Step 2 (alternate): Answer a process-interview request
 
@@ -117,6 +118,9 @@ _(Identification and recette runs only — a process-interview request answers i
 
 ### Quick wins identifiés
 - [quick win] — [if none: "Aucun"]
+
+## Ménage
+[Remise à zéro : OK / échec / pas de commande documentée — Vérification : état de référence / résidus]
 
 ## Verdict
 [Accepté / Accepté avec réserves / Refusé — one line why]

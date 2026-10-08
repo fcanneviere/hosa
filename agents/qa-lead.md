@@ -75,7 +75,7 @@ Input: a request to improve test tooling ("optimise les tests", "les tests sont 
 **Phase 1 — Propose (dispatched first):**
 
 1. Re-read your own project memory (flakiness/slowness already observed across past Mode 2 runs) and the `hosa-tester` reports from the current session.
-2. If the same problem recurs (the same test flagged flaky or slow on at least two separate runs), return one concrete optimization proposal — quarantining the flaky test, adjusting a run configuration, parallelizing a slow suite — with your reasoning. If nothing recurs, say "rien à signaler sur l'outillage" instead of inventing a proposal with no basis.
+2. Any residue reported under a `## Ménage` (data or files left after the reset) is handled at the first occurrence, not the second: propose isolating the test that leaves it, or extending the dataset's `## Remise à zéro` to cover it (`hosa-data-engineer`). If the same problem recurs (the same test flagged flaky or slow on at least two separate runs), return one concrete optimization proposal — quarantining the flaky test, adjusting a run configuration, parallelizing a slow suite — with your reasoning. If nothing recurs, say "rien à signaler sur l'outillage" instead of inventing a proposal with no basis.
 
 **Phase 2 — Apply (dispatched again only if the skill relays the user's confirmation):**
 

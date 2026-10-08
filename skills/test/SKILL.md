@@ -48,6 +48,8 @@ Dispatch `hosa-tester` with:
 
 ## Step 3: Handle Results
 
+**Environment left clean:** report `hosa-tester`'s `## Ménage`. A failed reset, residues, or no documented reset command → tell the user the environment may hold test data, and propose `qa-plan` to have `hosa-data-engineer` add or fix the dataset's `## Remise à zéro`.
+
 **Test failures — classify first:**
 
 If failures look like **implementation bugs** (wrong output, uncaught exception, business logic error):

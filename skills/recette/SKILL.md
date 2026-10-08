@@ -73,7 +73,7 @@ Append to `kb/test/log.md` (create if missing, OKF §9 format). If the persona w
 
 ## Step 5: Report and Route
 
-Report the agent's verdict, scénarios, pain points, and quick wins in plain language.
+Report the agent's verdict, scénarios, pain points, and quick wins in plain language, and its `## Ménage` — a recette that couldn't reset the environment leaves data the next one would trip on: say so, and propose `qa-plan` to have `hosa-data-engineer` add or fix the dataset's `## Remise à zéro`.
 
 - **Échoué scenarios that look like implementation bugs** → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the recette `Test Plan` and the target) with the exact gap, then suggest `debug` on it.
 - **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → dispatch `hosa-product-owner` to create a `Ticket` capturing what's missing, then suggest routing it back for rework.
