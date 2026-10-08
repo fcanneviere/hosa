@@ -41,7 +41,7 @@ Read directly — no agent dispatch, this is a read-only snapshot:
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
 
 **Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
-1. CDC: `hosa` (identity) → `interview` → `redaction` → `relecture` → `contestation` (needs ≥1 `stable` Exigence to move on)
+1. CDC: `hosa` (identity) → `interview` → `redaction` → `fondamentaux` → `relecture` → `contestation` (needs ≥1 `stable` Exigence to move on)
 2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `interface` → `backlog`
 3. Delivery cycle (needs a non-empty backlog): `sprint` → `git` (M1) → `develop` → `qa-plan` → `qa` → `validation` → `git` (M2) → `bilan-sprint`
 

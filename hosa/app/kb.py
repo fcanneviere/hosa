@@ -204,6 +204,7 @@ PIPELINES = [
         ("hosa", "Identité du projet", lambda cs: bool(_of(cs, "Project"))),
         ("interview", "Interviews", lambda cs: bool(_of(cs, "Compte Rendu"))),
         ("redaction", "Rédaction", lambda cs: bool(_of(cs, "Exigence"))),
+        ("fondamentaux", "Fondamentaux", lambda cs: bool(_of(cs, "Revue Fondamentaux"))),
         ("relecture", "Relecture", lambda cs: any(c["frontmatter"].get("status") == "stable" for c in _of(cs, "Exigence"))),
         ("contestation", "Contestation", lambda cs: any((c["frontmatter"].get("status") == "stable" and c["frontmatter"].get("verified")) for c in _of(cs, "Exigence"))),
     ]),

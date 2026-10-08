@@ -38,6 +38,9 @@ Fragile dependencies between processes, a process with no assigned responsable, 
 ### 5. Exigences hors objectifs
 If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each exigence, check it serves at least one of them. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it.
 
+### 6. Fonctions de base
+Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). An item marked Couvert or Ajouté whose linked exigence doesn't actually deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence), or a basic function the software plainly needs that the review lists nowhere — name it. A missing review is itself a finding. Items the user confirmed out of scope aren't findings.
+
 Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it.
 
 ## No Commits
@@ -65,12 +68,16 @@ Return this structure exactly:
 - [Exigence ou zone concernée]: [le risque, précisément]
 - [If none: "Aucun"]
 
+## Fonctions de base
+- [Item] — [ce qui manque réellement, ou "revue fondamentaux absente"]
+- [If none: "Aucune"]
+
 ## Exigences hors objectifs
 - [Exigence] — ne sert aucun objectif mesurable [— correspond au non-objectif : <lequel>, si applicable]
 - [If none or no `## Objectifs mesurables` on file: "Aucune" / "Non évalué — pas d'objectifs mesurables enregistrés"]
 
 ## Verdict
-[Aucune anomalie / Anomalies trouvées — N contradiction(s), N angle(s) mort(s), N hypothèse(s), N risque(s), N exigence(s) hors objectifs]
+[Aucune anomalie / Anomalies trouvées — N contradiction(s), N angle(s) mort(s), N hypothèse(s), N risque(s), N fonction(s) de base, N exigence(s) hors objectifs]
 ```
 
 ## Project Memory

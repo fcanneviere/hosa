@@ -1,6 +1,6 @@
 ---
 name: redaction
-description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
+description: Use to turn cahier des charges interview notes into structured `Exigence` concepts in `.hosa/kb/cdc/`. Second stage of the CDC pipeline (interview → redaction → fondamentaux → relecture → contestation). Works from `interview`'s notes in the same session, or from notes/answers the user pastes inline.
 ---
 
 # Redaction
@@ -18,7 +18,7 @@ Pour chaque processus : écrit une Exigence structurée
         ↓
 Log kb/cdc/log.md
         ↓
-Propose d'enchaîner sur `relecture`
+Enchaîne sur `fondamentaux`
 ```
 
 ## Trigger
@@ -88,5 +88,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <titre> (status: draft)
 
 ## Suite
-Je lance `relecture` maintenant ?
+Je vérifie les fonctions de base (administration, utilisateurs, logs, sauvegarde…) maintenant ? (skill `fondamentaux`)
 ```

@@ -25,9 +25,9 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
 | `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
-| `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 3 |
-| `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 4 |
-| `fondamentaux` | Check the cahier des charges against a standard checklist of cross-cutting essentials (admin, login, rights, settings, import/export, backup, audit, notifications) and write missing ones — companion check to the CDC pipeline, usable anytime |
+| `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 4 |
+| `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 5; won't sign off until `fondamentaux` has run |
+| `fondamentaux` | Make sure the cahier des charges contains every basic software function personas never ask for (administration, user management, rights, audit/error logs, change history, backup, import/export, settings, notifications) and the core NFRs — `hosa-product-owner` includes every missing one by default, the user strikes out what doesn't apply — CDC pipeline stage 3, mandatory |
 | `stack` | Propose and record the technical stack of the managed project, based on the stable cahier des charges — data-structuring pipeline stage 1 |
 | `infra` | Set up and configure the managed project's Docker environment, install the chosen stack into it for real, and document installation — data-structuring pipeline stage 2 |
 | `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 3 |
@@ -70,7 +70,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Rédige les exigences", "Écris le cahier des charges" (avec notes fournies) | `redaction` |
 | "Relis le cahier des charges" | `relecture` |
 | "Challenge le cahier des charges" | `contestation` |
-| "Vérifie les fondamentaux du cahier des charges", "Le cahier des charges couvre-t-il les basiques (admin, login, import/export...)" | `fondamentaux` |
+| "Vérifie les fondamentaux du cahier des charges", "Le cahier des charges couvre-t-il les basiques (admin, utilisateurs, logs, sauvegarde, import/export...)" | `fondamentaux` |
 | "Choisis la stack technique", "Quelle stack pour le projet" | `stack` |
 | "Mets en place l'environnement Docker", "Installe la stack" | `infra` |
 | "Précise les données du cahier des charges", "Qualifie l'origine des données" | `donnees` |
