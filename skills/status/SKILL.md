@@ -1,6 +1,6 @@
 ---
 name: status
-description: "Use when the user asks where the project stands: progress plan and resume point, CDC, backlog, active sprint and QA, quality, documentation, next step. Triggers: \"où en est-on ?\", \"qu'est-ce qui reste ?\"."
+description: "Use when the user asks where the project stands — progress plan and resume point, CDC, backlog, active sprint and QA, quality, documentation, next step — or how many tokens each agent and skill consumes. Triggers: \"où en est-on ?\", \"qu'est-ce qui reste ?\", \"consommation par agent\"."
 ---
 
 # Status
@@ -23,6 +23,16 @@ Suggère la prochaine étape logique
 ```
 
 ---
+
+## Consommation (on request)
+
+"Combien ça consomme ?", "où partent les tokens ?", "consommation par agent" → run, from the project's root:
+
+```bash
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/usage_report.py" . [--since YYYY-MM-DD] [--session <id>]
+```
+
+It reads Claude Code's local transcripts and reports token use per agent, per skill and per model, plus the files read the most. Show its tables, then name the one or two biggest consumers and what would reduce them. Read-only.
 
 ## Mode Hosa (`.hosa/kb/` exists)
 

@@ -63,7 +63,7 @@ After each ticket (tests, recettes, results recorded): `avancement.py … progre
 
 ## Step 5b: Environment Left Clean
 
-`hosa-tester` and every `hosa-key-user` end their pass with the dataset's reset and verification (their `## Ménage`). Check every report has it: a missing or failed `## Ménage`, or residues named there, means the next ticket would start on polluted data — redispatch `hosa-data-engineer` (Responsibility 4 reload) before the next ticket, and hand the residue to Step 6 as a tooling issue.
+`hosa-tester` and every `hosa-key-user` end their pass with the dataset's reset and verification (their `## Ménage`). Check every report has it: a missing or failed `## Ménage`, or residues named there, means the next ticket would start on polluted data — redispatch `hosa-data-engineer` with `model: sonnet` (Responsibility 4 reload) before the next ticket, and hand the residue to Step 6 as a tooling issue.
 
 ## Step 6: Tooling Health
 

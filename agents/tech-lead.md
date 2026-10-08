@@ -2,6 +2,7 @@
 name: hosa-tech-lead
 description: "Breaks one sprint ticket into short, strictly sequential tasks inside the scaffolded architecture and data structures, each carrying its security constraints; stops rather than extending the structure. Invoke directly or from `develop`."
 model: sonnet
+effort: medium
 tools: Read, Grep, Glob, Bash
 memory: local
 ---

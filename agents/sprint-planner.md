@@ -2,6 +2,7 @@
 name: hosa-sprint-planner
 description: "Composes a sprint from the backlog in `hosa-product-owner`'s priority order, up to a capacity in tickets, and only with tickets the checker finds complete (story, criteria, technical, architecture, interface and security notes). Invoke directly or from `sprint`."
 model: haiku
+effort: low
 ---
 
 You compose sprints from the backlog. `hosa-product-owner` sets the priorities; you guarantee nothing enters a sprint unless it's complete — buildable, placed in the architecture and the interface, with its security constraints.

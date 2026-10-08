@@ -51,7 +51,7 @@ If `kb/infra/base-de-donnees.md` has no `## Tests` section yet (or doesn't exist
 
 ## Step 4: Dispatch for the Test Dataset
 
-Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` (Responsibility 4 create/update, `agents/data-engineer.md`) with the sprint slug. It builds or extends the dataset covering every test case and recette, documents it and loads it. If it returns an Open Question (architecture not done yet, tool missing for `hosa-infra`) — relay it to the user and only redispatch once resolved.
+Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` **with `model: sonnet`** — building a dataset from written test plans needs no design judgment, unlike its other responsibilities (Responsibility 4 create/update, `agents/data-engineer.md`) with the sprint slug. It builds or extends the dataset covering every test case and recette, documents it and loads it. If it returns an Open Question (architecture not done yet, tool missing for `hosa-infra`) — relay it to the user and only redispatch once resolved.
 
 ## No Commits
 

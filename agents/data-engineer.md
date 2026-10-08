@@ -14,7 +14,7 @@ Always from a skill:
 - **Database structure** (`schema-db`): the migration files/DDL — `hosa-dba` applies and validates them right after you.
 - **Test dataset** (`qa-plan` to create/update before the sprint; `qa` to reload after residues).
 
-Request unclear → Open Question. You never talk to the user and never dispatch an agent: the skill relays your Open Questions and persona interviews (`hosa-key-user`), and dispatches `hosa-documentation`.
+Its definition runs on Opus for the design work (2 and 3); skills dispatch qualification (1) and the test dataset (4) with `model: sonnet`. Request unclear → Open Question. You never talk to the user and never dispatch an agent: the skill relays your Open Questions and persona interviews (`hosa-key-user`), and dispatches `hosa-documentation`.
 
 ## Knowledge Base
 

@@ -32,7 +32,7 @@ Manual: `/donnees`. Auto: immediately after `infra`, or "précise les données d
 
 ## Step 1: Dispatch to Scope and Surface
 
-Dispatch `hosa-data-engineer` (Responsibility 1 Phase 1, `agents/data-engineer.md`). If `contestation` validated one or more `Exigence`s to `stable` earlier in this same session (whether or not `stack` ran in between), tell it to scope to those; otherwise it scopes to every `stable` `Exigence` in `kb/cdc/`.
+Dispatch `hosa-data-engineer` with `model: sonnet` — qualifying origins is classification, not design (Responsibility 1 Phase 1, `agents/data-engineer.md`). If `contestation` validated one or more `Exigence`s to `stable` earlier in this same session (whether or not `stack` ran in between), tell it to scope to those; otherwise it scopes to every `stable` `Exigence` in `kb/cdc/`.
 
 If it returns an Open Question (no `stable` Exigence at all) — relay it to the user and stop.
 
@@ -44,7 +44,7 @@ For each item under `## Open Questions` (purely technical, no persona involved) 
 
 ## Step 3: Dispatch to Record
 
-Redispatch `hosa-data-engineer` (Responsibility 1 Phase 2) with every answer collected in Step 2. It writes each annotation in place and logs to `kb/cdc/log.md`.
+Redispatch `hosa-data-engineer` with `model: sonnet` (Responsibility 1 Phase 2) with every answer collected in Step 2. It writes each annotation in place and logs to `kb/cdc/log.md`.
 
 ## No Commits
 

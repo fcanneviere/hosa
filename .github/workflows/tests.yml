@@ -1,0 +1,26 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Hooks
+        run: node --test hooks/*.test.js
+      - name: App and plugin frontmatter
+        working-directory: hosa/app
+        run: |
+          pip install -r requirements.txt
+          python -m unittest
+      - name: Scripts compile
+        run: python -m py_compile skills/*/scripts/*.py

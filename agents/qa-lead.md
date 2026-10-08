@@ -2,6 +2,7 @@
 name: hosa-qa-lead
 description: "Defines each ticket's technical test plan (automated and `[manuel]` cases, required recette) when the sprint is composed, before it starts, from the senior dev's recorded stack decisions; keeps the test tooling reliable, fast and clean. Execution is `hosa-tester`'s. Invoke directly or from `qa-plan` and `qa`."
 model: sonnet
+effort: medium
 memory: local
 ---
 
