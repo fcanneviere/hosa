@@ -1,6 +1,6 @@
 ---
 name: interface
-description: Use to design and scaffold the interface layer (UX/UI) of the project Hosa manages, consistent with the stable cahier des charges, the personas' needs, and the software architecture already scaffolded by `architecture`. Seventh stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: Use to design and scaffold a complete, working and usable interface layer (UX/UI) for the project Hosa manages — screen inventory and navigation per role covering every stable Exigence (basic functions included), UX fundamentals (states, forms, lists, errors, accessibility, responsive…), a verified navigable scaffold — consistent with the stable cahier des charges, the personas' needs, and the software architecture already scaffolded by `architecture`. Also completes an interface scaffolded earlier. Seventh stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
 ---
 
 # Interface
@@ -18,12 +18,16 @@ Dispatch hosa-key-user (UI-interview) pour chaque persona,
 un à la fois
         ↓
 Redispatch hosa-ux-designer (Phase 2) avec les besoins
-surfacés → propose identité visuelle + règles de design
+surfacés → propose identité visuelle + règles de design +
+structure de navigation par rôle
         ↓
 Présente les propositions à l'utilisateur → il valide/ajuste
         ↓
 Redispatch hosa-ux-designer (Phase 3) avec les choix validés
-→ enregistre, conçoit et scaffold la couche interface
+→ plan de navigation, fondamentaux UX, scaffold navigable,
+vérification (build, routes, interface_check)
+        ↓ Installation nécessaire → hosa-infra, redispatch
+        ↓ manques → redispatch avec la liste, jusqu'à complet
         ↓
 Dispatch hosa-documentation (Mode 1) avec le
 "Documentation à produire" retourné
@@ -35,9 +39,13 @@ Propose de lancer `backlog`
 
 ## Trigger
 
-Manual: `/interface`. Auto: immediately after `architecture`, or "conçois l'interface", "crée l'identité visuelle", "définis l'UX/UI du projet".
+Manual: `/interface`. Auto: immediately after `architecture`, or "conçois l'interface", "crée l'identité visuelle", "définis l'UX/UI du projet", "complète l'interface", "la navigation manque", "l'interface n'est pas utilisable".
 
 ---
+
+## Completing an Existing Interface
+
+If the interface was already scaffolded (an `Infra` `## Documentation d'interface` heading exists) but `interface_check.py` reports gaps — no `kb/interface/navigation.md`, screens missing, fundamentals not applied — run this same flow as a completion: Step 1 as usual; skip Step 2 and the identity/design-rule part of Step 3 when `## Identité visuelle` and `ux` `Design Rule`s already exist (unless the user wants to revisit them), but always present the navigation structure for validation; then Steps 4 to 6, extending the existing scaffold rather than replacing it.
 
 ## Step 1: Dispatch for Inputs and Personas
 
@@ -51,11 +59,23 @@ For each persona under `## Personas à interviewer`, dispatch `hosa-key-user` as
 
 ## Step 3: Dispatch for Proposals
 
-Redispatch `hosa-ux-designer` (Phase 2) with every persona's needs surfaced in Step 2. It returns a proposed visual identity and design rules — present them to the user and wait for their validation or adjustments per item.
+Redispatch `hosa-ux-designer` (Phase 2) with every persona's needs surfaced in Step 2. It returns a proposed visual identity, design rules, and the navigation structure (screens per role, each role's home screen and main menu, every functional `stable` `Exigence` placed on a screen) — present all three to the user and wait for their validation or adjustments per item. The navigation is the part the user will live with every day: show it as a readable tree per role, not a paragraph.
 
 ## Step 4: Dispatch to Record and Design
 
-Redispatch `hosa-ux-designer` (Phase 3) with the user's validated choices. It writes the visual identity to `kb/project/` and each design rule to `kb/rules/design/`, then designs and scaffolds the interface layer, and returns a `## Documentation à produire` field.
+Redispatch `hosa-ux-designer` (Phase 3) with the user's validated choices. It writes the visual identity to `kb/project/` and each design rule to `kb/rules/design/`, writes `kb/interface/navigation.md`, applies the UX fundamentals, scaffolds a navigable interface, verifies it, and returns a `## Documentation à produire` field.
+
+- **`## Installation nécessaire`** → dispatch `hosa-infra` (Mode 2) with it, then redispatch `hosa-ux-designer` (Phase 3) once confirmed.
+
+## Step 4b: Completeness Gate
+
+Run the checker yourself, from the managed project's root:
+
+```bash
+<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb
+```
+
+Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Don't move on to documentation with an incomplete interface: an exigence with no screen, an orphan screen, or a UX fundamental neither done nor justified as not applicable.
 
 ## Step 5: Dispatch Documentation
 
@@ -84,8 +104,14 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 ## Couche interface conçue
 [Écrans/composants retenus et pourquoi]
 
+## Plan de navigation
+- `kb/interface/navigation.md` — [N écrans, rôles couverts]
+
 ## Structures créées
 - `<path>` — [dossier/composant scaffoldé]
+
+## Vérification
+- Build : [OK / échec] — routes rendues : [X / Y] — interface_check : [complet / manques]
 
 ## Documentation
 - `<path>`

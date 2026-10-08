@@ -127,11 +127,11 @@ Never block ticket creation on a missing architecture doc.
 
 ## Step 5: Add the Interface Placement (UX/UI designer role)
 
-Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading (written by `interface`) — that heading, specifically, not the architecture doc, the data dictionary, or the migrations paths the same `Infra` entry may also record. If it's there, read the documentation it points to and append to the ticket:
+Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading (written by `interface`) — that heading, specifically, not the architecture doc, the data dictionary, or the migrations paths the same `Infra` entry may also record. If it's there, read the documentation it points to and `kb/interface/navigation.md`, and append to the ticket:
 
 ```markdown
 ## Placement interface (UX/UI)
-[Écran/composant concerné et pourquoi]
+[Écran(s) du plan de navigation, avec leur route, composant(s) concerné(s), et pourquoi — un écran absent du plan est à ajouter via `interface`, pas à inventer ici]
 ```
 
 If no interface documentation path is recorded yet (this skill invoked standalone, before `interface` ran), append instead:
