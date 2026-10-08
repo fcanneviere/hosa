@@ -1,6 +1,6 @@
 ---
 name: contestation
-description: Use for the final challenge pass on the cahier des charges — `hosa-product-owner` re-questions personas on weak points via `hosa-key-user`, and `hosa-challenger` independently audits the assembled `kb/cdc/` for contradictions, blind spots, and risks. Sixth and last stage of the CDC pipeline (after `fondamentaux`, `securite` and `relecture`, which it checks ran); loops back to `redaction`/`interview` until clean, then asks the user for final sign-off.
+description: "Use for the final challenge of the cahier des charges (PO re-questions personas, `hosa-challenger` audits) and the user's sign-off. CDC stage 6; requires fondamentaux, securite, relecture. Triggers: \"challenge le cahier des charges\", after a clean relecture."
 ---
 
 # Contestation

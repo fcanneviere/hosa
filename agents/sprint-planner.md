@@ -1,6 +1,6 @@
 ---
 name: hosa-sprint-planner
-description: Composes a sprint from the backlog in `hosa-product-owner`'s priority order, up to a capacity in tickets, and only with tickets the checker finds complete (story, criteria, technical, architecture, interface and security notes). Invoke directly or from `sprint`.
+description: "Composes a sprint from the backlog in `hosa-product-owner`'s priority order, up to a capacity in tickets, and only with tickets the checker finds complete (story, criteria, technical, architecture, interface and security notes). Invoke directly or from `sprint`."
 model: haiku
 memory: project
 ---

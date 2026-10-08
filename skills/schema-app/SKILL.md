@@ -1,6 +1,6 @@
 ---
 name: schema-app
-description: Use to derive data entities from qualified `kb/cdc/` Exigences and write the corresponding data structures, plus their documentation, into the project Hosa manages. Fourth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture).
+description: "Use to derive entities from qualified exigences and write the application data structures and their documentation. Structuration stage 4. Trigger: \"génère la structure de données de l'application\", after `donnees`."
 ---
 
 # Schema App

@@ -1,6 +1,6 @@
 ---
 name: recette
-description: Use when the user wants business/functional acceptance testing ("recette métier") of a feature or ticket, from a specific persona's point of view — not code-level testing (that's `test`). Dispatches the `hosa-key-user` agent, which embodies the persona, enriches its KB entry if too thin, and validates the target against that persona's needs and expectations.
+description: "Use for a business acceptance test (recette) of a feature or ticket from one persona's point of view (`hosa-key-user`) — not code tests. Triggers: \"fais une recette de…\", \"valide ça avec [persona]\"."
 ---
 
 # Recette

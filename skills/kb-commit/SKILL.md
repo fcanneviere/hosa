@@ -1,6 +1,6 @@
 ---
 name: kb-commit
-description: Use to commit accumulated `.hosa/kb/` changes into a dedicated commit, scoped to just that subtree, inside the managed project's own git history. Every Hosa pipeline skill writes the KB but never commits it ("No Commits" is a per-skill rule, not a statement that the KB stays uncommitted forever) — without running this, the OKF traceability (`generated`/`verified`/`log.md`) has no matching commit trail. Companion skill, usable anytime, safe to re-run (no-op if the KB has no pending changes).
+description: "Use to commit the KB's pending changes on its own `hosa-kb` branch (linked to the code commit), or to migrate a KB still tracked in the code branches. Triggers: `/kb-commit`, `/kb-commit migrer`; proposed after KB writes."
 ---
 
 # KB Commit

@@ -1,6 +1,6 @@
 ---
 name: build
-description: Use when the user wants to implement something. Reads the spec (or accepts an inline description), dispatches agents to plan and build, and quizzes the user after each task or parallel group before committing. All commits in the user's name only.
+description: "Use when the user wants to implement something. Reads the spec (or accepts an inline description), dispatches agents to plan and build, and quizzes the user after each task or parallel group before committing. All commits in the user's name only."
 ---
 
 # Build

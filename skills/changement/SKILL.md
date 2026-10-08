@@ -1,6 +1,6 @@
 ---
 name: changement
-description: Use when a `stable` Exigence needs to change — runs an impact analysis (linked tickets, and, for whichever of them are already built, the data/architecture/interface/documentation those changes touch) before anything is rewritten, reverts the Exigence to `draft`, runs a mini relecture/contestation loop scoped to just that Exigence, then creates follow-up tickets for what the change actually breaks. Companion to the CDC pipeline, usable anytime after `contestation` has stabilized at least one Exigence.
+description: "Use when a stable exigence must change: impact analysis (tickets, data, architecture, interface, docs), back to draft, mini relecture/contestation, follow-up tickets. Triggers: \"cette exigence a changé\", \"le besoin a évolué sur…\"."
 ---
 
 # Changement

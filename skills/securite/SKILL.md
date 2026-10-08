@@ -1,6 +1,6 @@
 ---
 name: securite
-description: Use to build security into the cahier des charges from the start — `hosa-security` analyses data sensitivity, actors and threats, then writes security `Exigence`s, constraints inside existing exigences, and the project's `Security Rule`s, so they're designed and developed in from the first ticket instead of retrofitted after the final audit. CDC pipeline stage 4 (interview → redaction → fondamentaux → securite → relecture → contestation) — mandatory: `contestation` won't sign off without it.
+description: "Use to build security into the cahier des charges: `hosa-security` analyses data sensitivity and threats, writes security exigences and `Security Rule`s. CDC stage 4, mandatory. Triggers: \"sécurité dès la conception\", after `fondamentaux`."
 ---
 
 # Sécurité

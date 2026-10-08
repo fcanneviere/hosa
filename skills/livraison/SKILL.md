@@ -1,6 +1,6 @@
 ---
 name: livraison
-description: Use to turn a local merge into something actually shipped — scopes the `Ticket`s done since the last release, makes sure a CI pipeline and environments exist (via `hosa-infra`), writes release notes from those tickets (via `hosa-documentation`), records the release, and optionally pushes/opens a PR (via `hosa-git`, only on explicit confirmation). Follow-on to `git` Mode 2 / `validation` — the step Hosa's pipeline stopped short of before.
+description: "Use to ship merged work: scope done tickets, CI and environments (`hosa-infra`), release notes (`hosa-documentation`), optional push/PR (`hosa-git`, on explicit request). Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
 ---
 
 # Livraison

@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Use when something is broken, not working as expected, or throwing errors. Root cause before fix, always. Can dispatch multiple debugger agents in parallel when the problem spans multiple areas. Commits fix in the user's name only.
+description: "Use when something is broken, not working as expected, or throwing errors. Root cause before fix, always. Can dispatch multiple debugger agents in parallel when the problem spans multiple areas. Commits fix in the user's name only."
 ---
 
 # Debug

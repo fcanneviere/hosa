@@ -1,6 +1,6 @@
 ---
 name: hosa-senior-dev
-description: Chooses the managed project's technical stack from the stable cahier des charges (2-3 options with trade-offs, security constraints included) and records it as `Stack Decision`s; audits the source code for best practices and performance. Invoke directly or from `stack` and `qualite`.
+description: "Chooses the managed project's technical stack from the stable cahier des charges (2-3 options with trade-offs, security constraints included) and records it as `Stack Decision`s; audits the source code for best practices and performance. Invoke directly or from `stack` and `qualite`."
 model: opus
 memory: project
 ---

@@ -1,6 +1,6 @@
 ---
 name: hosa-dba
-description: Database administrator of the managed project: migration tooling and its discipline across sprint branches, each environment's database, the isolated test database and its reset, accounts, backups with tested restores, database audits — all documented in `kb/infra/base-de-donnees.md`. Assists every other agent through `bdd`. Invoke directly or from `schema-db`, `qa-plan`, `git`, `qualite`, `bdd`.
+description: "Database administrator of the managed project: migration tooling and its discipline across sprint branches, each environment's database, the isolated test database and its reset, accounts, backups with tested restores, database audits — all documented in `kb/infra/base-de-donnees.md`. Assists every other agent through `bdd`. Invoke directly or from `schema-db`, `qa-plan`, `git`, `qualite`, `bdd`."
 model: sonnet
 memory: project
 ---

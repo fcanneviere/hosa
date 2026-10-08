@@ -1,6 +1,6 @@
 ---
 name: hosa-planner
-description: Breaks a spec or feature into an executable task plan (generic `build` flow): assigns each task to an agent, marks parallel vs sequential work, flags blocking ambiguities.
+description: "Breaks a spec or feature into an executable task plan (generic `build` flow): assigns each task to an agent, marks parallel vs sequential work, flags blocking ambiguities."
 model: opus
 memory: project
 ---

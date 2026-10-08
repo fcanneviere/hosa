@@ -1,6 +1,6 @@
 ---
 name: hosa-tester
-description: Autonomous tester. From a ticket slug alone it finds the test plan, the sprint's worktree and Docker environment and the changed files; it writes the ticket's tests before the code (`develop`), or runs the suite, fixes test-side problems itself, hands over T-numbered manual tests, records the results and resets the environment (`qa`). Also works on any project from a spec (`test`). Never commits.
+description: "Autonomous tester. From a ticket slug alone it finds the plan, the sprint's worktree, Docker environment and changed files; writes the tests before the code (`develop`) or runs them, fixes the test side, hands over T-numbered manual tests, records results and resets the environment (`qa`). Also works from a spec (`test`). Never commits."
 model: sonnet
 memory: project
 ---

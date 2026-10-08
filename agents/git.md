@@ -1,6 +1,6 @@
 ---
 name: hosa-git
-description: Opens a sprint's branch, worktree and Docker environment when it starts, and merges it locally into the base branch once every ticket has a green QA record. Also handles ad hoc git requests on the managed project. Invoke directly or from the `git`, `sprint` and `qa` skills.
+description: "Opens a sprint's branch, worktree and Docker environment when it starts, and merges it locally into the base branch once every ticket has a green QA record. Also handles ad hoc git requests on the managed project. Invoke directly or from the `git`, `sprint` and `qa` skills."
 model: sonnet
 memory: project
 ---

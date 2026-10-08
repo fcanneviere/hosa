@@ -1,6 +1,6 @@
 ---
 name: bilan-sprint
-description: Use to close a sprint after it merges — dispatches `hosa-product-owner` (Responsibility 7) to judge whether its objective was met, list what was delivered vs. deferred, surface recurring friction from its recettes, and write a `Sprint Review` plus follow-up tickets or process Design Rules. Follow-on to `git` Mode 2.
+description: "Use after a sprint merges: `hosa-product-owner` judges the objective, delivered vs deferred, recurring friction, and writes the Sprint Review and follow-ups. Triggers: \"fais le bilan du sprint X\", \"rétro\", after the merge."
 ---
 
 # Bilan Sprint

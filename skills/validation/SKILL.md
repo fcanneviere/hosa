@@ -1,6 +1,6 @@
 ---
 name: validation
-description: Use to close a ticket's cycle once it's implemented and tested — dispatches `hosa-product-owner` (Responsibility 5) to check it against its own acceptance criteria, technical test results, and recette verdict, then sets it `state: done` + `verified` or bounces it back with what's missing. Follow-on to `qa`, precondition for a sprint's `git` Mode 2 merge.
+description: "Use to accept or reject an implemented, tested ticket against its criteria, test results and recettes (`hosa-product-owner`). Required before the sprint merge. Triggers: \"valide le ticket X\", after `qa`."
 ---
 
 # Validation

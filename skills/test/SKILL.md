@@ -1,6 +1,6 @@
 ---
 name: test
-description: Use when the user wants to test the implementation. Dispatches the tester agent to run existing tests, identify coverage gaps, and write new tests. Commits new tests in the user's name only. Suggests debug for implementation failures.
+description: "Use when the user wants to test the implementation. Dispatches the tester agent to run existing tests, identify coverage gaps, and write new tests. Commits new tests in the user's name only. Suggests debug for implementation failures."
 ---
 
 # Test

@@ -1,6 +1,6 @@
 ---
 name: hosa
-description: Use when initializing or updating the identity (name, objective, description, target audience) of the project Hosa manages and its personas, when creating an arbitrary OKF concept from a natural-language request that doesn't fit a more specific pipeline skill, or when answering a traceability question ("who asked for X?", "where does this rule come from?") against the KB. Manual trigger `/hosa`.
+description: "Use to set up or update the managed project's identity and personas, to note an out-of-band concept (exigence, ticket, rule), or to answer \"qui a demandé X ?\" from the KB. Triggers: \"initialise le projet\", \"crée un persona\"."
 ---
 
 # Hosa

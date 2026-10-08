@@ -1,6 +1,6 @@
 ---
 name: hosa-implementer
-description: Executes one implementation task (generic `build` flow): writes the least code that works, following the project's patterns, and reports what it built. Never commits. Invoke directly or from `build`.
+description: "Executes one implementation task (generic `build` flow): writes the least code that works, following the project's patterns, and reports what it built. Never commits. Invoke directly or from `build`."
 model: sonnet
 memory: project
 ---

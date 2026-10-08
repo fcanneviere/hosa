@@ -1,6 +1,6 @@
 ---
 name: hosa-documentation
-description: Sole writer of the managed project's documentation — technical (installation, architecture, data, database), functional (from the stable cahier des charges, one guide per persona), one ADR per `Stack Decision`, the release notes, and the `CLAUDE.md` index. Producers dispatch it instead of writing docs; the `documentation` skill checks for drift. Invoke directly or from `documentation`.
+description: "Sole writer of the managed project's documentation — technical (installation, architecture, data, database), functional (from the stable cahier des charges, one guide per persona), one ADR per `Stack Decision`, the release notes, and the `CLAUDE.md` index. Producers dispatch it instead of writing docs; the `documentation` skill checks for drift. Invoke directly or from `documentation`."
 model: sonnet
 memory: project
 ---

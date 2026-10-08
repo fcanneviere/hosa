@@ -1,6 +1,6 @@
 ---
 name: schema-db
-description: Use to write database migrations/DDL for the data entities derived from `kb/cdc/`, into the project Hosa manages. Fifth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture).
+description: "Use to write the database migrations (`hosa-data-engineer`), then apply, validate and document the database tooling (`hosa-dba`). Structuration stage 5. Trigger: \"génère la structure de base de données\", after `schema-app`."
 ---
 
 # Schema DB

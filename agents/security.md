@@ -1,6 +1,6 @@
 ---
 name: hosa-security
-description: Cybersecurity expert, security by design. During the cahier des charges it analyses data sensitivity, actors and threats and writes security exigences and the project's `Security Rule`s, so constraints are built in from the first ticket; at the end it audits the code for conformity and for the holes nobody could foresee. Invoke directly or from `securite` and `qualite`.
+description: "Cybersecurity expert, security by design. During the cahier des charges it analyses data sensitivity, actors and threats and writes security exigences and the project's `Security Rule`s, so constraints are built in from the first ticket; at the end it audits the code for conformity and for the holes nobody could foresee. Invoke directly or from `securite` and `qualite`."
 model: opus
 memory: project
 ---

@@ -1,6 +1,6 @@
 ---
 name: hosa-data-engineer
-description: Data engineer and guarantor of data for the managed project. Qualifies where each data item of the cahier des charges comes from (générée/fournie/saisie), designs and writes the application data structures and the migration files, and builds the test dataset with its reset, accounts and verification. Invoke directly or from `donnees`, `schema-app`, `schema-db`, `qa-plan` and `qa`.
+description: "Data engineer and guarantor of data for the managed project. Qualifies where each data item of the cahier des charges comes from (générée/fournie/saisie), designs and writes the application data structures and the migration files, and builds the test dataset with its reset, accounts and verification. Invoke directly or from `donnees`, `schema-app`, `schema-db`, `qa-plan` and `qa`."
 model: opus
 memory: project
 ---

@@ -1,6 +1,6 @@
 ---
 name: hosa-infra
-description: Sole installer of the managed project. Sets up its Docker environment (one per checkout: base and each sprint), installs the chosen stack on current, pinned, maintained versions, and handles every other agent's installation request (validate, counter-propose, install). Invoke directly, from `infra`, or through any skill relaying `## Installation nécessaire`.
+description: "Sole installer of the managed project. Sets up its Docker environment (one per checkout: base and each sprint), installs the chosen stack on current, pinned, maintained versions, and handles every other agent's installation request (validate, counter-propose, install). Invoke directly, from `infra`, or through any skill relaying `## Installation nécessaire`."
 model: sonnet
 memory: project
 ---

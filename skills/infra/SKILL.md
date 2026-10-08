@@ -1,6 +1,6 @@
 ---
 name: infra
-description: Use to set up and configure the managed project's Docker environment and install the chosen stack into it, for real, with a version-pinned, documented result. Second stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture), runs after `stack` has recorded the technical choices. Also the entry point for any other agent's mid-task installation need.
+description: "Use to set up the managed project's Docker environment and install its stack on pinned versions, or to handle an agent's `## Installation nécessaire` (`hosa-infra`). Structuration stage 2. Triggers: \"installe la stack\", after `stack`."
 ---
 
 # Infra

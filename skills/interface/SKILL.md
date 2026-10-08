@@ -1,6 +1,6 @@
 ---
 name: interface
-description: Use to design and scaffold a complete, working and usable interface layer (UX/UI) for the project Hosa manages — screen inventory and navigation per role covering every stable Exigence (basic functions included), UX fundamentals (states, forms, lists, errors, accessibility, responsive…), a verified navigable scaffold — consistent with the stable cahier des charges, the personas' needs, and the software architecture already scaffolded by `architecture`. Also completes an interface scaffolded earlier. Seventh stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: "Use to design and scaffold a complete, navigable interface: identity, design rules, front/back office navigation, lexicon, UX fundamentals, verified scaffold; also completes an existing one. Structuration stage 7. Triggers: \"conçois l'interface\", \"la navigation manque\"."
 ---
 
 # Interface

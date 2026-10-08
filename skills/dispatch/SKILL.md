@@ -1,6 +1,6 @@
 ---
 name: dispatch
-description: Use when you have 2 or more independent tasks that can run in parallel. Fan out agents concurrently using the Agent tool and collect results. Called standalone or internally by build and debug.
+description: "Use when you have 2 or more independent tasks that can run in parallel. Fan out agents concurrently using the Agent tool and collect results. Called standalone or internally by build and debug."
 ---
 
 # Dispatch

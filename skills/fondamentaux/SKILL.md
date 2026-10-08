@@ -1,6 +1,6 @@
 ---
 name: fondamentaux
-description: Use to make sure the cahier des charges contains every basic function of a software product that personas never think to ask for (administration, user management, rights, logs, error log, change history, backup, import/export, settings, notifications…) plus the core non-functional requirements. `hosa-product-owner` checks coverage against a standard checklist, includes every missing item by default, and the user only strikes out what the project genuinely doesn't need. CDC pipeline stage 3 (interview → redaction → fondamentaux → securite → relecture → contestation) — mandatory: `contestation` won't sign off without it. Also usable anytime.
+description: "Use to put every basic software function (administration, users, rights, logs, history, backup, import/export…), front/back office coverage and core NFRs in the cahier des charges, included by default. CDC stage 3, mandatory. Triggers: \"vérifie les fondamentaux\", after `redaction`."
 ---
 
 # Fondamentaux

@@ -1,6 +1,6 @@
 ---
 name: understand
-description: Use when the user has a new idea, feature request, or plan. Runs a combined brainstorm + grill session to make sure both parties fully understand what needs to be built, then writes a spec, quizzes the user on it, and commits in the user's name only.
+description: "Use when the user has a new idea, feature request, or plan. Runs a combined brainstorm + grill session to make sure both parties fully understand what needs to be built, then writes a spec, quizzes the user on it, and commits in the user's name only."
 ---
 
 # Understand

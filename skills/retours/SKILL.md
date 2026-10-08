@@ -1,6 +1,6 @@
 ---
 name: retours
-description: Hosa's single standard for every report — every reply to the user and every agent's report to its skill. Answer first, short but complete, sentences written to ASD-STE100 rules adapted to French, every question numbered Q1, Q2… with lettered options and a recommendation so the user answers in one line ("Q1 a, Q2 b"). Loaded by every Hosa agent and by the main session; not a pipeline step.
+description: "Hosa's report standard for every reply and agent report: answer first, ASD-STE100 French, questions numbered Q1… with options, human tests numbered T1…. Reference, not a pipeline step."
 ---
 
 # Retours — the Hosa report standard

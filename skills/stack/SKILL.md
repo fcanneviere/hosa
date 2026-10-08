@@ -1,6 +1,6 @@
 ---
 name: stack
-description: Use to propose and record the technical stack for the project Hosa manages, based on the stable cahier des charges. First stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture).
+description: "Use to propose (2-3 options) and record the managed project's technical stack from the stable cahier des charges and its security constraints. Structuration stage 1. Triggers: \"choisis la stack technique\", after `contestation`."
 ---
 
 # Stack

@@ -1,6 +1,6 @@
 ---
 name: git
-description: Use to start a sprint (branch, worktree, its own Docker environment and database, baseline tests) once its tests are prepared, or to merge it locally once every ticket is validated (base integrated and tested first, then landed), or for any other git request on the managed project. Dispatches `hosa-git`. Proposed by `sprint`/`qa-plan` (start), `validation` (merge), `develop`/`qa` when the sprint isn't running, and `livraison` (push/PR).
+description: "Use to start a sprint (branch, worktree, Docker environment, baseline) or merge it once every ticket is validated, or for any git request on the managed project (`hosa-git`). Triggers: \"démarre le sprint X\", \"fusionne le sprint X\", push, PR."
 ---
 
 # Git

@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Use to design and scaffold the software architecture of the project Hosa manages, consistent with the stable cahier des charges, the chosen stack, and the data structures already written by `schema-app`/`schema-db`, including its observability baseline (correlation-id, logging convention, alertable symptoms). Sixth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: "Use to design and scaffold the managed project's software architecture (layers, modules, observability baseline) from the stable CDC, the stack and the data structures. Structuration stage 6. Triggers: \"crée l'architecture logicielle\", after `schema-db`."
 ---
 
 # Architecture

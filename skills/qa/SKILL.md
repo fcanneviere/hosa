@@ -1,6 +1,6 @@
 ---
 name: qa
-description: Use to run a sprint's QA once it's implemented — dispatches `hosa-tester` against each ticket's technical test plan and `hosa-key-user` for its required recette, classifies failures, and routes them to the right owner (`debug` for technical bugs, `hosa-product-owner` for business gaps). Follow-on to `qa-plan`.
+description: "Use to run a sprint's QA: `hosa-tester` per ticket (autonomous, records results, cleans up), `hosa-key-user` recettes, failures routed. Triggers: \"exécute la QA du sprint\", \"teste le sprint\", \"fais la recette du sprint\"."
 ---
 
 # QA

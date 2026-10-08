@@ -1,6 +1,6 @@
 ---
 name: okf
-description: Use whenever a skill or agent writes, edits, renames or deprecates a file under `.hosa/kb/` — the rules every KB file must follow (Open Knowledge Format 0.2) and the validator run that closes every KB write. Also usable directly — "vérifie la KB", "valide le format OKF".
+description: "Rules every `.hosa/kb/` file follows (Open Knowledge Format 0.2), the validator closing every KB write, the KB summary and `kb_query.py`. Applied by every KB writer; triggers: \"vérifie la KB\", \"valide le format OKF\"."
 ---
 
 # OKF — writing the Hosa knowledge base

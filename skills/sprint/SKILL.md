@@ -1,6 +1,6 @@
 ---
 name: sprint
-description: Use to compose a sprint from the Product Backlog — dispatches tickets in `hosa-product-owner`'s priority order, up to a given capacity, guarding against dispatching a ticket whose technical feasibility, architecture placement, or interface placement was never actually evaluated. Follows the data-structuring pipeline's last stage (`backlog`), but is itself delivery planning, not data structuring.
+description: "Use to compose a sprint from the backlog in priority order, up to a capacity, with complete tickets only, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
 ---
 
 # Sprint

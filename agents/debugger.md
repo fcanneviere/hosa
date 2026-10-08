@@ -1,6 +1,6 @@
 ---
 name: hosa-debugger
-description: Finds the root cause of a bug by systematic investigation — never guesses, never fixes a symptom — proposes a minimal fix, and applies it with a regression test only once the user confirmed. Invoke directly or from `debug`.
+description: "Finds the root cause of a bug by systematic investigation — never guesses, never fixes a symptom — proposes a minimal fix, and applies it with a regression test only once the user confirmed. Invoke directly or from `debug`."
 model: sonnet
 memory: project
 ---

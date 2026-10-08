@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: Use to check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted. Companion check usable anytime, not a forced pipeline stage — dispatches `hosa-documentation` in cold-check mode.
+description: "Use to check the managed project's documentation against its sources and refresh what drifted (`hosa-documentation`, cold check). Trigger: \"vérifie que la documentation est à jour\"."
 ---
 
 # Documentation

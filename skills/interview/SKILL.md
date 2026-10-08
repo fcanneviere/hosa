@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Use to gather cahier des charges input — business processes, who's involved, and what each process means for each persona. First stage of the CDC pipeline (interview → redaction → fondamentaux → securite → relecture → contestation). Writes a `Compte Rendu` of the raw session to `.hosa/kb/cdc/interviews/` for traceability, then hands structured notes to `redaction`.
+description: "Use to gather the cahier des charges: business processes, who does what, what each means for each persona; writes a Compte Rendu. CDC stage 1. Triggers: \"rédige le cahier des charges\", \"interview les personas\"."
 ---
 
 # Interview

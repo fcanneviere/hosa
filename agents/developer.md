@@ -1,6 +1,6 @@
 ---
 name: hosa-developer
-description: Implements one task of `hosa-tech-lead`'s plan, inside the scaffolded architecture and data structures, until the ticket's tests pass — using the lexicon's words, the security constraints and `hosa-dba`'s commands. Invoke directly or from `develop`.
+description: "Implements one task of `hosa-tech-lead`'s plan, inside the scaffolded architecture and data structures, until the ticket's tests pass — using the lexicon's words, the security constraints and `hosa-dba`'s commands. Invoke directly or from `develop`."
 model: sonnet
 memory: project
 ---

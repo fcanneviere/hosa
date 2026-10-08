@@ -1,6 +1,6 @@
 ---
 name: develop
-description: Use to implement a single sprint ticket — breaks it into short sequential tasks (`hosa-tech-lead`) and implements them one at a time (`hosa-developer`), strictly within the architecture and data structures already scaffolded. Never extends that structure itself; stops and reports if a ticket needs one. Follow-on to `git` Mode 1, precondition for `qa-plan`/`qa`.
+description: "Use to implement one sprint ticket in the sprint worktree: tests first (`hosa-tester`), tasks (`hosa-tech-lead`), code (`hosa-developer`), one commit. Triggers: \"développe le ticket X\", \"implémente le ticket X\"."
 ---
 
 # Develop

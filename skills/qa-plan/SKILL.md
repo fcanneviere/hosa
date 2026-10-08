@@ -1,6 +1,6 @@
 ---
 name: qa-plan
-description: Use to add the tests to a sprint before it starts — for each ticket of a composed sprint, defines the technical test cases (grounded in the senior dev's recorded stack decisions) and the persona(s) who must validate it via recette, then has the test dataset built with its reset command. Chained by `sprint` right after composing it; precondition for starting the sprint (`git` Mode 1), for `develop`'s tests-first step and for `qa`.
+description: "Use to add the tests to a sprint before it starts: one test plan per ticket (`hosa-qa-lead`) and the test dataset with its reset (`hosa-data-engineer`). Chained by `sprint`. Triggers: \"prépare les tests du sprint\"."
 ---
 
 # QA Plan

@@ -1,6 +1,6 @@
 ---
 name: hosa-reviewer
-description: Checks whether an implementation satisfies every requirement of its spec and returns PASS, PASS-WITH-NOTES or FAIL with a precise gap list. Invoke from `review`.
+description: "Checks whether an implementation satisfies every requirement of its spec and returns PASS, PASS-WITH-NOTES or FAIL with a precise gap list. Invoke from `review`."
 model: opus
 tools: Read, Grep, Glob, Bash
 memory: project

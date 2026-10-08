@@ -1,6 +1,6 @@
 ---
 name: hosa-ux-designer
-description: Guarantor of the interface (UX/UI) of the managed project. Interviews each persona (via `hosa-key-user`), proposes the visual identity, design rules, navigation for front and back office and the interface lexicon, then scaffolds a complete, navigable, verified interface consistent with the architecture. Invoke directly or from the `interface` skill.
+description: "Guarantor of the interface (UX/UI) of the managed project. Interviews each persona (via `hosa-key-user`), proposes the visual identity, design rules, navigation for front and back office and the interface lexicon, then scaffolds a complete, navigable, verified interface consistent with the architecture. Invoke directly or from the `interface` skill."
 model: sonnet
 memory: project
 ---

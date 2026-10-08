@@ -1,6 +1,6 @@
 ---
 name: status
-description: Use when the user wants to know where they are in a project. On a Hosa-managed project (`.hosa/kb/` exists), reads the KB directly — identity/objectives, CDC state, backlog by state, the active sprint and its QA, open qualite anomalies, documentation drift, and the next pipeline step. Otherwise falls back to reading the spec, git log, and test results.
+description: "Use when the user asks where the project stands: progress plan and resume point, CDC, backlog, active sprint and QA, quality, documentation, next step. Triggers: \"où en est-on ?\", \"qu'est-ce qui reste ?\"."
 ---
 
 # Status

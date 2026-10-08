@@ -1,6 +1,6 @@
 ---
 name: qualite
-description: Use to audit the managed project's source code — `hosa-senior-dev` for best practices and performance, `hosa-security` for security (conformity to the rules set at design time, plus the holes nobody could foresee) — classifies findings by severity and records them in `kb/qualite/`. Companion check usable anytime, and before a release.
+description: "Use to audit the managed project's code: best practices and performance (`hosa-senior-dev`), security (`hosa-security`), database (`hosa-dba`); blocking findings become tickets. Triggers: \"audite la qualité du code\", \"revue de sécurité du code\"."
 ---
 
 # Qualité

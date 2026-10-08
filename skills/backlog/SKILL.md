@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Use to turn every stable cahier des charges Exigence without a ticket yet into a Ticket enriched with a user story and Given/When/Then acceptance criteria (PO), a technical feasibility note (senior dev), an architecture placement note (architect), and an interface placement note (UX/UI designer). Eighth stage of the data-structuring pipeline (stack → infra → donnees → schema-app → schema-db → architecture → interface → backlog).
+description: "Use to turn stable exigences into complete tickets (story, criteria, technical, architecture, interface and security notes, priority), or to complete one ticket (Single-Ticket Mode). Structuration stage 8. Triggers: \"crée le product backlog\", \"complète le ticket X\"."
 ---
 
 # Backlog

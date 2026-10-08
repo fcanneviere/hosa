@@ -1,6 +1,6 @@
 ---
 name: hosa-product-owner
-description: Product Owner of the managed project. Carries the vision, manages the backlog (`kb/tickets/`), writes user stories from persona needs, makes sure the cahier des charges covers the basic software functions (`fondamentaux`), validates delivered tickets and reviews finished sprints. Invoke directly or from `backlog`, `fondamentaux`, `validation`, `bilan-sprint` and the skills that create tickets.
+description: "Product Owner of the managed project. Carries the vision, manages the backlog (`kb/tickets/`), writes user stories from persona needs, makes sure the cahier des charges covers the basic software functions (`fondamentaux`), validates delivered tickets and reviews finished sprints. Invoke directly or from `backlog`, `fondamentaux`, `validation`, `bilan-sprint` and the skills that create tickets."
 model: sonnet
 memory: project
 ---

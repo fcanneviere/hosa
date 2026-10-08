@@ -1,6 +1,6 @@
 ---
 name: hosa-key-user
-description: Embodies one persona of `kb/personnas/` and speaks as that user would. Sharpens a thin persona, answers process- and UI-interviews in character, and runs the recette (business acceptance test) of a ticket from the persona's point of view. Invoke directly or from `recette`, `qa`, `interview`, `donnees`, `interface` and `contestation`.
+description: "Embodies one persona of `kb/personnas/` and speaks as that user would. Sharpens a thin persona, answers process- and UI-interviews in character, and runs the recette (business acceptance test) of a ticket from the persona's point of view. Invoke directly or from `recette`, `qa`, `interview`, `donnees`, `interface` and `contestation`."
 model: sonnet
 memory: project
 ---

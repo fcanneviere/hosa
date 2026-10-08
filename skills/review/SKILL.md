@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when the user wants to check if the implementation matches the spec and requirements. Finds gaps, triggers a build cycle for missing pieces, and loops until all requirements are satisfied. All commits in the user's name only.
+description: "Use when the user wants to check if the implementation matches the spec and requirements. Finds gaps, triggers a build cycle for missing pieces, and loops until all requirements are satisfied. All commits in the user's name only."
 ---
 
 # Review

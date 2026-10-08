@@ -1,6 +1,6 @@
 ---
 name: bdd
-description: Use for any operation on the managed project's database — migrations (apply, roll back, state, conflicts), an environment's database, the test database and its reset, backup and restore, a slow query or a lock, or setting up and documenting the database tooling. Dispatches `hosa-dba`, the database administrator. Also how any skill relays another agent's `## Base de données nécessaire`.
+description: "Use for any database operation on the managed project — migrations, conflicts, an environment's or the test database, reset, backup/restore, slow query — via `hosa-dba`. Triggers: \"applique les migrations\", \"conflit de migrations\", \"restaure la base\", `## Base de données nécessaire`."
 ---
 
 # Base de données

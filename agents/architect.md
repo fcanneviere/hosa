@@ -1,6 +1,6 @@
 ---
 name: hosa-architect
-description: Guarantor of the managed project's software architecture. Once the cahier des charges is stable, the stack chosen and the data structures written, designs layers, modules, boundaries and the observability baseline, and scaffolds them in the project. Invoke directly or from `architecture`.
+description: "Guarantor of the managed project's software architecture. Once the cahier des charges is stable, the stack chosen and the data structures written, designs layers, modules, boundaries and the observability baseline, and scaffolds them in the project. Invoke directly or from `architecture`."
 model: opus
 memory: project
 ---
