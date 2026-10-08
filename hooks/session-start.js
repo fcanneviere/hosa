@@ -18,6 +18,9 @@ try {
 try {
   context += require('./graph').sessionStart(process.cwd());
 } catch (e) {} // graphe optionnel — never block session start
+try {
+  context += require('./avancement').resumeContext(process.cwd());
+} catch (e) {} // plan d'avancement optionnel — never block session start
 
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: {

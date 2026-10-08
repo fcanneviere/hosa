@@ -59,6 +59,8 @@ For each persona under the ticket's `## Recette requise` (in `kb/test/<slug-tick
 
 Write each `hosa-key-user` result to `.hosa/kb/test/<slug-ticket>-<slug-persona>.md` in the exact format `recette` uses, and log it to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched). The technical results are already recorded by `hosa-tester` — check its `## Résultats enregistrés` points at the plan; missing → redispatch it rather than writing them yourself.
 
+After each ticket (tests, recettes, results recorded): `avancement.py … progress qa --sprint <slug> --detail "<ticket> : QA faite (k/n)" --reprise "qa <ticket suivant>"`.
+
 ## Step 5b: Environment Left Clean
 
 `hosa-tester` and every `hosa-key-user` end their pass with the dataset's reset and verification (their `## Ménage`). Check every report has it: a missing or failed `## Ménage`, or residues named there, means the next ticket would start on polluted data — redispatch `hosa-data-engineer` (Responsibility 4 reload) before the next ticket, and hand the residue to Step 6 as a tooling issue.

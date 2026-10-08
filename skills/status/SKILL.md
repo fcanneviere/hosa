@@ -26,7 +26,9 @@ Suggère la prochaine étape logique
 
 ## Mode Hosa (`.hosa/kb/` exists)
 
-Read directly — no agent dispatch, this is a read-only snapshot:
+**Plan d'avancement first:** run `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" .hosa/kb show` from the managed project's root — its resume point and stage in progress lead the snapshot. No plan yet (`kb/project/avancement.md` missing — a project started before it existed) → create it now: walk the three pipelines below, and for each stage the KB shows as done (same reading as `## Prochaine étape du pipeline`), run `done <stage>` (`--sprint <slug>` for each sprint's stages), so the plan starts from the project's real state. That's this skill's only write.
+
+Then read directly — no agent dispatch:
 
 **Identité et objectifs:** `kb/project/identity.md` — nom, objectif, `## Objectifs mesurables`. Missing → say so, suggest `hosa`.
 
@@ -75,8 +77,11 @@ If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stab
 - Dernière vérification : <date>
 [Si jamais vérifiée : "Jamais vérifiée."]
 
+### Point de reprise
+[Sortie de `avancement.py show` : étape en cours et prochaine action]
+
 ### Prochaine étape
-[La première étape manquante du pipeline concerné, et le skill à lancer]
+[L'étape en cours à reprendre, sinon la première étape manquante du pipeline concerné, et le skill à lancer]
 ```
 
 ---
