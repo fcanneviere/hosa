@@ -54,7 +54,7 @@ Then read directly — no agent dispatch:
 
 **Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
 1. CDC: `hosa` (identity) → `interview` → `redaction` → `fondamentaux` → `securite` → `relecture` → `contestation` (needs ≥1 `stable` Exigence to move on)
-2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `interface` → `backlog`
+2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (Menaces) → `interface` → `backlog`
 3. Delivery cycle (needs a non-empty backlog): `sprint` → `qa-plan` → `git` (M1) → `develop` (tests d'abord) → `qa` → `validation` (démo) → `git` (M2) → `bilan-sprint` → `livraison`
 
 If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stable CDC yet, so data-structuring can't start), say so explicitly rather than reporting a false gap further down.
@@ -104,6 +104,10 @@ If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stab
 - Which tasks have been committed (look for `feat:`, `fix:`, `test:` prefixes)
 - When the last commit happened
 - Whether there's uncommitted work in the working tree (`git status`)
+
+**Sécurité:** `kb/securite/modele-menaces.md` present or not ("pas de modèle de menaces" once `architecture` is done is a gap to report), and the latest audit or release gate under `kb/securite/` with its verdict. No `kb/securite/` yet → "jamais audité".
+
+**Retours Hosa:** the number of entries under `## Ouverts` in `kb/retours-hosa/journal.md`, and the three with the highest `(×N)` — omit the line when the file is absent or empty.
 
 **Tests:** check if a test runner exists and run it if possible. If tests were run recently, note the last known result. If you can't run them, say so — don't guess.
 

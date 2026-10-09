@@ -1,6 +1,9 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hosa",
+  "owner": {
+    "name": "Fabien"
+  },
   "description": "Local marketplace for the Hosa plugin — install with `/plugin marketplace add <path-to-this-repo>` then `/plugin install hosa@hosa`.",
   "plugins": [
     {

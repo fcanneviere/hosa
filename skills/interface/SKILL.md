@@ -1,6 +1,6 @@
 ---
 name: interface
-description: "Use to design and scaffold a complete, navigable interface: style cards, layout directions and pages on comparison pages, front/back office navigation, lexicon, UX fundamentals, screenshot-verified scaffold with an independent review; also completes an existing one. Structuration stage 7. Triggers: \"conçois l'interface\", \"la navigation manque\"."
+description: "Use to design and scaffold a complete, navigable interface: style cards, layout directions and pages on comparison pages, front/back office navigation, lexicon, UX fundamentals, screenshot-verified scaffold with an independent review; also completes an existing one. Structuration stage 8. Triggers: \"conçois l'interface\", \"la navigation manque\"."
 ---
 
 # Interface
@@ -97,7 +97,7 @@ Add the confirmed interface documentation path to the `Infra` entry under its ow
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -133,7 +133,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-**Q1 — Je lance `backlog` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `backlog`, lancé sans attendre.
 ```

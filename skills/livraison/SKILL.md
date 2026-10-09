@@ -20,6 +20,9 @@ Demande la version (semver) à l'utilisateur — jamais devinée
 Barrière qualité : `qualite` sur le code changé depuis la
 dernière livraison → aucun Bloquant ouvert
         ↓
+Porte de sécurité : `securite` (Livraison) → Go, ou No-Go :
+corrige d'abord, ou dérogation explicite de l'utilisateur
+        ↓
 hosa-documentation (Mode 3) : notes de version + documentation
 utilisateur
         ↓
@@ -59,6 +62,10 @@ Ask the user for the version number (semver or the managed project's own scheme)
 
 Run `qualite` on the code changed since the last release (`git diff --name-only <last tag or derniere-livraison's commit>..HEAD`; first release → the whole codebase). It audits best practices, performance and security. Any **Bloquant** → stop the release: each becomes a ticket fixed in a sprint, then come back. **À corriger** findings are shown; the user decides whether they wait.
 
+## Step 3b: Security Gate
+
+Invoke `securite` in Livraison mode with the version and the previous release's date. **Go** → continue. **No-Go** → `securite` asks the user: fix first (stop here; each blocking finding is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `securite`; continue and say so in the Output).
+
 ## Step 4: Release Notes and User Documentation
 
 Dispatch `hosa-documentation` (Mode 3) with the version and the scoped tickets (title, description, linked Exigence). It prepends a dated section to `CHANGELOG.md` (or the project's existing changelog) and updates the user documentation the tickets change. Never write either from this skill: documentation in the managed project is `hosa-documentation`'s alone.
@@ -96,12 +103,27 @@ generated: { by: human:<user>, at: <ISO8601> }
 ## Qualité
 <audit `kb/qualite/<slug>.md` — Bloquant : 0 — À corriger : N, reportés ou corrigés>
 
+## Porte de sécurité
+[Go / No-Go avec dérogation](../securite/livraison-<version>.md)
+
+## Retour arrière
+- Déclencheurs : <taux d'erreur > 2× la normale, parcours critique cassé, faille découverte, intégrité des données>
+- Procédure : <redéployer la version précédente — commande réelle de `kb/infra/deploiement.md`>
+- Base de données : <migrations de cette version réversibles : commande vérifiée / non réversibles : comment on s'en sort>
+
 ## Déploiement
 <cible, date, vérification OK — ou "Non déployé">
+
+## Vérification après déploiement
+- [ ] Health check répond
+- [ ] Pas de nouveau type d'erreur dans les logs
+- [ ] Parcours critique testé à la main
 
 ## Tickets inclus
 - [<titre>](../tickets/<slug>.md)
 ```
+
+`## Retour arrière` is filled before the release, not after an incident: no rollback mechanism, or a migration with no verified way back → say so there; a release with no way back is the user's informed choice. The user ticks `## Vérification après déploiement` after deploying.
 
 Overwrite the previous version of this file — it's a pointer to "the last release", not a history; the history is the changelog, the tags, and this file's own git history.
 
@@ -122,7 +144,8 @@ This skill commits nothing itself: the release commit and the tag are `hosa-git`
 ```
 ## Livraison <version>
 - Tickets inclus : [liste]
-- Qualité : [audit, Bloquant : 0]
+- Qualité : [audit, Bloquant : 0] — Sécurité : [Go / No-Go avec dérogation]
+- Retour arrière : [procédure prête / absente — <raison>]
 - Notes de version : [chemin] — documentation utilisateur : [sections mises à jour]
 - Tag : `v<version>` sur `<commit>` — suite complète X/Y, contrôles OK
 - Déploiement : [cible, vérifié / non déployé]

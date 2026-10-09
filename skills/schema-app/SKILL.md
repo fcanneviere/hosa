@@ -45,7 +45,7 @@ Add the confirmed documentation path to the `Infra` entry, and log the update to
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -60,7 +60,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-**Q1 — Je lance `schema-db` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `schema-db`, lancé sans attendre.
 ```

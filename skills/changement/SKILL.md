@@ -93,7 +93,7 @@ Confirm `kb/cdc/log.md` was updated for the Exigence rewrite and re-stabilizatio
 
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 

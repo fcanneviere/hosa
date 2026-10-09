@@ -57,7 +57,9 @@ Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe �
 
 ## Step 3: Break Down
 
-Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entrée sous `Ambiguities` ou `Structural Deviation` : rapporte-la telle quelle à l'utilisateur, propose la suite adaptée — combler l'ambiguïté avec l'utilisateur, ou lancer `architecture`/`schema-app`/`schema-db` (ou dispatcher `hosa-architect`/`hosa-data-engineer` directement) pour la déviation — ne dispatche aucune tâche, stoppe. Le ticket reste `state: doing`.
+Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entrée sous `Ambiguities` ou `Structural Deviation` : rapporte-la telle quelle à l'utilisateur, propose la suite adaptée — combler l'ambiguïté avec l'utilisateur, ou, pour la déviation, la router vers le propriétaire qu'elle nomme : `architecture`/`hosa-architect` (module, couche), `schema-app`/`schema-db`/`hosa-data-engineer` (entité, champ), `hosa-ux-designer` (écran, composant, interaction) — ne dispatche aucune tâche, stoppe. Le ticket reste `state: doing`. **Tout ce qui touche l'interface (écran, parcours, composant, libellé visible) passe par `hosa-ux-designer`** en dispatch « Ticket gap » (slug, worktree, manque) : il complète l'écran dans le worktree et réécrit `## Placement interface (UX/UI)` ; puis relance cette étape.
+
+Plan clair : écrit le `Task Plan` et les `Notes` de `hosa-tech-lead` tels quels dans le ticket, sous `## Plan de tâches (tech lead)` en fin de fichier (remplace la section après un blocage). C'est ce qu'un développeur humain lit pour relire ou reprendre le ticket ; ne le résume pas. Chaque tâche faite sans blocage : coche sa ligne (`- [x]`).
 
 ## Step 3a: Brief Once
 
@@ -104,9 +106,13 @@ Le trailer `Hosa-Ticket:` relie le ticket aux fichiers du commit dans le graphe 
 `/develop <slug-ticket> correction`, or chained by `qa`, `validation` (démo) or the review: a defect on a ticket of the **active** sprint is fixed in that sprint, on its worktree — never left as a backlog ticket while the sprint waits.
 1. Écrit `state: doing` sur le ticket et retire `verified` (même s'il était `done` : la validation est à refaire). Log, avec la source du défaut.
 2. Le défaut a déjà un test en échec (QA) → passe-le. Sinon (démo, recette) → dispatch `hosa-tester` en Écrire d'abord avec le rapport du défaut : un test qui le reproduit, en échec.
-3. Pas de `hosa-tech-lead` : dispatch `hosa-developer` en `correction` avec le test, le rapport et les fichiers concernés. Cause floue ou défaut qui touche plusieurs modules → `debug`, sur le worktree et le `docker_project` du sprint.
+3. Pas de `hosa-tech-lead` : dispatch `hosa-developer` en `correction` avec le test, le rapport et les fichiers concernés. Cause floue ou défaut qui touche plusieurs modules → `debug` en mode auto, sur le worktree et le `docker_project` du sprint.
 4. Puis étapes 4b, 4c, 5, 6 (commit `fix:` avec `Hosa-Ticket:`) et 7.
 5. Suite : relance `qa` pour ce ticket seul, puis `validation`.
+
+## Step 6b: Clean Worktree
+
+Après le commit : `git -C <worktree> status --porcelain -- . ':(exclude).hosa'`. Une sortie = du travail du ticket que `Files Changed` a omis : liste ces fichiers à l'utilisateur. Ils appartiennent au ticket → ajoute-les au commit (`git commit --amend`, la branche du sprint n'est pas publiée). À jeter → seulement avec sa confirmation explicite. Ne passe jamais au ticket suivant avec un worktree non propre.
 
 ## Step 7: Log
 
@@ -128,15 +134,9 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 
 ## Suite
 [Tickets restants :]
-**Q1 — Je passe au ticket suivant, <ticket> ? (skill `develop`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `develop` sur <ticket>, lancé sans attendre.
 [Correction faite :]
-**Q1 — Je relance la QA de ce ticket ? (skill `qa`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `qa` de ce ticket, lancé sans attendre.
 [Tous les tickets faits :]
-**Q1 — Je lance la QA du sprint ? (skill `qa`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `qa` du sprint, lancé sans attendre.
 ```

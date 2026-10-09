@@ -8,7 +8,10 @@ A ticket is complete when it has, in its body:
     "## Placement interface (UX/UI)" and "## Note sécurité (expert
     cybersécurité)" sections holding a real note, not
     `backlog`'s "pas encore évalué/déterminé" fallback line,
-  - a `depends_on` (if any) naming existing tickets, without a cycle.
+  - a `depends_on` (if any) naming existing tickets, without a cycle,
+  - grounded notes (`backlog`'s Grounding Rule): the technical, architecture
+    and interface notes carry their labelled bullets, none still `inconnu — …`
+    and none a structural gap `à créer — owner: …`.
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
@@ -28,6 +31,26 @@ SECTIONS = {
     "## Placement interface (UX/UI)": "Interface pas encore scaffoldée",
     "## Note sécurité (expert cybersécurité)": "Analyse de sécurité pas encore faite",
 }
+
+
+BULLETS = {
+    "## Note technique (senior dev)": ("Contrat", "Règles et validations", "Tests à écrire", "Complexité"),
+    "## Placement architecture (architecte)": ("Module/couche", "Fichiers touchés", "Données"),
+    "## Placement interface (UX/UI)": ("Écran / route", "Composants", "États"),
+}
+
+
+def grounding(heading: str, content: str) -> list[str]:
+    out = []
+    for label in BULLETS.get(heading, ()):
+        if not re.search(rf"^\s*[-*]\s+\*\*{re.escape(label)}\*\*\s*:", content, re.M):
+            out.append(f"`{heading[3:]}` : puce « {label} » absente")
+    for line in content.splitlines():
+        if re.search(r"\binconnu\s+—", line):
+            out.append(f"`{heading[3:]}` : « {line.strip()[:60]} » encore inconnu")
+        elif re.search(r"à créer\s+—\s+owner\s*:", line):
+            out.append(f"`{heading[3:]}` : manque structurel « {line.strip()[:60]} »")
+    return out
 
 
 def split(text: str) -> tuple[str, str]:
@@ -99,6 +122,8 @@ def gaps(path: Path) -> list[str]:
             missing.append(f"section `{heading}` encore au texte d'attente")
         elif fallback is None and not re.search(r"^\s*[-*] \S", content, re.M):
             missing.append(f"section `{heading}` sans aucun scénario")
+        else:
+            missing += grounding(heading, content)
     for dep in depends_on(front):
         if not (path.parent / f"{dep}.md").is_file():
             missing.append(f"`depends_on` cite `{dep}`, ticket introuvable")

@@ -50,7 +50,7 @@ The test dataset must exist with its documented `## Remise à zéro` (prepared b
 
 ## Step 3: Run Technical Tests Per Ticket
 
-For each ticket, dispatch `hosa-tester` (Exécuter mode) with just the ticket slug — it finds the test plan, the worktree, the `docker_project` and the ticket's changed files itself, runs and completes the tests, fixes test-side problems on its own, appends `## Résultats techniques` (with its `Arbre testé`, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time) and resets the environment. Relay `## Installation nécessaire` to `hosa-infra` and `## Open Questions` to the user, then redispatch. `## Tests à faire par toi` → show it to the user as is (T-numbered, `retours` section 3b), with the environment running at its reference state; relay the one-line answer to `hosa-tester`, which records and routes it. Route what it classified: **implementation bug** (wrong output, uncaught exception, business logic error) → the ticket goes back to `doing` and is fixed **in this sprint**: `develop <ticket> correction` with the failing test and its output (it uses `debug` on the sprint's worktree when the cause is unclear), then this QA again for that ticket alone. The failure stays recorded in `## Résultats techniques`, so nothing gets lost; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
+For each ticket, dispatch `hosa-tester` (Exécuter mode) with just the ticket slug — it finds the test plan, the worktree, the `docker_project` and the ticket's changed files itself, runs and completes the tests, fixes test-side problems on its own, appends `## Résultats techniques` (with its `Arbre testé`, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time) and resets the environment. Relay `## Installation nécessaire` to `hosa-infra` and `## Open Questions` to the user, then redispatch. `## Tests à faire par toi` → show it to the user as is (T-numbered, `retours` section 3b), with the environment running at its reference state; relay the one-line answer to `hosa-tester`, which records and routes it. Route what it classified: **implementation bug** (wrong output, uncaught exception, business logic error) → the ticket goes back to `doing` and is fixed **in this sprint**: `develop <ticket> correction` with the failing test and its output (it uses `debug` on the sprint's worktree when the cause is unclear), then this QA again for that ticket alone. The failure stays recorded in `## Résultats techniques`, so nothing gets lost. Count the correction cycles per ticket: the same test still failing for the same reason after 2 corrections → stop looping and escalate to the user with what each cycle tried, asking whether the problem is the ticket (`hosa-product-owner`), the structure (`architecture`/`schema-app`/`schema-db`) or the test. A different failure restarts the count; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
 
 ## Step 4: Run Recette Per Ticket
 
@@ -96,8 +96,6 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ## Suite
 [Si tout est propre :] QA propre.
-**Q1 — Je lance la validation des tickets maintenant ? (skill `validation`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `validation`, lancé sans attendre.
 [Sinon : liste des actions suggérées ci-dessus — pas d'offre de validation tant que le verdict n'est pas propre]
 ```

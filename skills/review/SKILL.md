@@ -31,6 +31,10 @@ After 3 full review→build cycles with the same gap still present:
 
 ---
 
+## Step 0: Hosa Project Check
+
+If `.hosa/kb/` is populated beyond its example files, don't review against `docs/specs/` — follow the redirect in `using-hosa` ("Generic vs. Hosa variant"): `validation` per ticket, `qa` per sprint. Continue below only if there's no KB or the user explicitly asks to work outside the pipeline.
+
 ## Step 1: Locate Input
 
 **Spec:** look in `docs/specs/` for the most recent file by YYYY-MM-DD filename prefix. If multiple exist on the same date, ask the user which to use.

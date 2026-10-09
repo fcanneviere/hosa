@@ -14,11 +14,18 @@ Check kb/project/identity.md
         ↓ missing                          ↓ exists
    Init flow                          Update flow
         ↓                                   ↓
-Ask: nom → objectif → descriptif →    Show current values → ask which
+Crée .hosa/kb/index.md +              Show current values → ask which
+git init si besoin (hosa-git Mode 0)
+        ↓
+Brief fourni ? → en extrait les
+réponses, ne demande que le reste
+        ↓
+Ask: nom → objectif → descriptif →
 public cible → objectifs mesurables   field(s) to change → confirm each
 (KPI/OKR) → non-objectifs →                  ↓
 contraintes → point de départ →       Apply confirmed changes
-échéances/budget → langue
+échéances/budget → langue →
+niveau dev → niveau infra
 (one at a time)
         ↓
 Ask personas one at a time
@@ -34,15 +41,34 @@ Attentes/Pain points/Quick wins
         ↓
 Log to kb/project/log.md and
 kb/personnas/log.md
+        ↓
+hosa-git Mode 3 : commit de la KB initiale
 ```
 
 ## Trigger
 
-Manual: `/hosa`. Auto: "initialise le projet", "configure hosa", "crée le projet Hosa", or anything asking to set up or change the project's identity or personas.
+Manual: `/hosa [chemin/vers/brief.md]`. Auto: "initialise le projet", "configure hosa", "crée le projet Hosa", or anything asking to set up or change the project's identity or personas.
 
 ---
 
 ## Init flow (`kb/project/identity.md` doesn't exist)
+
+### Bootstrap
+
+Before any question, dispatch `hosa-git` (Mode 0, `agents/git.md`) on the project root: it initializes the repository if there's none, sets up the ignore rules, and creates the KB on its own branch `hosa-kb` (`kb_branch.py init`). Everything this skill and the ones after it write is versioned from the start. `kb_branch.py init` seeds `.hosa/kb/index.md`, the OKF root index (`okf` skill) without which the KB is invalid; if it is missing anyway, create it:
+
+```markdown
+---
+okf_version: "0.2"
+---
+# KB Hosa
+```
+
+### Brief
+
+If the user gave a brief file (`/hosa brief.md`, or pasted/named one): read it first and extract every answer it already gives to the questions below, plus any personas it describes. Show what was extracted as a numbered list and ask the user to confirm or correct it in one go; then ask only the questions the brief left unanswered. Never invent an answer the brief doesn't support — a missing answer is asked, not guessed. Copy the brief to `.hosa/kb/project/brief.md` (`type: Brief`, `generated: { by: human:<user>, at: <ISO8601> }`) and link it from `identity.md` so every later answer stays traceable to it.
+
+### Questions
 
 Ask one question at a time, in order, waiting for an answer before moving on:
 1. Nom du projet
@@ -55,12 +81,14 @@ Ask one question at a time, in order, waiting for an answer before moving on:
 8. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
 9. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
 10. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
+11. Ton niveau en développement : débutant / intermédiaire / expert
+12. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
 
 Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine for now — don't force one if the user has none ready yet; but the cahier des charges (`interview`) can't start without one, so say so.
 
 ### Writing `kb/project/identity.md`
 
-The KB is on its branch (`using-hosa`, KB location): on a first run, `${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py init <root>` has created it; otherwise `status` must say it's in place. Then:
+The KB is on its branch (`using-hosa`, KB location): on a first run, `hosa-git` Mode 0 (Bootstrap) has created it with `kb_branch.py init`; otherwise `status` must say it's in place. Then:
 
 ```
 mkdir -p .hosa/kb/project/
@@ -105,9 +133,13 @@ Neuf | Existant
 ## Langue
 - Documentation : <langue>
 - Code : <langue>
+
+## Niveau de l'utilisateur
+- Développement : débutant | intermédiaire | expert
+- Infrastructure : débutant | intermédiaire | expert
 ```
 
-`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language.
+`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. Every skill reads `## Niveau de l'utilisateur` before asking a technical question (see `using-hosa` Core Rules).
 
 ### Writing personas
 
@@ -131,21 +163,23 @@ This flow only captures nom + description — not enough to embody the
 persona for recette métier. Once all personas for this session are written
 (the user has said "terminé"), for each persona just created dispatch
 `hosa-key-user` in identification mode (persona file path, no recette
-target) so it interrogates the user directly and writes back Identité /
-Objectifs / Besoins / Attentes / Pain points / Quick wins to
-`kb/personnas/<slug>.md`, per its own process. Do this one persona at a time
-— don't batch the interrogation across personas.
+target). It writes back whatever of Identité / Objectifs / Besoins /
+Attentes / Pain points / Quick wins it can derive to
+`kb/personnas/<slug>.md`, and returns the rest under `## Open Questions` —
+it can't ask the user itself. Ask those questions yourself, one at a time,
+then redispatch it with the answers; repeat until it returns "None". Do this
+one persona at a time — don't batch the interrogation across personas.
 
-Once every persona in this session has been enriched, propose the next
-stage, as a numbered question (`retours`): "Personas prêts. Lancer l'interview du cahier des charges
-maintenant ? (skill `interview`)". Yes → invoke the `interview` skill. No →
-finish normally; `interview` stays invocable manually later. If zero personas
-exist, don't propose it: say that `interview` needs at least one persona,
-and ask whether to create one now.
+Once every persona in this session has been enriched, chain to `interview`
+without asking ("Personas prêts. Je lance l'interview du cahier des charges.").
+If zero personas exist, don't chain: say that `interview` needs at least one
+persona, and ask whether to create one now.
 
 ### Logging
 
 Append an entry to `kb/project/log.md` and `kb/personnas/log.md` (create if missing) — OKF §9 format: chronological, most recent date first, grouped by date.
+
+Then dispatch `hosa-git` (Mode 3, checkpoint) to commit the initial KB on `hosa-kb` — the identity, the brief if any, the personas — before chaining to `interview`.
 
 ---
 

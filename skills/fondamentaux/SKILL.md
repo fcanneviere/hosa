@@ -125,7 +125,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - [If none: "Aucune — tout était déjà couvert ou hors périmètre"]
 
 ## Suite
-**Q1 — J'analyse la sécurité du cahier des charges maintenant ? (skill `securite`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `securite` (Analyse), lancé sans attendre.
 ```

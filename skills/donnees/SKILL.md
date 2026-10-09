@@ -48,7 +48,7 @@ Redispatch `hosa-data-engineer` with `model: sonnet` (Responsibility 1 Phase 2) 
 
 ## No Commits
 
-You don't commit. Report what changed in the KB and let the user or the orchestrating flow decide when to commit.
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -57,7 +57,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <n> items annotés
 
 ## Suite
-**Q1 — Je lance `schema-app` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `schema-app`, lancé sans attendre.
 ```

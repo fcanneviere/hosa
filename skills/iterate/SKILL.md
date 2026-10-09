@@ -31,6 +31,10 @@ Suggest test or review when done
 
 The quiz below is a hard gate by default. Per "Trust the user" (`using-hosa`'s Core Rules), the user may disable it, but only as an explicit, informed, upfront choice before Phase 1 starts — never as a mid-flow bypass once a task is already presented, which the gate refuses regardless of phrasing. If disabled upfront, skip the quiz for every task this run and commit directly after presentation; say so once at the start.
 
+## Phase 0: Hosa Project Check
+
+If `.hosa/kb/` is populated beyond its example files, don't iterate here — follow the redirect in `using-hosa` ("Generic vs. Hosa variant"): `changement` if the behavior is specified by an Exigence, otherwise a new `Ticket` then `sprint`/`develop`. Continue below only if there's no KB or the user explicitly asks to work outside the pipeline.
+
 ## Phase 1: Read First
 
 Before asking anything, read the relevant code:

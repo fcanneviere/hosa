@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "Use to turn stable exigences into complete tickets (story, criteria, technical, architecture, interface and security notes, priority), or to complete one ticket (Single-Ticket Mode). Structuration stage 8. Triggers: \"crée le product backlog\", \"complète le ticket X\"."
+description: "Use to turn every stable Exigence into Product Backlog tickets — vertical slices with `depends_on`, story and acceptance criteria (PO), and grounded technical, architecture, interface and security notes citing real paths; `nfr` exigences become the definition of done; also refines vague `todo` tickets. Structuration stage 9. Triggers: \"crée le product backlog\", after `interface`."
 ---
 
 # Backlog
@@ -35,8 +35,7 @@ ligne "pas encore faite" si aucune analyse de sécurité n'existe
         ↓
 Log kb/tickets/log.md
         ↓
-Socle non commité (structures, migrations, architecture,
-interface, outillage) → propose de le committer (hosa-git)
+Checkpoint hosa-git : socle encore non commité, puis KB
         ↓
 Propose de lancer sprint
 ```
@@ -68,7 +67,7 @@ No ticket given → every `state: todo` ticket. Exit `0` = all complete, `1` = g
 
 ## Step 1: Scope
 
-List every `stable` `Exigence` (`kb_query.py .hosa/kb --type Exigence --where status=stable`), except those tagged `nfr` (Step 1b). For each one, `kb_query.py .hosa/kb --type Ticket --grep "cdc/<slug>.md"` lists the tickets that link to it — check every existing `Ticket` in `kb/tickets/` for a markdown link pointing back to that `Exigence`'s file — if one already links to it, skip it; a re-run of `backlog` only fills gaps, it never recreates or overwrites a ticket. If every `stable` `Exigence` already has a linked ticket (or there are no `stable` `Exigence`s at all), say so and stop — nothing to write.
+List every `stable` `Exigence` (`kb_query.py .hosa/kb --type Exigence --where status=stable`), except those tagged `nfr` (Step 1b). For each one, `kb_query.py .hosa/kb --type Ticket --grep "cdc/<slug>.md"` lists the tickets that link to it — check every existing `Ticket` in `kb/tickets/` for a markdown link pointing back to that `Exigence`'s file — if one already links to it, skip it; a re-run of `backlog` only fills gaps, it never recreates or overwrites a ticket. Also collect every `state: todo` ticket with no `sprint` whose technical, architecture or interface note misses the Grounding Rule below — free prose instead of the bullets, a bullet without a real reference, or a fallback line whose stage now exists: it is **refined** (those sections rewritten, nothing else). Nothing left to create or refine → say so and stop.
 
 ## Step 1b: Definition of Done
 
@@ -99,7 +98,7 @@ A target still "pas encore de chiffre" → the item says so; `qa-plan` then test
 
 ## Step 2: Write the Story (PO role)
 
-For each `Exigence` left after Step 1, **split it into tickets** first. A ticket is one usable slice, built, tested and demonstrated alone inside one sprint: one screen with its action, one rule, one import. A process with several screens, roles or rules gives several tickets. An exigence that is already that small stays one ticket. When a ticket can't work before another (authentication, a reference table, a creation before its edition), give it `depends_on: [<slug>]`. Unsure where to cut, or which comes first → ask the user.
+For each `Exigence` left after Step 1, **split it into tickets** first. A ticket is a **vertical slice**: something a persona can exercise end to end, through every layer it needs (data, logic, interface) — never one layer of many features ("toutes les tables", "toute l'API"). Built, tested and demonstrated alone inside one sprint: one screen with its action, one rule, one import. The first ticket of an exigence is the thinnest path that works; the next ones widen it. A process with several screens, roles or rules gives several tickets. An exigence that is already that small stays one ticket. When a ticket can't work before another (it needs its data, its screen or its endpoint: authentication, a reference table, a creation before its edition), give it `depends_on: [<slug>]` — a real dependency only, never "plus logique après". A cycle means the split is wrong: re-slice. Unsure where to cut, or which comes first → ask the user.
 
 Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
 
@@ -131,13 +130,25 @@ Then append acceptance criteria derived from the `Exigence`'s own text — its `
 
 If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
 
+## Grounding Rule (Steps 3-5)
+
+These notes are what a developer builds from, not a summary for a manager. Write them from the real project:
+- First read the data dictionary (its path is in the `Infra` entry), the architecture and interface documentation, and query the project graph: `map` once per run, then `find`/`explain` on every module, entity, route or component the ticket touches.
+- **Every bullet names something real** — a path, an entity with its exact fields and types, a route, a function or component — as the dictionary, the documentation or the graph give it. Something that doesn't exist yet is `à créer`: a new file in an existing module is plain `à créer`; a missing module, layer, entity, field or screen is `à créer — owner: <hosa-architect | hosa-data-engineer | hosa-ux-designer>`, a structural gap `sprint` won't plan until its owner fills it.
+- No bullet without a reference: "faisable avec la stack", "couche service", "écran principal" are not answers. Can't name it → `inconnu — <ce qu'il faudrait lire ou décider>`, a visible gap.
+- A bullet that doesn't apply says `aucun`; never leave a bullet out.
+
 ## Step 3: Add the Technical Note (senior dev role)
 
 Read `kb/stack/` for `Stack Decision` concepts. If at least one exists, append to the ticket just written:
 
 ```markdown
 ## Note technique (senior dev)
-[Faisabilité/complexité au regard de la stack retenue, et pourquoi]
+- **Contrat** : <méthode + route, ou signature> — entrée <champs et types>, sortie <champs et types>, erreurs <code ou exception → cas>
+- **Règles et validations** : <règle précise> → critère « <Étant donné… du Step 2> » (une ligne par règle)
+- **Tests à écrire** : <chemin du fichier de test> — <cas : nominal, erreur, limite>
+- **Hors périmètre** : <ce que ce ticket ne fait pas, et le ticket qui le fera>
+- **Complexité** : <1|2|3> — <la partie qui coûte, et pourquoi au regard de la stack>
 ```
 
 If `kb/stack/` has no `Stack Decision` yet (this skill invoked standalone, before `stack` ran), append instead:
@@ -155,7 +166,11 @@ Read `kb/infra/` for the `Infra` entry's `## Documentation d'architecture` headi
 
 ```markdown
 ## Placement architecture (architecte)
-[Module/couche concerné, et pourquoi]
+- **Module/couche** : <module> (<chemin>) — <pourquoi ici>
+- **Fichiers touchés** : `<chemin>` — <ce qui y change> (un par ligne ; `à créer` si absent)
+- **Données** : <Entité>.<champ> (<type>) lu/écrit — ou `aucun`
+- **Migration** : <ce qu'elle ajoute ou modifie> — ou `aucune`
+- **Points d'appel** : <symbole existant qui appellera ce code, d'après `graph.py affected`>
 ```
 
 If no architecture documentation path is recorded yet (this skill invoked standalone, before `architecture` ran), append instead:
@@ -173,7 +188,11 @@ Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading 
 
 ```markdown
 ## Placement interface (UX/UI)
-[Écran(s) du plan de navigation, avec leur route, composant(s) concerné(s), et pourquoi — nommés avec les termes de `kb/interface/lexique.md` ; un écran ou un terme absent est à ajouter via `interface`, pas à inventer ici]
+- **Écran / route** : <écran du plan de navigation> (`<route>`, `<chemin>`)
+- **Composants** : `<chemin du composant>` — <rôle dans ce ticket> (`à créer` si absent) — ou `aucun`
+- **États** : chargement, vide, erreur, succès — <ce que l'utilisateur voit dans chacun>
+- **Libellés** : « <texte exact> » pour chaque bouton, message et titre ajouté
+[Tout est nommé avec les termes de `kb/interface/lexique.md` ; un écran ou un terme absent est ajouté via `interface`, jamais inventé ici]
 ```
 
 If no interface documentation path is recorded yet (this skill invoked standalone, before `interface` ran), append instead:
@@ -205,19 +224,19 @@ Never block ticket creation on a missing analysis.
 
 ## Step 6: Priority and Estimate
 
-Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter. An `L` (or the project's biggest size) won't fit one sprint safely: propose splitting it, as in Step 2.
+Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then set each ticket's `estimate` yourself, in the senior dev role, from its `Complexité`: `1` (≤ ½ day), `2` (about 1 day) or `3` (2-3 days). Show them in the report; the user can correct any. Bigger than 3 → split it, as in Step 2.
 
 ## Step 7: Log and Check
 
 Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9. Then run the checker (see **Ticket complet**) on the tickets just written and report any gap it lists.
 
-## Step 8: Commit the Foundation
+## Step 8: Checkpoint
 
-The structuration wrote real files in the managed project (Docker, quality tooling, data structures, migrations, architecture, interface). `git` Mode 1 refuses to start a sprint on uncommitted source, since the worktree would not contain it. Check `git -C <root> status --porcelain -- . ':(exclude).hosa'`. Not empty → show the list and ask one numbered question: commit it now as the project's foundation? Yes → dispatch `hosa-git` (Mode 3, « commit du socle »).
+Every structuration skill ends with its `hosa-git` checkpoint, so the foundation is already committed. Check anyway `git -C <root> status --porcelain -- . ':(exclude).hosa'`: not empty → dispatch `hosa-git` (Mode 3, checkpoint) with those files — `git` Mode 1 refuses to start a sprint on uncommitted source. Then the KB checkpoint for the tickets.
 
 ## Single-Ticket Mode
 
-Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already holds a real note.
+Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already meets the Grounding Rule.
 
 1. Run the checker on the ticket. Already complete → say so and stop.
 2. Story, `Lié à :` or `## Critères d'acceptation` missing → dispatch `hosa-product-owner` (Responsibility 4) to add them, with the concept that surfaced the ticket. It returns an Open Question instead of guessing a persona or a scenario — ask the user and redispatch.
@@ -233,11 +252,12 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 ## Output
 
 ```
+## Tickets précisés
+- `kb/tickets/<slug>.md` — [titre] (sections réécrites)
+
 ## Tickets créés
 - `kb/tickets/<slug>.md` — [titre] (state: todo) — [ligne du checker : complet / ce qui manque]
 
 ## Suite
-**Q1 — Je lance `sprint` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `sprint` (proposition de sprint à valider), lancé sans attendre.
 ```

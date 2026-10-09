@@ -201,6 +201,13 @@ class GraphTest(unittest.TestCase):
         g = graph.refresh(self.root, [str(outside), "README.md"])
         self.assertIn("app/billing.py", {n["id"] for n in g["nodes"]})
 
+    def test_sprint_worktree_edits_are_not_indexed(self):
+        wt = self.root / ".worktrees/sprint/s1/app/copy.py"
+        wt.parent.mkdir(parents=True)
+        wt.write_text("def dup():\n    pass\n", encoding="utf-8")
+        g = graph.refresh(self.root, [str(wt)])
+        self.assertFalse([n for n in g["nodes"] if n["id"].startswith(".worktrees/")])
+
     def test_queries_are_fresh_without_explicit_index(self):
         self.touch("app/util.py", FILES["app/util.py"] + "\ndef extra():\n    pass\n")
         self.assertIn("app/util.py::extra", graph.run(self.root, "explain", "extra"))

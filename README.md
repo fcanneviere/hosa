@@ -21,12 +21,14 @@ Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.
 
 1. **Cahier des charges** — `hosa` (identité du projet, personas) → `interview` → `redaction` → `fondamentaux` → `securite` → `relecture` → `contestation`.
    Les fonctions de base (administration, utilisateurs, logs, sauvegarde, import/export…) et les contraintes de sécurité y entrent dès le départ, pas à la fin.
-2. **Structuration** — `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `interface` → `backlog`.
+2. **Structuration** — `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (modèle de menaces) → `interface` → `backlog`.
    `infra` installe aussi les outils qualité : tests, tests navigateur, linter, formateur, CI.
    Chaque ticket du backlog naît complet : story, critères d'acceptation, notes technique, architecture, interface et sécurité. Les gros besoins sont découpés en tickets livrables, avec leurs dépendances. Les exigences non fonctionnelles (performance, accessibilité…) forment une « définition de terminé » vérifiée sur chaque ticket.
 3. **Chaque sprint** — `sprint` → `qa-plan` → démarrage (`git`) → `develop` → `qa` → `validation` → fusion (`git`) → `bilan-sprint` → `livraison`.
    Les tests sont écrits avant le code, sécurité comprise. Chaque ticket passe la suite complète, le linter et une revue de code avant son commit. Un défaut trouvé est corrigé dans le sprint. Avant la fusion, tu fais une courte démo (tests T1, T2…). Chaque sprint a sa branche, son worktree et son propre environnement Docker. La fusion ne touche la branche principale qu'avec du code déjà testé.
    La livraison passe un audit qualité, crée une version testée et taguée, puis la déploie si tu le demandes, après une sauvegarde de la base.
+
+Hosa enchaîne les étapes tout seul. Il ne s'arrête que pour tes vraies décisions : choix produit, validation du cahier des charges, proposition de sprint, démo, fusion, livraison.
 
 Tu n'as pas besoin de connaître ces noms : décris ce que tu veux (« prépare le prochain sprint », « où en est-on ? ») et Hosa lance le bon skill. Tu peux aussi taper `/<skill>`.
 
@@ -44,6 +46,14 @@ Les skills orchestrent, les agents font le travail, chacun dans son domaine : `h
 ### Reprendre où on s'est arrêté
 
 Hosa tient un **plan d'avancement** (`.hosa/kb/project/avancement.md`). Si une session s'arrête (limite atteinte, coupure), la suivante reprend à l'étape, au ticket et à la tâche exacts. Il refuse aussi de sauter une étape sans ton accord.
+
+### Le dépôt git
+
+Hosa gère le dépôt dès le premier fichier : il l'initialise et commite à chaque étape (le code sur la branche principale, la KB sur `hosa-kb`). Tu n'as pas à le lui demander.
+
+### Les retours sur Hosa
+
+Quand un agent bute sur une consigne de Hosa (contradiction, étape manquante, contournement), il le note dans `.hosa/kb/retours-hosa/journal.md`. `/status` montre les retours les plus fréquents : c'est la liste des améliorations à apporter au plugin.
 
 ### Ce que tu reçois en retour
 

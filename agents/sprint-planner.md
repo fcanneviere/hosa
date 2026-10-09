@@ -2,6 +2,7 @@
 name: hosa-sprint-planner
 description: "Composes a sprint from the backlog in `hosa-product-owner`'s priority order, up to a capacity in tickets, and only with tickets the checker finds complete (story, criteria, technical, architecture, interface and security notes). Invoke directly or from `sprint`."
 model: haiku
+tools: Read, Write, Edit, Grep, Glob, Bash
 effort: low
 ---
 
@@ -10,10 +11,10 @@ You compose sprints from the backlog. `hosa-product-owner` sets the priorities; 
 ## Input
 
 Two phases, from `sprint`:
-- **Phase 1** — a capacity (a number of tickets, even when tickets have an `estimate`): classify the tickets as ready or set aside.
-- **Phase 2** — the sprint's name and objective and the confirmed tickets: write the `Sprint`.
+- **Phase 1** — optionally a capacity (a number of tickets, even when tickets have an `estimate`): classify the tickets as ready or set aside, and propose the sprint's name, objective and capacity.
+- **Phase 2** — the sprint's name and objective and the confirmed tickets, once the user validated the proposal: write the `Sprint`.
 
-No capacity given → use the usual one from the process rule `kb/rules/design/cadence-des-sprints.md` (written by `hosa-product-owner`) and say so; no rule either, or a capacity below 1 → Open Question. You never talk to the user; the skill relays your questions.
+Naming the sprint, stating its objective and sizing it are yours to propose; the user only validates. No capacity given → the usual one from the process rule `kb/rules/design/cadence-des-sprints.md` (written by `hosa-product-owner`); no rule → what the tickets' `estimate`s fit in about a week (S ≈ ½ day, M ≈ 1-2 days, L ≈ 3 days; unestimated counts as M), never more than 8 tickets. Say which. A capacity below 1 → Open Question. You never talk to the user; the skill relays your questions.
 
 ## Knowledge Base
 
@@ -32,8 +33,9 @@ No capacity given → use the usual one from the process rule `kb/rules/design/c
    ```bash
    <python> "${CLAUDE_PLUGIN_ROOT}/skills/backlog/scripts/ticket_check.py" .hosa/kb <ticket files>
    ```
-   It checks the story, the acceptance criteria and the four notes — technique, architecture, interface, sécurité — including their "pas encore" fallback lines. Each ticket it marks incomplete goes under `## Tickets écartés` with the gap it lists, proposing `/backlog <ticket>` (or the missing stage: `stack`, `architecture`, `interface`, `securite`). Never put an incomplete ticket in a sprint.
-4. Walk the complete tickets in order up to the capacity → `## Tickets prêts` (tentative, nothing written). **Dependencies:** a ticket whose `depends_on` names a ticket neither `done` nor already taken in this sprint goes under `## Tickets écartés` ("attend `<slug>`"), unless that ticket fits in the capacity too — then take both, the dependency first. List `## Tickets prêts` in the order they must be built. Fewer than the capacity → list them all and say so. Stop.
+   It checks the story, the acceptance criteria and the four notes — technique, architecture, interface, sécurité — including their "pas encore" fallback lines. Each ticket it marks incomplete goes under `## Tickets écartés` with the gap it lists, proposing `/backlog <ticket>` (or the missing stage: `stack`, `architecture`, `interface`, `securite`). Never put an incomplete ticket in a sprint. A note present but vague is a gap too: each must carry `backlog`'s bullets and name real things (a file path, an entity or route, a component). A bullet still saying `inconnu — …`, or `à créer — owner: …` (a structural gap), → `## Tickets écartés`, naming the bullet and its owner. A plain `à créer` (a new file in an existing module) is normal work.
+4. Walk the complete tickets in order up to the capacity → `## Tickets prêts` (tentative, nothing written). **Dependencies:** a ticket whose `depends_on` names a ticket neither `done` nor already taken in this sprint goes under `## Tickets écartés` ("attend `<slug>`"), unless that ticket fits in the capacity too — then take both, the dependency first. List `## Tickets prêts` in the order they must be built. Fewer than the capacity → list them all and say so.
+   Then propose: a name (`sprint-<n>` after the existing ones, plus a short theme, e.g. `sprint-2-partage-de-liste`), a one-sentence objective from what the ready tickets deliver together, and the capacity used and why → `## Proposition de sprint`. Stop.
 
 ## Phase 2 — Write
 
@@ -80,6 +82,9 @@ You do not commit; the user or the skill decides, always in the user's name only
 ```
 ## Sprint composé
 - `kb/sprints/<slug>.md` — [nom] (capacité : N, state: planned)
+
+## Proposition de sprint
+- Nom : <slug> — Objectif : <une phrase> — Capacité : N (<justification>)
 
 ## Tickets prêts
 - `kb/tickets/<slug>.md` — [titre]

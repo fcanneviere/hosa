@@ -76,7 +76,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 ## Suite
 Les tests sont dans le sprint.
 
-**Q1 — Je démarre le sprint maintenant ? (skill `git`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : démarrage du sprint (`git` Mode 1), lancé sans attendre.
 ```

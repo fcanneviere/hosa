@@ -48,6 +48,8 @@ For each exigence, check every section against these standards — mark **OK** o
 - `espace` (frontmatter, functional exigences — not `nfr`): `front-office`, `back-office` or both, consistent with the roles in `Qui fait quoi`
 - `Besoin(s) persona répondu(s)`: a real link to a `kb/personnas/` file, or an explicit "Aucun — exigence transverse"
 
+- **Vocabulary:** an exigence uses a word `kb/cdc/glossaire.md` lists under "Pas", or a business term with no glossary entry that two exigences use with different meanings → **Anomalie** (→ `redaction`). No glossary yet → one anomaly asking `redaction` to start it, not one per term.
+
 ## Step 3: Cross-Exigence Consistency
 
 Check pairs of exigences that plausibly connect (one's output feeds another's input, or they share a responsable):
@@ -76,8 +78,6 @@ This skill only reads and reports — it doesn't edit `kb/cdc/` itself. Fixes ha
 
 ## Suite
 [Propre :]
-**Q1 — Je lance `contestation` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `contestation`, lancé sans attendre.
 [Sinon :] liste des exigences à renvoyer et vers quel skill.
 ```

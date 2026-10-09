@@ -33,7 +33,7 @@ Dispatch `hosa-documentation` in Mode 2. It reads every `kb/documentation/` entr
 
 ## No Commits
 
-You don't commit. Report what changed and let the user decide when to commit.
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 

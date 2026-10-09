@@ -84,6 +84,25 @@ If a process serves no specific persona (purely transverse — e.g. a compliance
 
 Every section must be filled with the specific content gathered — a section with no matching information from the notes means you're missing input, not that you should write a placeholder. If information is missing, ask the user rather than writing something generic.
 
+## Step 2b: Glossary
+
+Keep `.hosa/kb/cdc/glossaire.md` — the domain vocabulary, so the CDC, the tickets and the code name each thing one way. `interface` starts its lexicon (`kb/interface/lexique.md`) from it.
+
+```markdown
+---
+type: Glossaire
+title: Glossaire du domaine
+description: Les termes métier du projet et leur sens unique
+tags: [glossaire]
+status: draft
+generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
+---
+## Termes
+- **<terme>** : <définition en une phrase, dans les mots du métier>. Pas : <synonymes à éviter>.
+```
+
+Add every business term of this run's exigences that a newcomer could misread or that has a synonym in the notes — never technical terms (table, endpoint). One entry per term, updated in place. Two words for one thing → the one the user chose in `interview`, or one numbered question with a recommendation; the other goes under "Pas". Write the exigences with the chosen term only.
+
 ## Step 3: Log
 
 Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date.
@@ -99,7 +118,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <titre> (status: draft)
 
 ## Suite
-**Q1 — Je vérifie les fonctions de base (administration, utilisateurs, logs, sauvegarde…) maintenant ? (skill `fondamentaux`)**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `fondamentaux`, lancé sans attendre.
 ```

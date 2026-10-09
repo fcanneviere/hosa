@@ -10,7 +10,8 @@ Gathers raw material for the cahier des charges: which business processes exist,
 ## Flow
 
 ```
-Ask user: quels processus métier à couvrir ? (un à la fois, jusqu'à "terminé")
+Propose les processus métier déduits de l'identité + personas
+→ l'utilisateur confirme/ajuste (rien à déduire → demande un à un)
         ↓
 Pour chaque processus :
   Identifie les personas concernés (demande si ambigu)
@@ -41,9 +42,16 @@ Manual: `/interview`. Auto: "rédige le cahier des charges", "interview les pers
 
 A cahier des charges is told from its personas' point of view. No persona in `kb/personnas/` other than the example → stop, say so, and propose `hosa` to create at least one (numbered question).
 
+## How Questions Are Asked
+
+- **Look it up before asking.** What the KB already answers (identity, personas, an earlier compte rendu, a brief) is read, not asked.
+- **One question at a time, numbered, with a recommended answer** — "Q1. <question> — je propose : <réponse> (recommandé), parce que <raison>". A recommendation turns an open question into a quick check.
+- **Walk the decision tree.** Settle a decision before the ones that depend on it (who validates an order comes before what happens when they refuse it).
+- **Pin the vocabulary.** When the user and a persona name the same thing differently ("commande" / "panier"), or a word is ambiguous, ask once which term the project uses and what it means — it goes to the glossary `redaction` keeps.
+
 ## Step 1: List the Processes
 
-Ask: "Quels sont les grands processus métier à couvrir dans le cahier des charges ? (un par un, dis 'terminé' quand c'est bon)". One at a time, waiting for each answer. Zero is not a valid end state here — unlike personas, a cahier des charges needs at least one process; if the user says "terminé" immediately, ask once more before accepting it.
+Read `kb/project/identity.md` and `kb/personnas/`, and derive candidate processes — each a concrete activity a persona carries out end to end ("préparer la liste", "faire les courses"), not a feature. Propose them: "Voici les processus métier que je déduis du projet et des personas : [liste]. Tu confirmes, tu en retires, ou tu en ajoutes ?" Adjust until the user confirms. Nothing to derive from → ask: "Quels sont les grands processus métier à couvrir ? (un par un, dis 'terminé' quand c'est bon)", one at a time. Zero is not a valid end state here — unlike personas, a cahier des charges needs at least one process; if the user says "terminé" immediately, ask once more before accepting it.
 
 ## Step 2: Per Process — Identify Personas
 
@@ -99,9 +107,7 @@ One `### <Processus>` section per process covered this session. Use `generated: 
 
 Restitute the same notes to the user, grouped by process (same structure as the compte rendu above), then propose: "Notes prêtes pour [N] processus.
 
-**Q1 — Je lance `redaction` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là."
+Suite : `redaction`, lancé sans attendre."
 
 ## No Commits
 

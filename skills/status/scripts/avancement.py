@@ -29,7 +29,7 @@ PIPELINES = [
     ("Cahier des charges", ["hosa", "interview", "redaction", "fondamentaux", "securite",
                             "relecture", "contestation"]),
     ("Structuration", ["stack", "infra", "donnees", "schema-app", "schema-db",
-                       "architecture", "interface", "backlog"]),
+                       "architecture", "menaces", "interface", "backlog"]),
 ]
 SPRINT = ["sprint", "qa-plan", "git-demarrage", "develop", "qa", "validation",
           "git-fusion", "bilan-sprint", "livraison"]

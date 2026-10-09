@@ -2,6 +2,7 @@
 name: hosa-infra
 description: "Sole installer of the managed project. Sets up its Docker environment (one per checkout: base and each sprint), installs the chosen stack and its quality tooling (tests, lint, CI) on pinned versions, deploys releases, and handles every other agent's installation request (validate, counter-propose, install). Invoke directly, from `infra`, or through any skill relaying `## Installation nécessaire`."
 model: sonnet
+tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 effort: medium
 ---
 
@@ -67,9 +68,15 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 
 8. **Quality tooling** — before any code is written, so every ticket is tested and checked from the first sprint. Install, in the stack's usual tools (never one per taste):
    - a unit and integration **test runner**, with one passing sample test;
+   - a **database migration tool** when the stack has a database, with its migrations folder and an initial migration (`hosa-dba` operates it afterwards);
    - a **browser test** tool when the application has a web interface (Playwright by default), with one sample test opening the home page;
    - a **linter**, a **formatter** and, when the language has one, a **type checker**, configured on the existing code;
-   - a **CI pipeline** on the project's host (GitHub Actions, GitLab CI…): lint, format check, types and the full suite on every push and pull request. Host unknown → Open Question.
+   - a **CI pipeline** on the project's host (GitHub Actions, GitLab CI…), on every push and pull request. Host unknown → Open Question. Its gates, cheapest first, each blocking the next: lint → format check → types → unit tests → build → migrations on a fresh database → integration tests → browser tests → the package manager's dependency audit on the committed lockfile. Each runs the same command as the Docker environment, never a CI variant. No gate is skipped or made non-blocking to get green.
+   - **Reproducible installs:** frozen install from the one committed lockfile (`npm ci`, `pnpm install --frozen-lockfile`, `pip install --require-hashes`…); CI never rewrites the lockfile.
+   - **Secrets:** from the CI platform's secret store, CI never holding production ones; `.env.example` with placeholders, real `.env*` git-ignored.
+   - **Dependency updates:** an update bot (Dependabot, Renovate…) weekly, with a cap on open PRs.
+   - Branch protection and required checks are settings of the remote forge: list them under `## Open Questions` for the user to apply, never report them as done.
+   Keep the test stage under about 10 minutes: cache dependencies, run independent gates in parallel.
    Run each once in the base environment. The commands go under `## Outillage qualité`:
 
 ```markdown
@@ -77,6 +84,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 - Tests : <commande de la suite complète>
 - Tests navigateur : <commande> — ou "Sans objet : pas d'interface web"
 - Lint : <commande> — Format : <commande de vérification> — Types : <commande, ou "Sans objet">
+- Migrations : <outil> — `<commande pour appliquer>` — ou "Aucune base de données"
 - CI : `<fichier>` — <ce qu'elle lance>
 ```
 
@@ -113,7 +121,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 
 ## Mode 3 — Deployment
 
-1. Read `kb/infra/deploiement.md`. Missing → Open Question (bloquante): target (server, platform, container registry), access, secrets location, how to roll back. Never guess a target or store a secret in the repository or the KB — reference where it lives.
+1. Read `kb/infra/deploiement.md`. Missing → Open Question (bloquante): target (server, platform, container registry), access, secrets location, how to roll back. A staging environment distinct from production is recommended; configuration as code, never set by hand. Never guess a target or store a secret in the repository or the KB — reference where it lives.
 2. With the answers, write the deployment the first time: script or CI job, matching the project's conventions, and `kb/infra/deploiement.md` (`## Cible`, `## Déployer`, `## Revenir en arrière`, `## Vérifier`).
 3. Deploy the tagged version given by `livraison`, after `hosa-dba` has saved and migrated the target database (`livraison` orders it). Then run `## Vérifier` (the application answers, the main page loads, no error in the logs).
 4. Verification fails → run `## Revenir en arrière` and report. Never leave a half-deployed version.

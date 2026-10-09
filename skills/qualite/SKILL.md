@@ -41,13 +41,14 @@ Scope: from `livraison`, the file list it gives (the code changed since the last
 
 ## Step 2: Audit Checklist
 
-Dispatch, on the same scope and in parallel, `hosa-senior-dev` (best practices and performance — its fixed checklist below; don't invent extra items, don't drop any without asking first) and — when the project has a database (`kb/infra/base-de-donnees.md`) — `hosa-dba` (Mode 4 Audit, `agents/dba.md`: migrations reversible and conflict-free, indexes against the queries actually run, least-privilege account, backups and their last restore test), and `hosa-security` (Mode 2, `agents/security.md`): conformity to the `Security Rule`s and security exigences set during the cahier des charges, then the unforeseen holes. Security constraints were designed in from the start (`securite`); this audit is the safety net for what nobody could foresee. If `kb/rules/security/` is empty because `securite` never ran, say so — the audit still runs on the baseline rules, but propose `securite` so the next features are built with them.
+Dispatch, on the same scope and in parallel, `hosa-senior-dev` (best practices and performance — its fixed checklist below; don't invent extra items, don't drop any without asking first) and — when the project has a database (`kb/infra/base-de-donnees.md`) — `hosa-dba` (Mode 4 Audit, `agents/dba.md`: migrations reversible and conflict-free, indexes against the queries actually run, least-privilege account, backups and their last restore test), and `hosa-security` (Mode 2, `agents/security.md`): conformity to the `Security Rule`s and security exigences set during the cahier des charges, then the unforeseen holes. Security constraints were designed in from the start (`securite`, then its threat model); this audit is the safety net for what nobody could foresee, and it also covers the supply chain and the secrets in the git history. If `kb/rules/security/` is empty because `securite` never ran, say so — the audit still runs on the baseline rules, but propose `securite` so the next features are built with them.
 
 **Bonnes pratiques**
 - Lisibilité : nommage clair, fonctions courtes, pas de code mort ou commenté
 - Duplication : logique répétée qui devrait être factorisée
 - Gestion des erreurs : pas d'exception avalée silencieusement, retours cohérents
-- Dépendances : audit natif du gestionnaire de paquets sur le lockfile committé (aucune vulnérabilité critique/haute non mitigée), aucune ajoutée hors `hosa-infra`
+- Dépendances : aucune ajoutée hors `hosa-infra`, aucune déclarée mais inutilisée (l'audit de vulnérabilités est celui de `hosa-security`)
+- Profondeur des modules : un module passe-plat (interface presque aussi complexe que son implémentation, dont la suppression ne compliquerait rien chez ses appelants) est un constat
 
 **Performance**
 - Requêtes N+1 : boucle qui déclenche une requête DB par itération au lieu d'un chargement groupé
@@ -63,7 +64,7 @@ For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui 
 
 ## Step 4: Write and Log
 
-`hosa-senior-dev` writes `.hosa/kb/qualite/<slug>.md`, `hosa-dba` writes `.hosa/kb/qualite/<slug>-bdd.md`, `hosa-security` writes `.hosa/kb/qualite/<slug>-securite.md` (same structure, `tags: [securite]`, each finding marked prévisible/imprévisible):
+`hosa-senior-dev` writes `.hosa/kb/qualite/<slug>.md`, `hosa-dba` writes `.hosa/kb/qualite/<slug>-bdd.md`, `hosa-security` writes `.hosa/kb/securite/audit-<date>-<scope>.md` (its own structure: constats, dépendances, verdict; each finding marked prévisible/imprévisible) — this skill links it from its report. The senior dev and DBA audits use this structure:
 
 ```markdown
 ---

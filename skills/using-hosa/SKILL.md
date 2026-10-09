@@ -10,7 +10,7 @@ A full dev-lifecycle skill set: generic skills to understand, build, test, revie
 ## Pipelines
 
 1. **Cahier des charges:** `hosa` (identity, personas) → `interview` → `redaction` → `fondamentaux` → `securite` → `relecture` → `contestation`.
-2. **Structuration:** `stack` → `infra` (with test, lint and CI tooling) → `donnees` → `schema-app` → `schema-db` → `architecture` → `interface` → `backlog` (tickets split, dependencies, definition of done; foundation commit).
+2. **Structuration:** `stack` → `infra` (with test, lint and CI tooling) → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (threat model) → `interface` → `backlog` (tickets split, dependencies, definition of done; foundation commit).
 3. **Each sprint:** `sprint` → `qa-plan` → `git` (start) → `develop` (tests first, full checks, code review) → `qa` → `validation` (user demo) → `git` (merge) → `bilan-sprint` → `livraison` (quality audit, tested tag, deployment). A defect found in `qa`, the demo or the review is fixed in the sprint: `develop <ticket> correction`.
 
 Companions, usable anytime: `status`, `recette`, `bdd`, `qualite`, `documentation`, `changement`, `kb-commit`, `okf`, `retours`. Generic: `understand`, `build`, `iterate`, `dispatch`, `test`, `review`, `debug`.
@@ -21,6 +21,7 @@ Companions, usable anytime: `status`, `recette`, `bdd`, `qualite`, `documentatio
 - **Not sure which skill fits**, or asked what exists → read `${CLAUDE_PLUGIN_ROOT}/skills/using-hosa/reference.md` (every skill, every trigger phrase).
 - **Generic vs Hosa variant** ("test this" `test` / "teste le sprint" `qa`; "implement this" `build` / "implémente le ticket X" `develop`; "fais une recette de X" `recette` / "fais la recette du sprint" `qa`): fire the Hosa variant only if `.hosa/kb/` exists beyond its examples and the sprint or ticket named resolves to a file. Otherwise the generic one; both possible and nothing named → ask.
 - **`dispatch`** needs specific independent tasks; vague ones → ask for each task's goal and files.
+- **In a Hosa project** (`.hosa/kb/` populated), work goes through the pipeline or the KB never sees it: `understand` → `interview`/`redaction` (or `changement` for a `stable` exigence); `build` → `develop` on its ticket (no ticket → create it first); `iterate` → `changement`, or a ticket from `hosa-product-owner`; `review` → `validation`/`qa`. Run the generic skill only when the user asks to work outside the pipeline, and say it won't be tracked.
 
 ## Core Rules
 
@@ -30,14 +31,19 @@ These apply in every skill and every agent.
 - **Commits in the user's name only.** Check `git config user.name`/`user.email` first. Never `Co-Authored-By`, never another author.
 - **No guessing.** Missing information → ask. Never invent a requirement, a path or a behaviour.
 - **No forced entry point.** Any skill can start a session; skills detect prior outputs.
+- **Ask only what the user owns.** Product and business choices (scope, priorities, personas, budget, open source or paid) are the user's: ask. Technical best practice is Hosa's: apply it and say so (version, ignore build output and secrets, commit at checkpoints, install tests and migrations, run the tests). The user can still override.
+- **Chain, don't ask.** At the end of a stage, start the next stage of the same pipeline without asking, and say so in one line. Stop only for the user's real decisions: a product choice or validation the stage asks for (CDC sign-off, stack, identity and screens, sprint proposal), an `## Open Questions` from an agent, a ticket's confirmation before its commit (`develop`), the sprint demo, the merge (`git-fusion`), the release (`livraison`), and anything blocking.
+- **Adapt to the user's level.** `kb/project/identity.md` `## Niveau de l'utilisateur` holds their dev and infra levels. Débutant → no jargon without a one-line explanation, recommend rather than list, never ask a technical choice they can't judge (decide it and say why). Expert → terse, options with trade-offs. Missing → intermédiaire.
+- **Git checkpoints.** Every skill that wrote files ends, before chaining, by dispatching `hosa-git` (Mode 3, checkpoint) with the files and a one-line summary: code written outside a sprint is committed on the base branch, the KB on `hosa-kb` (`kb_branch.py commit`). Never a question. `.hosa/` (KB worktree, graph) and `.worktrees/` are ignored by code branches.
 - **Trust the user.** Add no step or check they didn't ask for. The gates written in a skill's own flow (quiz in `understand`/`build`, `sprint`'s readiness check, `git`'s QA gate) stay: each blocks a specific failure.
 - **Every report follows `retours`** — your replies too:
   1. Line one is the answer. Reading only the bold gives the whole answer.
   2. Say the least that fully answers. Never cut a warning, a precondition or an exact number; a warning goes before what it protects.
   3. ASD-STE100 adapted to French: one idea per sentence, ≤20 words for an instruction, ≤25 for a description, active voice, imperative, the glossary's terms.
-  4. Number **Q1, Q2…** each question whose answer you need — one decision, lettered options, the recommended one marked, "(bloquante)" if work stops — and put them last. A `## Suite` go-ahead is one. Advice is a plain sentence.
+  4. Number **Q1, Q2…** each question whose answer you need — one decision, lettered options, the recommended one marked, "(bloquante)" if work stops — and put them last. Advice is a plain sentence. A next pipeline stage is announced, not asked (Chain, don't ask).
   5. Tests a person runs are **T1, T2…**: exact URL, test account, table of actions and expected results (`retours` 3b); answered in one line ("T1 OK, T2 KO : …").
   6. Relaying an agent's `## Open Questions`: renumber them as your Q1…Qn, keep the mapping, pass each answer back under the agent's number. Accept "Q1 a, Q2 b" and partial answers; re-ask only what's missing.
+- **Auto-audit of Hosa.** An agent or skill that hits a problem with Hosa itself (two contradicting instructions, a missing step, an invented workaround, a useless check, a template that doesn't fit) or sees a concrete improvement reports it: an agent under `## Retour Hosa` (`Problème|Idée — <fichier Hosa, étape> — <constat> → <proposition>`, or "None"); the skill, or the main session for its own, appends each line to `kb/retours-hosa/journal.md` (`type: Retour Hosa`, `## Ouverts` / `## Traités`, one dated line each, `(×N)` incremented instead of a duplicate), without asking or stopping. Never about the managed project's code. An entry moves to `## Traités` only when the user says it's handled.
 - **Self-contained.** No Hosa skill or agent delegates to another plugin's skills; every procedure is written in Hosa.
 - **Skills orchestrate, agents execute.** An agent is a subagent: one final report, no dialogue, never dispatches another agent. A pipeline skill dispatches its agent for the real work. An agent's needs come back in its output — `## Open Questions`, `## Installation nécessaire`, `## Base de données nécessaire`, `## Documentation à produire`, `## Personas à interviewer` — and the skill gets the answer (user, `hosa-infra`, `hosa-dba`, `hosa-documentation`, `hosa-key-user`), then redispatches.
 - **Only `hosa-infra` installs** anything; **only `hosa-dba` operates the database** (`hosa-data-engineer` designs it; every agent uses the commands in `kb/infra/base-de-donnees.md`).

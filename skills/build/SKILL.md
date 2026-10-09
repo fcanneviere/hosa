@@ -38,6 +38,10 @@ All tasks done → suggest test
 
 The quiz is a hard gate by default — see Step 5. Per "Trust the user" (`using-hosa`'s Core Rules), the user may disable it, but only as an explicit, informed, upfront choice before Step 1 starts (e.g. "build this, no quiz this time") — never as a mid-flow bypass once a task is already presented, which Step 5 refuses regardless of phrasing. If disabled upfront, skip Step 5 entirely for this run and commit directly after Step 4's presentation; say so once at the start so the user knows the run is unguarded.
 
+## Step 0: Hosa Project Check
+
+If `.hosa/kb/` is populated beyond its example files, don't build here — follow the redirect in `using-hosa` ("Generic vs. Hosa variant"): `develop` on the matching ticket. Continue below only if there's no KB or the user explicitly asks to work outside the pipeline.
+
 ## Step 1: Locate Input
 
 Check for an existing spec in this order:

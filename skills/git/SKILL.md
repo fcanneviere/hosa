@@ -12,7 +12,8 @@ Drives the managed project's git repository lifecycle for one `Sprint` at a time
 ```
 Détermine le mode depuis la requête (démarrage / fusion / ad hoc)
         ↓
-Sprint identifié (Mode 1/2) ou requête libre (Mode 3)
+Sprint identifié (Mode 1/2), requête libre ou checkpoint (Mode 3),
+initialisation (Mode 0, depuis `hosa`)
         ↓
 Dispatch hosa-git dans ce mode
         ↓
@@ -22,7 +23,7 @@ ou résultat de la requête ad hoc)
 
 ## Trigger
 
-Manual: `/git demarre <slug>`, `/git termine <slug>`, or any other git request against the managed project (`/git <requête libre>`) for Mode 3. Auto: "démarre le sprint X", "commence le sprint X" → Mode 1 ; "termine le sprint X", "fusionne le sprint X", "merge le sprint X" → Mode 2 ; any other git request against the managed project's repo (statut, nettoyage d'un worktree orphelin, annuler un commit...) → Mode 3.
+Manual: `/git demarre <slug>`, `/git termine <slug>`, or any other git request against the managed project (`/git <requête libre>`) for Mode 3. Auto: "démarre le sprint X", "commence le sprint X" → Mode 1 ; "termine le sprint X", "fusionne le sprint X", "merge le sprint X" → Mode 2 ; any other git request against the managed project's repo (statut, nettoyage d'un worktree orphelin, annuler un commit...) → Mode 3. Mode 0 (initialize, from `hosa`) and Mode 3 checkpoints (at the end of every skill that wrote files) are dispatched by other skills, never asked.
 
 ---
 
@@ -36,13 +37,18 @@ Mode 1 is stage `git-demarrage`, Mode 2 is `git-fusion` (`avancement.py <root>/.
 
 ## Step 2: Dispatch `hosa-git`
 
-Dispatch `hosa-git` in the determined mode — with the sprint slug for Mode 1/2, or with the request as given for Mode 3. It reads `kb/sprints/<slug>.md` and the relevant KB when a sprint is involved, performs the worktree creation or QA-gated merge (or handles the ad hoc request directly), and reports back.
+Dispatch `hosa-git` in the determined mode — with the sprint slug for Mode 1/2, the root for Mode 0, or the request (or the checkpoint's files and summary) for Mode 3. It reads `kb/sprints/<slug>.md` and the relevant KB when a sprint is involved, performs the worktree creation or QA-gated merge (or handles the ad hoc request directly), and reports back.
 
 If it returns:
 - **`## Installation nécessaire`** — dispatch `hosa-infra` (Mode 2) with it, then redispatch `hosa-git` once confirmed.
 - **`## Base de données nécessaire`** — dispatch `hosa-dba` (Mode 3, via `bdd`) with it and the sprint's environment, then redispatch `hosa-git` from where it stopped.
 - **`## Open Questions`** with a mode ambiguity — ask the user and redispatch.
 - **`## Open Questions`** with a ticket `Accepté avec réserves` — present the reservations and ask the user (or `hosa-product-owner`) to explicitly accept the risk; only redispatch `hosa-git` to proceed with the merge once they do.
+
+## Hand-off
+
+- Mode 1 succeeded → `develop` on the sprint's first ticket, without asking.
+- Mode 2 succeeded → `bilan-sprint`, without asking (the merge itself was the user's decision).
 
 ## Commits
 

@@ -300,9 +300,11 @@ de `agents/README.md`.
 - Nouvel état `Sprint` reflétant le résultat de la QA (ex. `qa-passed`) — le
   verdict vit dans `kb/test/`, pas dans le frontmatter du `Sprint` ; pas de
   champ ajouté en v1.
-- Ré-exécution automatique après correction (boucle fermée) — `qa` produit
-  un rapport et des suggestions ; relancer `qa` sur le même sprint après
-  correction reste une action manuelle de l'utilisateur.
+- Ré-exécution automatique après correction d'un échec de **recette** —
+  ces échecs partent chez `hosa-product-owner` (le ticket est à reprendre),
+  pas dans une boucle. Les échecs **techniques**, eux, sont bouclés : `debug`
+  puis re-run de ce seul ticket, escalade à l'utilisateur si le même échec
+  persiste après 2 cycles (Step 5b de `qa`).
 - Application automatique des optimisations d'outillage proposées en Mode
   3 — toujours soumise à confirmation, jamais appliquée seule.
 - Détection de drift si le plan de test technique change après coup — même

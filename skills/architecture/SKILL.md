@@ -19,7 +19,8 @@ Dispatch hosa-documentation (Mode 1) avec le
         ↓
 Met à jour l'entrée Infra avec le chemin confirmé
         ↓
-Propose d'enchaîner sur `interface`
+Enchaîne sur `securite` (mode Menaces) sans demander,
+puis `interface`
 ```
 
 ## Trigger
@@ -42,9 +43,13 @@ Dispatch `hosa-documentation` (Mode 1) with what `hosa-architect` returned under
 
 Add the confirmed architecture documentation path to the `Infra` entry under its own `## Documentation d'architecture` heading — a fixed heading, not a bare line, so a later reader (e.g. `backlog`) can tell it apart from the data dictionary or migrations paths `schema-app`/`schema-db` also record there. Log the update to `kb/infra/log.md`.
 
+## Step 4: Threat Model
+
+Invoke `securite` in Menaces mode without asking — the trust boundaries of an application only exist once its layers do, and every control added after the code is written costs more than one designed in now. It's the progress-plan stage `menaces`; `securite` then chains to `interface`.
+
 ## No Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
 
 ## Output
 
@@ -63,7 +68,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-**Q1 — Je lance `interface` maintenant ?**
-  a) Oui, maintenant. (recommandé)
-  b) Non, on s'arrête là.
+Suite : `securite` (Menaces), puis `interface`, lancé sans attendre.
 ```

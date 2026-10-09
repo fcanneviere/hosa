@@ -40,6 +40,26 @@ test('nudges once per session, never blocks', () => {
   assert.ok(processPayload({ ...p, session_id: 's2' }));
 });
 
+test('refuses a tree-wide identifier Grep once, with the graph answer in the reason', () => {
+  const root = project();
+  const hit = () => 'function src/a.py:login  src/a.py:3';
+  const p = { hook_event_name: 'PreToolUse', tool_name: 'Grep', cwd: root, session_id: 's1', tool_input: { pattern: 'login' } };
+  const out = processPayload(p, undefined, undefined, hit);
+  assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(out.hookSpecificOutput.permissionDecisionReason, /src\/a\.py:3/);
+  assert.notEqual(processPayload(p, undefined, undefined, hit)?.hookSpecificOutput.permissionDecision, 'deny');
+});
+
+test('regex, single-file and no-hit greps are never refused', () => {
+  const root = project();
+  fs.writeFileSync(path.join(root, 'src', 'a.py'), '');
+  const hit = () => 'x';
+  const deny = (input, q = hit) => processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Grep', cwd: root, session_id: 's9', tool_input: input }, undefined, undefined, q)?.hookSpecificOutput.permissionDecision === 'deny';
+  assert.equal(deny({ pattern: 'def \\w+' }), false);
+  assert.equal(deny({ pattern: 'login', path: 'src/a.py' }), false);
+  assert.equal(deny({ pattern: 'logout' }, () => ''), false);
+});
+
 test('no nudge when the graph was already queried this session', () => {
   const root = project();
   const later = new Date(Date.now() + 5000);
