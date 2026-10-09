@@ -15,7 +15,8 @@ Lit kb/tickets/<slug>.md et son kb/sprints/<slug-sprint>.md
           d'abord, stoppe
 Écrit state: doing sur le ticket, log kb/tickets/log.md
         ↓
-Dispatch hosa-tech-lead → plan de tâches séquentiel
+Dispatch hosa-tech-lead → plan de tâches séquentiel, écrit dans
+le ticket sous ## Plan de tâches (tech lead)
         ↓ ambiguïté ou déviation → rapporte, route vers son propriétaire
           (utilisateur, `architecture`/`schema-app`/`schema-db`/`interface`,
           ou hosa-architect/hosa-data-engineer/hosa-ux-designer), stoppe
@@ -52,9 +53,13 @@ Lit `kb/tickets/<slug>.md`. **Si `state` vaut déjà `done`, le dit et stoppe �
 
 Dispatch `hosa-tech-lead` avec le slug du ticket. Si sa sortie contient une entrée sous `Ambiguities` ou `Structural Deviation` : rapporte-la telle quelle à l'utilisateur, propose la suite adaptée — combler l'ambiguïté avec l'utilisateur, ou, pour la déviation, la router vers son propriétaire : `architecture`/`hosa-architect` (module/couche), `schema-app`/`schema-db`/`hosa-data-engineer` (entité/champ), `interface`/`hosa-ux-designer` (écran/composant/interaction) — ne dispatche aucune tâche, stoppe. **Une ambiguïté ou déviation qui touche l'interface (écran, parcours, composant, libellé visible) passe toujours par `hosa-ux-designer` (dispatch « Ticket gap » avec le slug, le worktree et le manque rapporté), jamais tranchée par toi ni par l'utilisateur seul** : il met à jour le `Placement interface` du ticket, puis seulement on relance l'étape 3. Le ticket reste `state: doing`.
 
+Plan clair : écrit le `Task Plan` et les `Notes` de `hosa-tech-lead` tels quels dans le ticket, sous `## Plan de tâches (tech lead)` en fin de fichier — remplace la section si elle existe déjà (relance après blocage). C'est ce qu'un développeur humain lit pour reprendre ou relire le ticket ; ne le résume pas.
+
 ## Step 4: Implement Sequentially
 
 Pour chaque tâche du plan, dans l'ordre : dispatch `hosa-developer` avec la tâche, sa contrainte de placement, le chemin du worktree. **Une seule tâche à la fois — jamais de dispatch concurrent.** Si un framework de test existe déjà dans le projet géré et que la tâche introduit un comportement testable neuf, `hosa-developer` écrit le test en échec avant d'implémenter (red-green) — ceci ne remplace pas `test`, qui reste le passage dédié à la couverture globale. Si une tâche revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
+
+Chaque tâche revenue sans blocage : coche sa ligne (`- [x]`) sous `## Plan de tâches (tech lead)` du ticket.
 
 ## Step 5: Present and Confirm
 

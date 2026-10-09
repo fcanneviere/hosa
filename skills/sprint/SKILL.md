@@ -45,7 +45,7 @@ If it returns an Open Question (empty backlog, no priority order) — relay it t
 
 ## Step 2: Review with the User
 
-Present `## Tickets prêts` and `## Tickets écartés`. For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise present `## Proposition de sprint` (name, objective, capacity) with the tickets as one numbered block for the user to validate or amend in one answer (e.g. "Q1 ok, Q2 retire le ticket 3") — they may drop a ticket to wait for a fuller backlog.
+Present `## Tickets prêts` and `## Tickets écartés`. For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, re-running `backlog` to refine a vague ticket, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise present `## Proposition de sprint` (name, objective, capacity) with the tickets as one numbered block for the user to validate or amend in one answer (e.g. "Q1 ok, Q2 retire le ticket 3") — they may drop a ticket to wait for a fuller backlog.
 
 If `## Tickets prêts` is empty and the user has no gap to fill, stop here — report the tickets écartés and their Open Questions, don't write a `Sprint`.
 
