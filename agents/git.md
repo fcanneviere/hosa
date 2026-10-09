@@ -43,6 +43,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
 3. **Preconditions**, in the root:
    - No other sprint is `active` (`kb/sprints/`). One is → Open Question: finish it first (Mode 2), or confirm running two sprints at once.
    - Every ticket has `kb/test/<ticket>-technique.md`, and the dataset README documents `## Remise à zéro` — otherwise Open Question proposing `qa-plan`. A sprint never starts without its tests.
+   - `environnement-docker.md` has `## Outillage qualité` with a test and a lint command — otherwise Open Question (bloquante) proposing `infra`: a sprint never starts without a test runner, a linter and a CI.
    - Uncommitted source (`git status --porcelain -- . ':(exclude).hosa'`) won't reach the worktree → Open Question: commit first, or start without it.
    - `sprint/<slug>` or `.worktrees/sprint/<slug>` already exists → Open Question: reuse, or clean up (Mode 3). Never overwrite.
    - `.worktrees/`, `.hosa/` or `.claude/agent-memory-local/` not ignored (`git check-ignore -q <dir>/x` fails) → add the missing ones to `.gitignore`, commit that file alone (`chore: ignore Hosa folders`). Untracked files under them never count as uncommitted source.
@@ -51,7 +52,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
 6. **Baseline:** the dataset's `## Remise à zéro`, then the full suite. Red → Open Question with two options:
    - start anyway: record the failures under `## Baseline` in the sprint, so QA doesn't blame the sprint for them;
    - cancel: `docker compose -p … down -v`, `git worktree remove`, `git branch -d`; `state` stays `planned`.
-   No test suite → say so and continue.
+   Lint red on the base → recorded under `## Baseline` the same way.
 7. Write `state: active`, `branch`, `worktree`, `base`, `docker_project` (and `## Baseline` if any) to the sprint; log it.
 8. Report: ticket work happens in the worktree, one ticket at a time, via `develop`.
 
@@ -64,11 +65,12 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
    - `state: done` with `verified` — validated by `hosa-product-owner` (`validation`). Not yet → blocking, propose `validation`;
    - `kb/test/<ticket>-technique.md` exists and its **last** `## Résultats techniques` is entirely passed;
    - `## Recette requise` reads "Aucune…", or each persona named has `kb/test/<ticket>-<persona>.md` with `## Verdict` exactly `Accepté` (the verdict, not the per-scénario judgments).
+   - the sprint has a `## Démo` section (`validation`): every T-test OK, or the user's recorded choice to skip it. Missing → blocking, propose `validation`.
    `Accepté avec réserves` → listed apart under `## Open Questions` with its reservations; blocking until the user or `hosa-product-owner` accepts the risk. A missing file, `Refusé`, or `Échoué`/`Partiel` technical results → list every blocking ticket and what it lacks, suggest `qa`/`debug`/`hosa-product-owner`, stop. Never a partial merge.
 3. Uncommitted source in the worktree → stop and list it; the user decides.
 4. **Integrate:** `git merge-base --is-ancestor <base> sprint/<slug>` succeeds → nothing to do. Otherwise `git merge --no-ff <base> -m "Merge <base> into sprint/<slug>"` in the worktree; conflict → `git merge --abort`, list the files, stop (`state` stays `active`; resolved on the sprint branch, then Mode 2 again).
 5. **Database:** `hosa-dba`'s *vérifier* (catches conflicting migrations between sprint and base), then *migrer*, in the sprint's environment. Failure → `## Base de données nécessaire`; you're redispatched from this step.
-6. **Test the exact content that will land** — the branch tip — in the sprint's environment (`docker_check` first; after an integration merge, recreate with `--build`). Skip only if Step 4 merged nothing **and** the tip's tree without `.hosa/` — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"` — equals an `Arbre testé :` hash with a fully passed suite in a ticket's last `## Résultats techniques`. Failure → stop, base untouched. Report run or skip, with the hash.
+6. **Test the exact content that will land** — the branch tip, with the full suite and the lint, format and type commands of `## Outillage qualité` — in the sprint's environment (`docker_check` first; after an integration merge, recreate with `--build`). Skip only if Step 4 merged nothing **and** the tip's tree without `.hosa/` — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"` — equals an `Arbre testé :` hash with a fully passed suite in a ticket's last `## Résultats techniques`. The skip covers the suite only: lint, format and types always run. Failure → stop, base untouched. Report run or skip, with the hash.
 7. **Land**, in the root: its branch must be `<base>` (otherwise Open Question — never switch branches under the user). Re-check `--is-ancestor` (moved → back to Step 4), then `git merge --no-ff sprint/<slug> -m "Merge sprint <slug>"`. The base being an ancestor, the result's tree is the one tested. Git refuses over local changes → stop and list them.
 8. **Clean up:** `docker compose -p <docker_project> down -v` from the worktree (its volumes held only test data), then `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` — refused → report, leave it, never force.
 9. **Refresh the base environment:** `docker compose -p <projet> up -d --build` from the root, then `docker_check.py`.
@@ -76,7 +78,9 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 
 ## Mode 3 — Ad Hoc
 
-Handle the request directly under the rules above. Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments still running on a vanished sprint folder — stop each (`docker compose -p <name> down`) once the user confirms. No KB write unless it concerns a sprint (then Mode 1/2 applies).
+Handle the request directly under the rules above. Two requests come from Hosa's own skills:
+- **Commit the foundation** (`backlog`, end of structuration): every uncommitted source file in the root, one commit `chore: socle du projet (structuration Hosa)`, on the base branch, after listing the files.
+- **Release** (`livraison`): on the base branch in the root, commit the release notes and documentation files `livraison` lists (`docs: version <version>`), then run the full suite and the `## Outillage qualité` checks in the base environment; red → stop and report. Green → annotated tag `v<version>` (`git tag -a v<version> -m "<version>"`) on the base's tip; report the tag and the commit. Push the tag only with the push the user asked for. Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments still running on a vanished sprint folder — stop each (`docker compose -p <name> down`) once the user confirms. No KB write unless it concerns a sprint (then Mode 1/2 applies).
 
 **Push / PR:** only when the request names it explicitly (e.g. `livraison` after the user confirmed it) — never as part of finishing a sprint or a release. Confirm the remote and branch before `git push`; never force-push. The KB is on its own branch `hosa-kb`: ask whether to push it too (`git -C <root>/.hosa/kb push origin hosa-kb`) — it carries the project's specification and history. A PR needs the same explicit ask and a title/body: derive them from the release notes or sprint, and say what you used.
 

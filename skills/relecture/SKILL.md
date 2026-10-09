@@ -10,10 +10,11 @@ Reads the cahier des charges as written and checks it holds up — not a rewrite
 ## Flow
 
 ```
-Scope : exigences modifiées dans cette session (si juste après
-`redaction`), ou l'ensemble de kb/cdc/ si appelé seul
+Scope : exigences écrites ou modifiées dans cette session
+(redaction, fondamentaux, securite), ou l'ensemble de kb/cdc/
+si appelé seul
         ↓
-Pour chaque exigence : les 6 sections sont-elles remplies,
+Pour chaque exigence : les 8 sections sont-elles remplies,
 précises, sans généralité ?
         ↓
 Cohérence entre exigences : sorties/entrées qui s'enchaînent,
@@ -33,7 +34,7 @@ Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier de
 
 ## Step 1: Scope
 
-If invoked right after `redaction`, check the exigences just written. Otherwise, read every `Exigence` in `.hosa/kb/cdc/`.
+In the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
 
 ## Step 2: Precision and Completeness Check
 
@@ -41,6 +42,8 @@ For each exigence, check every section against these standards — mark **OK** o
 - `Objectif du processus`: concrete and specific, not a restatement of the title
 - `Données en entrée` / `Données en sortie`: named data, not "les infos nécessaires" or other placeholders
 - `Qui fait quoi`: names an actual persona/rôle for every action listed, not "l'utilisateur" generically when a specific persona applies
+- `Règles de gestion`: each rule testable — a condition, a threshold, a calculation or a status change with an example; not "selon les règles en vigueur". "Aucune règle propre" only for pure entry or consultation
+- `Cas d'erreur`: at least one, each with the expected reaction; not "gérer les erreurs"
 - `Responsable`: exactly one clear owner, not "l'équipe" or left implicit
 - `espace` (frontmatter, functional exigences — not `nfr`): `front-office`, `back-office` or both, consistent with the roles in `Qui fait quoi`
 - `Besoin(s) persona répondu(s)`: a real link to a `kb/personnas/` file, or an explicit "Aucun — exigence transverse"

@@ -5,7 +5,7 @@ description: "Use to set up or update the managed project's identity and persona
 
 # Hosa
 
-Initializes or updates the managed project's identity and personas in `.hosa/kb/`, creates any other OKF concept a natural-language request implies (when no more specific pipeline skill already owns it), and answers provenance questions by reading `generated`/`sources` straight from the KB. Full scope of the `hosa` skill from `docs/specs/2026-09-23-hosa-pilotage-design.md` §2.
+Initializes or updates the managed project's identity and personas in `.hosa/kb/`, creates any other OKF concept a natural-language request implies (when no more specific pipeline skill already owns it), and answers provenance questions by reading `generated`/`sources` straight from the KB.
 
 ## Flow
 
@@ -56,7 +56,7 @@ Ask one question at a time, in order, waiting for an answer before moving on:
 9. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
 10. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
 
-Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine — don't force one if the user has none ready yet.
+Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine for now — don't force one if the user has none ready yet; but the cahier des charges (`interview`) can't start without one, so say so.
 
 ### Writing `kb/project/identity.md`
 
@@ -139,9 +139,9 @@ Objectifs / Besoins / Attentes / Pain points / Quick wins to
 Once every persona in this session has been enriched, propose the next
 stage, as a numbered question (`retours`): "Personas prêts. Lancer l'interview du cahier des charges
 maintenant ? (skill `interview`)". Yes → invoke the `interview` skill. No →
-finish normally; `interview` stays invocable manually later. Skip this
-proposal entirely if zero personas were created or enriched this session —
-there's nothing yet to interview about.
+finish normally; `interview` stays invocable manually later. If zero personas
+exist, don't propose it: say that `interview` needs at least one persona,
+and ask whether to create one now.
 
 ### Logging
 

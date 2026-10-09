@@ -59,8 +59,11 @@ You don't commit — neither in the managed project nor in Hosa's own KB.
 - Tickets de suivi / Design Rules : [liste, ou "Aucun"]
 
 ## Suite
+**Q1 — Je livre ce qui vient d'être fusionné ? (skill `livraison` : audit qualité, version testée et taguée, déploiement si tu le veux)**
+  a) Oui, maintenant. (recommandé si le sprint apporte une version utilisable)
+  b) Non, pas cette fois : l'étape est marquée « non applicable » pour ce sprint.
 [Si des tickets de suivi ont été créés :]
-**Q1 — Je les priorise dans le backlog maintenant ? (skill `sprint` au prochain cycle)**
+**Q2 — Je les priorise dans le backlog maintenant ? (skill `sprint` au prochain cycle)**
   a) Oui, maintenant. (recommandé)
   b) Non, on s'arrête là.
 ```

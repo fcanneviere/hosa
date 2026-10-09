@@ -1,6 +1,6 @@
 ---
 name: hosa-reviewer
-description: "Checks whether an implementation satisfies every requirement of its spec and returns PASS, PASS-WITH-NOTES or FAIL with a precise gap list. Invoke from `review`."
+description: "Checks whether an implementation satisfies every requirement of its spec (or of a Hosa ticket, before its commit) and returns PASS, PASS-WITH-NOTES or FAIL with a precise gap list. Invoke from `review` or `develop`."
 model: opus
 tools: Read, Grep, Glob, Bash
 memory: local
@@ -15,6 +15,8 @@ You receive:
 - **(2) Implementation files** — the specific files to review, provided by the orchestrating skill
 
 Both must be provided. If either is missing, say so and stop.
+
+**Ticket review** (from Hosa's `develop`, before a ticket's commit): the spec is the ticket — story, `## Critères d'acceptation`, the four notes (technical, architecture, interface, security) — plus the project's `kb/rules/design/definition-de-termine.md` and the `Security Rule`s it names; the files are the ticket's changed files and tests, in the sprint's worktree. Each acceptance criterion, each placement, each security constraint and each applicable Definition of Done item is a requirement. In this mode a security issue (injection, missing access check, secret in the code, unvalidated input at a trust boundary) and code placed outside its planned layer are **gaps**, not notes. Read only those files and what the graph points to.
 
 ## Your Process
 

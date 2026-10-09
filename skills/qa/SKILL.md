@@ -25,7 +25,8 @@ ses résultats et fait le ménage
 Dispatch hosa-key-user pour chaque persona de « Recette
 requise », écrit chaque résultat de recette
         ↓
-Route les échecs (ticket + debug / hosa-product-owner)
+Route les échecs : défaut → `develop <ticket> correction` dans
+le sprint ; besoin nouveau → ticket au backlog (hosa-product-owner)
         ↓
 Fin de sprint : dispatch hosa-qa-lead (Mode 2) pour la santé
 de l'outillage
@@ -35,7 +36,7 @@ Rapporte le verdict global du sprint
 
 ## Trigger
 
-Manual: `/qa <slug-sprint>`. Auto: "exécute la QA du sprint", "teste le sprint", "fais la recette du sprint".
+Manual: `/qa <slug-sprint> [<slug-ticket>]` — a ticket given re-runs Steps 3-5 for it alone (after a correction). Auto: "exécute la QA du sprint", "teste le sprint", "fais la recette du sprint".
 
 ---
 
@@ -49,11 +50,11 @@ The test dataset must exist with its documented `## Remise à zéro` (prepared b
 
 ## Step 3: Run Technical Tests Per Ticket
 
-For each ticket, dispatch `hosa-tester` (Exécuter mode) with just the ticket slug — it finds the test plan, the worktree, the `docker_project` and the ticket's changed files itself, runs and completes the tests, fixes test-side problems on its own, appends `## Résultats techniques` (with its `Arbre testé`, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time) and resets the environment. Relay `## Installation nécessaire` to `hosa-infra` and `## Open Questions` to the user, then redispatch. `## Tests à faire par toi` → show it to the user as is (T-numbered, `retours` section 3b), with the environment running at its reference state; relay the one-line answer to `hosa-tester`, which records and routes it. Route what it classified: **implementation bug** (wrong output, uncaught exception, business logic error) → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the failing test) so it doesn't get lost as a mention in a report, run `backlog`'s Single-Ticket Mode on it so it's complete, then flag it for `debug`; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
+For each ticket, dispatch `hosa-tester` (Exécuter mode) with just the ticket slug — it finds the test plan, the worktree, the `docker_project` and the ticket's changed files itself, runs and completes the tests, fixes test-side problems on its own, appends `## Résultats techniques` (with its `Arbre testé`, which lets `hosa-git` skip re-running a suite already passed on the exact same content at merge time) and resets the environment. Relay `## Installation nécessaire` to `hosa-infra` and `## Open Questions` to the user, then redispatch. `## Tests à faire par toi` → show it to the user as is (T-numbered, `retours` section 3b), with the environment running at its reference state; relay the one-line answer to `hosa-tester`, which records and routes it. Route what it classified: **implementation bug** (wrong output, uncaught exception, business logic error) → the ticket goes back to `doing` and is fixed **in this sprint**: `develop <ticket> correction` with the failing test and its output (it uses `debug` on the sprint's worktree when the cause is unclear), then this QA again for that ticket alone. The failure stays recorded in `## Résultats techniques`, so nothing gets lost; **test infrastructure issue** (bad import path, missing fixture, unconfigured environment) → report directly, no ticket, don't suggest debug.
 
 ## Step 4: Run Recette Per Ticket
 
-For each persona under the ticket's `## Recette requise` (in `kb/test/<slug-ticket>-technique.md`): dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) capturing exactly what the persona rejected — the ticket itself needs rework, not a code fix. Then run `backlog`'s Single-Ticket Mode on it, so it's complete before you report it.
+For each persona under the ticket's `## Recette requise` (in `kb/test/<slug-ticket>-technique.md`): dispatch `hosa-key-user` with a recette request (same contract `recette` already sends) targeting this ticket. If it reads "Aucune...", skip recette for this ticket and say so explicitly in the report — don't omit any mention of it. Any Échoué or Partiel scenario: the ticket's own `## Critères d'acceptation` not met → `develop <ticket> correction` in this sprint, like a bug. The persona wants something the criteria never asked for → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) and run `backlog`'s Single-Ticket Mode on it: a new need goes to the backlog, it doesn't block this sprint.
 
 ## Step 5: Record the Recettes
 
@@ -80,11 +81,11 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 - <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel/Non applicable
 
 ## Échecs techniques
-- <ticket> — [détail] → ticket créé : `kb/tickets/<slug>.md` → suggéré : debug
+- <ticket> — [détail] → suggéré : `develop <ticket> correction`
 [Si aucun : "Aucun"]
 
 ## Recette à corriger
-- <ticket>/<persona> — [ce qui a échoué] → ticket créé : `kb/tickets/<slug>.md`
+- <ticket>/<persona> — [ce qui a échoué] → `develop <ticket> correction`, ou ticket créé (besoin nouveau) : `kb/tickets/<slug>.md`
 [Si aucun : "Aucun"]
 
 ## Ménage

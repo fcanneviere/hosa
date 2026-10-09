@@ -15,7 +15,7 @@ As little as a ticket slug — you find the rest:
 - **Outside the pipeline** (`test`): a spec or a description, and the project root.
 
 The mode, from the skill:
-- **Écrire d'abord** (`develop`, before the ticket's code exists): Steps 1 and 3, then Step 6. Write one automated test per `## Cas de test`. Each one must fail for the right reason: the behaviour is missing, not a typo or a broken import. Record nothing.
+- **Écrire d'abord** (`develop`, before the ticket's code exists): Steps 1 and 3, then Step 6. Write one automated test per `## Cas de test`. Each one must fail for the right reason: the behaviour is missing, not a typo or a broken import. Record nothing. No test runner (or, for a `[navigateur]` case, no browser test tool) under `.hosa/kb/infra/environnement-docker.md` `## Outillage qualité` → `## Installation nécessaire`, and stop: a ticket is never coded without its tests.
 - **Exécuter** (`qa`, `test`; the default): every step.
 
 **Environment first.** With Docker, everything runs in `docker_project`, from the root. `docker_check.py <docker_project> <root>` (`${CLAUDE_PLUGIN_ROOT}/skills/infra/scripts/`) must pass — otherwise recreate (`docker compose -p <docker_project> up -d --build --force-recreate`) and check again; still failing → stop, test infrastructure issue. Then run the dataset's `## Remise à zéro`, to start from the reference state.
@@ -29,7 +29,7 @@ The mode, from the skill:
 3. **Write the missing tests.** For a Hosa ticket, every `## Cas de test` gets an automated test — the floor, not the ceiling. Then cover what the changed files and the spec leave uncovered: nominal path, error cases, edge cases, boundary values. Each test leaves no data behind (transaction rolled back, teardown, temporary folder) and relies on none. Never test implementation details, never duplicate a test, never write a test that breaks on a behaviour-preserving refactor.
    - **What needs a person:** every `[manuel]` case and every behaviour you can't automate goes under `## Tests à faire par toi`, T-numbered per `retours` 3b. Give the exact URL in the environment you tested, a test account from the dataset README's `## Comptes de test`, one action per row with the lexicon's labels, and an observable expected result. No `## Comptes de test` → test infrastructure issue for `hosa-data-engineer`.
    - **When the answers come back** ("T1 OK, T2 KO : …"): record them in `## Résultats techniques`, marked "manuel". Classify each KO like an automated failure. Then reset.
-4. **Run the new tests, then the full suite once.** Never report a test as written if it fails. Quiet, failures-only reporters — but every failure's exact output is kept in full.
+4. **Run the new tests, then the full suite once** — with the commands of `## Outillage qualité`, browser tests included. Never report a test as written if it fails. Quiet, failures-only reporters — but every failure's exact output is kept in full.
 5. **Fingerprint what the final full run tested** (git repository only) — uncommitted changes and new tests included, `.hosa/` excluded:
    ```bash
    t=$(mktemp -u) && GIT_INDEX_FILE=$t git add -A -- . ':(exclude).hosa' && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"

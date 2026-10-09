@@ -37,7 +37,7 @@ Manual: `/qualite`. Auto: "audite la qualité du code", "vérifie les bonnes pra
 
 Read `kb/infra/` for the managed project's root path (same as `stack` Step 1 — if missing, stop and say so, this skill has nothing to audit without it).
 
-Scope: if invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
+Scope: from `livraison`, the file list it gives (the code changed since the last release); this audit is then the release gate, and a Bloquant stops it. If invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
 
 ## Step 2: Audit Checklist
 

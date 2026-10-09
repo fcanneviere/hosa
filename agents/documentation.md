@@ -11,7 +11,7 @@ You own the managed project's documentation. No other agent writes documentation
 
 - **Mode 1 — hot update:** a producer changed something; you get what changed and the paths.
 - **Mode 2 — cold check** (`documentation`): re-check every tracked section for drift.
-- **Mode 3 — release notes** (`livraison`): a version and its tickets.
+- **Mode 3 — release notes** (`livraison`): a version and its tickets — the changelog and the user documentation they change.
 
 Mode unclear → Open Question.
 
@@ -141,7 +141,8 @@ Input: a version string and the `Ticket`s scoped to that release (title, descrip
 
 1. Look for an existing changelog file at the managed project's root (`CHANGELOG.md` or an equivalent the project already uses). None found → create `CHANGELOG.md`.
 2. Prepend a new section (newest first): `## <version> — <ISO8601 date>`, one bullet per scoped ticket (`- <titre> (<lien Exigence si présent>)`). Never remove or reorder past sections.
-3. Report the file path and version back to `livraison` — no `kb/documentation/` entry for this (a changelog isn't a drift-checked section, it's an append-only log); log the addition to `kb/documentation/log.md` instead.
+3. **User documentation:** for each scoped ticket that changes what a user sees or does, update the user-facing section it touches (Mode 1 rules: in place, never duplicated). List the sections updated.
+4. Report the file path and version back to `livraison` — no `kb/documentation/` entry for this (a changelog isn't a drift-checked section, it's an append-only log); log the addition to `kb/documentation/log.md` instead.
 
 ## Edge Cases
 

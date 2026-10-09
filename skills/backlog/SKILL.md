@@ -10,7 +10,12 @@ Turns "what the application must do" (the stable cahier des charges) into Produc
 ## Flow
 
 ```
-Pour chaque Exigence stable de kb/cdc/ sans Ticket lié :
+Exigences non fonctionnelles [nfr] → définition de terminé
+(kb/rules/design/definition-de-termine.md), vérifiée sur chaque ticket
+        ↓
+Pour chaque autre Exigence stable de kb/cdc/ sans Ticket lié :
+découpe en tickets livrables (une tranche utilisable chacun),
+dépendances notées (depends_on)
         ↓
 Écrit la story et les critères d'acceptation Given/When/
 Then (rôle PO) dans un nouveau Ticket, state: todo
@@ -30,6 +35,9 @@ ligne "pas encore faite" si aucune analyse de sécurité n'existe
         ↓
 Log kb/tickets/log.md
         ↓
+Socle non commité (structures, migrations, architecture,
+interface, outillage) → propose de le committer (hosa-git)
+        ↓
 Propose de lancer sprint
 ```
 
@@ -45,7 +53,8 @@ A ticket is ready to be planned (`sprint`) and executed (`develop`, `qa-plan`) w
 - a story (`En tant que … je veux … afin de …`) and a `Lié à :` line — to its `Exigence`, or, for a ticket born outside the cahier des charges (bug, recette gap, audit finding, change impact, sprint follow-up), to the concept that surfaced it;
 - `## Critères d'acceptation` with at least one Given/When/Then scenario;
 - real `## Note technique (senior dev)`, `## Placement architecture (architecte)`, `## Placement interface (UX/UI)` and `## Note sécurité (expert cybersécurité)` notes — not the fallback lines below;
-- a `priority`, unless the user explicitly answered "pas encore".
+- a `priority`, unless the user explicitly answered "pas encore";
+- a `depends_on` (when present) naming existing tickets, with no cycle.
 
 The checker is the source of truth — run it from the managed project's root, with any Python 3.9+:
 
@@ -59,11 +68,40 @@ No ticket given → every `state: todo` ticket. Exit `0` = all complete, `1` = g
 
 ## Step 1: Scope
 
-List every `stable` `Exigence` (`kb_query.py .hosa/kb --type Exigence --where status=stable`). For each one, `kb_query.py .hosa/kb --type Ticket --grep "cdc/<slug>.md"` lists the tickets that link to it — check every existing `Ticket` in `kb/tickets/` for a markdown link pointing back to that `Exigence`'s file — if one already links to it, skip it; a re-run of `backlog` only fills gaps, it never recreates or overwrites a ticket. If every `stable` `Exigence` already has a linked ticket (or there are no `stable` `Exigence`s at all), say so and stop — nothing to write.
+List every `stable` `Exigence` (`kb_query.py .hosa/kb --type Exigence --where status=stable`), except those tagged `nfr` (Step 1b). For each one, `kb_query.py .hosa/kb --type Ticket --grep "cdc/<slug>.md"` lists the tickets that link to it — check every existing `Ticket` in `kb/tickets/` for a markdown link pointing back to that `Exigence`'s file — if one already links to it, skip it; a re-run of `backlog` only fills gaps, it never recreates or overwrites a ticket. If every `stable` `Exigence` already has a linked ticket (or there are no `stable` `Exigence`s at all), say so and stop — nothing to write.
+
+## Step 1b: Definition of Done
+
+An `Exigence` tagged `nfr` (performance, availability, data protection, accessibility, compatibility) is a constraint on every ticket, not a feature: it gets no ticket of its own. Write or update `kb/rules/design/definition-de-termine.md` — what every ticket must meet before `validation` accepts it, each item with **how it is checked**:
+
+```markdown
+---
+type: Design Rule
+title: Définition de terminé
+description: Ce que chaque ticket doit respecter avant d'être accepté
+tags: [process, nfr]
+status: stable
+generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
+---
+## Pour chaque ticket
+- Les tests du plan passent ; la suite complète reste verte — vérifié par `hosa-tester`
+- Lint, format et types sans erreur — commandes de `## Outillage qualité`
+- Revue de code PASS — `hosa-reviewer`
+- Contraintes de la note sécurité respectées et testées
+- Textes conformes au lexique — `lexique_check.py`
+- Documentation utilisateur à jour quand le ticket change ce qu'un utilisateur voit
+
+## Exigences non fonctionnelles
+- [<exigence nfr>](../../cdc/<slug>.md) — <cible chiffrée> — vérifié par : <test automatisé, mesure, outil> — s'applique à : <tous les tickets / ceux qui touchent X>
+```
+
+A target still "pas encore de chiffre" → the item says so; `qa-plan` then tests nothing for it, and the report says it. An `nfr` exigence that also needs something built (a data export for the right of access, a backup job) → its feature part gets a ticket, like any other exigence. Update this file in place on a re-run; log it to `kb/rules/design/log.md`.
 
 ## Step 2: Write the Story (PO role)
 
-For each `Exigence` left after Step 1, write a new `Ticket` to `kb/tickets/<slug>.md`, `state: todo`:
+For each `Exigence` left after Step 1, **split it into tickets** first. A ticket is one usable slice, built, tested and demonstrated alone inside one sprint: one screen with its action, one rule, one import. A process with several screens, roles or rules gives several tickets. An exigence that is already that small stays one ticket. When a ticket can't work before another (authentication, a reference table, a creation before its edition), give it `depends_on: [<slug>]`. Unsure where to cut, or which comes first → ask the user.
+
+Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
 
 ```markdown
 ---
@@ -72,6 +110,7 @@ title: <titre>
 description: <description courte>
 tags: []
 state: todo
+depends_on: []          # tickets à livrer avant celui-ci — retiré si vide
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 En tant que [persona],
@@ -83,7 +122,7 @@ Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
 
 If the `Exigence` names no clear persona, ask the user which persona it serves before writing the story — same "no guessing" discipline as every other Hosa skill.
 
-Then append acceptance criteria derived from the `Exigence`'s own text — at least one scenario, more if the `Exigence` describes distinct cases (happy path, error case, edge case):
+Then append acceptance criteria derived from the `Exigence`'s own text — its `## Règles de gestion` and `## Cas d'erreur` above all — at least one scenario per rule and per error case this ticket covers, plus the nominal path:
 
 ```markdown
 ## Critères d'acceptation
@@ -166,11 +205,15 @@ Never block ticket creation on a missing analysis.
 
 ## Step 6: Priority and Estimate
 
-Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter.
+Once every ticket for this run is written, ask the user once: "Dans quel ordre je priorise ces N tickets ? (numéros, ou 'pas encore' pour laisser sans priorité)". If given, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then ask, per ticket, for a rough `estimate` (S/M/L or points) using the technical note from Step 3 as basis — "pas encore" is a valid answer and leaves the field absent; never invent one to fill the frontmatter. An `L` (or the project's biggest size) won't fit one sprint safely: propose splitting it, as in Step 2.
 
 ## Step 7: Log and Check
 
 Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9. Then run the checker (see **Ticket complet**) on the tickets just written and report any gap it lists.
+
+## Step 8: Commit the Foundation
+
+The structuration wrote real files in the managed project (Docker, quality tooling, data structures, migrations, architecture, interface). `git` Mode 1 refuses to start a sprint on uncommitted source, since the worktree would not contain it. Check `git -C <root> status --porcelain -- . ':(exclude).hosa'`. Not empty → show the list and ask one numbered question: commit it now as the project's foundation? Yes → dispatch `hosa-git` (Mode 3, « commit du socle »).
 
 ## Single-Ticket Mode
 

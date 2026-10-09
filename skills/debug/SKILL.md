@@ -93,6 +93,8 @@ If it reports any of the above failed: report what's still broken and return to 
 
 ## Step 6: Commit
 
+**On a Hosa sprint ticket** (from `develop`'s correction mode): work, test and commit only in the sprint's worktree and its `docker_project`, never on the base branch. Don't commit here: hand the fix back to `develop`, which reviews it (`hosa-reviewer`) and commits it with the `Hosa-Ticket:` trailer.
+
 ```bash
 git status
 git add <only files changed by the fix>

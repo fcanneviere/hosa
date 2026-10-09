@@ -43,6 +43,8 @@ Hold and restate the vision and objectives, each grounded in the personas it ser
 - Flag duplicate and stale tickets.
 - Nothing enters `doing` unless an implementer can start without guessing.
 - A ticket tied to a release carries `milestone: <slug>` (read by `livraison`).
+- A ticket is one usable slice, built and tested inside one sprint. Too big (several screens, roles or rules) → split it. One that can't work before another → `depends_on: [<slug>]`.
+- `kb/rules/design/definition-de-termine.md` (`backlog` Step 1b) turns every `nfr` exigence into a check on each ticket; keep it in step with them.
 - **Every ticket you create** has, from the start, its story, its `Lié à :` line and `## Critères d'acceptation` with at least one Given/When/Then scenario, derived from what surfaced it (failing test, recette gap, audit finding, change impact). No persona or no concrete scenario → Open Question, never half a ticket. The technical, architecture, interface and security notes and the priority aren't yours: list every ticket you created under `## Backlog Changes` → `Added`, so the skill completes it with `backlog`'s Single-Ticket Mode.
 
 ### 3. Business/technical interface
@@ -62,10 +64,10 @@ Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
 A story with a back-office side (someone validates, moderates or manages what it produces) says so in its criteria, or gets a companion back-office ticket — never implied.
 
 ### 5. Ticket validation
-Check the ticket against its own `## Critères d'acceptation` — each scenario holds or not — then its last `## Résultats techniques` (fully passed) and its recette verdicts (`Accepté`, or `## Recette requise` reads "Aucune…"). Never against personal preference. Accept: `state: done` and `verified: { by: hosa-product-owner/1.0, at: … }` (machine-confirmed, OKF §5.3; the user's own acceptance is `by: human:<user>`). Reject: keep `doing`/`blocked`, name exactly which criterion or result failed, send it back to `develop`/`debug`/`qa`. Code correctness is `hosa-reviewer`'s; you check the right thing was built and tested.
+Check the ticket against its own `## Critères d'acceptation` — each scenario holds or not — then its last `## Résultats techniques` (fully passed, `[sécurité]` and `[nfr]` cases included — an `[nfr]` item marked "non testable : pas de cible" is named in your verdict, not hidden) and its recette verdicts (`Accepté`, or `## Recette requise` reads "Aucune…"). Never against personal preference. Accept: `state: done` and `verified: { by: hosa-product-owner/1.0, at: … }` (machine-confirmed, OKF §5.3; the user's own acceptance is `by: human:<user>`). Reject: keep `doing`/`blocked`, name exactly which criterion or result failed, send it back to `develop`/`debug`/`qa`. Code correctness is `hosa-reviewer`'s; you check the right thing was built and tested.
 
 ### 6. Guarantor of execution
-Every ticket a sprint merges went through your validation (5). Anything the pipeline `sprint → qa-plan → git → develop → qa → validation → git` doesn't settle: ask, never invent process. An agreed method is recorded in the KB (`Stack Decision` or `Design Rule`) — the sprint cadence (duration, usual capacity) as the process rule `kb/rules/design/cadence-des-sprints.md`, which `hosa-sprint-planner` reads.
+Every ticket a sprint merges went through your validation (5). Anything the pipeline `sprint → qa-plan → git → develop → qa → validation (démo) → git → bilan-sprint → livraison` doesn't settle: ask, never invent process. An agreed method is recorded in the KB (`Stack Decision` or `Design Rule`) — the sprint cadence (duration, usual capacity) as the process rule `kb/rules/design/cadence-des-sprints.md`, which `hosa-sprint-planner` reads.
 
 ### 7. Sprint review
 Judge whether the **objective** was met, not just whether tickets closed: from delivered vs. deferred tickets, their QA and recette results, and friction points that recur across this sprint's recettes. Write:

@@ -37,6 +37,10 @@ Manual: `/interview`. Auto: "rédige le cahier des charges", "interview les pers
 
 ---
 
+## Step 0: Personas First
+
+A cahier des charges is told from its personas' point of view. No persona in `kb/personnas/` other than the example → stop, say so, and propose `hosa` to create at least one (numbered question).
+
 ## Step 1: List the Processes
 
 Ask: "Quels sont les grands processus métier à couvrir dans le cahier des charges ? (un par un, dis 'terminé' quand c'est bon)". One at a time, waiting for each answer. Zero is not a valid end state here — unlike personas, a cahier des charges needs at least one process; if the user says "terminé" immediately, ask once more before accepting it.
@@ -49,7 +53,7 @@ For each process, check `.hosa/kb/personnas/` and ask the user which persona(s) 
 
 For each persona involved, dispatch `hosa-key-user` as a process-interview request (see `agents/key-user.md`):
 - Which process, and this persona's role in it
-- Ask: objectif du persona dans ce processus, données en entrée (ce dont il a besoin pour commencer), données en sortie (ce qu'il produit/transmet), ce qu'il fait concrètement
+- Ask: objectif du persona dans ce processus, données en entrée (ce dont il a besoin pour commencer), données en sortie (ce qu'il produit/transmet), ce qu'il fait concrètement, les **règles de gestion** qu'il applique (calculs, conditions, seuils, statuts et qui fait passer de l'un à l'autre), et les **cas d'erreur** (donnée manquante ou fausse, doublon, retard, refus) avec ce qui doit se passer alors — avec des exemples chiffrés réels
 
 One persona at a time — don't batch multiple personas into a single dispatch.
 
@@ -84,6 +88,8 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - Données en entrée : <liste>
 - Données en sortie : <liste>
 - Qui fait quoi : <par persona/rôle>
+- Règles de gestion : <calculs, conditions, statuts, avec exemples>
+- Cas d'erreur : <ce qui peut mal se passer, et la réaction attendue>
 - Responsable : <si obtenu>
 ```
 

@@ -5,7 +5,7 @@ description: "Use to turn interview notes into structured exigences in `kb/cdc/`
 
 # Redaction
 
-Writes one `Exigence` concept per business process into `.hosa/kb/cdc/`, using the structured body from the pipeline design (Objectif du processus / Données en entrée / Données en sortie / Qui fait quoi / Responsable / Besoin(s) persona répondu(s)).
+Writes one `Exigence` concept per business process into `.hosa/kb/cdc/`, with a structured body: Objectif du processus / Données en entrée / Données en sortie / Qui fait quoi / Règles de gestion / Cas d'erreur / Responsable / Besoin(s) persona répondu(s).
 
 ## Flow
 
@@ -61,6 +61,12 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ## Qui fait quoi
 - <rôle/persona> : <action concrète>
 
+## Règles de gestion
+- <règle précise : calcul, condition, seuil, statut et transition — avec un exemple chiffré>
+
+## Cas d'erreur
+- <ce qui peut mal se passer> → <ce que le logiciel fait, ce que voit l'utilisateur>
+
 ## Responsable
 <rôle ou persona responsable>
 
@@ -71,6 +77,8 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 `espace` says where the process lives: **front-office** (the application's end users — clients, citizens, members…), **back-office** (the people who run it — administrators, staff, operators, moderators), or both when a process has a user-facing side and a management side. Every front-office process implies back-office work (who creates, validates, moderates, corrects or deletes what end users see or submit): if the notes don't say who does it, ask — never leave the back-office side implicit.
 
 Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from interview notes.
+
+A process with no rule of its own (pure data entry, say) writes `Aucune règle propre — saisie et consultation.` under `## Règles de gestion`; every process has error cases. These two sections are what `backlog` turns into acceptance criteria: a vague rule here becomes a guessed test later.
 
 If a process serves no specific persona (purely transverse — e.g. a compliance step), write `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` instead of a persona link. Every other section is still required — "transverse" doesn't excuse vagueness.
 

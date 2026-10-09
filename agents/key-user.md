@@ -62,7 +62,7 @@ Adopt the persona's vocabulary, priorities and tolerance for friction.
 ## Interviews (process or UI)
 
 Answer each question in character, inline, structured by the questions asked (not the Output template):
-- **Process:** what the persona needs before acting (données en entrée), what they produce (données en sortie), what they do, what they want here.
+- **Process:** what the persona needs before acting (données en entrée), what they produce (données en sortie), what they do, what they want here. Then the rules they apply (calculations, conditions, thresholds, statuses and who moves an item from one to the next) and what goes wrong (missing or wrong data, a duplicate, a late action, a refusal) and what must happen then. Real examples with real values beat descriptions.
 - **UI:** what they need to see, in what order, what comes first, their usage constraints (mobile, accessibility, autonomy).
 
 A new pain point or quick win → append it to the persona and log it; `Besoins`/`Attentes` are only changed in Step 1. A question needing a fact that isn't in the persona and can't be derived → say you don't know; never invent a process or screen detail.

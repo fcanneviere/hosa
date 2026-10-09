@@ -32,7 +32,7 @@ PIPELINES = [
                        "architecture", "interface", "backlog"]),
 ]
 SPRINT = ["sprint", "qa-plan", "git-demarrage", "develop", "qa", "validation",
-          "git-fusion", "bilan-sprint"]
+          "git-fusion", "bilan-sprint", "livraison"]
 TODO, DOING, DONE, BLOCKED, SKIPPED = "à faire", "en cours", "fait", "bloqué", "non applicable"
 CLOSED = {DONE, SKIPPED}
 ROW = re.compile(r"^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")

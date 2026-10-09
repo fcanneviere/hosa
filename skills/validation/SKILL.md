@@ -1,6 +1,6 @@
 ---
 name: validation
-description: "Use to accept or reject an implemented, tested ticket against its criteria, test results and recettes (`hosa-product-owner`). Required before the sprint merge. Triggers: \"valide le ticket X\", after `qa`."
+description: "Use to accept or reject an implemented, tested ticket against its criteria, test results and recettes (`hosa-product-owner`), then run the sprint demo with the user. Required before the sprint merge. Triggers: \"valide le ticket X\", after `qa`."
 ---
 
 # Validation
@@ -19,8 +19,12 @@ Dispatch hosa-product-owner (Responsibility 5)
         ↓ Rejeté → reste doing/blocked, motif renvoyé à develop/
           debug/qa selon la nature du manque
 Log kb/tickets/log.md
-        ↓
-Suite : si tous les tickets du sprint sont validés, propose git Mode 2
+        ↓ tous les tickets du sprint acceptés
+Démo : hosa-qa-lead (Mode 3) écrit les tests T1… → l'utilisateur
+les fait → résultat écrit dans le sprint (## Démo)
+        ↓ KO → develop <ticket> correction → qa → validation
+        ↓ tout OK
+Suite : propose git Mode 2
 ```
 
 ## Trigger
@@ -40,7 +44,14 @@ Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with
 ## Step 3: Apply the Verdict
 
 - **Accept:** `hosa-product-owner` writes `state: done` and `verified: { by: hosa-product-owner/1.0, at: <ISO8601> }` on the ticket directly (it already owns `kb/tickets/` writes) — confirm it did.
-- **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop` (implementation gap), `debug` (technical bug), or `qa` (recette to re-run after a fix).
+- **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix).
+
+## Step 3b: Sprint Demo
+
+Once every ticket of the sprint is `done`, the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …").
+- All OK → write `## Démo` in `kb/sprints/<slug>.md`: the date, each T-test and `OK`. Log to `kb/sprints/log.md`.
+- A KO → record it the same way, then `develop <ticket> correction` with the user's words as the defect report; after its `qa` and `validation`, redo only the failed T-tests.
+- The user says the demo isn't needed this time → write `## Démo` with "Non faite — choix de l'utilisateur" and the date. `hosa-git` refuses the merge with no `## Démo` at all.
 
 ## Step 4: Log
 
@@ -57,8 +68,10 @@ You don't commit — neither in the managed project nor in Hosa's own KB.
 Verdict : Accepté (state: done) / Rejeté — [ce qui manque]
 
 ## Suite
-[Si Rejeté : suggéré : develop / debug / qa]
-[Si Accepté et tous les tickets du sprint sont désormais done :] Sprint <slug-sprint> entièrement validé.
+[Si Rejeté : suggéré : `develop <ticket> correction` / qa]
+[Si Accepté et tous les tickets du sprint sont désormais done :] Sprint <slug-sprint> entièrement validé. Démo : [T-tests ci-dessous / faite : tout OK].
+[T1, T2… de `hosa-qa-lead` Mode 3, tant que la démo n'est pas faite]
+[Démo faite et OK :]
 **Q1 — Je fusionne le sprint maintenant ? (skill `git`, Mode 2)**
   a) Oui, maintenant. (recommandé)
   b) Non, on s'arrête là.

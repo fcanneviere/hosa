@@ -33,7 +33,7 @@ No capacity given → use the usual one from the process rule `kb/rules/design/c
    <python> "${CLAUDE_PLUGIN_ROOT}/skills/backlog/scripts/ticket_check.py" .hosa/kb <ticket files>
    ```
    It checks the story, the acceptance criteria and the four notes — technique, architecture, interface, sécurité — including their "pas encore" fallback lines. Each ticket it marks incomplete goes under `## Tickets écartés` with the gap it lists, proposing `/backlog <ticket>` (or the missing stage: `stack`, `architecture`, `interface`, `securite`). Never put an incomplete ticket in a sprint.
-4. Walk the complete tickets in order up to the capacity → `## Tickets prêts` (tentative, nothing written). Fewer than the capacity → list them all and say so. Stop.
+4. Walk the complete tickets in order up to the capacity → `## Tickets prêts` (tentative, nothing written). **Dependencies:** a ticket whose `depends_on` names a ticket neither `done` nor already taken in this sprint goes under `## Tickets écartés` ("attend `<slug>`"), unless that ticket fits in the capacity too — then take both, the dependency first. List `## Tickets prêts` in the order they must be built. Fewer than the capacity → list them all and say so. Stop.
 
 ## Phase 2 — Write
 
@@ -52,6 +52,7 @@ generated: { by: hosa-sprint-planner/1.0, at: <ISO8601> }
 - [<titre>](../tickets/<slug>.md)
 ```
 
+   `## Tickets` keeps the build order of Phase 1: `develop` follows it.
 6. Log the sprint and each ticket change.
 
 ## Context Diet

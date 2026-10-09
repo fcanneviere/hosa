@@ -1,11 +1,11 @@
 ---
 name: livraison
-description: "Use to ship merged work: scope done tickets, CI and environments (`hosa-infra`), release notes (`hosa-documentation`), optional push/PR (`hosa-git`, on explicit request). Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
+description: "Use to ship merged work: scope done tickets, quality gate (`qualite`), release notes and user docs (`hosa-documentation`), tested tag (`hosa-git`), optional deployment with database backup (`hosa-dba`, `hosa-infra`), optional push. Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
 ---
 
 # Livraison
 
-`git` Mode 2 merges a sprint locally; nothing after that builds it, versions it, or tells anyone what shipped. This skill closes that gap: scope what's actually new, make sure it can run somewhere real, write it down, record the release, and push only if asked.
+`git` Mode 2 merges a sprint locally; nothing after that checks the whole, versions it, deploys it, or tells anyone what shipped. This skill closes that gap: scope what's new, pass the quality gate, write it down, tag a tested version, deploy it if asked, record the release, and push only if asked.
 
 ## Flow
 
@@ -17,26 +17,31 @@ Scope = tickets state: done depuis cette dernière livraison
         ↓ aucun → rien à livrer, stoppe
 Demande la version (semver) à l'utilisateur — jamais devinée
         ↓
-CI/environnements déjà en place (kb/infra/) ?
-    Non → dispatch hosa-infra (## Installation nécessaire)
-    Oui → passe
+Barrière qualité : `qualite` sur le code changé depuis la
+dernière livraison → aucun Bloquant ouvert
         ↓
-Dispatch hosa-documentation : notes de version depuis les
-tickets scopés
+hosa-documentation (Mode 3) : notes de version + documentation
+utilisateur
         ↓
-Écrit/actualise kb/infra/derniere-livraison.md (version, date,
-tickets inclus)
+hosa-git (Mode 3, release) : commit des docs, suite complète et
+contrôles sur la branche de base, tag v<version>
         ↓
-Demande : push + PR maintenant ?
-    Oui → dispatch hosa-git (Mode 3, demande explicite)
-    Non → passe, reste local
+Déployer maintenant ? (question)
+    Oui → hosa-dba (sauvegarde + migrations de la cible) →
+          hosa-infra (Mode 3 : déploie le tag, vérifie,
+          revient en arrière si échec)
+    Non → passe
+        ↓
+Écrit kb/infra/derniere-livraison.md
+        ↓
+Push + PR ? (question) → hosa-git (Mode 3) sur demande explicite
         ↓
 Log kb/infra/log.md
 ```
 
 ## Trigger
 
-Manual: `/livraison [version]`. Auto: "livre le projet", "déploie", "prépare la release" ; proposé en Suite de `git` Mode 2 et de `bilan-sprint` une fois le sprint bouclé.
+Manual: `/livraison [version]`. Auto: "livre le projet", "déploie", "prépare la release" ; proposé en Suite de `bilan-sprint`. Progress-plan stage `livraison` (`--sprint <slug>` of the sprint just reviewed); `skip` it with the user's reason when this sprint ships nothing.
 
 ---
 
@@ -44,19 +49,32 @@ Manual: `/livraison [version]`. Auto: "livre le projet", "déploie", "prépare l
 
 Read `kb/infra/derniere-livraison.md`. If it doesn't exist, this is the first release — scope is every `Ticket` with `state: done`. If it exists, read its `## Tickets inclus` and `## Date`, and scope to every `Ticket` with `state: done` and a `verified.at` timestamp after that date, not already listed. Empty scope either way → report "Rien de nouveau à livrer depuis <dernière version ou 'le début'>." and stop.
 
+No sprint may be `active` with unmerged work the user expects in this release: list any `active` sprint and ask whether it waits.
+
 ## Step 2: Version
 
 Ask the user for the version number (semver or the managed project's own scheme) — never guess a bump type (major/minor/patch) from ticket content alone; if the tickets suggest one, say so as a suggestion, not a default.
 
-## Step 3: CI and Environments
+## Step 3: Quality Gate
 
-Read `kb/infra/` for an existing CI pipeline / staging-or-prod environment record. Missing → this isn't a fresh install (that's `infra`'s job), it's "make what already runs in dev also run somewhere releasable" — dispatch `hosa-infra` (Mode 2, `## Installation nécessaire`) describing exactly that need. `hosa-infra` remains the only agent that ever installs or provisions anything, per the Hosa core rule — this skill never runs a CI/deploy command itself. Once confirmed in place, continue.
+Run `qualite` on the code changed since the last release (`git diff --name-only <last tag or derniere-livraison's commit>..HEAD`; first release → the whole codebase). It audits best practices, performance and security. Any **Bloquant** → stop the release: each becomes a ticket fixed in a sprint, then come back. **À corriger** findings are shown; the user decides whether they wait.
 
-## Step 4: Release Notes
+## Step 4: Release Notes and User Documentation
 
-Dispatch `hosa-documentation` (Mode 3) with the version and the scoped tickets (title, description, linked Exigence) — it prepends a dated section to `CHANGELOG.md` at the managed project's root (or the project's existing changelog file, if different). Never write release notes from this skill directly — documentation in the managed project is `hosa-documentation`'s sole responsibility.
+Dispatch `hosa-documentation` (Mode 3) with the version and the scoped tickets (title, description, linked Exigence). It prepends a dated section to `CHANGELOG.md` (or the project's existing changelog) and updates the user documentation the tickets change. Never write either from this skill: documentation in the managed project is `hosa-documentation`'s alone.
 
-## Step 5: Record the Release
+## Step 5: Tested Tag
+
+Dispatch `hosa-git` (Mode 3, « release ») with the version and the files `hosa-documentation` wrote. It commits them, runs the full suite and the `## Outillage qualité` checks on the base branch, and tags `v<version>` only if all pass. Red → stop: the base has a problem no sprint caught; report it and propose `develop <ticket> correction` or a fix ticket.
+
+## Step 6: Deployment (Optional)
+
+Ask one numbered question: deploy `v<version>` now? Yes:
+1. With a database, dispatch `hosa-dba` (Mode 3, « release ») on the target: a backup checked restorable, then the migrations. A failure restores the backup and stops here.
+2. Dispatch `hosa-infra` (Mode 3): it deploys the tag, verifies it, and rolls back on failure. No `kb/infra/deploiement.md` yet → relay its Open Questions (target, access, secrets location, rollback) to the user first.
+`hosa-infra` and `hosa-dba` stay the only agents that provision or touch a database; this skill never runs a deploy command itself.
+
+## Step 7: Record the Release
 
 Write `.hosa/kb/infra/derniere-livraison.md`:
 
@@ -70,36 +88,44 @@ status: stable
 generated: { by: human:<user>, at: <ISO8601> }
 ---
 ## Version
-<version>
+<version> — tag `v<version>` sur `<commit>`
 
 ## Date
 <ISO8601>
+
+## Qualité
+<audit `kb/qualite/<slug>.md` — Bloquant : 0 — À corriger : N, reportés ou corrigés>
+
+## Déploiement
+<cible, date, vérification OK — ou "Non déployé">
 
 ## Tickets inclus
 - [<titre>](../tickets/<slug>.md)
 ```
 
-Overwrite the previous version of this file — it's a pointer to "the last release", not a history; the history is the release notes `hosa-documentation` wrote into the managed project, and this file's own git history if `kb-commit` runs.
+Overwrite the previous version of this file — it's a pointer to "the last release", not a history; the history is the changelog, the tags, and this file's own git history.
 
-## Step 6: Push / PR (Optional)
+## Step 8: Push / PR (Optional)
 
-Ask the user explicitly, as numbered questions: "Je pousse et j'ouvre une PR maintenant, ou ça reste local ?" and, when pushing, "Je pousse aussi la branche de la KB (`hosa-kb`) ?" Never assume yes because a release was just cut. On yes, dispatch `hosa-git` Mode 3 with that exact request (remote, branch, PR title/body drawn from the release notes) — `hosa-git` confirms the remote/branch back before pushing, per its own Mode 3 discipline.
+Ask the user explicitly, as numbered questions: "Je pousse (branche et tag) et j'ouvre une PR maintenant, ou ça reste local ?" and, when pushing, "Je pousse aussi la branche de la KB (`hosa-kb`) ?" Never assume yes because a release was just cut. On yes, dispatch `hosa-git` Mode 3 with that exact request (remote, branch, tag, PR title/body drawn from the release notes) — `hosa-git` confirms the remote/branch back before pushing, per its own Mode 3 discipline.
 
-## Step 7: Log
+## Step 9: Log
 
 Append to `kb/infra/log.md` (create if missing) — OKF §9 format.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project (that's `hosa-git`'s call, only in Mode 3 on explicit request) nor in Hosa's own KB.
+This skill commits nothing itself: the release commit and the tag are `hosa-git`'s (Mode 3), in the user's name only.
 
 ## Output
 
 ```
 ## Livraison <version>
 - Tickets inclus : [liste]
-- CI/environnements : [déjà en place / mis en place via hosa-infra]
-- Notes de version : [chemin écrit par hosa-documentation]
+- Qualité : [audit, Bloquant : 0]
+- Notes de version : [chemin] — documentation utilisateur : [sections mises à jour]
+- Tag : `v<version>` sur `<commit>` — suite complète X/Y, contrôles OK
+- Déploiement : [cible, vérifié / non déployé]
 - Push/PR : [effectué (remote, branche, PR) / resté local]
 
 ## Suite

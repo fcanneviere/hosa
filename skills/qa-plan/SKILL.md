@@ -41,7 +41,7 @@ For each ticket in the sprint, check whether `.hosa/kb/test/<slug-ticket>-techni
 
 ## Step 3: Dispatch for Each Missing Plan
 
-For each ticket without a plan yet, dispatch `hosa-qa-lead` (Mode 1, `agents/qa-lead.md`) with the ticket's slug. It reads the ticket's story, persona link, and technical note, reads the recorded `Stack Decision`s, defines the technical test cases, identifies the recette required, and writes `kb/test/<slug-ticket>-technique.md`.
+For each ticket without a plan yet, dispatch `hosa-qa-lead` (Mode 1, `agents/qa-lead.md`) with the ticket's slug. It reads the ticket's story, persona link, and technical note, reads the recorded `Stack Decision`s, defines the technical test cases — functional, `[sécurité]` from the ticket's note sécurité, `[navigateur]` for its screens, `[nfr]` from the definition of done — identifies the recette required, and writes `kb/test/<slug-ticket>-technique.md`.
 
 If it returns an Open Question (the technical note or the stack decisions are missing something needed) — relay it to the user, get the answer, and only redispatch once you have it.
 

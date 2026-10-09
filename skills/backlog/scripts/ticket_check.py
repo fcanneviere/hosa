@@ -7,7 +7,8 @@ A ticket is complete when it has, in its body:
   - "## Note technique (senior dev)", "## Placement architecture (architecte)",
     "## Placement interface (UX/UI)" and "## Note sécurité (expert
     cybersécurité)" sections holding a real note, not
-    `backlog`'s "pas encore évalué/déterminé" fallback line.
+    `backlog`'s "pas encore évalué/déterminé" fallback line,
+  - a `depends_on` (if any) naming existing tickets, without a cycle.
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
@@ -52,6 +53,33 @@ def section(body: str, heading: str) -> str | None:
     return None
 
 
+def depends_on(front: str) -> list[str]:
+    m = re.search(r"^depends_on:[ \t]*(.*)$", front, re.M)
+    if not m:
+        return []
+    value = m.group(1).strip()
+    if value.startswith("["):
+        items = value.strip("[]").split(",")
+    elif value:
+        items = [value]
+    else:  # block list
+        items = re.findall(r"^\s+-\s+(.+)$", re.split(r"\n(?=\S)", front[m.end():], maxsplit=1)[0], re.M)
+    return [i.strip().strip("'\"").removesuffix(".md").split("/")[-1] for i in items if i.strip()]
+
+
+def cycle_from(slug: str, tickets: Path, seen: tuple = ()) -> list[str] | None:
+    if slug in seen:
+        return list(seen[seen.index(slug):]) + [slug]
+    f = tickets / f"{slug}.md"
+    if not f.is_file():
+        return None
+    for dep in depends_on(split(f.read_text(encoding="utf-8"))[0]):
+        found = cycle_from(dep, tickets, seen + (slug,))
+        if found:
+            return found
+    return None
+
+
 def gaps(path: Path) -> list[str]:
     front, body = split(path.read_text(encoding="utf-8"))
     if field(front, "type") != "Ticket":
@@ -71,6 +99,12 @@ def gaps(path: Path) -> list[str]:
             missing.append(f"section `{heading}` encore au texte d'attente")
         elif fallback is None and not re.search(r"^\s*[-*] \S", content, re.M):
             missing.append(f"section `{heading}` sans aucun scénario")
+    for dep in depends_on(front):
+        if not (path.parent / f"{dep}.md").is_file():
+            missing.append(f"`depends_on` cite `{dep}`, ticket introuvable")
+    loop = cycle_from(path.stem, path.parent)
+    if loop:
+        missing.append("dépendances en boucle : " + " → ".join(loop))
     if not field(front, "priority"):
         missing.append("(info) pas de `priority` — passera après les tickets priorisés")
     return missing

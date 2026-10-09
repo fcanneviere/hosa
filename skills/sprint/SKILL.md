@@ -41,7 +41,7 @@ If it returns an Open Question (empty backlog, no priority order) — relay it t
 
 ## Step 2: Review with the User
 
-Present `## Tickets prêts` and `## Tickets écartés`. For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise confirm which of `## Tickets prêts` to actually include (the user may drop one to wait for a fuller backlog), and ask for the sprint's name and objective/period if not already given — never invent them.
+Present `## Tickets prêts`, in the build order the planner set from `depends_on`, and `## Tickets écartés` (incomplete, or waiting on a dependency). For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise confirm which of `## Tickets prêts` to actually include (the user may drop one to wait for a fuller backlog), and ask for the sprint's name and objective/period if not already given — never invent them.
 
 If `## Tickets prêts` is empty and the user has no gap to fill, stop here — report the tickets écartés and their Open Questions, don't write a `Sprint`.
 
