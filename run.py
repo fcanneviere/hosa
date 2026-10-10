@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Hosa dashboard launcher.
 
-  python run.py            from the managed project: serves its .hosa/kb on http://localhost:3000
+  python run.py            from the managed project: serves its .hosa/kb on http://127.0.0.1:3000
   python run.py --setup    only (re)builds hosa/app/.venv — the SessionStart hook runs it in the background
 
 The app's dependencies live in hosa/app/.venv, never in the system Python (PEP 668).
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         raise SystemExit("Pas de .hosa/kb ici ni au-dessus : lance run.py depuis le projet géré par Hosa.")
     port = os.environ.get("PORT", "3000")
     if "--no-browser" not in sys.argv:
-        webbrowser.open(f"http://localhost:{port}")
+        webbrowser.open(f"http://127.0.0.1:{port}")  # IPv4 like the server: "localhost" may resolve to ::1, another app
     try:
         subprocess.call([str(PY), str(APP / "server.py")], env={**os.environ, "HOSA_KB_ROOT": str(root), "PORT": port})
     except KeyboardInterrupt:

@@ -13,7 +13,7 @@ From the managed project's root, run in the background (`run_in_background: true
 python "${CLAUDE_PLUGIN_ROOT}/run.py"
 ```
 
-(`python3` where `python` doesn't exist.) It builds the dependencies on first launch (`hosa/app/.venv`, a minute), then opens http://localhost:3000. `PORT=<n>` changes the port when 3000 is busy.
+(`python3` where `python` doesn't exist.) It builds the dependencies on first launch (`hosa/app/.venv`, a minute), then opens http://127.0.0.1:3000. `PORT=<n>` changes the port when 3000 is busy.
 
 Then answer in two lines: the link, and what to look at first — **Steering** shows the progress plan (stage in progress, missing proofs, next skill to run).
 

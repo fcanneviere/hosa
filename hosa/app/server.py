@@ -157,7 +157,7 @@ def serve(root, port=0):
 if __name__ == "__main__":
     root = os.environ.get("HOSA_KB_ROOT") or kb.resolve_kb_root()
     server = serve(root, int(os.environ.get("PORT", 3000)))
-    print(f"Hosa — http://localhost:{server.server_port}  (KB : {root})", file=sys.stderr)
+    print(f"Hosa — http://127.0.0.1:{server.server_port}  (KB : {root})", file=sys.stderr)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
