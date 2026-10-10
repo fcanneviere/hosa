@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -111,6 +113,21 @@ class AppTest(unittest.TestCase):
         self.assertEqual((ov["sprints"][0]["total"], ov["sprints"][0]["done"]), (1, 0))
         self.assertEqual(ov["tickets"]["todo"], 1)
         self.assertEqual(ov["activity"][0]["text"], "human:fab a créé `login`")
+
+    def test_overview_plan_follows_avancement(self):
+        self.assertIsNone(self.call("GET", "/api/overview")[1]["plan"])  # pas de plan : l'app retombe sur l'heuristique
+        with contextlib.redirect_stdout(io.StringIO()):
+            for stage in kb.av.PIPELINES[0][1] + kb.av.PIPELINES[1][1]:
+                kb.av.main([str(self.root), "done", stage])
+            kb.av.main([str(self.root), "skip", "menaces", "--detail", "pas d'API"])
+            kb.av.main([str(self.root), "start", "sprint", "--sprint", "s1", "--detail", "composition"])
+        plan = self.call("GET", "/api/overview")[1]["plan"]
+        self.assertEqual((plan["next"]["stage"], plan["next"]["skill"], plan["next"]["section"]), ("sprint", "sprint", "Sprint s1"))
+        self.assertIn("`## Tickets` ne liste aucun ticket", plan["next"]["gaps"])
+        self.assertEqual([s["title"] for s in plan["sections"]], ["Cahier des charges", "Structuration", "Sprint s1"])
+        menaces = next(s for s in plan["sections"][1]["stages"] if s["stage"] == "menaces")
+        self.assertEqual((menaces["status"], menaces["detail"]), ("non applicable", "pas d'API"))
+        self.assertTrue(plan["resume"][0].startswith("En cours : `sprint` (sprint s1)"))
 
     def test_spa_fallback(self):
         with urllib.request.urlopen(self.base + "/whatever") as r:

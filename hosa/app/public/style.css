@@ -388,3 +388,16 @@ dialog footer .btn { height: 32px; padding: 0 14px; }
 .g-req.orphan > .g-item .g-extra { color: var(--err); }
 .g-ticket { margin-left: 22px; }
 .g-files { margin-left: 22px; }
+
+/* Plan d'avancement (Steering) */
+.plan { display: flex; flex-direction: column; gap: 12px; }
+.plan .resume { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; color: var(--ink2); }
+.psections { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.psection { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.psection .hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.pstage { display: grid; grid-template-columns: 9px 110px 88px minmax(0, 1fr); gap: 8px; align-items: center; padding: 3px 6px; border-radius: 5px; font-size: 12px; color: var(--ink3); }
+.pstage code { font: 11.5px var(--mono); color: var(--ink); }
+.pstage .d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); }
+.pstage.ps-skipped code { text-decoration: line-through; color: var(--faint); }
+.pstage.ps-blocked .st { color: var(--red); }
+.pstage.cur { background: var(--side); }

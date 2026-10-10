@@ -1,4 +1,5 @@
 """Lecture/écriture de la KB OKF (.hosa/kb/) — la KB de fichiers est la seule source de vérité."""
+import importlib.util
 import re
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -257,6 +258,41 @@ def activity(root, limit=60):
     return out[:limit]
 
 
+def _avancement():
+    path = Path(__file__).resolve().parents[2] / "skills" / "status" / "scripts" / "avancement.py"
+    spec = importlib.util.spec_from_file_location("avancement", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+av = _avancement()
+
+
+def plan(root):
+    """Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
+    Mêmes règles que `avancement.py next` : étape à reprendre, son skill, ce qu'il lui manque."""
+    root = Path(root).resolve()
+    path = root / "project" / "avancement.md"
+    if not path.exists():
+        return None
+    sections, resume = av.load(path)
+    found = av.first_open(sections)
+    nxt = None
+    if found:
+        title, r = found
+        sprint = title[len("Sprint "):] if title.startswith("Sprint ") else None
+        nxt = {"stage": r[0], "section": title, "status": r[1], "detail": r[3],
+               "skill": av.SKILL.get(r[0], r[0]),
+               "gaps": av.check(root, r[0], sprint) if r[1] == av.DOING else []}
+    return {
+        "resume": [line[2:] if line.startswith("- ") else line for line in resume.splitlines()],
+        "sections": [{"title": t, "stages": [{"stage": s, "status": st, "at": at, "detail": d} for s, st, at, d in rows]}
+                     for t, rows in sections.items()],
+        "next": nxt,
+    }
+
+
 def overview(root):
     cs = walk(root)
     first_gap = None
@@ -298,6 +334,7 @@ def overview(root):
     return {
         "project": project and {"path": project["path"], "frontmatter": project["frontmatter"],
                                 "objectives": _section(project["body"], "Objectifs mesurables")},
+        "plan": plan(root),
         "pipelines": pipelines,
         "next": first_gap,
         "tickets": counts,

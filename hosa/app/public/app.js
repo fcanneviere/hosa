@@ -280,11 +280,42 @@ function renderHome() {
 
 // --- Steering ---------------------------------------------------------------------
 
+// Statuts écrits par avancement.py → états des pastilles du board.
+const PLAN_STATES = { 'à faire': 'todo', 'en cours': 'doing', fait: 'done', bloqué: 'blocked', 'non applicable': 'skipped' };
+const PLAN_LABELS = { todo: 'To do', doing: 'In progress', done: 'Done', blocked: 'Blocked', skipped: 'Not applicable' };
+
+// Le plan d'avancement (`project/avancement.md`) : la méthode telle que les skills la tiennent.
+function planPanel(plan) {
+  const n = plan.next;
+  const row = (s) => {
+    const st = PLAN_STATES[s.status] || 'todo';
+    return h('div', { class: `pstage ps-${st}${n && s.stage === n.stage ? ' cur' : ''}`, title: s.detail || null },
+      h('span', { class: `sdot s-${st === 'skipped' ? 'todo' : st}`, title: PLAN_LABELS[st] }),
+      h('code', {}, s.stage), h('span', { class: 'st' }, PLAN_LABELS[st]),
+      h('span', { class: 'd' }, [s.detail, s.at && fd(s.at.slice(0, 10))].filter(Boolean).join(' · ')));
+  };
+  return h('section', { class: 'plan' },
+    n ? h('p', { class: 'next' }, 'Next step: ', h('strong', {}, n.stage), ` (${n.section}, ${n.status.toLowerCase()}) — run `,
+      h('code', {}, `/${n.skill}`), ' in Claude Code.')
+      : h('p', { class: 'next' }, 'Every known stage is done — plan a new sprint with ', h('code', {}, '/sprint'), '.'),
+    n?.gaps.length ? h('div', { class: 'blocked' }, h('b', {}, 'Still to prove before it is done'),
+      n.gaps.map((g) => h('div', { class: 'd' }, g))) : null,
+    plan.resume.length ? h('div', { class: 'resume' }, cap('Resume point'), plan.resume.map((l) => h('div', {}, l))) : null,
+    h('div', { class: 'psections' }, plan.sections.map((s) => {
+      const closed = s.stages.filter((x) => ['fait', 'non applicable'].includes(x.status)).length;
+      return h('div', { class: 'psection' },
+        h('div', { class: 'hd' }, h('b', {}, s.title), h('span', { class: 'mono muted' }, `${closed}/${s.stages.length}`)),
+        s.stages.map(row));
+    })));
+}
+
 function nextStep(ov) {
+  if (ov.plan) return planPanel(ov.plan);
   const stage = ov.pipelines.flatMap((l) => l.stages).find((s) => s.skill === ov.next);
   return h('p', { class: 'next' }, stage
     ? ['Next step: ', h('strong', {}, stage.label), ' — run ', h('code', {}, `/${stage.skill}`), ' in Claude Code.']
-    : 'Every step of the method has left its trace in the KB.');
+    : 'Every step of the method has left its trace in the KB.',
+    ' No progress plan yet: ', h('code', {}, '/status'), ' creates it.');
 }
 
 function split(label, legend, bar) {

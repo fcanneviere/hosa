@@ -16,6 +16,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `review` | Check implementation against spec → fix gaps → loop until clean |
 | `debug` | Systematic root cause analysis → confirm with user → fix → commit |
 | `status` | Snapshot of project state — spec, progress, tests, next step |
+| `pilotage` | Open the local dashboard in the browser — progress plan, board, sprints, KB, graph, journal |
 | `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`.hosa/kb/`) |
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |

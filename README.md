@@ -106,17 +106,15 @@ La méthode et les outils viennent d'[oil-ui](https://github.com/oil-oil/oil-ui)
 | opérer la base de données | `/bdd` (migrations, sauvegarde, base de test…) |
 | livrer | « prépare la release » |
 
-## L'application web
+## Le tableau de bord
 
-Une interface locale affiche la KB : pipelines, backlog, sprints, personas.
+Une interface locale montre l'avancement du projet dans la méthode Hosa : le plan d'avancement (étape en cours, preuves manquantes, prochain skill à lancer), le tableau des tickets, les sprints, la KB, le graphe et le journal. Elle lit et modifie les fichiers de la KB, elle n'appelle jamais Claude.
 
-```bash
-python run.py
-```
+Dans Claude Code, demande « ouvre le tableau de bord » ou tape `/pilotage`. Elle s'ouvre sur http://localhost:3000.
 
-Elle installe ses dépendances (`hosa/app/requirements.txt`) et démarre sur http://localhost:3000. Variables optionnelles :
+Ses dépendances Python s'installent toutes seules dans `hosa/app/.venv` du plugin, en arrière-plan, à la première session après l'installation ou la mise à jour du plugin. Rien n'est installé dans le Python du système. Variables optionnelles :
 - `PORT` : port d'écoute (défaut `3000`) ;
-- `HOSA_KB_ROOT` : chemin vers la KB à afficher.
+- `HOSA_KB_ROOT` : chemin vers la KB à afficher (par défaut, celle du dossier courant ou d'un parent).
 
 ## Développer Hosa
 

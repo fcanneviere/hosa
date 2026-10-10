@@ -16,6 +16,18 @@ try {
   process.exit(0); // best-effort — never block session start
 }
 try {
+  // Fresh install or plugin update: the app venv (graph, yaml for the scripts) isn't built yet.
+  // run.py --setup builds it in the background; until then <python> is the system one.
+  const g = require('./graph');
+  const venvReady = fs.existsSync(path.join(root, 'hosa', 'app', '.venv', 'hosa-requirements.sha1'));
+  if (!venvReady) {
+    require('child_process').spawn(process.platform === 'win32' ? 'python' : 'python3', [path.join(root, 'run.py'), '--setup'],
+      { detached: true, stdio: 'ignore', windowsHide: true }).on('error', () => {}).unref();
+  }
+  context += `\n\n## Python\n\n\`<python>\` in skills and agents means \`"${g.python()}"\`.` +
+    (venvReady ? '' : ' Hosa is installing its Python dependencies in the background (first session after install or update): if a script fails on a missing module, wait a minute and retry.');
+} catch (e) {} // best-effort — never block session start
+try {
   context += require('./graph').sessionStart(process.cwd());
 } catch (e) {} // graphe optionnel — never block session start
 try {
