@@ -79,7 +79,7 @@ Si le ticket touche l'interface et que `kb/interface/lexique.md` existe : lance 
 
 ## Step 4c: Code Review
 
-Dispatch `hosa-reviewer` en **revue de ticket** : les sections du ticket (étape 3a), `kb/rules/design/definition-de-termine.md`, les fichiers modifiés et les tests du ticket, le worktree. **FAIL** → redispatch `hosa-developer` en `correction` avec la liste exacte des manques, puis nouvelle revue. Deux FAIL de suite → arrête et montre les manques à l'utilisateur. **PASS-WITH-NOTES** → les notes vont dans la présentation de l'étape 5.
+Dispatch `hosa-reviewer` en **revue de ticket** : les sections du ticket (étape 3a), `kb/rules/design/definition-de-termine.md`, les fichiers modifiés et les tests du ticket, le worktree. Après chaque revue, ajoute une ligne sous `## Revue` du ticket (KB de la racine) : `- <date> — PASS | PASS-WITH-NOTES | FAIL — <manques ou notes>`. Le hook `gate.js` refuse le commit du ticket tant que la dernière ligne n'est pas PASS ou PASS-WITH-NOTES. **FAIL** → redispatch `hosa-developer` en `correction` avec la liste exacte des manques, puis nouvelle revue. Deux FAIL de suite → arrête et montre les manques à l'utilisateur. **PASS-WITH-NOTES** → les notes vont dans la présentation de l'étape 5.
 
 ## Step 5: Present and Confirm
 

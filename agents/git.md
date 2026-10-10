@@ -74,7 +74,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
 Integrate the base into the sprint branch, test there, then land: a failure never touches the base branch, so nothing ever needs rolling back.
 
 1. Read the sprint. Not `active`, or `branch`/`worktree`/`base` missing → nothing to merge, stop. Check the worktree and branch still exist; gone → stale record, stop, propose Mode 3 or Mode 1.
-2. **QA gate**, for every ticket of `## Tickets`:
+2. **QA gate**, for every ticket of `## Tickets` — the `gate.js` hook refuses the landing merge (Step 7) when a proof below is missing, so check first:
    - `state: done` with `verified` — validated by `hosa-product-owner` (`validation`). Not yet → blocking, propose `validation`;
    - `kb/test/<ticket>-technique.md` exists and its **last** `## Résultats techniques` is entirely passed;
    - `## Recette requise` reads "Aucune…", or each persona named has `kb/test/<ticket>-<persona>.md` with `## Verdict` exactly `Accepté` (the verdict, not the per-scénario judgments).
