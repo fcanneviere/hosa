@@ -37,7 +37,7 @@ Manual: `/qualite`. Auto: "audite la qualité du code", "vérifie les bonnes pra
 
 Read `kb/infra/` for the managed project's root path (same as `stack` Step 1 — if missing, stop and say so, this skill has nothing to audit without it).
 
-Scope: from `livraison`, the file list it gives (the code changed since the last release); this audit is then the release gate, and a Bloquant stops it. If invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
+Scope: from `livraison`, the file list it gives (the code changed since the last release); this audit is then the release gate, and a Bloquant stops it. From `validation` (sprint audit), the files the sprint changed; a Bloquant stops the merge. Even on a scoped audit, `hosa-senior-dev` checks **Duplication** against the whole codebase: code a ticket copied from an existing file is only visible from outside the diff. If invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
 
 ## Step 2: Audit Checklist
 
@@ -86,7 +86,7 @@ Log to `kb/qualite/log.md` (create if missing) — OKF §9: chronological, most 
 
 ## Step 5: Route Blocking Findings
 
-Any **Bloquant** anomaly, from either audit: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: <hosa-senior-dev or hosa-security>/1.0, at: <ISO8601> }` — whichever audit surfaced it, not the user. Run `backlog`'s Single-Ticket Mode on it so it's complete, then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise. Each new `Security Rule` `hosa-security` proposes from an unforeseen finding: ask the user, and on yes it's written to `kb/rules/security/` so the next tickets are built with it.
+Any **Bloquant** anomaly, from either audit: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: <hosa-senior-dev or hosa-security>/1.0, at: <ISO8601> }` — whichever audit surfaced it, not the user. Run `backlog`'s Single-Ticket Mode on it so it's complete, then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger** anomalies from a sprint audit: one `Ticket` per fix, grouped by cause (all missing indexes = one ticket), so they reach a sprint instead of piling up until the release. Otherwise **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise. Each new `Security Rule` `hosa-security` proposes from an unforeseen finding: ask the user, and on yes it's written to `kb/rules/security/` so the next tickets are built with it.
 
 ## No Commits
 

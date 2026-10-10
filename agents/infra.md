@@ -67,7 +67,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ```
 
 8. **Quality tooling** — before any code is written, so every ticket is tested and checked from the first sprint. Install, in the stack's usual tools (never one per taste):
-   - a unit and integration **test runner**, with one passing sample test;
+   - a unit and integration **test runner**, with one passing sample test. Its command needs no manual step: the same command on the host and in the container (no shell glob one shell expands and another skips — let the runner find the files), its environment variables loaded by the command itself, and the test data reset before the run (`hosa-dba`'s test database reset). A run that silently skips files or depends on leftover data passes for green;
    - a **database migration tool** when the stack has a database, with its migrations folder and an initial migration (`hosa-dba` operates it afterwards);
    - a **browser test** tool when the application has a web interface (Playwright by default), with one sample test opening the home page;
    - a **linter**, a **formatter** and, when the language has one, a **type checker**, configured on the existing code;

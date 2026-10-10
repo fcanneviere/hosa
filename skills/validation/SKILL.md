@@ -20,6 +20,9 @@ Dispatch hosa-product-owner (Responsibility 5)
           debug/qa selon la nature du manque
 Log kb/tickets/log.md
         ↓ tous les tickets du sprint acceptés
+Audit du sprint : qualite sur les fichiers modifiés par le sprint
+        ↓ Bloquant → develop <ticket> correction → qa → validation
+        ↓ À corriger → tickets au backlog
 Démo : hosa-qa-lead (Mode 3) écrit les tests T1… → l'utilisateur
 les fait → résultat écrit dans le sprint (## Démo)
         ↓ KO → develop <ticket> correction → qa → validation
@@ -35,7 +38,7 @@ Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le tic
 
 ## Step 1: Read and Check Preconditions
 
-Read `kb/tickets/<slug>.md`. If it has no `## Critères d'acceptation` (written before `backlog` carried this field, or written standalone), say so and ask the user to confirm the ticket informally instead — don't invent criteria. Read `kb/test/<slug>-technique.md`: if it doesn't exist, or its most recent `## Résultats techniques` is missing, propose running `qa-plan`/`qa` first and stop. If `## Recette requise` names a persona with no matching verdict file yet, propose `qa` and stop.
+Read `kb/tickets/<slug>.md`. If it has no `## Critères d'acceptation` (written before `backlog` carried this field, or written standalone), say so and ask the user to confirm the ticket informally instead — don't invent criteria. Read `kb/test/<slug>-technique.md`: if it doesn't exist, or its most recent `## Résultats techniques` is missing, propose running `qa-plan`/`qa` first and stop. If `## Recette requise` names a persona with no matching `kb/test/<slug>-<persona>.md` yet, propose `qa` and stop — a verdict written inside the technical plan doesn't count. A `Différé` verdict → one numbered question: replay now (recommended), or accept the ticket and keep the replay ticket `rejeu-recettes-persona-<sprint>` in the backlog.
 
 ## Step 2: Dispatch `hosa-product-owner`
 
@@ -46,9 +49,16 @@ Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with
 - **Accept:** `hosa-product-owner` writes `state: done` and `verified: { by: hosa-product-owner/1.0, at: <ISO8601> }` on the ticket directly (it already owns `kb/tickets/` writes) — confirm it did.
 - **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix).
 
+## Step 3a: Sprint Audit
+
+Once every ticket of the sprint is `done`, run `qualite` scoped to the sprint: the files `git diff --name-only <base>...<branch>` lists (from `kb/sprints/<slug>.md`). Found here, a flaw costs one correction; found at release, it costs a sprint. Write `## Audit` in `kb/sprints/<slug>.md`: the date, the audit files, the count per level.
+- **Bloquant** → `develop <ticket> correction` on the ticket that introduced it, then `qa` and `validation` for that ticket, then this audit again.
+- **À corriger** → `qualite` has `hosa-product-owner` create the tickets; they go to the backlog, not this sprint.
+- **Mineur** → stays in the audit.
+
 ## Step 3b: Sprint Demo
 
-Once every ticket of the sprint is `done`, the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …").
+Once the sprint audit has no Bloquant left, the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …").
 - All OK → write `## Démo` in `kb/sprints/<slug>.md`: the date, each T-test and `OK`. Log to `kb/sprints/log.md`.
 - A KO → record it the same way, then `develop <ticket> correction` with the user's words as the defect report; after its `qa` and `validation`, redo only the failed T-tests.
 - The user says the demo isn't needed this time → write `## Démo` with "Non faite — choix de l'utilisateur" and the date. `hosa-git` refuses the merge with no `## Démo` at all.

@@ -58,7 +58,7 @@ For each persona under the ticket's `## Recette requise` (in `kb/test/<slug-tick
 
 ## Step 5: Record the Recettes
 
-Write each `hosa-key-user` result to `.hosa/kb/test/<slug-ticket>-<slug-persona>.md` in the exact format `recette` uses, and log it to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched). The technical results are already recorded by `hosa-tester` — check its `## Résultats enregistrés` points at the plan; missing → redispatch it rather than writing them yourself.
+Write each `hosa-key-user` result to `.hosa/kb/test/<slug-ticket>-<slug-persona>.md` in the exact format `recette` uses — always this file, never a section of the technical plan: `validation` and `hosa-git` look for it. A recette the user plays on a real device goes to the same file, with one `Oui`/`Non`/`Non observé` per `CAn`: ask for each one, never record a bare "OK". A `Différé` verdict → `hosa-product-owner` creates the ticket `rejeu-recettes-persona-<slug-sprint>` (one per sprint) with the scenarios to replay, so deferred recettes don't pile up unseen. Log each result to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched). The technical results are already recorded by `hosa-tester` — check its `## Résultats enregistrés` points at the plan; missing → redispatch it rather than writing them yourself.
 
 After each ticket (tests, recettes, results recorded): `avancement.py … progress qa --sprint <slug> --detail "<ticket> : QA faite (k/n)" --reprise "qa <ticket suivant>"`.
 

@@ -35,7 +35,7 @@ Manual: `/sprint [capacité]`. Auto: immediately after `backlog`, or "planifie u
 
 ## Step 1: Dispatch to Scope and Classify
 
-First, `kb/infra/environnement-docker.md` must have `## Outillage qualité` with a test command (and the migration command, or "Aucune base de données"): otherwise the project isn't ready for a sprint — say so, invoke `infra` to install them, and stop.
+First, `kb/infra/environnement-docker.md` must have `## Outillage qualité` with a test command (and the migration command, or "Aucune base de données"): otherwise the project isn't ready for a sprint — say so, invoke `infra` to install them, and stop. Same for security: `kb/securite/modele-menaces.md` must exist once the architecture is documented — otherwise run `securite` (Menaces) first. Its abuse cases become the `[sécurité]` tests of every ticket; written after the code, they only find what must be redone.
 
 Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`) with the capacity if one came with the trigger; otherwise it proposes one — don't ask.
 

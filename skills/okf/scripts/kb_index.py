@@ -6,8 +6,8 @@ bundles.
   kb_index.py <kb-dir>          (re)write the summary
   kb_index.py <kb-dir> --print  print it instead
 
-Each line: [title](path) — type · status/state · priority · sprint — description.
-Generated bundles (`code/`), `log.md`, `index.md` and the summary itself are
+Each line: [title](path) — type · status/state · priority · sprint — description,
+cut at DESC_MAX characters: the summary is read first by every agent. Generated bundles (`code/`), `log.md`, `index.md` and the summary itself are
 left out. Stdlib only; the frontmatter is read with a tolerant line parser.
 """
 from __future__ import annotations
@@ -20,6 +20,7 @@ from pathlib import Path
 SKIP_DIRS = {"code"}
 SKIP_FILES = {"log.md", "index.md", "sommaire.md"}
 FIELDS = ("type", "title", "description", "status", "state", "priority", "sprint", "espace")
+DESC_MAX = 160
 
 
 def frontmatter(text: str) -> dict[str, str]:
@@ -50,6 +51,8 @@ def build(kb: Path) -> str:
             f"sprint {fm['sprint']}" if fm.get("sprint") else "",
             f"espace {fm['espace']}" if fm.get("espace") else "") if x)
         desc = fm.get("description", "")
+        if len(desc) > DESC_MAX:
+            desc = desc[:DESC_MAX - 1].rstrip() + "…"
         line = f"- [{fm.get('title') or rel.stem}]({rel.as_posix()}) — {meta}" + (f" — {desc}" if desc else "")
         bundles.setdefault(rel.parts[0] if len(rel.parts) > 1 else ".", []).append(line)
     stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")

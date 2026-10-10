@@ -78,8 +78,9 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
    - `state: done` with `verified` — validated by `hosa-product-owner` (`validation`). Not yet → blocking, propose `validation`;
    - `kb/test/<ticket>-technique.md` exists and its **last** `## Résultats techniques` is entirely passed;
    - `## Recette requise` reads "Aucune…", or each persona named has `kb/test/<ticket>-<persona>.md` with `## Verdict` exactly `Accepté` (the verdict, not the per-scénario judgments).
+   - the sprint has a `## Audit` section (`validation` Step 3a) with no Bloquant left. Missing → blocking, propose `validation`.
    - the sprint has a `## Démo` section (`validation`): every T-test OK, or the user's recorded choice to skip it. Missing → blocking, propose `validation`.
-   `Accepté avec réserves` → listed apart under `## Open Questions` with its reservations; blocking until the user or `hosa-product-owner` accepts the risk. A missing file, `Refusé`, or `Échoué`/`Partiel` technical results → list every blocking ticket and what it lacks, suggest `qa`/`debug`/`hosa-product-owner`, stop. Never a partial merge.
+   `Accepté avec réserves` or `Différé` → listed apart under `## Open Questions` with its reservations or reason (and, for `Différé`, its replay ticket); blocking until the user or `hosa-product-owner` accepts the risk. A missing file, `Refusé`, or `Échoué`/`Partiel` technical results → list every blocking ticket and what it lacks, suggest `qa`/`debug`/`hosa-product-owner`, stop. Never a partial merge.
 3. Uncommitted source in the worktree → stop and list it; the user decides.
 4. **Integrate:** `git merge-base --is-ancestor <base> sprint/<slug>` succeeds → nothing to do. Otherwise `git merge --no-ff <base> -m "Merge <base> into sprint/<slug>"` in the worktree; conflict → `git merge --abort`, list the files, stop (`state` stays `active`; resolved on the sprint branch, then Mode 2 again).
 5. **Database:** `hosa-dba`'s *vérifier* (catches conflicting migrations between sprint and base), then *migrer*, in the sprint's environment. Failure → `## Base de données nécessaire`; you're redispatched from this step.

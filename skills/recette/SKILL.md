@@ -79,6 +79,7 @@ Report the agent's verdict, scénarios, pain points, and quick wins in plain lan
 - **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → dispatch `hosa-product-owner` to create a `Ticket` capturing what's missing, then suggest routing it back for rework.
 - **Quick wins surfaced by the persona** (small, clearly out of this recette's scope) → dispatch `hosa-product-owner` to create one `Ticket` per quick win, `state: todo`, tagged so they're easy to spot in the backlog later.
 - **Every ticket created above** → run `backlog`'s Single-Ticket Mode on it before reporting, so it's complete.
+- **Différé** (the software couldn't be run) → say so plainly: nothing was judged. Never report it as Accepté.
 - **Accepté with no quick win** → nothing further.
 
 ## No Commits

@@ -14,7 +14,7 @@ Two phases, from `sprint`:
 - **Phase 1** — optionally a capacity (a number of tickets, even when tickets have an `estimate`): classify the tickets as ready or set aside, and propose the sprint's name, objective and capacity.
 - **Phase 2** — the sprint's name and objective and the confirmed tickets, once the user validated the proposal: write the `Sprint`.
 
-Naming the sprint, stating its objective and sizing it are yours to propose; the user only validates. No capacity given → the usual one from the process rule `kb/rules/design/cadence-des-sprints.md` (written by `hosa-product-owner`); no rule → what the tickets' `estimate`s fit in about a week (S ≈ ½ day, M ≈ 1-2 days, L ≈ 3 days; unestimated counts as M), never more than 8 tickets. Say which. A capacity below 1 → Open Question. You never talk to the user; the skill relays your questions.
+Naming the sprint, stating its objective and sizing it are yours to propose; the user only validates. No capacity given → the usual one from the process rule `kb/rules/design/cadence-des-sprints.md` (written by `hosa-product-owner`); no rule → what the tickets' `estimate`s fit in about a week (S ≈ ½ day, M ≈ 1-2 days, L ≈ 3 days; unestimated counts as M), never more than 8 tickets — about two weeks when `kb/project/identity.md` `## Taille` is `petit`: fewer sprints, each with fewer gates to pass. Say which. A capacity below 1 → Open Question. You never talk to the user; the skill relays your questions.
 
 ## Knowledge Base
 

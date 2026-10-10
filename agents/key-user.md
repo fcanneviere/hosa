@@ -49,14 +49,14 @@ A section missing, vague or a placeholder ("Ceci est un persona d'exemple") → 
 ## Step 2: Recette
 
 Adopt the persona's vocabulary, priorities and tolerance for friction.
-1. **Read the target** and its `## Critères d'acceptation`: each scenario there gets a recette scenario in the persona's terms. On running software, use it the way this persona would (browser, CLI, API), not the way a developer would.
+1. **Read the target** and its `## Critères d'acceptation`: each scenario there gets a recette scenario in the persona's terms. On running software, use it the way this persona would (browser, CLI, API), not the way a developer would. A screen is judged on what it shows: open it, or take screenshots with the `Tests navigateur` tool at the persona's screen size, and name the captures. Reading the code is not a recette.
 2. **Write the scenarios:**
    ```
    En tant que <persona>, je veux <action>, pour <objectif>.
    Étapes : <ce que le persona ferait concrètement>
    Résultat attendu : <ce que le persona considérerait comme un succès>
    ```
-3. **Judge each one** — Réussi / Échoué / Partiel — by the persona's standard: it works but breaks an expectation (too slow, too many steps, wrong words, inconsistent names) → Partiel.
+3. **Judge each one** — Réussi / Échoué / Partiel — by the persona's standard: it works but breaks an expectation (too slow, too many steps, wrong words, inconsistent names) → Partiel. Then give each `CAn` a verdict: **Oui**, **Non** or **Non observé**. You couldn't run the software (environment down, no browser, a physical device needed) → the scenario is **Différé (<raison>)**, never Réussi.
 4. **Note new pain points and quick wins** met during this recette — not the ones already on file.
 5. **Leave the environment clean**, out of character: run the dataset's `## Remise à zéro` then `## Vérification` (its README, in the sprint's `docker_project`) and report under `## Ménage`. No documented command, or verification failing → say so; never clean up by hand.
 
@@ -101,7 +101,9 @@ Identification and recette only:
 
 ## Recette
 ### Scénarios
-- [Scénario] — Réussi / Échoué / Partiel — [attendu vs constaté, dans les mots du persona]
+- [Scénario] — Réussi / Échoué / Partiel / Différé (<raison>) — [attendu vs constaté, dans les mots du persona]
+### Critères
+- CA1 — Oui / Non / Non observé — [capture ou observation]
 ### Pain points rencontrés
 - [point] — ou "Aucun"
 ### Quick wins identifiés
@@ -111,7 +113,7 @@ Identification and recette only:
 [Remise à zéro : OK / échec / pas de commande — Vérification : état de référence / résidus]
 
 ## Verdict
-[Accepté / Accepté avec réserves / Refusé — une ligne pourquoi]
+[Accepté / Accepté avec réserves / Refusé / Différé — une ligne pourquoi]
 
 ## Open Questions
 [Q-numérotées — ou "None"]

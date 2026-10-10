@@ -83,6 +83,7 @@ Ask one question at a time, in order, waiting for an answer before moving on:
 10. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
 11. Ton niveau en développement : débutant / intermédiaire / expert
 12. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
+13. Taille du projet : petit (quelques écrans, un ou deux personas, un usage principal) / standard — propose "petit" when the description says so ("minuscule", "simple", "perso")
 
 Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine for now — don't force one if the user has none ready yet; but the cahier des charges (`interview`) can't start without one, so say so.
 
@@ -137,6 +138,9 @@ Neuf | Existant
 ## Niveau de l'utilisateur
 - Développement : débutant | intermédiaire | expert
 - Infrastructure : débutant | intermédiaire | expert
+
+## Taille
+petit | standard
 ```
 
 `contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. Every skill reads `## Niveau de l'utilisateur` before asking a technical question (see `using-hosa` Core Rules).

@@ -50,6 +50,8 @@ Then read directly — no agent dispatch:
 
 **Qualité:** the most recent `kb/qualite/log.md` entry's file — read its `## Verdict`. No `kb/qualite/` yet → "jamais audité".
 
+**KB committée:** `git -C .hosa/kb status --short`. Files listed → the KB holds work no checkpoint saved: say how many, and propose `/kb-commit`. A lost session would lose them.
+
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
 
 **Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
@@ -82,6 +84,9 @@ If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stab
 ### Qualité
 - Dernier audit : <Propre / N anomalie(s)> (<date>)
 [Si jamais audité : "Jamais audité."]
+
+### KB
+- Non committé : <N fichier(s) → `/kb-commit`, ou "rien">
 
 ### Documentation
 - Dernière vérification : <date>

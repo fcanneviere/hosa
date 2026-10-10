@@ -53,7 +53,7 @@ Relations are plain relative markdown links in the body (OKF §6.1): `[exigence]
   - hosa-product-owner/1.0 a créé `export-csv`
   ```
 
-  One line per write: actor, verb, slug in backticks. Append under today's heading (create it at the top if missing). Never rewrite past entries.
+  One line per write: actor, verb, slug in backticks, 150 characters at most. Results, test counts, commit details and reasons belong in the concept, not in the log: every agent reading the log pays for each word again. Append under today's heading (create it at the top if missing). Never rewrite past entries.
 
 ## Generated bundles
 

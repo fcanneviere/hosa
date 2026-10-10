@@ -125,10 +125,10 @@ Then append acceptance criteria derived from the `Exigence`'s own text — its `
 
 ```markdown
 ## Critères d'acceptation
-- Étant donné [contexte], quand [action], alors [résultat attendu]
+- CA1 — Étant donné [contexte], quand [action], alors [résultat attendu]
 ```
 
-If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
+Number the criteria `CA1`, `CA2`… and never renumber one: test plans, recettes and validation cite them by number. If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
 
 ## Grounding Rule (Steps 3-5)
 

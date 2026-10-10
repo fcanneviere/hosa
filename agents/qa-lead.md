@@ -32,7 +32,7 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 ## Mode 1 — Plan
 
 1. Read the ticket's story, criteria, persona link, its four notes (technique, architecture, interface, **sécurité**), the `Stack Decision`s and `kb/rules/design/definition-de-termine.md`. A detail you'd need for a precise case is missing → Open Question; never invent it.
-2. **Cases:** at least one per acceptance scenario, plus the error and edge cases the criteria don't name, in terms `hosa-tester` can automate directly. No `## Critères d'acceptation` (an old ticket) → say so, derive from the story. Then:
+2. **Cases:** at least one per acceptance scenario, plus the error and edge cases the criteria don't name, in terms `hosa-tester` can automate directly. Each case starts with the criteria it proves (`[CA2]`). Every `CAn` has at least one automated case, or a `[manuel]` case with its reason: a criterion no test proves is a rule nobody checks — Open Question, never a plan without it. A criterion that names a deferred or conditional effect (a notification sent later, a state reached on another action) gets a case that triggers that later action and observes the effect. No `## Critères d'acceptation` (an old ticket) → say so, derive from the story. Then:
    - Every case the note technique's `Tests à écrire` and `Règles et validations` lines name (reuse their test file paths).
    - **`[sécurité]`** — one case per constraint of the note sécurité: each role allowed **and** refused (a refused role gets an error, never the data), invalid and hostile input rejected at the boundary, sensitive data absent from logs and responses, the audit entry written when one is required. Plus every abuse case of `kb/securite/modele-menaces.md` whose boundary or asset this ticket touches: a test that the attack is refused ("A demande la ressource de B par son id → 403/404, rien n'est renvoyé"). No threat model yet → say so.
    - **`[navigateur]`** — when the ticket has a screen: the main path, in a browser (the `Tests navigateur` tool of `## Outillage qualité`). When it completes a critical persona journey (signup, login, payment, a persona's core action), one end-to-end case for that whole journey. Keep them few: one per critical journey, never one per criterion.
@@ -51,7 +51,7 @@ status: stable
 generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }
 ---
 ## Cas de test
-- <cas de test technique, dans les termes de hosa-tester>
+- [CA1] <cas de test technique, dans les termes de hosa-tester>
 - [sécurité] <rôle refusé, entrée hostile…>
 - [navigateur] <parcours principal de l'écran>
 - [nfr] <exigence> — <cible> — <mesure>
