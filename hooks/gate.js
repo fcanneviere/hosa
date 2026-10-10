@@ -3,14 +3,17 @@
 // their proof in the KB, so a skipped step is refused instead of trusted.
 // - commit in a sprint worktree: carries `Hosa-Ticket: <slug>` and the ticket's
 //   last `## Revue` is PASS or PASS-WITH-NOTES (`develop` Step 4c);
-// - `git merge … sprint/<slug>` (landing): `git` Mode 2's QA gate — every
-//   ticket done and verified, technical results recorded, no recette Refusé or
-//   criterion "Non", `## Audit` with `Bloquant : 0`, `## Démo` with no T-test KO.
+// - `git merge … sprint/<slug>` (landing): `git` Mode 2's QA gate, i.e.
+//   `avancement.py check validation` — tickets done and verified, every CA
+//   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
 
 const fs = require('fs');
 const path = require('path');
-const { findKbRoot } = require('./graph');
+const { spawnSync } = require('child_process');
+const { findKbRoot, python } = require('./graph');
+
+const AVANCEMENT = path.join(__dirname, '..', 'skills', 'status', 'scripts', 'avancement.py');
 
 // Git Bash paths (/c/dev/x) → C:/dev/x, so path.resolve works on Windows.
 const native = (p) => (process.platform === 'win32' ? p.replace(/^\/([a-z])(\/|$)/i, '$1:/') : p);
@@ -61,8 +64,6 @@ function section(text, heading) {
   return out.join('\n');
 }
 
-const field = (text, name) => (new RegExp(`^${name}:\\s*(.+)$`, 'm').exec(text || '') || [])[1];
-
 function commitGate(call, cmd) {
   const m = /[\\/]\.worktrees[\\/]sprint[\\/]([^\\/]+)/.exec(call.dir);
   if (!m) return null;
@@ -89,37 +90,13 @@ function mergeGate(call) {
   const slug = branch.slice('sprint/'.length);
   const root = findKbRoot(call.dir);
   if (!root) return null;
-  const kb = path.join(root, '.hosa', 'kb');
-  const sprint = read(path.join(kb, 'sprints', `${slug}.md`));
-  if (sprint == null) return `sprint \`${slug}\` not found in kb/sprints/.`;
-  const gaps = [];
-  const tickets = [...(section(sprint, 'Tickets') || '').matchAll(/\(\.\.\/tickets\/([^)]+)\.md\)/g)].map((x) => x[1]);
-  if (!tickets.length) gaps.push('`## Tickets` lists no ticket');
-  const tests = fs.existsSync(path.join(kb, 'test')) ? fs.readdirSync(path.join(kb, 'test')) : [];
-  for (const t of tickets) {
-    const text = read(path.join(kb, 'tickets', `${t}.md`));
-    if (field(text, 'state') !== 'done' || !field(text, 'verified')) gaps.push(`${t}: not done and verified (\`validation\`)`);
-    if (section(read(path.join(kb, 'test', `${t}-technique.md`)), 'Résultats techniques') == null) gaps.push(`${t}: no \`## Résultats techniques\` (\`qa\`)`);
-    for (const f of tests.filter((x) => x.startsWith(`${t}-`) && x !== `${t}-technique.md`)) {
-      const r = read(path.join(kb, 'test', f));
-      if (/^\s*Refusé/m.test(section(r, 'Verdict') || '')) gaps.push(`${f}: recette Refusé`);
-      if (/^-\s*CA\d+\s*—\s*Non\s*—/m.test(r || '')) gaps.push(`${f}: a criterion answered Non`);
-    }
-  }
-  const audit = section(sprint, 'Audit');
-  const bloquants = audit && [...audit.matchAll(/Bloquant\s*:\s*(\d+)/g)].pop();
-  if (!bloquants) gaps.push('no `## Audit` with its `Bloquant : N` line (`validation` Step 3a)');
-  else if (bloquants[1] !== '0') gaps.push(`\`## Audit\`: Bloquant : ${bloquants[1]}`);
-  const demo = section(sprint, 'Démo');
-  if (demo == null) gaps.push('no `## Démo` (`validation` Step 3b)');
-  else {
-    const status = {};
-    for (const x of demo.matchAll(/\b(T\d+)\b[^\n]*?\b(OK|KO)\b/g)) status[x[1]] = x[2];
-    const ko = Object.keys(status).filter((k) => status[k] === 'KO');
-    if (ko.length) gaps.push(`\`## Démo\`: ${ko.join(', ')} still KO`);
-  }
-  if (!gaps.length) return null;
-  return `sprint ${slug} can't land, the QA gate fails:\n- ${gaps.join('\n- ')}\nFix each gap through its skill, then merge.`;
+  // One source of truth for a stage's proofs: avancement.py `check`.
+  const r = spawnSync(python(), [AVANCEMENT, path.join(root, '.hosa', 'kb'), 'check', 'validation', '--sprint', slug],
+    { encoding: 'utf8', timeout: 10000, windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
+  if (r.status !== 1) return null; // passed, or the check itself failed: fail-open
+  return `sprint ${slug} can't land, the QA gate fails:
+${r.stdout.trim()}
+Fix each gap through its skill, then merge.`;
 }
 
 function processPayload(p) {

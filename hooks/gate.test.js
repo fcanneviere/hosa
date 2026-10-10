@@ -71,8 +71,20 @@ test('the merge lists every missing proof', () => {
     '.hosa/kb/sprints/s1.md': sprint('## Audit\nBloquant : 1\n## Démo\n- T2 KO\n'),
   });
   const why = denied(bash(r, 'git merge --no-ff sprint/s1'));
-  for (const gap of [/not done and verified/, /recette Refusé/, /criterion answered Non/, /Bloquant : 1/, /T2 still KO/]) assert.match(why, gap);
-  assert.match(denied(bash(project({ ...full, '.hosa/kb/sprints/s1.md': sprint('') }), 'git merge sprint/s1')), /no `## Audit`[\s\S]*no `## Démo`/);
+  for (const gap of [/pas `done` et `verified`/, /recette Refusé/, /critère répondu Non/, /Bloquant : 1/, /T2 encore KO/]) assert.match(why, gap);
+  assert.match(denied(bash(project({ ...full, '.hosa/kb/sprints/s1.md': sprint('') }), 'git merge sprint/s1')), /pas de `## Audit`[\s\S]*pas de `## Démo`/);
+});
+
+test('every acceptance criterion needs a proof', () => {
+  const files = {
+    ...full,
+    '.hosa/kb/tickets/t1.md': `${done}## Critères d'acceptation\n- CA1 — Étant donné…\n- CA2 — Étant donné…\n- CA3 — Étant donné…\n`,
+    '.hosa/kb/test/t1-technique.md': '## Cas\n- [CA2] liste vide\n## Résultats techniques\nok\n',
+    '.hosa/kb/sprints/s1.md': sprint('## Audit\nBloquant : 0\n## Démo\n- T1 OK\n'),
+  };
+  assert.match(denied(bash(project(files), 'git merge sprint/s1')), /t1 : CA3 prouvé\(s\) par aucun cas/);
+  files['.hosa/kb/test/t1-technique.md'] += '- [CA3] notification différée\n';
+  assert.equal(bash(project(files), 'git merge sprint/s1'), null);
 });
 
 test('other git commands pass', () => {

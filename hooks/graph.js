@@ -146,4 +146,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary };
+module.exports = { processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python };

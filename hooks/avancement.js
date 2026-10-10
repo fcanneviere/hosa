@@ -32,7 +32,7 @@ function resumeContext(cwd) {
   const note = kbLayoutNote(root);
   const kb = path.join(root, '.hosa', 'kb');
   const file = path.join(kb, 'project', 'avancement.md');
-  const how = `Keep it current: \`${process.platform === 'win32' ? 'python' : 'python3'} "${SCRIPT}" "${kb}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`.`;
+  const how = `Keep it current: \`${process.platform === 'win32' ? 'python' : 'python3'} "${SCRIPT}" "${kb}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; \`next\` gives the stage to run, its skill and what it still lacks.`;
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
     return `${note}\n\n## Plan d'avancement\n\nNo progress plan yet for this project — the \`status\` skill creates it from the KB. ${how}`;

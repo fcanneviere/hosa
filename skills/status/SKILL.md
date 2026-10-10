@@ -36,7 +36,7 @@ It reads Claude Code's local transcripts and reports token use per agent, per sk
 
 ## Mode Hosa (`.hosa/kb/` exists)
 
-**Plan d'avancement first:** run `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" .hosa/kb show` from the managed project's root — its resume point and stage in progress lead the snapshot. No plan yet (`kb/project/avancement.md` missing — a project started before it existed) → create it now: walk the three pipelines below, and for each stage the KB shows as done (same reading as `## Prochaine étape du pipeline`), run `done <stage>` (`--sprint <slug>` for each sprint's stages), so the plan starts from the project's real state. That's this skill's only write.
+**Plan d'avancement first:** run `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" .hosa/kb show` from the managed project's root — its resume point and stage in progress lead the snapshot. No plan yet (`kb/project/avancement.md` missing — a project started before it existed) → create it now: walk the three pipelines below, and for each stage the KB shows as done (same reading as `## Prochaine étape du pipeline`), run `done <stage> --force` (`--sprint <slug>` for each sprint's stages; `--force` because it records the past, which may predate today's proofs), so the plan starts from the project's real state. That's this skill's only write.
 
 Then read directly — no agent dispatch:
 
@@ -54,7 +54,7 @@ Then read directly — no agent dispatch:
 
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
 
-**Prochaine étape du pipeline:** walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
+**Prochaine étape du pipeline:** `avancement.py .hosa/kb next` gives it, with its skill and what the stage in progress still lacks. To build a missing plan, walk the three Hosa pipelines in order and report the first gap found — the same precondition each stage's own Step 1 already checks, just read here instead of enforced:
 1. CDC: `hosa` (identity) → `interview` → `redaction` → `fondamentaux` → `securite` → `relecture` → `contestation` (needs ≥1 `stable` Exigence to move on)
 2. Data-structuring (needs a stable CDC): `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (Menaces) → `interface` → `backlog`
 3. Delivery cycle (needs a non-empty backlog): `sprint` → `qa-plan` → `git` (M1) → `develop` (tests d'abord) → `qa` → `validation` (démo) → `git` (M2) → `bilan-sprint` → `livraison`
