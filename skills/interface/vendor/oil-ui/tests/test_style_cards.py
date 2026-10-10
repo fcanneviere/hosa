@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -17,7 +18,7 @@ spec.loader.exec_module(cards_builder)
 
 def run(config, out, *extra):
     return subprocess.run([sys.executable, str(SCRIPT), str(config), "--out", str(out), *extra],
-                          capture_output=True, text=True, timeout=60)
+                          capture_output=True, encoding="utf-8", env={**os.environ, "PYTHONIOENCODING": "utf-8"}, timeout=60)
 
 
 class StyleCardTests(unittest.TestCase):
@@ -53,7 +54,7 @@ class StyleCardTests(unittest.TestCase):
         manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
         cards = json.loads(EXAMPLE.read_text(encoding="utf-8"))["cards"]
         self.assertEqual([c["id"] for c in manifest["candidates"]], [c["id"] for c in cards])
-        self.assertEqual(manifest["round"], "风格卡片")
+        self.assertEqual(manifest["round"], "Cartes de style")
         for c in manifest["candidates"]:
             page = (out / c["source"]).read_text(encoding="utf-8")
             self.assertIn("<head>", page)
@@ -67,17 +68,17 @@ class StyleCardTests(unittest.TestCase):
         config = self.write(lambda c: c["content"].update(title="Changed title"))
         self.assert_rejected(config, out, "--force")
         self.assertEqual(run(config, out, "--force").returncode, 0)
-        manifest = json.loads((out / "manifest.json").read_text())
+        manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
         for candidate in manifest["candidates"]:
-            self.assertIn("Changed title", (out / candidate["source"]).read_text())
+            self.assertIn("Changed title", (out / candidate["source"]).read_text(encoding="utf-8"))
         self.assertEqual((out / "notes.txt").read_bytes(), b"keep these bytes\x00")
 
     def test_rejects_bad_config_with_clear_message(self):
         cases = {
             "colors.accent": lambda c: c["cards"][0]["colors"].update(accent="green"),
             "layout": lambda c: c["cards"][0].update(layout="three-columns"),
-            "4–6 张": lambda c: c.update(cards=c["cards"][:2]),
-            "网络字体": lambda c: c["cards"][0]["fonts"].update(display="url(https://fonts.example/x.woff2)"),
+            "4 à 6 cartes": lambda c: c.update(cards=c["cards"][:2]),
+            "pas de police réseau": lambda c: c["cards"][0]["fonts"].update(display="url(https://fonts.example/x.woff2)"),
         }
         for needle, mutate in cases.items():
             with self.subTest(needle):
@@ -94,7 +95,7 @@ class StyleCardTests(unittest.TestCase):
                 config = self.write(lambda c: count(c, n))
                 out = self.dir / f"count-{n}"
                 if n in (3, 7):
-                    self.assert_rejected(config, out, "4–6 张")
+                    self.assert_rejected(config, out, "4 à 6 cartes")
                     self.assertFalse(out.exists())
                 else:
                     result = run(config, out)
@@ -105,7 +106,7 @@ class StyleCardTests(unittest.TestCase):
         cases = [
             ("content", lambda c: c.update(content=[])),
             ("cards", lambda c: c.update(cards="four")),
-            ("第 1 张卡片", lambda c: c["cards"].__setitem__(0, [])),
+            ("carte 1", lambda c: c["cards"].__setitem__(0, [])),
             ("id", lambda c: c["cards"][0].update(id=1)),
             ("name", lambda c: c["cards"][0].update(name=1)),
             ("concept", lambda c: c["cards"][0].update(concept=None)),
@@ -136,7 +137,7 @@ class StyleCardTests(unittest.TestCase):
 
     def test_bad_input_and_output_paths_have_friendly_errors(self):
         config = self.dir / "broken.json"
-        for data, needle in ((b"[]", "根"), (b"{bad", str(config)), (b"\xff\xff", str(config))):
+        for data, needle in ((b"[]", "racine"), (b"{bad", str(config)), (b"\xff\xff", str(config))):
             with self.subTest(data=data):
                 config.write_bytes(data)
                 self.assert_rejected(config, self.dir / "out", needle)
@@ -153,7 +154,7 @@ class StyleCardTests(unittest.TestCase):
                 config = out / name
                 config.parent.mkdir(parents=True)
                 config.write_bytes(EXAMPLE.read_bytes())
-                self.assert_rejected(config, out, "会被输出覆盖", "--force")
+                self.assert_rejected(config, out, "écrasée par la sortie", "--force")
         out = self.dir / "beside"
         out.mkdir()
         config = out / "cards.json"
@@ -175,12 +176,12 @@ class StyleCardTests(unittest.TestCase):
     def test_rejects_output_in_skill_directory_before_creating_it(self):
         out = ROOT / "rejected-style-cards-test-output"
         self.assertFalse(out.exists())
-        self.assert_rejected(EXAMPLE, out, "Skill 安装目录")
+        self.assert_rejected(EXAMPLE, out, "installation du skill")
         self.assertFalse(out.exists())
 
     def test_rejects_card_content_override(self):
         config = self.write(lambda c: c["cards"][0].update(content={"title": "Different product"}))
-        self.assert_rejected(config, self.dir / "out", "不支持覆盖")
+        self.assert_rejected(config, self.dir / "out", "remplacement non pris en charge")
 
     def test_css_values_are_validated_before_writing(self):
         payload = "400;</style><script>alert(1)</script><style>"
@@ -219,7 +220,7 @@ class StyleCardTests(unittest.TestCase):
         out = self.dir / "out"
         result = run(config, out)
         self.assertEqual(result.returncode, 0, result.stderr)
-        page = (out / "card-glaze.html").read_text()
+        page = (out / "card-glaze.html").read_text(encoding="utf-8")
         self.assertNotIn(payload, page)
         self.assertIn("&lt;script&gt;", page)
 
@@ -235,13 +236,13 @@ class StyleCardTests(unittest.TestCase):
         out = self.dir / "out"
         result = run(self.write(english), out)
         self.assertEqual(result.returncode, 0, result.stderr)
-        manifest = json.loads((out / "manifest.json").read_text())
+        manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["project"], "Style cards")
         self.assertEqual(manifest["round"], "Style cards")
         self.assertIn("Compare colors", manifest["brief"])
         for candidate in manifest["candidates"]:
             self.assertIn("Display Georgia · Body Georgia · Numbers Georgia", candidate["typography"])
-            page = (out / candidate["source"]).read_text()
+            page = (out / candidate["source"]).read_text(encoding="utf-8")
             self.assertIn('<html lang="en">', page)
             self.assertIn(candidate["traits"][0], page)
             self.assertNotRegex(json.dumps(candidate, ensure_ascii=False) + page, r"[\u4e00-\u9fff]")
@@ -258,7 +259,7 @@ class StyleCardTests(unittest.TestCase):
                     with self.assertRaises(cards_builder.ConfigError) as caught:
                         cards_builder.build(config, out, True)
                 message = str(caught.exception)
-                self.assertIn("退出码 7", message)
+                self.assertIn("code de sortie 7", message)
                 for label, stream in (("stdout", stdout), ("stderr", stderr)):
                     if stream.strip():
                         self.assertIn(f"{label}: {stream.strip()}", message)

@@ -2,7 +2,7 @@
 <html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="connect-src 'none'"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title><link rel="icon" type="image/png" href="logo.png"><style>
 @font-face{font-family:"Instrument Serif";src:url("fonts/instrument-serif/InstrumentSerif-Regular.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
 :root{--canvas:#faf8f1;--surface:#faf8f1;--well:#eeeee5;--raised:#faf8f1;--line:#dcded3;--line-2:#c2c9bc;--text:#303c35;--soft:#606b60;--faint:#81897e;--ink:#303c35;--accent:#435a47;--chip:#e8eddf;--hl:#ffe28a;--bar-h:68px;--sans:-apple-system,BlinkMacSystemFont,"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;--mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;--brand:"Instrument Serif",Georgia,serif;color-scheme:light;font-family:var(--sans);color:var(--text);background:var(--canvas);font-synthesis:none;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
- /* 动效：咔嗒用于控件，滑行用于画面与切换，弹出用于确认；弹簧曲线由刚度/阻尼采样 */
+ /* Animations : clic pour les contrôles, glissement pour les vues et les changements, rebond pour les confirmations ; courbes de ressort échantillonnées depuis raideur/amortissement */
  --snap:cubic-bezier(.2,.9,.25,1.04);--snap-d:330ms;--glide:cubic-bezier(.2,.8,.2,1);--glide-d:440ms;--pop:cubic-bezier(.3,1.5,.5,1);--exit:cubic-bezier(.4,0,1,1)}
 @supports (transition-timing-function:linear(0,1)){:root{
  --snap:linear(0,.058,.186,.339,.491,.626,.739,.827,.893,.941,.973,.994,1.005,1.011,1.013,1.013,1.012,1.01,1.008,1.006,1);
@@ -80,7 +80,7 @@
 @keyframes vt-in{from{opacity:0;transform:scale(.98)}}
 @keyframes info-in{from{transform:translateX(100%)}}
 @keyframes info-out{to{transform:translateX(100%)}}
-/* 并排与单张之间、视口变化用页面过渡：同一方向的画面从卡片放大到单张，其他卡片淡出，侧栏从右侧滑入 */
+/* Côte à côte ↔ vue unique et changement de taille : transition de page ; la direction s'agrandit de sa carte à la vue unique, les autres cartes s'effacent, le panneau glisse depuis la droite */
 ::view-transition-group(*){animation-duration:var(--glide-d);animation-timing-function:var(--glide)}
 ::view-transition-old(*),::view-transition-new(*){height:100%;object-fit:cover;object-position:50% 0}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.2s}
@@ -89,7 +89,7 @@
 ::view-transition-new(info):only-child{animation:info-in var(--glide-d) var(--glide) both}
 ::view-transition-old(info):only-child{animation:info-out .22s var(--exit) both}
 ::view-transition-old(bar){display:none}::view-transition-new(bar){animation:none}
-/* 视口和缩放只改变形状与位置：外框直接变形，内容不做叠影 */
+/* Taille et zoom ne changent que la forme et la position : le cadre se déforme, le contenu ne se superpose pas */
 html[data-vt=reshape]::view-transition-old(*){animation:none;opacity:0}
 html[data-vt=reshape]::view-transition-new(*){animation:none}
 html[data-vt=reshape]::view-transition-old(*):only-child{animation:vt-out .18s var(--exit) both;opacity:1}
@@ -124,49 +124,49 @@ html[data-vt=reshape]::view-transition-new(*):only-child{animation:vt-in .3s .08
 const DATA = /*__OIL_UI_DATA__*/ null;
 // Interface strings: edit both locales here; manifest content stays as supplied.
 const I18N = {
-  "zh": {
-    "htmlLang": "zh-CN",
-    "pageTitle": "风格对比",
-    "projectTitle": "{project} · 风格对比 · Oil UI{edition}",
+  "fr": {
+    "htmlLang": "fr",
+    "pageTitle": "Comparaison de styles",
+    "projectTitle": "{project} · Comparaison de styles · Oil UI{edition}",
     "brandTitle": "Oil UI{edition} · oiloil.org",
-    "brandLabel": "Oil UI{edition}，打开 oiloil.org",
-    "layoutLabel": "查看方式",
-    "compare": "并排",
-    "loupe": "单张",
-    "viewportLabel": "预览视口",
-    "desktop": "桌面 1280",
-    "mobile": "手机 390",
-    "candidates": "候选方向",
-    "singleView": "单张查看",
-    "previous": "上一个方向",
-    "next": "下一个方向",
-    "switchDirection": "切换方向",
-    "empty": "尚未加入设计小样。按 references/style-explorer.md 准备 manifest 后用生成器组装。",
-    "baseline": "现状",
-    "serviceUnavailable": "开发服务器没有运行",
-    "serviceHelp": "在对话里跟 Agent 说“打开对比页”就行。",
-    "copyCommand": "复制命令",
-    "copyCommandLabel": "复制启动命令",
-    "live": "本地运行",
-    "image": "静态图",
-    "interactive": "可操作",
-    "fonts": "字体",
-    "traits": "特征",
-    "viewDirection": "单张查看 {name}",
-    "selected": "已选择",
-    "peek": "点击单张查看 · 实际尺寸",
-    "fit": "适应窗口",
-    "actual": "实际尺寸 100%",
-    "keyboardHint": "<kbd>←</kbd> <kbd>→</kbd> 切换方向　<kbd>P</kbd> 选择并复制<br><kbd>Esc</kbd> 回到并排",
-    "selectedCopy": "已选择 · 复制",
-    "select": "选择",
-    "selectDirection": "选这个方向",
-    "recopyTitle": "再点一次，重新复制这个方向",
-    "selectTitle": "选择这个方向，并复制给 Agent",
-    "copyRound": "{round}：",
-    "copyChoice": "{round}选 {number} {name}",
-    "copied": "已复制，粘贴给 Agent",
-    "copyFailed": "复制失败，请手动复制"
+    "brandLabel": "Oil UI{edition} — ouvrir oiloil.org",
+    "layoutLabel": "Affichage",
+    "compare": "Côte à côte",
+    "loupe": "Une seule",
+    "viewportLabel": "Taille d'aperçu",
+    "desktop": "Ordinateur 1280",
+    "mobile": "Mobile 390",
+    "candidates": "Directions proposées",
+    "singleView": "Vue unique",
+    "previous": "Direction précédente",
+    "next": "Direction suivante",
+    "switchDirection": "Changer de direction",
+    "empty": "Aucun aperçu pour l'instant. Prépare un manifest, puis lance le générateur.",
+    "baseline": "Actuel",
+    "serviceUnavailable": "Le serveur de dev ne tourne pas",
+    "serviceHelp": "Demande à l'agent « ouvre la page de comparaison ».",
+    "copyCommand": "Copier la commande",
+    "copyCommandLabel": "Copier la commande de démarrage",
+    "live": "En local",
+    "image": "Image fixe",
+    "interactive": "Interactif",
+    "fonts": "Polices",
+    "traits": "Caractéristiques",
+    "viewDirection": "Voir {name} seule",
+    "selected": "Choisie",
+    "peek": "Clique pour la voir seule · taille réelle",
+    "fit": "Ajuster à la fenêtre",
+    "actual": "Taille réelle (100 %)",
+    "keyboardHint": "<kbd>←</kbd> <kbd>→</kbd> Changer de direction · <kbd>P</kbd> Choisir et copier<br><kbd>Esc</kbd> Retour côte à côte",
+    "selectedCopy": "Choisie · Copier",
+    "select": "Choisir",
+    "selectDirection": "Choisir cette direction",
+    "recopyTitle": "Clique encore pour recopier cette direction",
+    "selectTitle": "Choisir cette direction et copier un message pour l'agent",
+    "copyRound": "Manche {round} — ",
+    "copyChoice": "{round}Je retiens {number} {name}",
+    "copied": "Copié. Colle-le à l'agent.",
+    "copyFailed": "Copie impossible. Copie le texte à la main."
   },
   "en": {
     "htmlLang": "en",
@@ -185,7 +185,7 @@ const I18N = {
     "previous": "Previous direction",
     "next": "Next direction",
     "switchDirection": "Switch direction",
-    "empty": "No previews yet. Prepare a manifest as described in references/style-explorer.md, then run the generator.",
+    "empty": "No previews yet. Prepare a manifest, then run the generator.",
     "baseline": "Current",
     "serviceUnavailable": "The dev server isn't running",
     "serviceHelp": "Ask your agent to “open the comparison page.”",
@@ -214,7 +214,7 @@ const I18N = {
   }
 };
 const IS_PRO = DATA?.edition !== 'open';
-const LANG = DATA?.lang || (/^zh/i.test(navigator.language || '') ? 'zh' : 'en');
+const LANG = DATA?.lang || (/^fr/i.test(navigator.language || '') ? 'fr' : 'en');
 function t(key, values={}) {
  values={edition:IS_PRO?' Pro':'',...values};
  return I18N[LANG][key].replace(/\{(\w+)\}/g, (_, name)=>String(values[name] ?? ''));
@@ -261,7 +261,7 @@ function t(key, values={}) {
  }
  const checkServices=()=>services.forEach((state,url)=>checkService(url));
 
- // 动效工具：尊重“减少动态效果”，浏览器不支持时直接落到最终状态
+ // Outils d'animation : respectent « réduire les animations » ; sans prise en charge, état final directement
  function animate(node,frames,opts){if(calm.matches||!node?.animate)return;try{node.animate(frames,opts);}catch{node.animate(frames,{...opts,easing:'ease-out'});}}
  let vtSeq=0;
  function morph(update,kind){
@@ -325,7 +325,7 @@ function t(key, values={}) {
   $$('.card .frame').forEach(f=>f.dataset.viewport=st.viewport);
  }
 
- // 单张查看：所有方向预先排成一条横向轨道，切换时整条轨道滑动，不重新加载画面
+ // Vue unique : toutes les directions sont alignées sur un rail horizontal ; changer fait glisser le rail sans recharger les vues
  function syncLoupe(dir){
   const list=shown(),key=list.map(c=>c.id).join();if(!list.length)return;
   if(key!==loupeKey){
@@ -389,7 +389,7 @@ function t(key, values={}) {
  function step(d){const list=shown(),i=list.findIndex(c=>c.id===st.current),n=list[i+d];if(n)go(n.id);else nudge(d);}
  function nudge(d){animate($('.slide.is-current .stage'),[{transform:'none'},{transform:`translateX(${d*14}px)`},{transform:'none'}],{duration:320,easing:'ease-out'});}
 
- // 选择即复制：再次点击“已选择”重新复制这个方向
+ // Choisir = copier : un nouveau clic sur « Choisie » recopie cette direction
  function choose(id){
   const fresh=st.chosen!==id;st.chosen=id;save();paintChoice();
   if(fresh){

@@ -41,29 +41,29 @@ def find_browser():
 class ShootCLITests(unittest.TestCase):
     def test_help(self):
         result = subprocess.run([NODE, str(SCRIPT), "--help"], cwd=ROOT,
-                                capture_output=True, text=True, timeout=10)
+                                capture_output=True, encoding="utf-8", timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("用法", result.stdout)
+        self.assertIn("Usage", result.stdout)
 
     def test_missing_target(self):
         result = subprocess.run([NODE, str(SCRIPT)], cwd=ROOT,
-                                capture_output=True, text=True, timeout=10)
+                                capture_output=True, encoding="utf-8", timeout=10)
         self.assertNotEqual(result.returncode, 0)
 
     def test_unknown_option(self):
         help_result = subprocess.run([NODE, str(SCRIPT), "--help"], cwd=ROOT,
-                                     capture_output=True, text=True, timeout=10)
+                                     capture_output=True, encoding="utf-8", timeout=10)
         self.assertEqual(help_result.returncode, 0, help_result.stderr)
         options = [line.split()[0] for line in help_result.stdout.splitlines()
                    if line.startswith("  --")]
         for args in (("--xxx",), ("--xxx", "value")):
             with self.subTest(args=args):
                 result = subprocess.run([NODE, str(SCRIPT), *args], cwd=ROOT,
-                                        capture_output=True, text=True, timeout=10)
+                                        capture_output=True, encoding="utf-8", timeout=10)
                 self.assertEqual(result.returncode, 1)
                 self.assertEqual(result.stderr.splitlines(), [
-                    "shoot：不认识的选项 --xxx",
-                    "可用选项：" + " ".join(options),
+                    "shoot : option inconnue --xxx",
+                    "options disponibles : " + " ".join(options),
                 ])
                 self.assertEqual(result.stdout, "")
 
@@ -72,15 +72,15 @@ class ShootCLITests(unittest.TestCase):
             for following in ((), ("--force",)):
                 with self.subTest(option=option, following=following):
                     result = subprocess.run([NODE, str(SCRIPT), option, *following], cwd=ROOT,
-                                            capture_output=True, text=True, timeout=10)
+                                            capture_output=True, encoding="utf-8", timeout=10)
                     self.assertEqual(result.returncode, 1)
-                    self.assertEqual(result.stderr, f"shoot：{option} 需要一个值\n")
+                    self.assertEqual(result.stderr, f"shoot : {option} attend une valeur\n")
 
     def test_force_is_ignored(self):
         result = subprocess.run([NODE, str(SCRIPT), "--force"], cwd=ROOT,
-                                capture_output=True, text=True, timeout=10)
+                                capture_output=True, encoding="utf-8", timeout=10)
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(result.stderr, "shoot：缺少页面地址或文件。\n")
+        self.assertEqual(result.stderr, "shoot : adresse de la page ou fichier manquant.\n")
 
 
 class ShootBrowserTests(unittest.TestCase):
@@ -88,7 +88,7 @@ class ShootBrowserTests(unittest.TestCase):
     def setUpClass(cls):
         if not NODE:
             raise unittest.SkipTest("Node 22+ is not installed")
-        version = subprocess.run([NODE, "--version"], capture_output=True, text=True, timeout=10)
+        version = subprocess.run([NODE, "--version"], capture_output=True, encoding="utf-8", timeout=10)
         if version.returncode or int(version.stdout.strip().lstrip("v").split(".")[0]) < 22:
             raise unittest.SkipTest("Node 22+ is required")
         cls.browser = find_browser()
@@ -107,7 +107,7 @@ class ShootBrowserTests(unittest.TestCase):
 body { margin: 0; padding: 24px; background: #fde68a; font: 20px sans-serif; }
 body[data-state="b"] { background: #bfdbfe; }
 button { padding: 16px; }
-</style></head><body><h1 id="state"></h1><button id="go">切换</button>
+</style></head><body><h1 id="state"></h1><button id="go">Changer</button>
 <script>
 const state = new URLSearchParams(location.search).get('state') || 'a';
 function show(value) {
@@ -124,7 +124,7 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
 
     def shoot(self, output, *args):
         result = subprocess.run([NODE, str(SCRIPT), str(self.page), "--out", str(output), *args],
-                                cwd=ROOT, env=self.env, capture_output=True, text=True, timeout=90)
+                                cwd=ROOT, env=self.env, capture_output=True, encoding="utf-8", timeout=90)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result
 
@@ -176,7 +176,7 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
     def test_mark_reports_missing_elements(self):
         output = self.folder / "missing"
         result = subprocess.run([NODE, str(SCRIPT), str(self.page), "--out", str(output), "--mark", "#go; .nope"],
-                                cwd=ROOT, env=self.env, capture_output=True, text=True, timeout=90)
+                                cwd=ROOT, env=self.env, capture_output=True, encoding="utf-8", timeout=90)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(".nope", result.stderr)
 
@@ -192,7 +192,12 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         outside.mkdir()
         self.addCleanup(shutil.rmtree, outside)
         (outside / 'secret.txt').write_text('test-only-secret', encoding='utf-8')
-        (self.folder / 'leak.txt').symlink_to(outside / 'secret.txt')
+        try:
+            (self.folder / 'leak.txt').symlink_to(outside / 'secret.txt')
+        except OSError:  # Windows without Developer Mode: no symlinks, the other paths are still checked
+            symlinks = False
+        else:
+            symlinks = True
         (self.folder / 'nested').mkdir()
         (self.folder / 'nested/okay.txt').write_text('allowed-resource', encoding='utf-8')
         (self.folder / '.env.production.local').write_text('synthetic-secret', encoding='utf-8')
@@ -200,8 +205,9 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         (self.folder / '.git/config').write_text('synthetic-git-config', encoding='utf-8')
         (self.folder / 'credentials.json').write_text('{"token":"synthetic"}', encoding='utf-8')
         (self.folder / 'server.pem').write_text('synthetic-private-key', encoding='utf-8')
-        (self.folder / 'env.txt').symlink_to(self.folder / '.env.production.local')
-        (self.folder / 'nested/hidden').symlink_to(self.folder / '.git', target_is_directory=True)
+        if symlinks:
+            (self.folder / 'env.txt').symlink_to(self.folder / '.env.production.local')
+            (self.folder / 'nested/hidden').symlink_to(self.folder / '.git', target_is_directory=True)
         (self.folder / 'nested/module.mjs').write_text('export const value = "module-works";', encoding='utf-8')
         blocked = ['/..%2f' + outside.name + '%2fsecret.txt', '/leak.txt', '/%E0%A4%A',
                    '/.env.production.local', '/%2eenv.production.local', '/.git/config',
@@ -217,10 +223,10 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
           if (module.value !== 'module-works') console.error('LEGIT_RESOURCE_BLOCKED');
           console.error('AUDIT_FINISHED');
         })().catch(() => console.error('AUDIT_FAILED'));</script>'''.replace('PATHS', json.dumps(blocked))
-        self.page.write_text(self.page.read_text().replace('</body>', probe + '</body>'), encoding='utf-8')
+        self.page.write_text(self.page.read_text(encoding="utf-8").replace('</body>', probe + '</body>'), encoding='utf-8')
         output = self.folder / 'boundary-shots'
         self.shoot(output, '--wait', '1000')
-        report = json.loads((output / 'report.json').read_text())
+        report = json.loads((output / 'report.json').read_text(encoding="utf-8"))
         issues = '\n'.join(report[0]['issues'])
         self.assertIn('AUDIT_FINISHED', issues)
         for marker in ('SECURITY_LEAK', 'LEGIT_RESOURCE_BLOCKED', 'AUDIT_FAILED'):
@@ -230,7 +236,7 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         output = self.folder / 'safe-states'
         states = ['../escaped', '<label & "quoted">']
         self.shoot(output, '--states', ','.join(states), '--mask', '--sheet')
-        report = json.loads((output / 'report.json').read_text())
+        report = json.loads((output / 'report.json').read_text(encoding="utf-8"))
         self.assertEqual([entry['state'] for entry in report], states)
         for entry in report:
             self.assertRegex(entry['file'], r'^state-\d+-[0-9a-f]{12}\.png$')
@@ -239,10 +245,10 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         self.assert_artifacts(output, ('sheet.png', 'sheet-masked.png'))
 
     def test_type_accepts_selectors_with_quotes(self):
-        self.page.write_text(self.page.read_text().replace('</body>', '<input data-x="value"></body>'), encoding='utf-8')
+        self.page.write_text(self.page.read_text(encoding="utf-8").replace('</body>', '<input data-x="value"></body>'), encoding='utf-8')
         output = self.folder / 'quoted-selector'
         self.shoot(output, '--steps', '''type 'input[data-x="value"]' hello''')
-        report = json.loads((output / 'report.json').read_text())
+        report = json.loads((output / 'report.json').read_text(encoding="utf-8"))
         self.assertEqual(report[0]['issues'], [])
 
     def test_record_steps(self):
@@ -277,7 +283,7 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         result = subprocess.run([
             "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json",
             str(output / "record.mp4"),
-        ], capture_output=True, text=True, timeout=10)
+        ], capture_output=True, encoding="utf-8", timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertGreaterEqual(float(json.loads(result.stdout)["format"]["duration"]), 2.0)
 
@@ -308,15 +314,15 @@ new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.ad
         output = self.folder / "still"
         self.shoot(output, "--motion", "--size", "1280x800")
         issues = "\n".join(json.loads((output / "report.json").read_text(encoding="utf-8"))[0]["issues"])
-        self.assertIn("首次进入：没有检测到动画", issues)
-        self.assertIn("滚动：没有检测到", issues)
+        self.assertIn("Entrée : aucune animation détectée", issues)
+        self.assertIn("Défilement : aucun changement détecté", issues)
 
     def test_steps_reject_unquoted_selectors_with_spaces(self):
         output = self.folder / "unquoted"
         result = subprocess.run([NODE, str(SCRIPT), str(self.page), "--out", str(output), "--steps", "click body #go"],
-                                cwd=ROOT, env=self.env, capture_output=True, text=True, timeout=90)
+                                cwd=ROOT, env=self.env, capture_output=True, encoding="utf-8", timeout=90)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("加引号", result.stdout + result.stderr)
+        self.assertIn("guillemets", result.stdout + result.stderr)
         self.shoot(self.folder / "quoted", "--steps", 'click "body #go"')
 
     def test_motion_skips_scroll_check_on_single_screen(self):
@@ -329,7 +335,7 @@ h1{animation:rise .5s ease-out both}</style></head><body><h1>Game</h1></body></h
         probe = json.loads((output / "report.json").read_text(encoding="utf-8"))[0]
         self.assertEqual(probe["issues"], [])
         self.assertFalse(probe["motion"]["scroll"]["scrollable"])
-        self.assertIn("页面不滚动", result.stdout)
+        self.assertIn("La page ne défile pas", result.stdout)
 
     def test_record_entry_captures_first_appearance(self):
         self.page.write_text('''<!doctype html><html><head><link rel="icon" href="data:,"><style>
@@ -337,7 +343,7 @@ body{margin:0;background:#fde68a}
 @keyframes rise{from{opacity:0;transform:translateY(160px)}to{opacity:1;transform:none}}
 h1{margin:40px;height:300px;background:#1e3a8a;animation:rise .3s ease-out both}</style></head>
 <body><h1></h1></body></html>''', encoding="utf-8")
-        # 出场 0.3 秒就结束：默认录屏开录时已经播完，只有 --entry 能录到它
+        # L'entrée dure 0,3 s : déjà finie quand l'enregistrement normal démarre, seul --entry la capte
         late = self.folder / "late"
         self.shoot(late, "--record", "--hold", "300")
         self.assertEqual((late / "motion-start.jpg").read_bytes(), (late / "motion-end.jpg").read_bytes())
@@ -348,7 +354,7 @@ h1{margin:40px;height:300px;background:#1e3a8a;animation:rise .3s ease-out both}
 
     def test_reports_page_problems(self):
         self.page.write_text(self.page.read_text(encoding="utf-8").replace("</body>", '''
-<div style="width:2000px">溢出</div><img src="missing.png">
+<div style="width:2000px">Débordement</div><img src="missing.png">
 <script>console.error('shoot-test-error'); throw new Error('shoot-test-exception');</script>
 </body>'''), encoding="utf-8")
         for args in ((), ("--record", "--hold", "300")):
@@ -357,12 +363,12 @@ h1{margin:40px;height:300px;background:#1e3a8a;animation:rise .3s ease-out both}
                 self.shoot(output, "--size", "1280x900", *args)
                 report = json.loads((output / "report.json").read_text(encoding="utf-8"))
                 issues = "\n".join(report[0]["issues"])
-                for expected in ("shoot-test-error", "shoot-test-exception", "横向溢出", "图片没加载出来"):
+                for expected in ("shoot-test-error", "shoot-test-exception", "débordement horizontal", "image non chargée"):
                     self.assertIn(expected, issues)
 
 
     def test_reports_blank_webgl_canvas(self):
-        # 同一块画布已经拿了 2d 上下文，再要 webgl 必然失败，用它模拟“截图成功但画布是空的”
+        # Le canevas a déjà un contexte 2d : demander webgl échoue forcément, ce qui simule « capture réussie mais canevas vide »
         self.page.write_text(self.page.read_text(encoding="utf-8").replace("</body>", '''
 <canvas id="bad"></canvas><canvas id="good"></canvas>
 <script>
@@ -372,7 +378,7 @@ const good = document.querySelector('#good'); good.getContext('webgl2') || good.
         output = self.folder / "webgl"
         self.shoot(output)
         issues = "\n".join(json.loads((output / "report.json").read_text(encoding="utf-8"))[0]["issues"])
-        self.assertIn("WebGL：1 个画布没能创建绘图上下文", issues)
+        self.assertIn("WebGL : 1 canevas sans contexte de dessin", issues)
 
 
 if __name__ == "__main__":

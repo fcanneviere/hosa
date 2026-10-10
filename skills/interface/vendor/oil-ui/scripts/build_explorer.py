@@ -29,16 +29,16 @@ PREVIEW_CSP = (
 def text_field(obj: dict, name: str, *, default: str | None = None) -> str:
     value = obj.get(name, default)
     if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{name} 必须是非空字符串")
+        raise ValueError(f"{name} doit être une chaîne non vide")
     return value.strip()
 
 
 def text_list(obj: dict, name: str) -> list[str]:
     values = obj.get(name)
     if not isinstance(values, list) or not values:
-        raise ValueError(f"{name} 必须是非空字符串数组")
+        raise ValueError(f"{name} doit être une liste non vide de chaînes")
     if any(not isinstance(v, str) or not v.strip() for v in values):
-        raise ValueError(f"{name} 的每项必须是非空字符串")
+        raise ValueError(f"{name} : chaque élément doit être une chaîne non vide")
     return [v.strip() for v in values]
 
 
@@ -56,22 +56,22 @@ class AssetCheck(HTMLParser):
         if tag == "head" and self.head_position is None:
             self.head_position = (self.getpos(), self.get_starttag_text())
         if tag in ("iframe", "frame", "object", "embed"):
-            raise ValueError("候选 HTML 不支持嵌套文档；请提供静态内容或截图")
+            raise ValueError("HTML candidat : documents imbriqués non pris en charge ; fournis du contenu statique ou une capture")
         if tag == "style":
             self.in_style = True
         if attrs.get("style"):
             self.styles.append(attrs["style"])
         if tag == "base":
-            raise ValueError("候选 HTML 不应包含 base；资源需要内嵌")
+            raise ValueError("HTML candidat : pas de balise base ; les ressources doivent être intégrées")
         if tag == "meta" and attrs.get("http-equiv", "").lower() == "refresh":
-            raise ValueError("候选 HTML 不应自动跳转")
+            raise ValueError("HTML candidat : pas de redirection automatique")
         for key in ("src", "poster", "data", "href", "xlink:href"):
             value = attrs.get(key, "") or ""
             if not value or value.startswith(("#", "data:")):
                 continue
-            raise ValueError(f"候选 HTML 含未内嵌资源 {tag}.{key}: {value}")
+            raise ValueError(f"HTML candidat : ressource non intégrée {tag}.{key} : {value}")
         if attrs.get("srcset"):
-            raise ValueError("候选 HTML 请用内嵌 src 代替 srcset")
+            raise ValueError("HTML candidat : utilise un src intégré au lieu de srcset")
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "style":
@@ -105,11 +105,11 @@ def check_css(css: str, label: str) -> None:
 
     def check_resource(value: str):
         if not css_unescape(value).strip().lower().startswith(("data:", "#")):
-            raise ValueError(f"{label}: CSS 含未内嵌资源")
+            raise ValueError(f"{label} : le CSS contient une ressource non intégrée")
 
     for index, (kind, value) in enumerate(tokens):
         if value == "@" and index + 1 < len(tokens) and tokens[index + 1][0] == "ident" and css_unescape(tokens[index + 1][1]).lower() == "import":
-            raise ValueError(f"{label}: 请内嵌 CSS，不使用 @import")
+            raise ValueError(f"{label} : intègre le CSS, sans @import")
         name = css_unescape(value).lower() if kind == "ident" else ""
         if name not in ("url", "image-set", "-webkit-image-set", "image", "src"):
             continue
@@ -243,7 +243,7 @@ def prepare_html(path: Path, interactive: bool = False, root: Path | None = None
     for style in parser.styles:
         check_css(style, path.name)
     if parser.head_position is None:
-        raise ValueError(f"{path.name}: 候选 HTML 需要完整的 head 元素")
+        raise ValueError(f"{path.name} : le HTML candidat doit avoir un élément head complet")
     (line, column), start_tag = parser.head_position
     head_end = sum(len(part) + 1 for part in content.split('\n')[:line - 1]) + column + len(start_tag)
     meta = f'<meta http-equiv="Content-Security-Policy" content="{preview_csp(interactive)}">'
@@ -259,7 +259,7 @@ def prepare_image(path: Path) -> str:
     elif data.startswith(b"RIFF") and data[8:12] == b"WEBP":
         mime = "image/webp"
     else:
-        raise ValueError(f"{path.name}: 静态预览支持 PNG、JPEG 和 WebP")
+        raise ValueError(f"{path.name} : l'aperçu statique accepte PNG, JPEG et WebP")
     return f"data:{mime};base64," + base64.b64encode(data).decode("ascii")
 
 
@@ -272,68 +272,68 @@ def local_url(value: str, identifier: str) -> str:
         parts = urlsplit(value)
         parts.port  # Reject malformed ports before generating CSP origins.
     except ValueError:
-        raise ValueError(f"{identifier}: url 必须是有效的本机 http(s) 地址") from None
+        raise ValueError(f"{identifier} : url doit être une adresse http(s) locale valide") from None
     if parts.scheme not in ("http", "https") or (parts.hostname or "").lower() not in LOOPBACK or parts.username or parts.password:
-        raise ValueError(f"{identifier}: url 只能是本机开发服务器地址，例如 http://localhost:5173/orders")
+        raise ValueError(f"{identifier} : url ne peut viser qu'un serveur de dev local, par exemple http://localhost:5173/orders")
     return value
 
 
 def load_manifest(path: Path) -> tuple[dict, set[Path]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or raw.get("schemaVersion") != 1:
-        raise ValueError("manifest.schemaVersion 必须为 1")
+        raise ValueError("manifest.schemaVersion doit valoir 1")
     data = {"schemaVersion": 1, "project": text_field(raw, "project"),
             "brief": text_field(raw, "brief"), "round": text_field(raw, "round", default="01")}
     if "lang" in raw:
-        if raw["lang"] not in ("zh", "en"):
-            raise ValueError('manifest.lang 只能是 "zh" 或 "en"')
+        if raw["lang"] not in ("fr", "en"):
+            raise ValueError('manifest.lang doit valoir "fr" ou "en"')
         data["lang"] = raw["lang"]
     if "serve" in raw:
         serve = raw["serve"]
         if not isinstance(serve, dict):
-            raise ValueError("serve 必须是对象")
+            raise ValueError("serve doit être un objet")
         if not isinstance(serve.get("command"), str) or not serve["command"].strip():
-            raise ValueError("serve.command 必须是非空字符串")
+            raise ValueError("serve.command doit être une chaîne non vide")
         if "cwd" in serve and (not isinstance(serve["cwd"], str) or not Path(serve["cwd"]).is_absolute()):
-            raise ValueError("serve.cwd 必须是绝对路径")
+            raise ValueError("serve.cwd doit être un chemin absolu")
         if "url" in serve:
             if not isinstance(serve["url"], str) or not serve["url"].strip():
-                raise ValueError("serve.url 必须是非空的本机 http(s) 地址")
+                raise ValueError("serve.url doit être une adresse http(s) locale non vide")
             local_url(serve["url"], "serve")
         data["serve"] = serve
     candidates = raw.get("candidates")
     if not isinstance(candidates, list) or not candidates:
-        raise ValueError("candidates 至少需要一个候选")
+        raise ValueError("candidates doit contenir au moins un candidat")
     seen = set()
     inputs = {path, TEMPLATE.resolve()}
     output = []
     for candidate in candidates:
         if not isinstance(candidate, dict):
-            raise ValueError("每个候选必须是对象")
+            raise ValueError("chaque candidat doit être un objet")
         identifier = text_field(candidate, "id")
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", identifier) or identifier in seen:
-            raise ValueError(f"候选 id 无效或重复: {identifier}")
+            raise ValueError(f"id de candidat invalide ou en double : {identifier}")
         seen.add(identifier)
         kind = candidate.get("kind", "html")
         if kind not in ("html", "image", "url"):
-            raise ValueError(f"未知候选 kind: {kind}")
+            raise ValueError(f"kind de candidat inconnu : {kind}")
         baseline = candidate.get("baseline", False)
         interactive = candidate.get("interactive", False)
         if not isinstance(baseline, bool) or not isinstance(interactive, bool):
-            raise ValueError(f"{identifier}: baseline 和 interactive 必须是 true 或 false")
+            raise ValueError(f"{identifier} : baseline et interactive doivent valoir true ou false")
         if interactive and kind != "html":
-            raise ValueError(f"{identifier}: interactive 只用于 html 候选")
+            raise ValueError(f"{identifier} : interactive ne s'applique qu'aux candidats html")
         if kind == "url":
             source = None
             url = local_url(text_field(candidate, "url"), identifier)
         else:
             source = (path.parent / text_field(candidate, "source")).resolve()
             if not source.is_relative_to(path.parent) or not source.is_file():
-                raise ValueError(f"候选 source 必须是 manifest 目录内可读文件: {identifier}")
+                raise ValueError(f"source du candidat : doit être un fichier lisible dans le dossier du manifest : {identifier}")
             inputs.add(source)
         colors = text_list(candidate, "palette")
         if any(not re.fullmatch(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})", c) for c in colors):
-            raise ValueError(f"{identifier}: palette 需要十六进制颜色")
+            raise ValueError(f"{identifier} : palette attend des couleurs hexadécimales")
         output.append({
             "id": identifier,
             **{name: text_field(candidate, name) for name in ("name", "concept", "typography")},
@@ -344,7 +344,7 @@ def load_manifest(path: Path) -> tuple[dict, set[Path]]:
             "interactive": interactive,
         })
     if sum(c["baseline"] for c in output) > 1:
-        raise ValueError("最多只能有一个基线候选")
+        raise ValueError("un seul candidat de référence (baseline) au plus")
     # The current version always sits first so every direction is read against it.
     output.sort(key=lambda c: not c["baseline"])
     data["candidates"] = output
@@ -357,17 +357,17 @@ def build(manifest: Path, output: Path, *, force: bool = False) -> dict:
     manifest, output = manifest.resolve(), output.resolve()
     data, inputs = load_manifest(manifest)
     if output in inputs or output.is_relative_to(SKILL_ROOT):
-        raise ValueError("输出不能覆盖输入或写进 Skill 安装目录")
+        raise ValueError("la sortie ne peut ni écraser une entrée ni être dans le dossier d'installation du skill")
     if output.exists() and not force:
-        raise FileExistsError("输出已存在；使用新路径，或明确加 --force 更新")
+        raise FileExistsError("la sortie existe déjà ; choisis un autre chemin, ou ajoute --force pour la mettre à jour")
     template = embed_local_files(TEMPLATE.read_text(encoding="utf-8"), TEMPLATE.parent, SKILL_ROOT, inputs)
     skill_file = SKILL_ROOT / "SKILL.md"
     skill = skill_file.read_text(encoding="utf-8") if skill_file.is_file() else ""
     data["edition"] = "pro" if re.search(r"^name:\s*oil-ui-pro\s*$", skill, re.MULTILINE) else "open"
     if template.count(MARKER) != 1:
-        raise ValueError("模板数据入口缺失或重复")
+        raise ValueError("point d'entrée des données du gabarit absent ou en double")
     if template.count(CONNECT_CSP) != 1:
-        raise ValueError("模板连接策略入口缺失或重复")
+        raise ValueError("point d'entrée de la politique de connexion du gabarit absent ou en double")
     origins = set()
     for candidate in data["candidates"]:
         if candidate["kind"] == "url":
@@ -395,26 +395,29 @@ def build(manifest: Path, output: Path, *, force: bool = False) -> dict:
         with output.open("x", encoding="utf-8") as handle:
             handle.write(page)
     if origins and "serve" not in data:
-        print("提醒：本轮包含 url 候选，建议在 manifest 顶层补上 serve 启动方式，方便重新打开对比页。", file=sys.stderr)
+        print("Rappel : cette manche contient des candidats url ; ajoute serve à la racine du manifest pour pouvoir rouvrir la page de comparaison.", file=sys.stderr)
     return {"output": str(output), "candidates": len(data["candidates"]), "fingerprint": data["fingerprint"], "bytes": output.stat().st_size}
 
 
 def main() -> int:
     if sys.version_info < (3, 10):
-        print("需要 Python 3.10 或更新版本", file=sys.stderr)
+        print("Python 3.10 ou plus récent requis", file=sys.stderr)
         return 2
-    parser = argparse.ArgumentParser(description="把本地候选与 manifest 组装成独立风格对比 HTML")
+    parser = argparse.ArgumentParser(description="Assemble les candidats locaux et le manifest en une page HTML autonome de comparaison de styles")
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--force", action="store_true", help="明确允许原子更新已有输出")
+    parser.add_argument("--force", action="store_true", help="autorise la mise à jour atomique d'une sortie existante")
     args = parser.parse_args()
     try:
         print(json.dumps(build(args.manifest, args.output, force=args.force), ensure_ascii=False))
         return 0
     except (OSError, ValueError, TypeError) as exc:
-        print(f"未生成对比页：{exc}", file=sys.stderr)
+        print(f"page de comparaison non générée : {exc}", file=sys.stderr)
         return 1
 
 
 if __name__ == "__main__":
+    # UTF-8 whatever the console code page (Windows: cp1252), so accented messages read the same everywhere.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     raise SystemExit(main())

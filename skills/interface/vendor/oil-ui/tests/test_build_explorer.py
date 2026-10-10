@@ -6,6 +6,7 @@ import importlib.util
 from html.parser import HTMLParser
 import io
 import json
+import os
 import re
 from pathlib import Path
 import shutil
@@ -29,8 +30,8 @@ class ExplorerBuildTests(unittest.TestCase):
         self.manifest = self.folder / "manifest.json"
         self.output = self.folder / "output" / "explore.html"
         self.source = self.folder / "sample.html"
-        self.source.write_text('<!doctype html><html><head><style>body{color:#123}</style></head><body>同一内容<script>window.bad=true</script></body></html>', encoding="utf-8")
-        self.data = {"schemaVersion": 1, "project": "项目", "brief": "同一内容比较", "round": "01", "candidates": [{"id": "a", "name": "方向一", "concept": "编辑式", "typography": "宋体与黑体", "palette": ["#112233", "#fff"], "traits": ["大标题"], "kind": "html", "source": "sample.html"}]}
+        self.source.write_text('<!doctype html><html><head><style>body{color:#123}</style></head><body>Même contenu<script>window.bad=true</script></body></html>', encoding="utf-8")
+        self.data = {"schemaVersion": 1, "project": "Projet", "brief": "Comparaison sur le même contenu", "round": "01", "candidates": [{"id": "a", "name": "Direction un", "concept": "Éditorial", "typography": "Serif et sans-serif", "palette": ["#112233", "#fff"], "traits": ["Grand titre"], "kind": "html", "source": "sample.html"}]}
         self.save()
 
     def save(self):
@@ -42,7 +43,7 @@ class ExplorerBuildTests(unittest.TestCase):
     def test_lang_is_optional_and_preserved_when_explicit(self):
         builder.build(self.manifest, self.output)
         self.assertNotIn("lang", self.payload(self.output.read_text(encoding="utf-8")))
-        for lang in ("zh", "en"):
+        for lang in ("fr", "en"):
             with self.subTest(lang=lang):
                 self.data["lang"] = lang
                 self.save()
@@ -52,7 +53,7 @@ class ExplorerBuildTests(unittest.TestCase):
     def test_invalid_lang_preserves_existing_output(self):
         builder.build(self.manifest, self.output)
         original = self.output.read_bytes()
-        for lang in (None, "", "ZH", "zh-CN", "en-US", "fr", 1, True, [], {}):
+        for lang in (None, "", "FR", "fr-FR", "en-US", "zh", 1, True, [], {}):
             with self.subTest(lang=lang):
                 self.data["lang"] = lang
                 self.save()
@@ -64,17 +65,17 @@ class ExplorerBuildTests(unittest.TestCase):
         template = builder.TEMPLATE.read_text(encoding="utf-8")
         table_text = template.split("const I18N = ", 1)[1].split(";\n", 1)[0]
         table = json.loads(table_text)
-        self.assertEqual(set(table), {"zh", "en"})
-        self.assertEqual(set(table["zh"]), set(table["en"]))
+        self.assertEqual(set(table), {"fr", "en"})
+        self.assertEqual(set(table["fr"]), set(table["en"]))
         keys = set(re.findall(r"\bt\('([^']+)'", template))
         keys.update(re.findall(r'data-i18n(?:-[\w-]+)?="([^"]+)"', template))
-        self.assertEqual(keys, set(table["zh"]))
+        self.assertEqual(keys, set(table["fr"]))
         for key in keys:
-            self.assertTrue(table["zh"][key], key)
+            self.assertTrue(table["fr"][key], key)
             self.assertTrue(table["en"][key], key)
             self.assertNotRegex(table["en"][key], r"[\u3400-\u9fff]", key)
             placeholders = lambda value: set(re.findall(r"\{(\w+)\}", value))
-            self.assertEqual(placeholders(table["zh"][key]), placeholders(table["en"][key]), key)
+            self.assertEqual(placeholders(table["fr"][key]), placeholders(table["en"][key]), key)
         # Both locales are shipped for browser detection; neither may leak into
         # markup or JavaScript outside this single table (comments are not UI).
         shell = template.replace(table_text, "{}")
@@ -88,9 +89,9 @@ class ExplorerBuildTests(unittest.TestCase):
         translations = translations[translations.index("const I18N = "):]
         copy_function = template.split(" function copyText()", 1)[1].split("\n async function copy", 1)[0]
         number_function = template.split("no=c=>", 1)[1].split(",vtName=", 1)[0]
-        cases = [(None, "zh-CN", "zh"), (None, "ZH-hant", "zh"),
-                 (None, "en-US", "en"), (None, "fr-FR", "en"),
-                 (None, "", "en"), ("zh", "en-US", "zh"), ("en", "zh-CN", "en")]
+        cases = [(None, "fr-FR", "fr"), (None, "FR-ca", "fr"),
+                 (None, "en-US", "en"), (None, "zh-CN", "en"),
+                 (None, "", "en"), ("fr", "en-US", "fr"), ("en", "fr-FR", "en")]
         program = "const results=[];\n"
         for lang, browser_lang, expected in cases:
             for round_value, notes, baseline in (("01", "  More space  ", False), ("", "", False), ("02", "", True)):
@@ -103,13 +104,16 @@ class ExplorerBuildTests(unittest.TestCase):
                 program += "const no=c=>" + number_function + ";\nfunction copyText()" + copy_function
                 program += "\nresults.push({lang:LANG,text:copyText()});\n}\n"
         program += "console.log(JSON.stringify(results));"
-        run = subprocess.run([shutil.which("node"), "-e", program], capture_output=True, text=True, timeout=10)
+        # Through a file: the program exceeds the Windows command line limit.
+        script = self.folder / "language-check.js"
+        script.write_text(program, encoding="utf-8")
+        run = subprocess.run([shutil.which("node"), str(script)], capture_output=True, encoding="utf-8", timeout=10)
         self.assertEqual(run.returncode, 0, run.stderr)
         results = iter(json.loads(run.stdout))
         for _, _, expected in cases:
-            number = "现状" if expected == "zh" else "Current"
-            texts = (["01：选 01 Direction A", "选 01 Direction A", f"02：选 {number} Direction A"]
-                     if expected == "zh" else ["Round 01: Go with 01 Direction A", "Go with 01 Direction A", f"Round 02: Go with {number} Direction A"])
+            number = "Actuel" if expected == "fr" else "Current"
+            texts = (["Manche 01 — Je retiens 01 Direction A", "Je retiens 01 Direction A", f"Manche 02 — Je retiens {number} Direction A"]
+                     if expected == "fr" else ["Round 01: Go with 01 Direction A", "Go with 01 Direction A", f"Round 02: Go with {number} Direction A"])
             for text in texts:
                 self.assertEqual(next(results), {"lang": expected, "text": text})
 
@@ -142,7 +146,7 @@ class ExplorerBuildTests(unittest.TestCase):
 })();
 </script>"""
         table = json.loads(builder.TEMPLATE.read_text(encoding="utf-8").split("const I18N = ", 1)[1].split(";\n", 1)[0])
-        for lang in ("zh", "en"):
+        for lang in ("fr", "en"):
             with self.subTest(lang=lang):
                 self.data["lang"] = lang
                 self.save()
@@ -197,7 +201,7 @@ finally{clearTimeout(deadline);chrome.kill();}
 """
                 run = subprocess.run([shutil.which("node"), "--input-type=module", "-e", runner, chrome,
                                       str(self.folder / ("chrome-" + lang)), self.output.as_uri()],
-                                     capture_output=True, text=True, timeout=25)
+                                     capture_output=True, encoding="utf-8", timeout=25)
                 self.assertEqual(run.returncode, 0, run.stderr)
                 observed = json.loads(run.stdout)
                 self.assertEqual(observed["lang"], table[lang]["htmlLang"])
@@ -210,18 +214,18 @@ finally{clearTimeout(deadline);chrome.kill();}
                 for key in ("compare", "loupe", "layoutLabel", "viewportLabel",
                             "baseline", "fonts", "traits", "actual", "fit", "empty", "copied", "copyFailed"):
                     self.assertIn(table[lang][key], strings, key)
-                    other = table["en" if lang == "zh" else "zh"][key]
+                    other = table["en" if lang == "fr" else "fr"][key]
                     self.assertNotIn(other, strings, key)
                 if lang == "en":
                     self.assertNotRegex("\n".join(strings), r"[\u3400-\u9fff]")
-                self.assertEqual(observed["copied"], ["01：选 现状 Direction A"] if lang == "zh"
+                self.assertEqual(observed["copied"], ["Manche 01 — Je retiens Actuel Direction A"] if lang == "fr"
                                  else ["Round 01: Go with Current Direction A"])
 
     def test_portable_single_file_and_html_payload(self):
         result = builder.build(self.manifest, self.output)
         page = self.output.read_text(encoding="utf-8")
         self.assertEqual(result["candidates"], 1)
-        self.assertIn("同一内容", page)
+        self.assertIn("Même contenu", page)
         self.assertNotIn(str(self.folder), page)
         self.assertNotIn(builder.MARKER, page)
         self.assertIn("script-src 'none'", page)
@@ -261,7 +265,7 @@ finally{clearTimeout(deadline);chrome.kill();}
     def test_existing_output_is_preserved_and_force_is_explicit(self):
         builder.build(self.manifest, self.output)
         original = self.output.read_bytes()
-        self.data["project"] = "新项目"
+        self.data["project"] = "Nouveau projet"
         self.save()
         with self.assertRaises(FileExistsError):
             builder.build(self.manifest, self.output)
@@ -359,7 +363,7 @@ finally{clearTimeout(deadline);chrome.kill();}
             builder.build(self.manifest, self.output)
 
     def test_live_candidates_accept_only_local_dev_servers(self):
-        self.data["candidates"].append({"id": "live", "name": "现状", "concept": "当前版本", "typography": "系统字体", "palette": ["#fff"], "traits": ["现有页面"], "kind": "url", "url": "http://localhost:5173/orders", "baseline": True})
+        self.data["candidates"].append({"id": "live", "name": "Actuel", "concept": "Version actuelle", "typography": "Police système", "palette": ["#fff"], "traits": ["Page existante"], "kind": "url", "url": "http://localhost:5173/orders", "baseline": True})
         self.save()
         builder.build(self.manifest, self.output)
         page = self.output.read_text(encoding="utf-8")
@@ -392,13 +396,13 @@ finally{clearTimeout(deadline);chrome.kill();}
             with self.subTest(serve=serve):
                 self.data["serve"] = serve
                 self.save()
-                with self.assertRaisesRegex(ValueError, "serve.command 必须是非空字符串"):
+                with self.assertRaisesRegex(ValueError, "serve.command doit être une chaîne non vide"):
                     builder.build(self.manifest, self.output)
         for serve in (None, [], "pnpm dev"):
             with self.subTest(serve=serve):
                 self.data["serve"] = serve
                 self.save()
-                with self.assertRaisesRegex(ValueError, "serve 必须是对象"):
+                with self.assertRaisesRegex(ValueError, "serve doit être un objet"):
                     builder.build(self.manifest, self.output)
         self.assertFalse(self.output.exists())
 
@@ -407,7 +411,7 @@ finally{clearTimeout(deadline);chrome.kill();}
             with self.subTest(cwd=cwd):
                 self.data["serve"] = {"command": "pnpm dev", "cwd": cwd}
                 self.save()
-                with self.assertRaisesRegex(ValueError, "serve.cwd 必须是绝对路径"):
+                with self.assertRaisesRegex(ValueError, "serve.cwd doit être un chemin absolu"):
                     builder.build(self.manifest, self.output)
 
     def test_serve_url_must_be_local_http_or_https(self):
@@ -415,11 +419,11 @@ finally{clearTimeout(deadline);chrome.kill();}
             with self.subTest(url=url):
                 self.data["serve"] = {"command": "pnpm dev", "url": url}
                 self.save()
-                with self.assertRaisesRegex(ValueError, "serve.*url.*本机"):
+                with self.assertRaisesRegex(ValueError, "serve.*url.*local"):
                     builder.build(self.manifest, self.output)
 
     def test_serve_is_embedded_unchanged_without_script_escape(self):
-        serve = {"command": "  printf '</script><script>window.injected=true</script>'\u2028\u2029  ", "cwd": str(self.folder / 'a"$`\\b'), "url": "http://localhost:3456", "note": "保留额外元数据"}
+        serve = {"command": "  printf '</script><script>window.injected=true</script>'\u2028\u2029  ", "cwd": str(self.folder / 'a"$`\\b'), "url": "http://localhost:3456", "note": "métadonnée supplémentaire conservée"}
         self.data["serve"] = serve
         self.save()
         builder.build(self.manifest, self.output)
@@ -438,7 +442,7 @@ finally{clearTimeout(deadline);chrome.kill();}
             builder.build(self.manifest, self.output)
         self.assertTrue(self.output.is_file())
         self.assertEqual(len(messages.getvalue().splitlines()), 1)
-        self.assertIn("建议在 manifest 顶层补上 serve", messages.getvalue())
+        self.assertIn("ajoute serve à la racine du manifest", messages.getvalue())
         self.data["serve"] = {"command": "pnpm dev"}
         self.save()
         messages = io.StringIO()
@@ -488,14 +492,14 @@ finally{clearTimeout(deadline);chrome.kill();}
         (self.folder / "vendor" / "lib.js").write_text("window.lib='</script>'", encoding="utf-8")
         (self.folder / "app.css").write_text("body{color:#123}", encoding="utf-8")
         self.source.write_text('<!doctype html><html><head><link rel="stylesheet" href="app.css">'
-                               '<script defer src="vendor/lib.js"></script></head><body><p>内容</p></body></html>', encoding="utf-8")
+                               '<script defer src="vendor/lib.js"></script></head><body><p>Contenu</p></body></html>', encoding="utf-8")
         static = builder.prepare_html(self.source, root=self.folder)
         self.assertIn("<style>body{color:#123}</style>", static)
         self.assertNotIn("lib.js", static)
         self.assertNotIn("window.lib", static)
         live = builder.prepare_html(self.source, interactive=True, root=self.folder)
         self.assertIn("'unsafe-eval'", live)
-        self.assertLess(live.index("<p>内容</p>"), live.index("window.lib"))
+        self.assertLess(live.index("<p>Contenu</p>"), live.index("window.lib"))
         self.assertIn("<\\/script>", live)
         self.data["candidates"][0]["interactive"] = True
         self.save()
@@ -513,22 +517,22 @@ finally{clearTimeout(deadline);chrome.kill();}
         builder.build(self.manifest, self.output)
         page = self.output.read_text(encoding="utf-8")
         hooks = {
-            "并排与单张": 'data-layout="loupe"',
-            "手机视口": 'data-viewport="mobile"',
-            "实际尺寸": '实际尺寸 100%',
-            "选择": "st.chosen",
-            "选择即复制": 'navigator.clipboard',
-            "本地地址候选": "c.kind==='url'",
-            "服务未运行提示": "开发服务器没有运行",
-            "复制启动命令": "button.dataset.copyServe",
-            "现状基线": "c.baseline",
-            "可操作小样": "c.interactive",
-            "按轮次保存": "DATA.fingerprint",
-            "展示北极星": "c.concept",
-            "展示色板": "c.palette",
+            "côte à côte et vue unique": 'data-layout="loupe"',
+            "fenêtre mobile": 'data-viewport="mobile"',
+            "taille réelle": 'Taille réelle (100 %)',
+            "choix": "st.chosen",
+            "choisir = copier": 'navigator.clipboard',
+            "candidat à adresse locale": "c.kind==='url'",
+            "serveur arrêté": "Le serveur de dev ne tourne pas",
+            "copier la commande de démarrage": "button.dataset.copyServe",
+            "référence actuelle": "c.baseline",
+            "maquette interactive": "c.interactive",
+            "sauvegarde par manche": "DATA.fingerprint",
+            "concept affiché": "c.concept",
+            "palette affichée": "c.palette",
         }
         missing = [name for name, hook in hooks.items() if hook not in page]
-        self.assertEqual(missing, [], "模板缺少对比页承诺的功能，见 .github/EXPLORER.md")
+        self.assertEqual(missing, [], "il manque au gabarit des fonctions promises par la page de comparaison")
         for removed in ('class="bar-r"', 'id="round"', 'id="filter-list"', 'id="notes-toggle"',
                         'id="notes"', 'id="show-all"', "liveSource", "imageSource", "interactiveSource", "htmlSource"):
             self.assertNotIn(removed, page)
@@ -544,7 +548,7 @@ finally{clearTimeout(deadline);chrome.kill();}
                 (copy / "SKILL.md").write_text("---\nname: " + name + "\n---\n", encoding="utf-8")
                 output = self.folder / (edition + ".html")
                 run = subprocess.run([sys.executable, str(copy / "scripts/build_explorer.py"), str(self.manifest),
-                                      "--output", str(output)], cwd=self.folder, capture_output=True, text=True)
+                                      "--output", str(output)], cwd=self.folder, capture_output=True, encoding="utf-8", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
                 self.assertEqual(run.returncode, 0, run.stderr)
                 page = output.read_text(encoding="utf-8")
                 self.assertEqual(self.payload(page)["edition"], edition)
@@ -558,7 +562,7 @@ finally{clearTimeout(deadline);chrome.kill();}
         copy = self.folder / "relocated"
         shutil.copytree(ROOT / "scripts", copy / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(ROOT / "assets", copy / "assets")
-        run = subprocess.run([sys.executable, str(copy / "scripts" / "build_explorer.py"), str(self.manifest), "--output", str(self.output)], cwd=self.folder, capture_output=True, text=True)
+        run = subprocess.run([sys.executable, str(copy / "scripts" / "build_explorer.py"), str(self.manifest), "--output", str(self.output)], cwd=self.folder, capture_output=True, encoding="utf-8", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertTrue(self.output.is_file())
 
