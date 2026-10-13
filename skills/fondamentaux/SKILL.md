@@ -74,7 +74,7 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 
 ## Step 2: Coverage Check (PO)
 
-Dispatch `hosa-product-owner` (Responsibility 8, `agents/product-owner.md`) with the checklist above, every `Exigence` in `kb/cdc/`, `kb/personnas/`, `kb/project/identity.md`, and the existing `kb/cdc/fondamentaux.md` if one exists (items already confirmed out of scope there aren't re-asked). It returns, per item: **Couvert** (citing the exigence that actually covers it — judged on content, not keywords) or **Manquant**, with a one-line example of what it means for *this* project, and its recommendation.
+Dispatch `hosa-product-owner` **with `model: opus`** — judging what the cahier des charges is missing is the PO's hardest call (Responsibility 8, `agents/product-owner.md`) with the checklist above, every `Exigence` in `kb/cdc/`, `kb/personnas/`, `kb/project/identity.md`, and the existing `kb/cdc/fondamentaux.md` if one exists (items already confirmed out of scope there aren't re-asked). It returns, per item: **Couvert** (citing the exigence that actually covers it — judged on content, not keywords) or **Manquant**, with a one-line example of what it means for *this* project, and its recommendation.
 
 ## Step 3: Confirm Once, Included by Default
 

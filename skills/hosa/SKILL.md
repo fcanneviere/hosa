@@ -183,7 +183,7 @@ persona, and ask whether to create one now.
 
 Append an entry to `kb/project/log.md` and `kb/personnas/log.md` (create if missing) — OKF §9 format: chronological, most recent date first, grouped by date.
 
-Then dispatch `hosa-git` (Mode 3, checkpoint) to commit the initial KB on `hosa-kb` — the identity, the brief if any, the personas — before chaining to `interview`.
+Then dispatch `hosa-git` with `model: haiku` (Mode 3, checkpoint) to commit the initial KB on `hosa-kb` — the identity, the brief if any, the personas — before chaining to `interview`.
 
 ---
 

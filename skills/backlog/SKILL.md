@@ -232,7 +232,7 @@ Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/
 
 ## Step 8: Checkpoint
 
-Every structuration skill ends with its `hosa-git` checkpoint, so the foundation is already committed. Check anyway `git -C <root> status --porcelain -- . ':(exclude).hosa'`: not empty → dispatch `hosa-git` (Mode 3, checkpoint) with those files — `git` Mode 1 refuses to start a sprint on uncommitted source. Then the KB checkpoint for the tickets.
+Every structuration skill ends with its `hosa-git` checkpoint, so the foundation is already committed. Check anyway `git -C <root> status --porcelain -- . ':(exclude).hosa'`: not empty → dispatch `hosa-git` with `model: haiku` (Mode 3, checkpoint) with those files — `git` Mode 1 refuses to start a sprint on uncommitted source. Then the KB checkpoint for the tickets.
 
 ## Single-Ticket Mode
 

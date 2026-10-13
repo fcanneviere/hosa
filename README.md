@@ -37,6 +37,13 @@ Tu n'as pas besoin de connaître ces noms : décris ce que tu veux (« prépare 
 
 Les skills orchestrent, les agents font le travail, chacun dans son domaine : `hosa-product-owner`, `hosa-key-user` (incarne un persona), `hosa-challenger`, `hosa-security`, `hosa-senior-dev`, `hosa-infra`, `hosa-data-engineer`, `hosa-dba`, `hosa-architect`, `hosa-ux-designer`, `hosa-sprint-planner`, `hosa-qa-lead`, `hosa-tech-lead`, `hosa-developer`, `hosa-tester`, `hosa-git`, `hosa-documentation`. Chaque agent tourne sur le modèle adapté à son travail (Opus, Sonnet ou Haiku).
 
+### Quel modèle pour ta session
+
+Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle consomme l'essentiel des tokens, bien plus que les agents.
+
+- **Cahier des charges et structuration** (de `interview` à `backlog`) : Opus. Ces choix engagent tout le projet.
+- **Sprints** (`sprint`, `develop`, `qa`, `validation`, `livraison`) : `/model sonnet` suffit. Les jugements difficiles restent sur Opus, portés par leurs agents : `hosa-reviewer`, `hosa-debugger`, `hosa-security`.
+
 ### La base de connaissances (KB)
 
 - Elle vit dans le projet, dans `.hosa/kb/`, sur sa **propre branche git `hosa-kb`** : elle ne se mélange jamais au code ni aux sprints.
