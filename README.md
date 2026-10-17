@@ -11,6 +11,8 @@ Dans Claude Code :
 /plugin install hosa@hosa
 ```
 
+Dans l'extension VS Code, `/plugin` n'existe pas : lance les mêmes commandes dans un terminal, `claude plugin marketplace add fcanneviere/hosa` puis `claude plugin install hosa@hosa`, puis recharge la fenêtre.
+
 Pour mettre à jour : `/plugin`, puis mettre à jour `hosa`. Hosa démarre tout seul à chaque session ouverte dans un projet.
 
 Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.

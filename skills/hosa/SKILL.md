@@ -55,7 +55,7 @@ Manual: `/hosa [chemin/vers/brief.md]`. Auto: "initialise le projet", "configure
 
 ### Bootstrap
 
-Before any question, dispatch `hosa-git` (Mode 0, `agents/git.md`) on the project root: it initializes the repository if there's none, sets up the ignore rules, and creates the KB on its own branch `hosa-kb` (`kb_branch.py init`). Everything this skill and the ones after it write is versioned from the start. `kb_branch.py init` seeds `.hosa/kb/index.md`, the OKF root index (`okf` skill) without which the KB is invalid; if it is missing anyway, create it:
+The project root is the session's current directory — never the brief's folder, which is only read. Before any question, dispatch `hosa-git` (Mode 0, `agents/git.md`) on the project root: it initializes the repository if there's none, sets up the ignore rules, and creates the KB on its own branch `hosa-kb` (`kb_branch.py init`). Everything this skill and the ones after it write is versioned from the start. `kb_branch.py init` seeds `.hosa/kb/index.md`, the OKF root index (`okf` skill) without which the KB is invalid; if it is missing anyway, create it:
 
 ```markdown
 ---

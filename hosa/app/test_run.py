@@ -38,6 +38,8 @@ class Setup(unittest.TestCase):
             (d / "requirements.txt").write_text("pyyaml\nnh3\n")
             run.setup()
             self.assertEqual(pip.call_count, 2)
+            # Detached at session start: no console window per child on Windows.
+            self.assertTrue(all(c.kwargs == run.NO_WINDOW for c in pip.call_args_list))
 
     def test_venv_in_plugin_data_once_installed(self):
         # The plugin root is replaced at each update: the venv lives in ${CLAUDE_PLUGIN_DATA} to survive it.

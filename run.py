@@ -13,7 +13,6 @@ import os
 import shutil
 import subprocess
 import sys
-import venv
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent / "hosa" / "app"
@@ -21,6 +20,9 @@ VENV = Path(os.environ["CLAUDE_PLUGIN_DATA"]) / "venv" if os.environ.get("CLAUDE
 PY = VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 REQS = APP / "requirements.txt"
 STAMP = VENV / "hosa-requirements.sha1"
+# Launched detached by the SessionStart hook: on Windows each console child would open its own window.
+# A hidden console for each direct child; theirs (uv's python, ensurepip) inherit it.
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 
 def setup():
@@ -30,13 +32,14 @@ def setup():
     uv = shutil.which("uv")  # much faster when present; --seed keeps pip in the venv should uv go away later
     if not PY.exists():
         if uv:
-            subprocess.check_call([uv, "venv", "-q", "--seed", "--python", sys.executable, str(VENV)])
+            subprocess.check_call([uv, "venv", "-q", "--seed", "--python", sys.executable, str(VENV)], **NO_WINDOW)
         else:
-            venv.create(VENV, with_pip=True)
+            subprocess.check_call([sys.executable, "-m", "venv", str(VENV)], **NO_WINDOW)
     if uv:
-        subprocess.check_call([uv, "pip", "install", "-q", "--python", str(PY), "-r", str(REQS)])
+        subprocess.check_call([uv, "pip", "install", "-q", "--python", str(PY), "-r", str(REQS)], **NO_WINDOW)
     else:
-        subprocess.check_call([str(PY), "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", str(REQS)])
+        subprocess.check_call([str(PY), "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", str(REQS)],
+                              **NO_WINDOW)
     STAMP.write_text(want)
 
 
