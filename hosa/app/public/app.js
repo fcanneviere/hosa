@@ -219,7 +219,7 @@ function home() {
 const reviewOf = (t) => { const m = (String(t.body || '').split(/^## Revue/m)[1] || '').match(/PASS-WITH-NOTES|PASS|FAIL/g); return m ? m[m.length - 1] : null; };
 const recettes = () => (S.ov && S.ov.recettes) || [];
 // « Export CSV — Martine » : premier mot du titre du persona, sinon son identifiant, sinon le titre seul
-const recetteName = (r) => { if (!r.persona) return r.titre; const p = S.concepts.find((c) => c.path === `personnas/${r.persona}.md`); return `${r.titre} — ${p && p.fm.title ? String(p.fm.title).split(/[\s,]/)[0] : r.persona}`; };
+const recetteName = (r) => { if (!r.persona) return r.titre; const p = S.concepts.find((c) => c.path === `personnas/${r.persona}.md`); return p && p.fm.title ? `${r.titre} — ${String(p.fm.title).split(/[\s,]/)[0]}` : r.titre; };
 const EMPTY_USAGE = 'Aucune donnée de consommation trouvée pour ce projet';
 function usageCard(compact) {
   const u = S.usage;
@@ -329,7 +329,7 @@ function vSprint(slug) {
       s.demo.length ? h('ul', {}, s.demo.map((d) => h('li', {}, h('span', { class: 'mono' }, d.t), ' ', d.ok ? st('OK', 'f', '✓') : st('KO', 'b', '✕')))) : none('Pas encore de démo.')));
 }
 const isStable = (c) => c.fm.status === 'stable';
-const statusSt = (c) => isStable(c) ? st('validée', 'f', '✓') : st('brouillon', 'a', '○');
+const statusSt = (c) => isStable(c) ? st('finalisée', 'f', '✓') : st('brouillon', 'a', '○');
 const serves = (c, persona) => kbLinks(c).includes(`personnas/${persona}.md`);
 const kbLinks = (c) => [...String(c.body || '').matchAll(/\]\(([^)\s]+\.md)/g)].map((m) => kbPath(c.path, m[1])).filter(Boolean);
 function vExigences() {
@@ -340,8 +340,8 @@ function vExigences() {
   const glossaire = S.concepts.find((c) => c.path === 'cdc/glossaire.md');
   return h('div', { class: 'grid' }, h('h1', {}, 'Exigences'), h('p', { class: 'muted' }, 'Ce que l’application doit permettre de faire. Vous validez chacune une fois qu’elle vous convient.'),
     bad.map((x) => h('div', { class: 'alert', role: 'alert' }, h('span', {}, h('span', { class: 'mono' }, x.path), ` n’apparaît pas dans la liste : ${x.cause}.`))),
-    ex.length ? [h('p', {}, h('b', {}, `${ex.filter(isStable).length} / ${ex.length} validées`)),
-      filterBar(['q'], { selects: { statut: [['stable', 'validée'], ['draft', 'brouillon']], espace: espaces, persona: ofType('Persona').map((p) => [p.slug, p.title]) } }),
+    ex.length ? [h('p', {}, h('b', {}, `${ex.filter((c) => c.trust === 'human').length} / ${ex.length} validées par vous`), h('span', { class: 'muted' }, ` · ${ex.filter(isStable).length} finalisées`)),
+      filterBar(['q'], { selects: { statut: [['stable', 'finalisée'], ['draft', 'brouillon']], espace: espaces, persona: ofType('Persona').map((p) => [p.slug, p.title]) } }),
       rows.length ? table(['Exigence', 'Statut', 'Validation', ''], rows.map((c) => h('tr', {}, h('td', {}, h('a', { href: `#/exigences/${encodeURIComponent(c.slug)}` }, c.title)), h('td', {}, statusSt(c)), h('td', {}, trustSt(c)),
         h('td', {}, waiting(c) ? h('button', { class: 'btn o', type: 'button', 'aria-label': `Valider ${c.title}`, onclick: () => validate(c) }, 'Valider') : null))))
         : none('Aucune exigence ne correspond.', ' ', clearBtn(['q', 'statut', 'espace', 'persona']))]
@@ -397,7 +397,7 @@ function vTracabilite() {
   if (S.gq) search(S.gq);
   api('graph/trace').then((t) => box.replaceChildren(t.length ? table(['Exigence', 'Statut', 'Tickets', 'Fichiers'], t.map((e) => {
     const n = e.tickets.reduce((k, x) => k + x.files.length, 0), alone = e.node.status === 'stable' && !n;
-    return h('tr', { class: alone ? 'fail' : '' }, h('td', {}, nodeLink(e.node)), h('td', {}, e.node.status === 'stable' ? st('validée', 'f', '✓') : st('brouillon', 'a', '○'), alone ? [' ', st('Sans fichier lié', 'b', '✕')] : null),
+    return h('tr', { class: alone ? 'fail' : '' }, h('td', {}, nodeLink(e.node)), h('td', {}, e.node.status === 'stable' ? st('finalisée', 'f', '✓') : st('brouillon', 'a', '○'), alone ? [' ', st('Sans fichier lié', 'b', '✕')] : null),
       h('td', {}, flat(e.tickets.map((x) => x.node)) || st('aucun ticket', 'a', '—')), h('td', { class: 'num' }, String(n)));
   })) : none('Aucune exigence dans le graphe')),
     (e) => box.replaceChildren(/graphe absent/i.test(e.message) ? errBox(`${e.message}.`, true) : errBox(`Traçabilité indisponible : ${plain(e)}.`, true)));
