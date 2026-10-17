@@ -13,3 +13,4 @@ okf_version: "0.2"
 * [infra](infra/) - Notes d'infrastructure
 * [test](test/) - Plans de test
 * [tickets](tickets/) - Tickets de suivi
+* [code](code/) - Carte du code du projet géré (générée par hosa-graph)

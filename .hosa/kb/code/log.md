@@ -1,0 +1,16 @@
+# Log — kb/code
+
+## 2026-10-11
+- process:hosa-graph a créé `skills-status-scripts`
+- process:hosa-graph a créé `skills-okf-scripts`
+- process:hosa-graph a créé `skills-kb-commit-scripts`
+- process:hosa-graph a créé `skills-interface-vendor-oil-ui-tests`
+- process:hosa-graph a créé `skills-interface-vendor-oil-ui-scripts`
+- process:hosa-graph a créé `skills-interface-vendor-oil-ui-assets-vendor`
+- process:hosa-graph a créé `skills-interface-scripts`
+- process:hosa-graph a créé `skills-infra-scripts`
+- process:hosa-graph a créé `skills-backlog-scripts`
+- process:hosa-graph a créé `hosa-app-public`
+- process:hosa-graph a créé `hosa-app`
+- process:hosa-graph a créé `hooks`
+- process:hosa-graph a créé `racine`
