@@ -228,11 +228,11 @@ def sprint_period(project: Path, text: str) -> tuple[str | None, str | None, lis
     """From the sprint's creation day (`generated.at`) to its merge commit's day, and its tickets."""
     tickets = re.findall(r"\(\.\./tickets/([^)]+)\.md\)", text.split("\n## Tickets", 1)[-1].split("\n## ", 1)[0])
     born = re.search(r"^generated:.*?\bat:\s*(\d{4}-\d{2}-\d{2})", text, re.M)
-    merge = re.search(r"^merge_commit:\s*(\S+)", text, re.M)
+    merge = re.search(r"^merge_commit:\s*([0-9a-fA-F]{7,40})\s*$", text, re.M)  # a SHA only: never a git option
     until = None
     if merge:
         try:
-            until = subprocess.run(["git", "-C", str(project), "show", "-s", "--format=%cs", merge.group(1)],
+            until = subprocess.run(["git", "-C", str(project), "show", "-s", "--format=%cs", "--end-of-options", merge.group(1)],
                                    capture_output=True, text=True, timeout=10).stdout.strip() or None
         except (OSError, subprocess.SubprocessError):
             pass

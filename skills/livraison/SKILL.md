@@ -1,6 +1,6 @@
 ---
 name: livraison
-description: "Use to ship merged work: scope done tickets, quality gate (`qualite`), release notes and user docs (`hosa-documentation`), tested tag (`hosa-git`), optional deployment with database backup (`hosa-dba`, `hosa-infra`), optional push. Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
+description: "Use to ship merged work: scope done tickets, quality gate (`qualite`), security and legal gates (`securite`, `juridique`), release notes and user docs (`hosa-documentation`), tested tag (`hosa-git`), optional deployment with database backup (`hosa-dba`, `hosa-infra`), optional push. Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
 ---
 
 # Livraison
@@ -21,6 +21,9 @@ Barrière qualité : `qualite` sur le code changé depuis la
 dernière livraison → aucun Bloquant ouvert
         ↓
 Porte de sécurité : `securite` (Livraison) → Go, ou No-Go :
+corrige d'abord, ou dérogation explicite de l'utilisateur
+        ↓
+Porte juridique : `juridique` (Livraison) → Go, ou No-Go :
 corrige d'abord, ou dérogation explicite de l'utilisateur
         ↓
 hosa-documentation (Mode 3) : notes de version + documentation
@@ -66,6 +69,10 @@ Run `qualite` on the code changed since the last release (`git diff --name-only 
 
 Invoke `securite` in Livraison mode with the version and the previous release's date. **Go** → continue. **No-Go** → `securite` asks the user: fix first (stop here; each blocking finding is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `securite`; continue and say so in the Output).
 
+## Step 3c: Legal Gate
+
+Invoke `juridique` in Livraison mode with the version, the planned release date and the previous release's date. **Go** → continue. **No-Go** → `juridique` asks the user: fix first (stop here; each missing constraint is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `juridique`; continue and say so in the Output).
+
 ## Step 4: Release Notes and User Documentation
 
 Dispatch `hosa-documentation` (Mode 3) with the version and the scoped tickets (title, description, linked Exigence). It prepends a dated section to `CHANGELOG.md` (or the project's existing changelog) and updates the user documentation the tickets change. Never write either from this skill: documentation in the managed project is `hosa-documentation`'s alone.
@@ -106,6 +113,9 @@ generated: { by: human:<user>, at: <ISO8601> }
 ## Porte de sécurité
 [Go / No-Go avec dérogation](../securite/livraison-<version>.md)
 
+## Porte juridique
+[Go / No-Go avec dérogation](../juridique/livraison-<version>.md)
+
 ## Retour arrière
 - Déclencheurs : <taux d'erreur > 2× la normale, parcours critique cassé, faille découverte, intégrité des données>
 - Procédure : <redéployer la version précédente — commande réelle de `kb/infra/deploiement.md`>
@@ -144,7 +154,7 @@ This skill commits nothing itself: the release commit and the tag are `hosa-git`
 ```
 ## Livraison <version>
 - Tickets inclus : [liste]
-- Qualité : [audit, Bloquant : 0] — Sécurité : [Go / No-Go avec dérogation]
+- Qualité : [audit, Bloquant : 0] — Sécurité : [Go / No-Go avec dérogation] — Juridique : [Go / No-Go avec dérogation]
 - Retour arrière : [procédure prête / absente — <raison>]
 - Notes de version : [chemin] — documentation utilisateur : [sections mises à jour]
 - Tag : `v<version>` sur `<commit>` — suite complète X/Y, contrôles OK

@@ -1,6 +1,7 @@
 # Log — kb/code
 
 ## 2026-10-17
+- process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hosa-app-public`
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hooks`

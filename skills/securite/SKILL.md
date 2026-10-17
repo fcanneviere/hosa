@@ -1,6 +1,6 @@
 ---
 name: securite
-description: "Use for the managed project's security, in three moments: constraints in the cahier des charges (CDC stage 4, mandatory), threat model after `architecture` (STRIDE, abuse cases), Go/No-Go before a release; also a code audit on request. Dispatches `hosa-security`. Triggers: \"sécurité dès la conception\", \"modèle de menaces\", \"audite la sécurité\"."
+description: "Use for the managed project's security, in three moments: constraints in the cahier des charges (CDC stage 5, mandatory), threat model after `architecture` (STRIDE, abuse cases), Go/No-Go before a release; also a code audit on request. Dispatches `hosa-security`. Triggers: \"sécurité dès la conception\", \"modèle de menaces\", \"audite la sécurité\"."
 ---
 
 # Sécurité
@@ -11,7 +11,7 @@ Security by design, then by check. `hosa-security` gives its constraints while t
 
 | Mode | When | Agent mode | Writes |
 |---|---|---|---|
-| **Analyse** | CDC stage 4, right after `fondamentaux` (default inside the CDC pipeline) | Mode 1 | `kb/cdc/securite.md`, security exigences, `## Contraintes de sécurité`, `kb/rules/security/*` |
+| **Analyse** | CDC stage 5, right after `juridique` (default inside the CDC pipeline) | Mode 1 | `kb/cdc/securite.md`, security exigences, `## Contraintes de sécurité`, `kb/rules/security/*` |
 | **Menaces** | Right after `architecture`, chained; again when the architecture changes | Mode 3 | `kb/securite/modele-menaces.md`, `kb/rules/security/*` |
 | **Audit** | On request, or from `qualite` | Mode 2 | `kb/securite/audit-<date>-<scope>.md` |
 | **Livraison** | Inside `livraison`, after the quality audit | Mode 4 | `kb/securite/livraison-<version>.md` |
@@ -36,7 +36,7 @@ Checkpoint hosa-git (Mode 3), puis enchaîne : relecture
 
 ## Trigger
 
-Manual: `/securite [analyse|menaces|audit|livraison]`. Auto: immediately after `fondamentaux` (Analyse) and after `architecture` (Menaces); "analyse la sécurité du cahier des charges", "sécurité dès la conception" (Analyse); "modèle de menaces" (Menaces); "fais une revue de sécurité", "audite la sécurité du code", "est-ce que c'est sécurisé ?" (Audit). `contestation` invokes Analyse itself if `kb/cdc/securite.md` is missing or out of date; `livraison` invokes Livraison.
+Manual: `/securite [analyse|menaces|audit|livraison]`. Auto: immediately after `juridique` (Analyse) and after `architecture` (Menaces); "analyse la sécurité du cahier des charges", "sécurité dès la conception" (Analyse); "modèle de menaces" (Menaces); "fais une revue de sécurité", "audite la sécurité du code", "est-ce que c'est sécurisé ?" (Audit). `contestation` invokes Analyse itself if `kb/cdc/securite.md` is missing or out of date; `livraison` invokes Livraison.
 
 Progress-plan stages: `securite` (Analyse, CDC pipeline) and `menaces` (Structuration, after `architecture`).
 
@@ -44,7 +44,7 @@ Progress-plan stages: `securite` (Analyse, CDC pipeline) and `menaces` (Structur
 
 ## Analyse (Mode 1)
 
-1. Dispatch `hosa-security` (Mode 1 Phase 1). Relay its `## Open Questions` (data classification, regulatory scope) and redispatch with the answers until the analysis is complete.
+1. Dispatch `hosa-security` (Mode 1 Phase 1). It reads `kb/cdc/juridique.md`: the regulations, retention periods, data location and vendors decided there are applied, not asked again. Relay its `## Open Questions` (data classification, risk acceptance) and redispatch with the answers until the analysis is complete.
 2. Present the data and their sensitivity, then per exigence the threats and the proposed measure, then the proposed security exigences, constraints and rules. The user validates, adjusts, or drops a measure. A dropped measure on a real threat is an **accepted risk**: ask for the reason and keep it, recorded rather than forgotten.
 3. Redispatch `hosa-security` (Mode 1 Phase 2) with the validated choices and the accepted risks. It seeds `kb/rules/security/`, writes the security exigences (`status: draft`, `tags: [securite]`), adds `## Contraintes de sécurité` to the exigences concerned, and writes `kb/cdc/securite.md`.
 

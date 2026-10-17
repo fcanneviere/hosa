@@ -22,6 +22,8 @@ BUDGET = 2000  # tokens, estimés à 4 caractères/token
 MAX_FILE_BYTES = int(os.environ.get("HOSA_GRAPH_MAX_KB", "512")) * 1024
 MAX_CANDIDATES = 5  # au-delà, un nom est trop générique (get, run, __init__) pour produire des arêtes utiles
 IMPACT_RELS = ("calls", "imports", "inherits")
+# Lancé détaché par le hook SessionStart (sans console) : sous Windows, chaque git ouvrirait sa propre fenêtre.
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 KIND_ORDER = {"exigence": 0, "ticket": 1, "file": 2, "class": 3, "function": 4, "method": 5}
 
 
@@ -36,7 +38,7 @@ def checkout_root(start=None):
     start = Path(start or Path.cwd()).resolve()
     try:
         out = subprocess.run(["git", "-C", str(start), "rev-parse", "--show-toplevel"],
-                             capture_output=True, text=True, check=True).stdout.strip()
+                             capture_output=True, text=True, check=True, **NO_WINDOW).stdout.strip()
         return Path(out).resolve()
     except (subprocess.CalledProcessError, FileNotFoundError):
         for d in (start, *start.parents):
@@ -64,7 +66,7 @@ def tracked_files(root):
     """Fichiers de code suivis ou non ignorés par git (respecte .gitignore), hors `SKIP_PREFIXES`."""
     try:
         out = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
-                             capture_output=True, check=True).stdout.decode("utf-8", "replace")
+                             capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace")
         files = [f for f in out.split("\0") if f]
     except (subprocess.CalledProcessError, FileNotFoundError):
         files = [p.relative_to(root).as_posix() for p in Path(root).rglob("*")
@@ -276,7 +278,7 @@ def ticket_touches(root):
     try:
         out = subprocess.run(["git", "-C", str(root), "log", "--no-merges", "--name-only",
                               "--format=%x1e%(trailers:key=Hosa-Ticket,valueonly,separator=%x2c)"],
-                             capture_output=True, check=True).stdout.decode("utf-8", "replace")
+                             capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace")
     except (subprocess.CalledProcessError, FileNotFoundError):
         return {}
     touches = {}
@@ -366,7 +368,7 @@ def _linked_worktree(root):
     """Dossier git commun si `root` est un worktree lié (celui d'un sprint), sinon None."""
     try:
         out = subprocess.run(["git", "-C", str(root), "rev-parse", "--git-dir", "--git-common-dir"],
-                             capture_output=True, text=True, check=True).stdout.splitlines()
+                             capture_output=True, text=True, check=True, **NO_WINDOW).stdout.splitlines()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     git_dir, common = (Path(root, d.strip()).resolve() for d in out[:2])
@@ -587,7 +589,7 @@ def status(root):
     big = []
     try:
         out = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
-                             capture_output=True, check=True).stdout.decode("utf-8", "replace").split("\0")
+                             capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace").split("\0")
         big = [f for f in out if f and gx.lang_of(f) and not f.startswith(SKIP_PREFIXES)
                and (root / f).is_file() and (root / f).stat().st_size > MAX_FILE_BYTES]
     except (subprocess.CalledProcessError, FileNotFoundError, OSError):

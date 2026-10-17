@@ -1,9 +1,9 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 const row = (s: string, st: string) => `| \`${s}\` | ${st} | | |`
-const UPSTREAM = ['hosa', 'interview', 'redaction', 'fondamentaux', 'securite', 'relecture', 'contestation',
+const UPSTREAM = ['hosa', 'interview', 'redaction', 'fondamentaux', 'juridique', 'securite', 'relecture', 'contestation',
   'stack', 'infra', 'donnees', 'schema-app', 'schema-db', 'architecture', 'menaces', 'interface', 'backlog']
-const conception = [...UPSTREAM.slice(0, 15).map((s) => row(s, 'fait')), row('backlog', 'en cours')].join('\n')
+const conception = [...UPSTREAM.slice(0, 16).map((s) => row(s, 'fait')), row('backlog', 'en cours')].join('\n')
 const sprints = [...UPSTREAM.map((s) => row(s, 'fait')), '## Sprint s1', row('sprint', 'en cours')].join('\n')
 
 // Plan text per call, so a test can close a stage between turns.

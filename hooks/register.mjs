@@ -9,7 +9,7 @@
 //    Sonnet again, without a release. Measure with `usage_report.py --since/--until`.
 
 const PLAN = '.hosa/kb/project/avancement.md'
-const UPSTREAM = ['hosa', 'interview', 'redaction', 'fondamentaux', 'securite', 'relecture', 'contestation',
+const UPSTREAM = ['hosa', 'interview', 'redaction', 'fondamentaux', 'juridique', 'securite', 'relecture', 'contestation',
   'stack', 'infra', 'donnees', 'schema-app', 'schema-db', 'architecture', 'menaces', 'interface', 'backlog']
 const CLOSED = ['fait', 'non applicable']
 // ponytail: fixed ids, bump them with each model generation

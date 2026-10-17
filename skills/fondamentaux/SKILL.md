@@ -24,7 +24,7 @@ Redispatch hosa-product-owner : écrit une Exigence (draft)
 par item retenu + kb/cdc/fondamentaux.md (le bilan, item
 par item)
         ↓
-Log kb/cdc/log.md → enchaîne sur `securite`
+Log kb/cdc/log.md → enchaîne sur `juridique`
 ```
 
 ## Trigger
@@ -65,7 +65,7 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 - **Messages d'erreur compréhensibles** : l'utilisateur sait ce qui s'est passé et quoi faire
 - **Aide et documentation utilisateur** : aide en ligne, guide, contact support
 
-**Non fonctionnel (NFR)** — contraintes chiffrées, `tags: [nfr]` (la sécurité a sa propre étape juste après : `securite`) :
+**Non fonctionnel (NFR)** — contraintes chiffrées, `tags: [nfr]` (le juridique et la sécurité ont leur propre étape juste après : `juridique`, puis `securite`) :
 - **Performance** : temps de réponse cible, volumétrie attendue
 - **Disponibilité** : SLA visé, tolérance à l'indisponibilité, objectifs de reprise (RPO/RTO)
 - **Protection des données (RGPD ou équivalent)** : base légale, durée de rétention, droit d'accès et à l'effacement
@@ -125,5 +125,5 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - [If none: "Aucune — tout était déjà couvert ou hors périmètre"]
 
 ## Suite
-Suite : `securite` (Analyse), lancé sans attendre.
+Suite : `juridique`, lancé sans attendre.
 ```

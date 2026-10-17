@@ -30,8 +30,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 PIPELINES = [
-    ("Cahier des charges", ["hosa", "interview", "redaction", "fondamentaux", "securite",
-                            "relecture", "contestation"]),
+    ("Cahier des charges", ["hosa", "interview", "redaction", "fondamentaux", "juridique",
+                            "securite", "relecture", "contestation"]),
     ("Structuration", ["stack", "infra", "donnees", "schema-app", "schema-db",
                        "architecture", "menaces", "interface", "backlog"]),
 ]

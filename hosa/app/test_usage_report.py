@@ -79,6 +79,12 @@ class SprintMeasures(unittest.TestCase):
         self.assertIn("## Démo\n- T1 OK\n\n## Mesures", text)
         self.assertEqual(ur.earlier_costs(project, "s2"), [2.0])
 
+    def test_merge_commit_must_be_a_sha(self):
+        out = Path(tempfile.mkdtemp()) / "pwned"
+        text = f"---\ngenerated: {{ by: x, at: 2026-10-17T07:00:00Z }}\nmerge_commit: --output={out}\n---\n"
+        self.assertEqual(ur.sprint_period(Path(tempfile.mkdtemp()), text), ("2026-10-17", None, []))
+        self.assertFalse(out.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

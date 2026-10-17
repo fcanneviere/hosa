@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T12:17:54Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T12:48:21Z'}
 ---
 
 ## Fichiers
@@ -52,28 +52,28 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T12:17:54Z'}
 - `KbError` — `hosa/app/kb.py:35`
 - `UsageError` — `hosa/app/kb.py:47`
 - `UsageFailed` — `hosa/app/kb.py:51`
-- `activity` — `hosa/app/kb.py:358` — Entrées des `log.md` : jour, dossier, texte, acteur (humain|processus|agent), et `lien` vers le
+- `activity` — `hosa/app/kb.py:359` — Entrées des `log.md` : jour, dossier, texte, acteur (humain|processus|agent), et `lien` vers le
 - `append_log` — `hosa/app/kb.py:221` — Entrée OKF §9 dans le log.md du bundle : groupée par date, plus récente en tête.
-- `board` — `hosa/app/kb.py:477` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
-- `coverage` — `hosa/app/kb.py:436` — Couverture des critères de chaque ticket, par chemin de concept.
-- `coverage_of` — `hosa/app/kb.py:428` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
+- `board` — `hosa/app/kb.py:478` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
+- `coverage` — `hosa/app/kb.py:437` — Couverture des critères de chaque ticket, par chemin de concept.
+- `coverage_of` — `hosa/app/kb.py:429` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
 - `create` — `hosa/app/kb.py:278`
 - `dump_frontmatter` — `hosa/app/kb.py:88`
 - `get` — `hosa/app/kb.py:175`
-- `kb_status` — `hosa/app/kb.py:610` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
+- `kb_status` — `hosa/app/kb.py:611` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
 - `load_frontmatter` — `hosa/app/kb.py:63` — Le frontmatter en dict, ou KbError avec une cause lisible : jamais le message de PyYAML, qui cite le contenu.
-- `overview` — `hosa/app/kb.py:532`
+- `overview` — `hosa/app/kb.py:533`
 - `parse` — `hosa/app/kb.py:76` — Retourne (frontmatter, body). Lève KbError « Le fichier est illisible : <cause> » si le YAML est invalide.
-- `plan` — `hosa/app/kb.py:445` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
-- `points` — `hosa/app/kb.py:469`
-- `recettes` — `hosa/app/kb.py:499` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
+- `plan` — `hosa/app/kb.py:446` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
+- `points` — `hosa/app/kb.py:470`
+- `recettes` — `hosa/app/kb.py:500` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
 - `render` — `hosa/app/kb.py:117`
 - `resolve_kb_root` — `hosa/app/kb.py:55`
 - `serialize` — `hosa/app/kb.py:92`
 - `trust_tier` — `hosa/app/kb.py:121`
 - `update` — `hosa/app/kb.py:237` — Met à jour un concept. merge=True fusionne le frontmatter (PATCH), sinon le remplace (édition complète).
-- `usage` — `hosa/app/kb.py:404` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
-- `usage.rows` — `hosa/app/kb.py:420`
+- `usage` — `hosa/app/kb.py:405` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
+- `usage.rows` — `hosa/app/kb.py:421`
 - `version` — `hosa/app/kb.py:204` — Empreinte du fichier sur disque : un PUT qui la renvoie n'écrase pas l'écriture d'un agent.
 - `walk` — `hosa/app/kb.py:150` — Concepts de la KB. Un fichier illisible est sauté (la liste n'échoue jamais) et,
 - `make_handler` — `hosa/app/server.py:26`

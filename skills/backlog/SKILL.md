@@ -121,7 +121,7 @@ Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
 
 If the `Exigence` names no clear persona, ask the user which persona it serves before writing the story — same "no guessing" discipline as every other Hosa skill.
 
-Then append acceptance criteria derived from the `Exigence`'s own text — its `## Règles de gestion` and `## Cas d'erreur` above all — at least one scenario per rule and per error case this ticket covers, plus the nominal path:
+Then append acceptance criteria derived from the `Exigence`'s own text — its `## Règles de gestion`, `## Cas d'erreur` and `## Contraintes juridiques` above all — at least one scenario per rule, per error case and per legal constraint this ticket covers, plus the nominal path:
 
 ```markdown
 ## Critères d'acceptation

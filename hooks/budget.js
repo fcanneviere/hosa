@@ -17,7 +17,7 @@ const { findKbRoot } = require('./graph');
 const CAPS = { 'hosa-ux-designer': 50 };
 const CAP = 150;
 const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 60000; // tokens: /clear restarts at 20-30 k
-const STAGES = new Set(['hosa', 'interview', 'redaction', 'fondamentaux', 'securite', 'relecture', 'contestation',
+const STAGES = new Set(['hosa', 'interview', 'redaction', 'fondamentaux', 'juridique', 'securite', 'relecture', 'contestation',
   'stack', 'infra', 'donnees', 'schema-app', 'schema-db', 'architecture', 'interface', 'backlog',
   'sprint', 'qa-plan', 'git', 'develop', 'qa', 'validation', 'bilan-sprint', 'livraison']);
 

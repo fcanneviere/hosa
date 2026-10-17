@@ -21,10 +21,11 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
 | `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
-| `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 5 |
-| `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 6; won't sign off until `fondamentaux` and `securite` have run |
+| `relecture` | Check the cahier des charges for precision, completeness, and consistency — CDC pipeline stage 6 |
+| `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 7; won't sign off until `fondamentaux`, `juridique` and `securite` have run |
 | `fondamentaux` | Make sure the cahier des charges contains every basic software function personas never ask for (administration, user management, rights, audit/error logs, change history, backup, import/export, settings, notifications) and the core NFRs — `hosa-product-owner` includes every missing one by default, the user strikes out what doesn't apply — CDC pipeline stage 3, mandatory |
-| `securite` | Security in three moments, by `hosa-security`: analysis of the cahier des charges (security exigences, constraints, `Security Rule`s — CDC pipeline stage 4, mandatory), threat model right after `architecture` (STRIDE, abuse cases — data-structuring stage 7), Go/No-Go gate inside `livraison`; also a code audit (OWASP, LLM, supply chain, secrets, RGPD) on request |
+| `juridique` | Legal compliance by design, by `hosa-legal`: qualifies the regulations that apply (RGPD, AI Act, cookies, LCEN, consumer law, accessibility, sector rules), writes the processing register, the legal exigences and the `## Contraintes juridiques` of each exigence concerned — CDC pipeline stage 4, mandatory, before `securite`; legal Go/No-Go gate inside `livraison` (constraints delivered, no tracker, vendor or AI feature outside the register) |
+| `securite` | Security in three moments, by `hosa-security`: analysis of the cahier des charges (security exigences, constraints, `Security Rule`s — CDC pipeline stage 5, mandatory), threat model right after `architecture` (STRIDE, abuse cases — data-structuring stage 7), Go/No-Go gate inside `livraison`; also a code audit (OWASP, LLM, supply chain, secrets, RGPD) on request |
 | `stack` | Propose and record the technical stack of the managed project, based on the stable cahier des charges — data-structuring pipeline stage 1 |
 | `infra` | Set up the managed project's Docker environment, install the chosen stack and the quality tooling (test runner, browser tests, linter, formatter, type checker, CI) for real, and document it; also relays agents' installation requests — data-structuring pipeline stage 2 |
 | `donnees` | Annotate the origin (générée/fournie/saisie) of data in the cahier des charges — data-structuring pipeline stage 3 |
@@ -45,7 +46,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `qualite` | Audit the managed project's source code — `hosa-senior-dev` for best practices and performance, `hosa-security` for security (conformity to the rules set at design time, plus the unforeseen holes) — classifies findings by severity, routes blocking ones |
 | `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
 | `changement` | Handle a change to a `stable` Exigence — impact analysis (tickets/entities/migrations/screens/docs affected), revert to `draft`, a mini relecture/contestation loop, then follow-up tickets. Companion to the CDC pipeline, usable anytime after `contestation` has run once |
-| `livraison` | Release the managed project — quality audit (`qualite`) as a gate, release notes and user documentation (`hosa-documentation`), tested tag (`hosa-git`), optional deployment with a database backup first (`hosa-dba`, `hosa-infra`), optional push/PR |
+| `livraison` | Release the managed project — quality audit (`qualite`), security and legal gates (`securite`, `juridique`), release notes and user documentation (`hosa-documentation`), tested tag (`hosa-git`), optional deployment with a database backup first (`hosa-dba`, `hosa-infra`), optional push/PR |
 | `kb-commit` | Commit whatever's accumulated under `.hosa/kb/` as a dedicated commit in the managed project's own git history, separate from the rest of that project's commits and from Hosa's own tooling commits. Companion skill, usable anytime |
 | `okf` | Rules every file under `.hosa/kb/` must follow (Open Knowledge Format 0.2) and the validator run that closes every KB write. Companion skill, applied by every skill or agent that writes the KB |
 
@@ -70,6 +71,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Relis le cahier des charges" | `relecture` |
 | "Challenge le cahier des charges" | `contestation` |
 | "Vérifie les fondamentaux du cahier des charges", "Le cahier des charges couvre-t-il les basiques (admin, utilisateurs, logs, sauvegarde, import/export...)" | `fondamentaux` |
+| "Vérifie la conformité RGPD", "Est-ce que l'AI Act s'applique ?", "Quelles contraintes juridiques ?", "Conformité dès la conception" | `juridique` |
 | "Analyse la sécurité du cahier des charges", "Quelles contraintes de sécurité ?", "Sécurité dès la conception" | `securite` |
 | "Applique les migrations", "Conflit de migrations", "Réinitialise la base de test", "Sauvegarde/restaure la base", "La requête est lente" | `bdd` |
 | "Choisis la stack technique", "Quelle stack pour le projet" | `stack` |

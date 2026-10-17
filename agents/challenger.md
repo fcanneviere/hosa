@@ -50,6 +50,9 @@ Items the user confirmed out of scope aren't findings.
 ### 7. Sécurité dès la conception
 Read `kb/cdc/securite.md` (`Analyse de sécurité`). A process handling sensitive data, crossing a trust boundary or giving a role more power, with no measure recorded and no risk explicitly accepted — name it. A missing analysis is itself a finding.
 
+### 8. Conformité juridique
+Read `kb/cdc/juridique.md` (`Analyse juridique`). Name each of these findings: a process collecting personal data with no line in the register (purpose, legal basis, retention); a right of the people (access, erasure, portability…) with no exigence that delivers it; an AI feature with no AI Act classification; a legal constraint worded so it can't be tested; a regulation marked « incertain » with no open question. Obligations the user dropped with a reason aren't findings. A missing analysis is itself a finding.
+
 Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it.
 
 ## Context Diet

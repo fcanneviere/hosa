@@ -1,6 +1,6 @@
 ---
 name: relecture
-description: "Use to check every exigence for precision, completeness and consistency, routing gaps to `redaction` or `interview`. CDC stage 5. Triggers: \"relis le cahier des charges\", after `securite`."
+description: "Use to check every exigence for precision, completeness and consistency, routing gaps to `redaction` or `interview`. CDC stage 6. Triggers: \"relis le cahier des charges\", after `securite`."
 ---
 
 # Relecture
@@ -34,7 +34,7 @@ Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier de
 
 ## Step 1: Scope
 
-In the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
+In the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
 
 ## Step 2: Precision and Completeness Check
 

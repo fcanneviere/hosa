@@ -19,7 +19,7 @@ Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.
 
 ### Trois enchaînements
 
-1. **Cahier des charges** — `hosa` (identité du projet, personas) → `interview` → `redaction` → `fondamentaux` → `securite` → `relecture` → `contestation`.
+1. **Cahier des charges** — `hosa` (identité du projet, personas) → `interview` → `redaction` → `fondamentaux` → `juridique` → `securite` → `relecture` → `contestation`.
    Les fonctions de base (administration, utilisateurs, logs, sauvegarde, import/export…) et les contraintes de sécurité y entrent dès le départ, pas à la fin.
 2. **Structuration** — `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (modèle de menaces) → `interface` → `backlog`.
    `infra` installe aussi les outils qualité : tests, tests navigateur, linter, formateur, CI.
@@ -35,7 +35,7 @@ Tu n'as pas besoin de connaître ces noms : décris ce que tu veux (« prépare 
 
 ### Les agents
 
-Les skills orchestrent, les agents font le travail, chacun dans son domaine : `hosa-product-owner`, `hosa-key-user` (incarne un persona), `hosa-challenger`, `hosa-security`, `hosa-senior-dev`, `hosa-infra`, `hosa-data-engineer`, `hosa-dba`, `hosa-architect`, `hosa-ux-designer`, `hosa-sprint-planner`, `hosa-qa-lead`, `hosa-tech-lead`, `hosa-developer`, `hosa-tester`, `hosa-git`, `hosa-documentation`. Chaque agent tourne sur le modèle adapté à son travail (Opus, Sonnet ou Haiku).
+Les skills orchestrent, les agents font le travail, chacun dans son domaine : `hosa-product-owner`, `hosa-key-user` (incarne un persona), `hosa-challenger`, `hosa-legal`, `hosa-security`, `hosa-senior-dev`, `hosa-infra`, `hosa-data-engineer`, `hosa-dba`, `hosa-architect`, `hosa-ux-designer`, `hosa-sprint-planner`, `hosa-qa-lead`, `hosa-tech-lead`, `hosa-developer`, `hosa-tester`, `hosa-git`, `hosa-documentation`. Chaque agent tourne sur le modèle adapté à son travail (Opus, Sonnet ou Haiku).
 
 ### Quel modèle pour ta session
 
