@@ -72,14 +72,15 @@ const meta = (c) => {
 const ofType = (t) => S.concepts.filter((c) => c.type === t);
 const TIER = { human: 'humain', machine: 'machine', none: 'aucune' };  // mêmes valeurs que `board.validation`
 // `hosa-product-owner/1.0` → « Claude · product owner » ; `human:fabien` → « vous (fabien) »
-const agentLabel = (by) => { const b = String(by || ''); if (b.startsWith('human:')) return `vous (${b.slice(6)})`; if (b.startsWith('claude-code/')) return 'Claude'; const m = b.match(/^hosa-([a-z-]+)\//); return m ? `Claude · ${m[1].replace(/-/g, ' ')}` : b; };
+const agentLabel = (by) => { const b = String(by || ''); if (b.startsWith('human:')) return `vous (${b.slice(6)})`; if (b.startsWith('claude-code/')) return 'Claude'; if (b.startsWith('process:')) return 'Application'; const m = b.match(/^hosa-([a-z-]+)\//); return m ? `Claude · ${m[1].replace(/-/g, ' ')}` : b; };
 const who = (by, empty) => h('td', { title: by || null }, by ? agentLabel(by) : empty || '—');
+const verifier = (by) => by && !String(by).startsWith('human:') ? 'contrôlé automatiquement' : by ? agentLabel(by) : 'personne pour l’instant';
 // l'écran d'un concept de la KB : fiche du ticket, de l'exigence, personas, sinon Gestion > Concepts
 function routeOf(path) {
   const c = S.concepts.find((x) => x.path === path);
   if (c && c.type === 'Ticket') return `#/tickets/${enc(path.replace(/\.md$/, ''))}`;
   if (c && c.type === 'Exigence') return `#/exigences/${encodeURIComponent(c.slug)}`;
-  if (c && c.type === 'Persona') return '#/personas';
+  if (c && c.type === 'Persona') return `#/personas/${encodeURIComponent(c.slug)}`;
   return `#/gestion/concepts/${enc(path)}`;
 }
 // lien relatif d'un corps Markdown (`../personnas/x.md`) → chemin dans la KB, ou null hors KB
@@ -116,11 +117,16 @@ const reload = async () => { await load(); paint(); toast('KB relue'); };
 
 // --- filtres conservés entre écrans ------------------------------------------
 const F = JSON.parse(sessionStorage.getItem('hosa.filtres') || '{"periode":"7"}');
-const setF = (k, v) => { F[k] = v; sessionStorage.setItem('hosa.filtres', JSON.stringify(F)); if (k === 'periode') { S.usage = undefined; loadUsage().then(route); } route(); };
+const setF = (k, v) => {
+  const typing = document.activeElement && document.activeElement.id === 'search';
+  F[k] = v; sessionStorage.setItem('hosa.filtres', JSON.stringify(F)); if (k === 'periode') { S.usage = undefined; loadUsage().then(route); } route();
+  const s = $('search'); if (typing && s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
+};
 const LABELS = { statut: 'Statut', sprint: 'Sprint', q: 'Recherche', periode: 'Période', verdict: 'Verdict', origine: 'Écrit par', validation: 'Validation', espace: 'Espace', persona: 'Persona', acteur: 'Acteur', dossier: 'Dossier', type: 'Type', tag: 'Étiquette' };
+let qTimer;
 function filterBar(keys, opts = {}) {
   return h('div', { class: 'filters', role: 'search' },
-    keys.includes('q') ? h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher', placeholder: 'Rechercher ( / )', value: F[`q`] || '', onchange: (e) => setF('q', e.target.value) }) : null,
+    keys.includes('q') ? h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher', placeholder: 'Rechercher ( / )', value: F[`q`] || '', oninput: (e) => { clearTimeout(qTimer); qTimer = setTimeout(() => setF('q', e.target.value), 250); } }) : null,
     ...Object.entries(opts.selects || {}).map(([k, vals]) => {
       const set = F[k] && !(k === 'periode' && F[k] === '7');
       const lbl = (vals.find(([v]) => v === F[k]) || [])[1] || F[k];
@@ -187,12 +193,12 @@ function validateCard(title) {
     l.length > 3 ? h('p', {}, h('a', { href: '#/gestion/validation' }, `Voir les ${l.length}`)) : null);
 }
 // Titre, Valider, Produit le d'abord : ce qui reste visible sur 390 px ; auteur et validateur passent sous le titre
-const byLine = (c) => h('div', { class: 'muted mob' }, `Produit par ${agentLabel(c.fm.generated.by)} · validé par ${c.fm.verified && c.fm.verified.by ? agentLabel(c.fm.verified.by) : 'personne pour l’instant'}`);
+const byLine = (c) => h('div', { class: 'muted mob' }, `Produit par ${agentLabel(c.fm.generated.by)} · validé par ${verifier(c.fm.verified && c.fm.verified.by)}`);
 function validateList(l, detail) {
   return table(detail ? ['Titre', '', 'Produit le', 'Produit par', 'Validé par'] : ['Titre', '', 'Produit le'], l.map((c) => h('tr', {}, h('td', {}, c.title, detail ? byLine(c) : null),
     h('td', {}, h('button', { class: 'btn o', type: 'button', 'aria-label': `Valider ${c.title}`, onclick: () => validate(c) }, 'Valider')),
     h('td', { class: 'num' }, fmtDay(c.fm.generated.at)),
-    detail ? who(c.fm.generated.by) : null, detail ? who(c.fm.verified && c.fm.verified.by, 'personne pour l’instant') : null)), detail ? 'v' : '');
+    detail ? who(c.fm.generated.by) : null, detail ? h('td', { title: (c.fm.verified && c.fm.verified.by) || null }, verifier(c.fm.verified && c.fm.verified.by)) : null)), detail ? 'v' : '');
 }
 
 function livrerCard() {
@@ -306,7 +312,7 @@ const pointsLine = (s) => h('p', {}, sprintSt(s), ` ${plural(s.engages, 'point p
 function velociteCard() {
   const v = S.ov.velocite || {};
   return card('Vitesse', h('p', { class: 'muted' }, 'Sprint : un groupe de tickets construits ensemble.'), v.moyenne == null ? none('Vitesse moyenne : pas encore de sprint terminé.')
-    : [h('p', {}, `vitesse moyenne (points par sprint) : ${fmtNum(v.moyenne)}`), h('p', {}, `sprints restants : ${v.restants == null ? '—' : fmtNum(v.restants)} pour ${plural(v.ouverts, 'point ouvert', 'points ouverts')}`)]);
+    : [h('p', {}, `vitesse moyenne (points par sprint) : ${fmtNum(v.moyenne)}`), h('p', {}, v.restants == null ? `sprints restants : impossible à estimer, aucun point fait dans les sprints terminés (${plural(v.ouverts, 'point ouvert', 'points ouverts')})` : `sprints restants : ${fmtNum(v.restants)} pour ${plural(v.ouverts, 'point ouvert', 'points ouverts')}`)]);
 }
 function vSprints() {
   const sp = S.ov.sprints || [];
@@ -318,7 +324,7 @@ function vSprint(slug) {
   const b = s.audit.bloquants;
   return h('div', { class: 'grid' }, crumbs(['Sprints', '/sprints'], [s.title]), h('h1', {}, s.title), h('p', {}, s.description), pointsLine(s),
     table(['Ticket', 'Statut'], s.tickets.map((t) => h('tr', {}, h('td', {}, h('a', { href: routeOf(t.path) }, t.title)), h('td', {}, ticketSt(t))))),
-    card('Audit et démo', h('p', {}, 'Bloquants : ', b == null ? st('pas encore audité', 'a', '○') : b ? st(plural(b, 'bloquant', 'bloquants'), 'b', '✕') : st('aucun bloquant', 'f', '✓')),
+    card('Audit et démo', h('p', {}, 'Bloquants : ', b == null ? st('Jamais audité', 'a', '○') : b ? st(plural(b, 'bloquant', 'bloquants'), 'b', '✕') : st('aucun bloquant', 'f', '✓')),
       h('p', { class: 'muted' }, 'Démo : les tests T1, T2… que vous faites vous-même avant de fusionner un sprint.'),
       s.demo.length ? h('ul', {}, s.demo.map((d) => h('li', {}, h('span', { class: 'mono' }, d.t), ' ', d.ok ? st('OK', 'f', '✓') : st('KO', 'b', '✕')))) : none('Pas encore de démo.')));
 }
@@ -349,8 +355,9 @@ function vExigence(slug) {
 }
 // listes Markdown d'une section, sans balisage : une ligne par puce
 const bullets = (text) => text ? h('ul', {}, text.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => h('li', {}, l.replace(/^[-*]\s+/, '').replace(/\*\*/g, '')))) : h('p', { class: 'muted' }, 'non documenté');
-function vPersonas() {
-  const ps = ofType('Persona');
+function vPersonas(slug) {
+  const ps = ofType('Persona').filter((p) => !slug || p.slug === slug);
+  if (slug && !ps.length) return v404();
   return h('div', { class: 'grid' }, h('h1', {}, 'Personas'), h('p', { class: 'muted' }, 'Les personnes pour qui vous construisez l’application.'), ps.length ? ps.map((p) => card(null, h('h3', {}, p.title), h('p', {}, p.fm.description || ''), h('div', { class: 'row' }, trustSt(p)),
     [['Objectifs', 'Objectifs'], ['Besoins', 'Besoins'], ['Difficultés', 'Pain points']].map(([label, name]) => [h('h2', {}, label), bullets(secOf(p.body, name))]))) : none('Aucun persona — /hosa les crée'));
 }
@@ -382,9 +389,12 @@ function nodePanel(id, panel) {
 }
 function vTracabilite() {
   const box = h('div', {}, h('p', { class: 'muted' }, 'Chargement…')), results = h('div'), panel = h('div', { class: 'card', 'aria-live': 'polite' }, none('Choisissez un élément pour voir ses relations et son impact.'));
-  const search = (q) => { if (!q.trim()) return results.replaceChildren(); results.replaceChildren(h('p', { class: 'muted' }, 'Chargement…'));
+  // recherche pendant la frappe ; la saisie survit aux redessins de l'écran (S.gq)
+  const search = (q) => { S.gq = q; if (!q.trim()) return results.replaceChildren(); results.replaceChildren(h('p', { class: 'muted' }, 'Chargement…'));
     api(`graph/find?q=${encodeURIComponent(q)}`).then((l) => results.replaceChildren(l.length ? table(['Élément', 'Type', 'Fichier'], l.map((n) => h('tr', {}, h('td', {}, h('button', { class: 'lnk', type: 'button', onclick: () => nodePanel(n.id, panel) }, nodeName(n))), h('td', {}, KIND[n.kind] || n.kind), h('td', { class: 'mono muted' }, n.file || '')))) : none('Aucun élément ne correspond')),
       (e) => results.replaceChildren(errBox(`Traçabilité indisponible : ${plain(e)}.`))); };
+  let timer;
+  if (S.gq) search(S.gq);
   api('graph/trace').then((t) => box.replaceChildren(t.length ? table(['Exigence', 'Statut', 'Tickets', 'Fichiers'], t.map((e) => {
     const n = e.tickets.reduce((k, x) => k + x.files.length, 0), alone = e.node.status === 'stable' && !n;
     return h('tr', { class: alone ? 'fail' : '' }, h('td', {}, nodeLink(e.node)), h('td', {}, e.node.status === 'stable' ? st('validée', 'f', '✓') : st('brouillon', 'a', '○'), alone ? [' ', st('Sans fichier lié', 'b', '✕')] : null),
@@ -392,8 +402,11 @@ function vTracabilite() {
   })) : none('Aucune exigence dans le graphe')),
     (e) => box.replaceChildren(/graphe absent/i.test(e.message) ? errBox(`${e.message}.`, true) : errBox(`Traçabilité indisponible : ${plain(e)}.`, true)));
   return h('div', { class: 'grid' }, h('h1', {}, 'Traçabilité'), h('p', { class: 'muted' }, 'Traçabilité : le lien entre une exigence, ses tickets et les fichiers de code.'), box,
-    sect('Rechercher un élément', h('div', { class: 'filters', role: 'search' }, h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher un élément', placeholder: 'fichier, fonction, ticket, exigence ( / )', onchange: (e) => search(e.target.value) })), results), panel);
+    sect('Rechercher un élément', h('div', { class: 'filters', role: 'search' }, h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher un élément', placeholder: 'fichier, fonction, ticket, exigence ( / )', value: S.gq || '', oninput: (e) => { clearTimeout(timer); timer = setTimeout(() => search(e.target.value), 250); } })), results), panel);
 }
+// seul le slug cité devient un lien, le reste de la phrase reste du texte
+const linkSlug = (text, path) => { const slug = path.replace(/^.*\//, '').replace(/\.md$/, ''), i = text.indexOf(`\`${slug}\``);
+  return i < 0 ? text : [text.slice(0, i), h('a', { href: routeOf(path) }, slug), text.slice(i + slug.length + 2)]; };
 const ACTEUR = { humain: 'Vous', processus: 'Application', agent: 'Claude' };
 function vJournal() {
   const l = S.activity.filter((a) => has(a.text + a.bundle) && (!F.acteur || a.acteur === F.acteur) && (!F.dossier || a.bundle === F.dossier));
@@ -402,7 +415,7 @@ function vJournal() {
     filterBar(['q'], { selects: { acteur: Object.entries(ACTEUR), dossier: [...new Set(S.activity.map((a) => a.bundle))].sort().map((b) => [b, b || 'racine']) } }),
     !S.activity.length ? none('Aucune entrée dans les journaux de la KB') : !l.length ? none('Aucune entrée ne correspond', ' ', clearBtn(['q', 'acteur', 'dossier']))
       : days.map((d) => sect(isoDay(d), table(['Acteur', 'Dossier', 'Action'], l.filter((a) => a.date === d).map((a) => h('tr', {},
-        h('td', { title: a.acteurNom }, ACTEUR[a.acteur] || a.acteur), h('td', {}, a.bundle || 'racine'), h('td', {}, a.lien ? h('a', { href: routeOf(a.lien) }, a.text) : a.text)))))));
+        h('td', { title: a.acteurNom }, ACTEUR[a.acteur] || a.acteur), h('td', {}, a.bundle || 'racine'), h('td', {}, a.lien ? linkSlug(a.text, a.lien) : a.text)))))));
 }
 function vValidation() {
   const l = toValidate();
@@ -412,7 +425,7 @@ function vValidation() {
     h('details', { class: 'card' }, h('summary', {}, `Déjà validé (${done.length})`),
       table(['Titre', '', 'Validé le', 'Produit par', 'Validé par'], done.map((c) => h('tr', {}, h('td', {}, c.title, byLine(c)),
         h('td', {}, h('button', { class: 'lnk', type: 'button', 'aria-label': `Annuler la validation de ${c.title}`, onclick: () => { if (confirm(`Annuler la validation de « ${c.title} » ?`)) unvalidate(c); } }, 'Annuler la validation')),
-        h('td', { class: 'num' }, fmtDay(c.fm.verified.at)), who(c.fm.generated.by), who(c.fm.verified.by))), 'v')));
+        h('td', { class: 'num' }, fmtDay(c.fm.verified.at)), who(c.fm.generated.by), h('td', { title: c.fm.verified.by }, verifier(c.fm.verified.by)))), 'v')));
 }
 function editor(c) {
   const fmTa = h('textarea', { id: 'fm', class: 'fm', 'aria-label': 'En-tête', 'aria-describedby': 'fm-msg' }), ta = h('textarea', { id: 'body', 'aria-label': 'Contenu' });
@@ -505,7 +518,7 @@ const ROUTES = [
   [/^\/$/, home, 'Accueil'],
   [/^\/avancement$/, vAvancement, "Plan d'avancement"], [/^\/tickets$/, () => vTickets(false), 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
   [/^\/sprints$/, vSprints, 'Sprints'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(m[1]), 'Sprint'], [/^\/exigences$/, vExigences, 'Exigences'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(m[1]), 'Exigence'],
-  [/^\/personas$/, vPersonas, 'Personas'], [/^\/recettes$/, vRecettes, 'Recettes'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
+  [/^\/personas$/, () => vPersonas(), 'Personas'], [/^\/personas\/([^/]+)$/, (m) => vPersonas(decodeURIComponent(m[1])), 'Persona'], [/^\/recettes$/, vRecettes, 'Recettes'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
   [/^\/gestion\/validation$/, vValidation, 'À valider'], [/^\/gestion\/concepts$/, () => vConcepts(), 'Concepts'], [/^\/gestion\/concepts\/(.+)$/, (m) => vConcepts(decodeURIComponent(m[1])), 'Concept'], [/^\/gestion\/tickets$/, () => vTickets(true), 'Tickets'],
 ];
 const here = () => (location.hash.replace(/^#/, '') || '/').replace(/\/$/, '') || '/';
