@@ -12,7 +12,6 @@ import os
 import subprocess
 import sys
 import venv
-import webbrowser
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent / "hosa" / "app"
@@ -47,10 +46,10 @@ if __name__ == "__main__":
     root = os.environ.get("HOSA_KB_ROOT") or kb_root(Path.cwd().resolve())
     if not root:
         raise SystemExit("Pas de .hosa/kb ici ni au-dessus : lance run.py depuis le projet géré par Hosa.")
-    port = os.environ.get("PORT", "3000")
+    env = {**os.environ, "HOSA_KB_ROOT": str(root), "PYTHONUTF8": "1"}
     if "--no-browser" not in sys.argv:
-        webbrowser.open(f"http://127.0.0.1:{port}")  # IPv4 like the server: "localhost" may resolve to ::1, another app
+        env["HOSA_OPEN_BROWSER"] = "1"  # server.py opens it once the port is its own, never on another project's server
     try:
-        subprocess.call([str(PY), str(APP / "server.py")], env={**os.environ, "HOSA_KB_ROOT": str(root), "PORT": port})
+        raise SystemExit(subprocess.call([str(PY), str(APP / "server.py")], env=env))
     except KeyboardInterrupt:
         pass

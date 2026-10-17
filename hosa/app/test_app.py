@@ -55,6 +55,11 @@ class AppTest(unittest.TestCase):
         self.srv.server_close()
         self.tmp.cleanup()
 
+    def test_refuses_a_busy_port(self):
+        # Two servers on one port: the browser would reach either project's KB.
+        with self.assertRaises(OSError):
+            server.serve(self.root, self.srv.server_port).server_close()
+
     def call(self, method, path, body=None, ctype="application/json", host=None):
         req = urllib.request.Request(self.base + path, method=method,
                                      data=None if body is None else json.dumps(body).encode())

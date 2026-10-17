@@ -4,6 +4,7 @@ import mimetypes
 import os
 import subprocess
 import sys
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
@@ -177,14 +178,26 @@ def make_handler(root):
     return Handler
 
 
+class Server(ThreadingHTTPServer):
+    # Sous Windows, SO_REUSEADDR laisse un 2e serveur écouter le même port : le navigateur tomberait sur l'un ou l'autre.
+    allow_reuse_address = os.name != "nt"
+
+
 def serve(root, port=0):
-    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(Path(root).resolve()))
+    return Server(("127.0.0.1", port), make_handler(Path(root).resolve()))
 
 
 if __name__ == "__main__":
     root = os.environ.get("HOSA_KB_ROOT") or kb.resolve_kb_root()
-    server = serve(root, int(os.environ.get("PORT", 3000)))
-    print(f"Hosa — http://127.0.0.1:{server.server_port}  (KB : {root})", file=sys.stderr)
+    port = int(os.environ.get("PORT", 3000))
+    try:
+        server = serve(root, port)
+    except OSError:
+        raise SystemExit(f"Port {port} déjà utilisé (un autre tableau de bord ?) : relance avec PORT=<autre port>.")
+    url = f"http://127.0.0.1:{server.server_port}"  # IPv4 like the bind: "localhost" may resolve to ::1, another app
+    print(f"Hosa — {url}  (KB : {root})", file=sys.stderr, flush=True)
+    if os.environ.get("HOSA_OPEN_BROWSER"):
+        webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
