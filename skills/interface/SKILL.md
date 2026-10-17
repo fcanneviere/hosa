@@ -48,6 +48,8 @@ Manual: `/interface`. Auto: immediately after `architecture`, or "conçois l'int
 
 If the interface was already scaffolded (an `Infra` `## Documentation d'interface` heading exists) but `interface_check.py` reports gaps — no `kb/interface/navigation.md`, screens missing, fundamentals not applied — run this same flow as a completion: Step 1 as usual; skip Step 2 and the identity/design-rule part of Step 3 when `## Identité visuelle` and `ux` `Design Rule`s already exist (unless the user wants to revisit them), but always present the navigation structure for validation; then Steps 4 to 6, extending the existing scaffold rather than replacing it.
 
+A `hosa-ux-designer` report with `## Reprise` (its tool-call budget is spent) → dispatch a fresh one, same phase and round, with that section and the user's choices — not the previous report.
+
 ## Step 1: Dispatch for Inputs and Personas
 
 Dispatch `hosa-ux-designer` (Phase 1, `agents/ux-designer.md`) to gather `kb/infra/`, `kb/cdc/`, `kb/personnas/`, `kb/stack/`, and the architecture documentation, and to list every real persona needing a UI-interview.

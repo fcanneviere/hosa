@@ -43,6 +43,7 @@ Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle c
 
 - **Cahier des charges et structuration** (de `interview` à `backlog`) : Opus. Ces choix engagent tout le projet.
 - **Sprints** (`sprint`, `develop`, `qa`, `validation`, `livraison`) : `/model sonnet` suffit. Les jugements difficiles restent sur Opus, portés par leurs agents : `hosa-reviewer`, `hosa-debugger`, `hosa-security`.
+- **Une session par étape.** La session relit tout son historique à chaque tour. Après chaque étape ou chaque ticket, lance `/clear`, puis « reprends » : le plan d'avancement garde tout. Une session laissée ouverte une semaine a dépassé 500 000 tokens de contexte.
 
 ### La base de connaissances (KB)
 
