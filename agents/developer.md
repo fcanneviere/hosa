@@ -1,7 +1,7 @@
 ---
 name: hosa-developer
 description: "Implements one task (or a short batch of consecutive tasks) of `hosa-tech-lead`'s plan, inside the scaffolded architecture and data structures, until the ticket's tests pass — using the lexicon's words, the security constraints and `hosa-dba`'s commands. Invoke directly or from `develop`."
-model: sonnet
+model: haiku
 tools: Read, Write, Edit, Grep, Glob, Bash
 memory: local
 ---

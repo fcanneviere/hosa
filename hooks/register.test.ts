@@ -61,3 +61,20 @@ test('a stage closed in a heavy session suggests /clear', async ($, on) => {
   await $.turn.complete({ turnId: 't2', answer: '', durationMs: 1, isAborted: false, usage: null })
   expect(toasts[0]).toContain('/clear')
 })
+
+test('HOSA_HAIKU=0 puts the Haiku execution agents back on Sonnet, only them', async ($, on) => {
+  project(on, [sprints], { HOSA_HAIKU: '0' })
+  on('agent.spawn', ($: any, e: any) => ({ model: e.model ?? 'own' }))
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  const spawn = (subagentType: string, model?: string) => $.agent.spawn({ subagentType, prompt: 'p', description: 'd', model })
+  expect((await spawn('hosa:hosa-developer')).model).toBe('sonnet')
+  expect((await spawn('hosa:hosa-git', 'haiku')).model).toBe('sonnet')
+  expect((await spawn('hosa:hosa-reviewer')).model).toBe('own')
+})
+
+test('without HOSA_HAIKU the agents keep their own model', async ($, on) => {
+  project(on, [sprints])
+  on('agent.spawn', ($: any, e: any) => ({ model: e.model ?? 'own' }))
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  expect((await $.agent.spawn({ subagentType: 'hosa:hosa-developer', prompt: 'p', description: 'd' })).model).toBe('own')
+})

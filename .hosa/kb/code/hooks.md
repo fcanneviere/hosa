@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T06:52:30Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T07:25:29Z'}
 ---
 
 ## Fichiers
@@ -80,10 +80,10 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T06:52:30Z'}
 - `stateFile` — `hooks/read-guard.js:16`
 - `denied` — `hooks/read-guard.test.js:13`
 - `read` — `hooks/read-guard.test.js:12`
-- `readPlan` — `hooks/register.mjs:20` — Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows.
-- `refresh` — `hooks/register.mjs:36` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
-- `register` — `hooks/register.mjs:53`
-- `showStatus` — `hooks/register.mjs:47`
+- `readPlan` — `hooks/register.mjs:23` — Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows.
+- `refresh` — `hooks/register.mjs:40` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
+- `register` — `hooks/register.mjs:57`
+- `showStatus` — `hooks/register.mjs:51`
 - `project` — `hooks/register.test.ts:10` — Plan text per call, so a test can close a stage between turns.
 - `row` — `hooks/register.test.ts:3`
 - `step` — `hooks/register.test.ts:23`

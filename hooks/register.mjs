@@ -5,6 +5,8 @@
 //    Subagents keep their own `model:`. Kill switch: HOSA_MODELE=0.
 // B. A status line with the phase and the context fill, and a toast when a stage closes in a
 //    heavy session: /clear then « reprends » (README « Une session par étape »).
+// C. Rollback of the execution agents moved to Haiku (2026-10-17): HOSA_HAIKU=0 runs them on
+//    Sonnet again, without a release. Measure with `usage_report.py --since/--until`.
 
 const PLAN = '.hosa/kb/project/avancement.md'
 const UPSTREAM = ['hosa', 'interview', 'redaction', 'fondamentaux', 'securite', 'relecture', 'contestation',
@@ -15,6 +17,7 @@ const MODEL = { conception: 'claude-opus-5-5', sprints: 'claude-sonnet-5-5' }
 // Families each phase accepts as they are: a stronger model the user chose for conception stays.
 const KEEP = { conception: /opus|fable/, sprints: /sonnet|haiku/ }
 const HEAVY = 20 // context %, from which a closed stage suggests /clear
+const ON_HAIKU = /(^|:)hosa-(developer|implementer|tester|qa-lead|key-user|git|documentation|infra|dba)$/
 
 // Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows.
 export function readPlan(text) {
@@ -29,6 +32,7 @@ export function readPlan(text) {
 }
 
 let enabled = true
+let haiku = true
 let plan = null // { phase, closed } of the managed project, null outside one
 let percent = null
 
@@ -53,10 +57,14 @@ function showStatus($) {
 export function register(on) {
   on('session.start', async ($, e, next) => {
     enabled = (await $.env.get('HOSA_MODELE')) !== '0'
+    haiku = (await $.env.get('HOSA_HAIKU')) !== '0'
     await refresh($)
     showStatus($)
     return next(e)
   })
+
+  on('agent.spawn', async ($, e, next) =>
+    next(!haiku && ON_HAIKU.test(e.subagentType) ? { ...e, model: 'sonnet' } : e))
 
   on('turn.step', async function* ($, e, next) {
     const want = enabled && !e.agentId && plan ? plan.phase : null

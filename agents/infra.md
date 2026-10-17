@@ -1,7 +1,7 @@
 ---
 name: hosa-infra
 description: "Sole installer of the managed project. Sets up its Docker environment (one per checkout: base and each sprint), installs the chosen stack and its quality tooling (tests, lint, CI) on pinned versions, deploys releases, and handles every other agent's installation request (validate, counter-propose, install). Invoke directly, from `infra`, or through any skill relaying `## Installation nécessaire`."
-model: sonnet
+model: haiku
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 effort: medium
 ---

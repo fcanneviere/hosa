@@ -2,7 +2,10 @@
 """Where do the tokens go? Reads Claude Code's local transcripts and reports
 token use per agent, per skill and per model, plus the files read the most.
 
-  usage_report.py [project-dir] [--since YYYY-MM-DD] [--session ID] [--top N]
+  usage_report.py [project-dir] [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--session ID] [--top N]
+
+To measure a change (a model switch), run it on the period before and after:
+`## Résultat` gives the cost, the tickets delivered and the review verdicts.
 
 project-dir: the managed project's root (default: current directory). Its
 transcripts live in ~/.claude/projects/<path with / replaced by ->/ (main
@@ -18,17 +21,31 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-FIELDS = ("calls", "input", "cache_write", "cache_read", "output", "thinking")
-# Relative cost of each token type, input = 1 (Anthropic pricing structure). Model price differences are not included.
-WEIGHT = {"input": 1.0, "cache_write": 1.25, "cache_read": 0.1, "output": 5.0}
+FIELDS = ("calls", "input", "cache_write", "cache_read", "output", "thinking", "usd")
+# $ per million tokens: input, output, cache read; a cache write is 1.25 × input. First match wins.
+# ponytail: list prices of 2026-10, 5-min cache writes, Haiku 5.5's dearer >100k-prompt tier ignored
+PRICES = [("fable", 10, 50, 0.25), ("opus-5-5", 4, 20, 0.20), ("opus", 5, 25, 0.50),
+          ("sonnet-5", 2, 10, 0.20), ("sonnet", 3, 15, 0.30), ("haiku-5-5", 0.10, 0.50, 0.01), ("haiku", 1, 5, 0.10)]
+VERDICT = re.compile(r"\b(PASS-WITH-NOTES|PASS|FAIL)\b")
 
 
-def weight(r: dict) -> float:
-    return sum(r[k] * w for k, w in WEIGHT.items())
+def usd(model: str, usage: dict) -> float:
+    price = next((p for p in PRICES if p[0] in model), None)
+    if not price:
+        return 0.0
+    _, inp, out, read = price
+    return ((usage.get("input_tokens", 0) or 0) * inp + (usage.get("cache_creation_input_tokens", 0) or 0) * inp * 1.25
+            + (usage.get("cache_read_input_tokens", 0) or 0) * read + (usage.get("output_tokens", 0) or 0) * out) / 1e6
+
+
+def outside(entry: dict, since: str | None, until: str | None) -> bool:
+    day = str(entry.get("timestamp", ""))[:10]
+    return bool(since and day < since or until and day > until)
 
 
 def project_dir(root: Path) -> Path:
@@ -62,9 +79,10 @@ def usage_once(entry: dict, seen: set) -> dict:
     return msg.get("usage") or {}
 
 
-def add(table: dict, key: str, usage: dict) -> None:
+def add(table: dict, key: str, usage: dict, model: str) -> None:
     row = table[key]
     row["calls"] += 1
+    row["usd"] += usd(model, usage)
     row["input"] += usage.get("input_tokens", 0) or 0
     row["cache_write"] += usage.get("cache_creation_input_tokens", 0) or 0
     row["cache_read"] += usage.get("cache_read_input_tokens", 0) or 0
@@ -72,7 +90,7 @@ def add(table: dict, key: str, usage: dict) -> None:
     row["thinking"] += ((usage.get("output_tokens_details") or {}).get("thinking_tokens", 0)) or 0
 
 
-def scan(base: Path, since: str | None, session: str | None):
+def scan(base: Path, since: str | None, session: str | None, until: str | None = None):
     by_actor: dict = defaultdict(lambda: dict.fromkeys(FIELDS, 0))
     by_model: dict = defaultdict(lambda: dict.fromkeys(FIELDS, 0))
     reads: dict = defaultdict(lambda: [0, 0])          # file -> [times, chars]
@@ -81,6 +99,7 @@ def scan(base: Path, since: str | None, session: str | None):
     pending_read: dict[str, tuple[str, str]] = {}       # tool_use id -> (actor, file)
     sidechain: list[tuple[Path, list]] = []
     seen: set[str] = set()                              # message ids already counted
+    verdicts: dict = defaultdict(int)                   # hosa-reviewer final verdict -> runs
 
     files = sorted(base.rglob("*.jsonl")) if base.is_dir() else []
     for path in files:
@@ -92,7 +111,7 @@ def scan(base: Path, since: str | None, session: str | None):
             continue
         skill = None
         for e in entries:
-            if since and str(e.get("timestamp", ""))[:10] < since:
+            if outside(e, since, until):
                 continue
             if e.get("isSidechain"):
                 sidechain.append((path, [e]))
@@ -111,8 +130,9 @@ def scan(base: Path, since: str | None, session: str | None):
                 actor = f"skill {skill}" if skill else "session principale"
                 usage = usage_once(e, seen)
                 if usage:
-                    add(by_actor, actor, usage)
-                    add(by_model, (e.get("message") or {}).get("model", "?"), usage)
+                    model = (e.get("message") or {}).get("model", "?")
+                    add(by_actor, actor, usage, model)
+                    add(by_model, model, usage, model)
                 for b in blocks(e):
                     if b.get("type") != "tool_use":
                         continue
@@ -129,20 +149,39 @@ def scan(base: Path, since: str | None, session: str | None):
             or re.sub(r"^agent-", "", path.stem)
         kind = agent_of.get(agent_id) or meta_type(path) or "agent (type inconnu)"
         actor = f"agent {kind}"
+        last_text = None
         for e in entries:
-            if since and str(e.get("timestamp", ""))[:10] < since:
+            if outside(e, since, until):
                 continue
             if e.get("type") == "assistant":
                 usage = usage_once(e, seen)
                 if usage:
-                    add(by_actor, actor, usage)
-                    add(by_model, (e.get("message") or {}).get("model", "?"), usage)
+                    model = (e.get("message") or {}).get("model", "?")
+                    add(by_actor, actor, usage, model)
+                    add(by_model, model, usage, model)
                 for b in blocks(e):
+                    if b.get("type") == "text":
+                        last_text = b.get("text", "")
                     if b.get("type") == "tool_use" and b.get("name") == "Read" and (b.get("input") or {}).get("file_path"):
                         pending_read[b["id"]] = (actor, b["input"]["file_path"])
             elif e.get("type") == "user":
                 count_reads(e, pending_read, reads)
-    return by_actor, by_model, reads
+        if kind.endswith("hosa-reviewer") and last_text is not None:
+            m = VERDICT.search(last_text)
+            verdicts[m.group(1) if m else "sans verdict"] += 1
+    return by_actor, by_model, reads, verdicts
+
+
+def delivered(project: Path, since: str | None, until: str | None) -> set[str]:
+    """Tickets with a commit carrying `Hosa-Ticket: <slug>` (the `develop` gate) in the period."""
+    cmd = ["git", "-C", str(project), "log", "--all", "--format=%(trailers:key=Hosa-Ticket,valueonly)"]
+    cmd += [f"--since={since} 00:00"] if since else []
+    cmd += [f"--until={until} 23:59:59"] if until else []
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30).stdout
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    return {line.strip() for line in (out or "").splitlines() if line.strip()}
 
 
 def meta_type(path: Path) -> str | None:
@@ -168,11 +207,11 @@ def fmt(n: int) -> str:
 
 
 def table(title: str, data: dict) -> list[str]:
-    total = sum(weight(r) for r in data.values()) or 1
-    out = [f"## {title}", "| | appels | entrée | cache écrit | cache lu | sortie (dont réflexion) | part |", "|---|---|---|---|---|---|---|"]
-    for key, r in sorted(data.items(), key=lambda kv: -weight(kv[1])):
+    total = sum(r["usd"] for r in data.values()) or 1
+    out = [f"## {title}", "| | appels | entrée | cache écrit | cache lu | sortie (dont réflexion) | coût | part |", "|---|---|---|---|---|---|---|---|"]
+    for key, r in sorted(data.items(), key=lambda kv: -kv[1]["usd"]):
         out.append(f"| {key} | {r['calls']} | {fmt(r['input'])} | {fmt(r['cache_write'])} | {fmt(r['cache_read'])} | "
-                   f"{fmt(r['output'])} ({fmt(r['thinking'])}) | {100*weight(r)/total:.0f} % |")
+                   f"{fmt(r['output'])} ({fmt(r['thinking'])}) | {r['usd']:.2f} $ | {100*r['usd']/total:.0f} % |")
     return out
 
 
@@ -180,6 +219,7 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Token use per agent, skill and model, from local transcripts.")
     ap.add_argument("project", nargs="?", type=Path, default=Path.cwd())
     ap.add_argument("--since")
+    ap.add_argument("--until")
     ap.add_argument("--session")
     ap.add_argument("--top", type=int, default=10)
     a = ap.parse_args(argv)
@@ -187,13 +227,19 @@ def main(argv: list[str]) -> int:
     if not base.is_dir():
         print(f"error: pas d'historique Claude Code pour {a.project} ({base})", file=sys.stderr)
         return 2
-    by_actor, by_model, reads = scan(base, a.since, a.session)
+    by_actor, by_model, reads, verdicts = scan(base, a.since, a.session, a.until)
     if not by_actor:
         print("Aucun échange trouvé pour ce filtre.")
         return 0
-    out = [f"Historique lu : {base}" + (f" — depuis le {a.since}" if a.since else ""),
-           "« part » : coût relatif par type de token (entrée 1, cache écrit 1,25, cache lu 0,1, sortie 5), sans la différence de prix entre modèles — voir le tableau par modèle.",
-           "Session principale : attribuée au dernier skill lancé depuis ton dernier message (approximation).", ""]
+    total = sum(r["usd"] for r in by_model.values())
+    tickets = delivered(a.project, a.since, a.until)
+    reviews = ", ".join(f"{k} {n}" for k, n in sorted(verdicts.items())) or "aucune"
+    out = [f"Historique lu : {base}" + (f" — depuis le {a.since}" if a.since else "") + (f" — jusqu'au {a.until}" if a.until else ""),
+           "« coût » : prix catalogue en dollars selon le modèle (estimation, hors abonnement) ; « part » : part de ce coût.",
+           "Session principale : attribuée au dernier skill lancé depuis ton dernier message (approximation).", "",
+           "## Résultat", f"- Coût total : {total:.2f} $",
+           f"- Tickets livrés (commits `Hosa-Ticket:`) : {len(tickets)}" + (f" — {total/len(tickets):.2f} $ par ticket" if tickets else ""),
+           f"- Revues `hosa-reviewer` : {reviews}", ""]
     out += table("Par agent et par skill", by_actor) + [""] + table("Par modèle", by_model) + [""]
     out += [f"## Fichiers les plus lus (top {a.top})", "| fichier | lectures | caractères renvoyés |", "|---|---|---|"]
     for f, (n, chars) in sorted(reads.items(), key=lambda kv: -kv[1][1])[: a.top]:
