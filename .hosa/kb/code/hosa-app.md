@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T07:14:44Z'}
 ---
 
 ## Fichiers
@@ -22,6 +22,7 @@ generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
 | `hosa/app/test_kb_index.py` | kb_index.py keeps the KB summary short: long descriptions are cut. |
 | `hosa/app/test_plugin_frontmatter.py` | Every skill and agent of the plugin must have valid YAML frontmatter with a name and a description. |
 | `hosa/app/test_run.py` | run.py: serves the managed project's KB (not a sprint worktree's stale copy), builds its venv once. |
+| `hosa/app/test_usage_report.py` | usage_report.py: a response written over several transcript lines is counted once. |
 
 ## Symboles publics
 
@@ -80,6 +81,8 @@ generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
 - `PluginFrontmatter` — `hosa/app/test_plugin_frontmatter.py:11`
 - `KbRoot` — `hosa/app/test_run.py:13`
 - `Setup` — `hosa/app/test_run.py:24`
+- `UsageOnce` — `hosa/app/test_usage_report.py:19`
+- `line` — `hosa/app/test_usage_report.py:14`
 
 ## Tickets et exigences
 

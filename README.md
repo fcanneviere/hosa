@@ -45,6 +45,8 @@ Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle c
 - **Sprints** (`sprint`, `develop`, `qa`, `validation`, `livraison`) : `/model sonnet` suffit. Les jugements difficiles restent sur Opus, portés par leurs agents : `hosa-reviewer`, `hosa-debugger`, `hosa-security`.
 - **Une session par étape.** La session relit tout son historique à chaque tour. Après chaque étape ou chaque ticket, lance `/clear`, puis « reprends » : le plan d'avancement garde tout. Une session laissée ouverte une semaine a dépassé 500 000 tokens de contexte.
 
+Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Opus ou Sonnet selon le plan d'avancement. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
+
 ### La base de connaissances (KB)
 
 - Elle vit dans le projet, dans `.hosa/kb/`, sur sa **propre branche git `hosa-kb`** : elle ne se mélange jamais au code ni aux sprints.

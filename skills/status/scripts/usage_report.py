@@ -50,6 +50,18 @@ def blocks(entry: dict) -> list:
     return content if isinstance(content, list) else []
 
 
+def usage_once(entry: dict, seen: set) -> dict:
+    """The entry's usage, or {} if its message was already counted: Claude Code
+    writes one API response over several lines, each repeating the same usage."""
+    msg = entry.get("message") or {}
+    mid = msg.get("id")
+    if mid in seen:
+        return {}
+    if mid:
+        seen.add(mid)
+    return msg.get("usage") or {}
+
+
 def add(table: dict, key: str, usage: dict) -> None:
     row = table[key]
     row["calls"] += 1
@@ -68,6 +80,7 @@ def scan(base: Path, since: str | None, session: str | None):
     agent_of: dict[str, str] = {}                       # agentId -> subagent type
     pending_read: dict[str, tuple[str, str]] = {}       # tool_use id -> (actor, file)
     sidechain: list[tuple[Path, list]] = []
+    seen: set[str] = set()                              # message ids already counted
 
     files = sorted(base.rglob("*.jsonl")) if base.is_dir() else []
     for path in files:
@@ -96,7 +109,7 @@ def scan(base: Path, since: str | None, session: str | None):
                 count_reads(e, pending_read, reads)
             elif e.get("type") == "assistant":
                 actor = f"skill {skill}" if skill else "session principale"
-                usage = (e.get("message") or {}).get("usage") or {}
+                usage = usage_once(e, seen)
                 if usage:
                     add(by_actor, actor, usage)
                     add(by_model, (e.get("message") or {}).get("model", "?"), usage)
@@ -120,7 +133,7 @@ def scan(base: Path, since: str | None, session: str | None):
             if since and str(e.get("timestamp", ""))[:10] < since:
                 continue
             if e.get("type") == "assistant":
-                usage = (e.get("message") or {}).get("usage") or {}
+                usage = usage_once(e, seen)
                 if usage:
                     add(by_actor, actor, usage)
                     add(by_model, (e.get("message") or {}).get("model", "?"), usage)

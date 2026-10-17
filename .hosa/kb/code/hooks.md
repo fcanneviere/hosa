@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T06:52:30Z'}
 ---
 
 ## Fichiers
@@ -21,6 +21,8 @@ generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
 | `hooks/graph.test.js` |  |
 | `hooks/read-guard.js` |  |
 | `hooks/read-guard.test.js` |  |
+| `hooks/register.mjs` | Hosa — mod (Claude Code ≥ 2.1.290; older versions ignore it, the classic hooks still run). |
+| `hooks/register.test.ts` |  |
 | `hooks/session-start.js` |  |
 | `hooks/subagent-start.js` |  |
 | `hooks/subagent-start.test.js` |  |
@@ -78,6 +80,13 @@ generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
 - `stateFile` — `hooks/read-guard.js:16`
 - `denied` — `hooks/read-guard.test.js:13`
 - `read` — `hooks/read-guard.test.js:12`
+- `readPlan` — `hooks/register.mjs:20` — Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows.
+- `refresh` — `hooks/register.mjs:36` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
+- `register` — `hooks/register.mjs:53`
+- `showStatus` — `hooks/register.mjs:47`
+- `project` — `hooks/register.test.ts:10` — Plan text per call, so a test can close a stage between turns.
+- `row` — `hooks/register.test.ts:3`
+- `step` — `hooks/register.test.ts:23`
 - `processPayload` — `hooks/subagent-start.js:11`
 
 ## Tickets et exigences

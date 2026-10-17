@@ -1,5 +1,11 @@
 # Log — kb/code
 
+## 2026-10-17
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+
 ## 2026-10-11
 - process:hosa-graph a créé `skills-status-scripts`
 - process:hosa-graph a créé `skills-okf-scripts`
