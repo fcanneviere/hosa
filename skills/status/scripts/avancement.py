@@ -50,10 +50,11 @@ def load(path: Path) -> tuple[dict[str, list[list[str]]], str]:
     """{section title: [[stage, status, updated, detail], …]}, resume point."""
     sections = {title: [[s, TODO, "", ""] for s in stages] for title, stages in PIPELINES}
     resume = ""
-    if not path.exists():
+    text = read(path)
+    if text is None:
         return sections, resume
     current = None
-    body = path.read_text(encoding="utf-8").split("\n---\n", 1)[-1]
+    body = text.split("\n---\n", 1)[-1]
     for line in body.splitlines():
         if line.startswith("## "):
             current = line[3:].strip()
@@ -111,7 +112,7 @@ SKILL = {"git-demarrage": "git", "git-fusion": "git", "menaces": "securite"}
 def read(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -136,6 +137,24 @@ def field(text: str | None, name: str) -> str | None:
     return m and m.group(1).strip()
 
 
+def criteria(text: str | None) -> list[str]:
+    ids = re.findall(r"^-\s*(CA\d+)\b", section(text, "Critères d'acceptation") or "", re.M)
+    return list(dict.fromkeys(ids))
+
+
+def coverage(kb: Path, ticket: str) -> dict:
+    """Criteria of a ticket proved by its technical plan (`[CAn]`) or a recette (`CAn — Oui`)."""
+    crit = criteria(read(kb / "tickets" / f"{ticket}.md"))
+    plan = read(kb / "test" / f"{ticket}-technique.md")
+    proofs = plan or ""
+    if (kb / "test").is_dir():
+        for p in sorted((kb / "test").iterdir()):
+            if p.name.startswith(f"{ticket}-") and p.suffix == ".md" and p.name != f"{ticket}-technique.md":
+                proofs += "\n" + (read(p) or "")
+    done = [ca for ca in crit if re.search(rf"\[{re.escape(ca)}\]|^-\s*{re.escape(ca)}\s*—\s*Oui\b", proofs, re.M)]
+    return {"criteres": crit, "couverts": done, "total": len(crit), "plan": plan is not None}
+
+
 def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
     """What the KB lacks to prove a sprint stage done. `hooks/gate.js` runs
     `check validation` before a sprint lands."""
@@ -156,11 +175,11 @@ def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
     for t in tickets:
         text = read(kb / "tickets" / f"{t}.md")
         plan = read(kb / "test" / f"{t}-technique.md")
-        criteria = re.findall(r"^-\s*(CA\d+)\b", section(text, "Critères d'acceptation") or "", re.M)
+        crit = criteria(text)
         if stage == "qa-plan":
             if plan is None:
                 gaps.append(f"{t} : pas de plan `kb/test/{t}-technique.md` (`qa-plan`)")
-            missing = [ca for ca in criteria if f"[{ca}]" not in (plan or "")]
+            missing = [ca for ca in crit if f"[{ca}]" not in (plan or "")]
             if missing:
                 gaps.append(f"{t} : {', '.join(missing)} sans cas de test [CAn] (`qa-plan`)")
         if stage == "develop":
@@ -172,16 +191,14 @@ def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
         if stage == "validation":
             if field(text, "state") != "done" or not field(text, "verified"):
                 gaps.append(f"{t} : pas `done` et `verified` (`validation`)")
-            proofs = plan or ""
             for f in (x for x in tests if x.startswith(f"{t}-") and x != f"{t}-technique.md"):
                 r = read(kb / "test" / f) or ""
                 if re.search(r"^\s*Refusé", section(r, "Verdict") or "", re.M):
                     gaps.append(f"{f} : recette Refusé")
                 if re.search(r"^-\s*CA\d+\s*—\s*Non\s*—", r, re.M):
                     gaps.append(f"{f} : un critère répondu Non")
-                proofs += "\n" + r
-            unproved = [ca for ca in criteria
-                        if not re.search(rf"\[{ca}\]|^-\s*{ca}\s*—\s*Oui\b", proofs, re.M)]
+            cov = coverage(kb, t)
+            unproved = [ca for ca in cov["criteres"] if ca not in cov["couverts"]]
             if unproved:
                 gaps.append(f"{t} : {', '.join(unproved)} prouvé(s) par aucun cas [CAn] ni recette Oui (`qa-plan`)")
     if stage == "validation":

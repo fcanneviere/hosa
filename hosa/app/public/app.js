@@ -1,23 +1,14 @@
 'use strict';
+// Application Hosa — SPA native, routage par le hash, sans réseau externe.
 
-const STATES = { todo: 'To do', doing: 'In progress', done: 'Done', blocked: 'Blocked' };
-const SPRINT_STATES = { planned: 'Planned', active: 'Active', done: 'Done' };
-const TRUST = {
-  human: { label: 'Human-verified', short: 'Human' },
-  machine: { label: 'Machine-checked', short: 'Machine' },
-  none: { label: 'Unverified', short: 'Unverified' },
-};
-const KIND = { human: ['H', 'Human'], agent: ['A', 'Agent'], process: ['P', 'Process'] };
-const PTS = { S: 1, M: 3, L: 5 };
-const VIEWS = [['', 'Home'], ['steering', 'Steering'], ['personas', 'Personas'], ['board', 'Board'], ['sprints', 'Sprints'], ['kb', 'Knowledge'], ['graph', 'Graph'], ['journal', 'Journal']];
-const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
-
-const store = {}; // concepts (décorés), byPath, activity, overview — rechargés ensemble
-const view = () => document.getElementById('view');
+const $ = (id) => document.getElementById(id);
+const S = { concepts: [], ov: null, activity: [], kbStatus: undefined, usage: undefined, loadedAt: null, err: null };
+// Un seul utilisateur : tout est accessible. Menu : Suivi (lecture) puis Gestion (écriture).
+const MENU = [['/', 'Accueil'], ['/avancement', "Plan d'avancement"], ['/exigences', 'Exigences'], ['/tickets', 'Tickets'], ['/sprints', 'Sprints'], ['/recettes', 'Recettes'], ['/consommation', 'Consommation'], ['/tracabilite', 'Traçabilité'], ['/journal', 'Journal'], ['/personas', 'Personas']];
+const GESTION = [['/gestion/validation', 'À valider'], ['/gestion/concepts', 'Concepts'], ['/gestion/tickets', 'Tickets']];
 
 // --- utilitaires -----------------------------------------------------------
-
-function h(tag, attrs = {}, ...children) {
+function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
     if (v == null || v === false) continue;
@@ -25,934 +16,541 @@ function h(tag, attrs = {}, ...children) {
     else if (k === 'class') el.className = v;
     else el.setAttribute(k, v === true ? '' : v);
   }
-  el.append(...children.flat(Infinity).filter((c) => c != null && c !== false));
+  el.append(...kids.flat(Infinity).filter((c) => c != null && c !== false));
   return el;
 }
-
 async function api(path, options = {}) {
   const init = { ...options };
-  if (options.json) {
-    init.body = JSON.stringify(options.json);
-    init.headers = { 'Content-Type': 'application/json' };
-  }
+  if (options.json) { init.body = JSON.stringify(options.json); init.headers = { 'Content-Type': 'application/json' }; }
   const res = await fetch(`/api/${path}`, init);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error(data.error || `erreur ${res.status}`), { status: res.status, data });
   return data;
 }
-
-const encodePath = (p) => p.split('/').map(encodeURIComponent).join('/');
-
-function showError(message) {
-  const el = document.getElementById('error');
-  el.textContent = message || '';
-  el.hidden = !message;
+const enc = (p) => p.split('/').map(encodeURIComponent).join('/');
+const fmtDate = (s) => { const d = new Date(s); return isNaN(d) ? '—' : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }); };
+// date avec l'année (horodatage ISO) ; `isoDay` pour une date AAAA-MM-JJ, sans fuseau
+const fmtDay = (s) => { const d = new Date(s); return isNaN(d) ? '—' : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); };
+const isoDay = (s) => String(s || '').split('-').reverse().join('/');
+const fmtNum = (x) => x.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+const fmtTime = (d) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.className = 'show'; setTimeout(() => (t.className = ''), 3500); }
+function copy(text) {
+  const done = () => toast(`Copié : ${text}`);
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => toast('Copie impossible : sélectionnez le texte.'));
+  else toast('Copie impossible : sélectionnez le texte.');
 }
+const cmd = (skill) => h('div', { class: 'cmd' }, h('span', {}, `/${skill}`), h('button', { class: 'btn', type: 'button', onclick: () => copy(`/${skill}`) }, 'Copier'));
+// statut : toujours mot + symbole + couleur
+const ST = { 'à faire': ['a', '○'], 'en cours': ['e', '◐'], fait: ['f', '✓'], 'bloqué': ['b', '✕'], 'non applicable': ['a', '—'] };
+const st = (label, kind, sym) => { const [k, s] = ST[label] || [kind || 'a', sym || '']; return h('span', { class: `st ${kind || k}` }, `${label} ${sym ?? s}`.trim()); };
+const TICKET = { todo: 'à faire', doing: 'en cours', done: 'fait', blocked: 'bloqué' };
+const ticketSt = (t) => st(TICKET[t.state] || 'à faire');
+const VERD = { PASS: ['réussi', 'f', '✓'], 'PASS-WITH-NOTES': ['réussi avec remarques', 'a', '✓'], FAIL: ['échoué', 'b', '✕'] };
+const verdict = (v) => !v || !VERD[v] ? st('non testé', 'a', '') : st(VERD[v][0], VERD[v][1], VERD[v][2]);
+const plain = (e) => { const m = String((e && e.message) || e || ''); return /[\\/`]|\.py|\.md|api|HTTP|json/i.test(m) || !m ? 'une erreur est survenue' : m; };
+const pl = (n, one, many) => (n > 1 ? many : one);
+const sect = (title, ...kids) => h('section', { class: 'sect' }, title ? h('h2', {}, title) : null, ...kids);
+const none = (text, ...extra) => h('p', { class: 'hint' }, text, ...extra);
+const errBox = (text, retry) => h('div', { class: 'alert err', role: 'alert' }, h('span', {}, text), retry ? h('button', { class: 'btn warn', onclick: reload }, 'Réessayer') : null);
+const subnav = (cur) => h('nav', { class: 'subnav', 'aria-label': 'Gestion' }, GESTION.map(([to, l]) => h('a', { href: `#${to}`, 'aria-current': cur === to ? 'page' : null }, l)));
+const crumbs = (...parts) => h('div', { class: 'crumbs' }, parts.flatMap((p, i) => [i ? ' › ' : '', p[1] ? h('a', { href: `#${p[1]}` }, p[0]) : p[0]]));
+const copyBtn = (text, label) => h('button', { class: 'lnk', type: 'button', 'aria-label': label || `Copier ${text}`, onclick: () => copy(text) }, 'Copier');
+const secOf = (body, name) => ((String(body || '').split(new RegExp(`^## ${name}`, 'm'))[1] || '').split(/^## /m)[0] || '').trim();
+const card = (title, ...kids) => h('section', { class: 'card' }, title ? h('h2', {}, title) : null, ...kids);
+const table = (head, rows, cls) => h('div', { class: 'tw' }, h('table', { class: cls || '' }, h('thead', {}, h('tr', {}, head.map((x) => h('th', { scope: 'col' }, x)))), h('tbody', {}, rows)));
 
-let toastTimer;
-function toast(message) {
-  const el = document.getElementById('toast');
-  el.textContent = message;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+// --- données ----------------------------------------------------------------
+const meta = (c) => {
+  const fm = c.frontmatter || {};
+  const by = fm.verified && fm.verified.by;
+  return { ...c, fm, title: fm.title || c.path, type: fm.type, slug: c.path.replace(/^.*\//, '').replace(/\.md$/, ''),
+    trust: !by ? 'none' : String(by).startsWith('human:') ? 'human' : 'machine', status: fm.status || 'stable',
+    state: fm.state || 'todo', at: (fm.verified && fm.verified.at) || (fm.generated && fm.generated.at) };
+};
+const ofType = (t) => S.concepts.filter((c) => c.type === t);
+const TIER = { human: 'humain', machine: 'machine', none: 'aucune' };  // mêmes valeurs que `board.validation`
+// `hosa-product-owner/1.0` → « Claude · product owner » ; `human:fabien` → « vous (fabien) »
+const agentLabel = (by) => { const b = String(by || ''); if (b.startsWith('human:')) return `vous (${b.slice(6)})`; if (b.startsWith('claude-code/')) return 'Claude'; const m = b.match(/^hosa-([a-z-]+)\//); return m ? `Claude · ${m[1].replace(/-/g, ' ')}` : b; };
+const who = (by, empty) => h('td', { title: by || null }, by ? agentLabel(by) : empty || '—');
+// l'écran d'un concept de la KB : fiche du ticket, de l'exigence, personas, sinon Gestion > Concepts
+function routeOf(path) {
+  const c = S.concepts.find((x) => x.path === path);
+  if (c && c.type === 'Ticket') return `#/tickets/${enc(path.replace(/\.md$/, ''))}`;
+  if (c && c.type === 'Exigence') return `#/exigences/${encodeURIComponent(c.slug)}`;
+  if (c && c.type === 'Persona') return '#/personas';
+  return `#/gestion/concepts/${enc(path)}`;
 }
-
-const fd = (d) => (d ? `${+d.slice(8, 10)} ${MONTHS[+d.slice(5, 7) - 1]}` : '');
-const today = () => new Date().toLocaleDateString('en-CA'); // AAAA-MM-JJ en heure locale
-const slugify = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-const initials = (s) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
-const sum = (ts) => ts.reduce((a, t) => a + t.pts, 0);
-const byPrio = (a, b) => (a.fm.priority ?? Infinity) - (b.fm.priority ?? Infinity) || a.title.localeCompare(b.title);
-const last = (c) => (c.verAt > c.byAt ? c.verAt : c.byAt);
-const isTicket = (c) => c.type === 'Ticket';
-const num = (t) => t.fm.id || t.slug;
-
-// --- provenance ------------------------------------------------------------
-
-// `generated`/`verified` valent { by, at } ; les skills écrivent aussi la forme courte `verified: human:x`.
-function actorId(v) {
-  if (v && typeof v === 'object') return v.by ? String(v.by) : null;
-  return typeof v === 'string' && /^[a-z]/i.test(v) ? v : null;
+// lien relatif d'un corps Markdown (`../personnas/x.md`) → chemin dans la KB, ou null hors KB
+function kbPath(from, href) {
+  if (!href || /^[a-z]+:|^#|^\//i.test(href) || !/\.md(#.*)?$/.test(href)) return null;
+  const out = from.split('/').slice(0, -1);
+  for (const seg of href.replace(/#.*$/, '').split('/')) { if (seg === '..') { if (!out.length) return null; out.pop(); } else if (seg && seg !== '.') out.push(seg); }
+  return out.join('/');
 }
-const atOf = (v) => (v && typeof v === 'object' && v.at ? String(v.at).slice(0, 10) : '');
-const kindOf = (id) => (id.startsWith('human:') ? 'human' : id.startsWith('process:') ? 'process' : 'agent');
-function shortOf(id) {
-  if (kindOf(id) !== 'agent') return id.split(':').pop();
-  const parts = id.split('/');
-  return parts.length > 1 && /^[\d.]+$/.test(parts.at(-1)) ? parts.at(-2) : parts.at(-1);
-}
-const trustOf = (ver) => (!ver ? 'none' : kindOf(ver) === 'human' ? 'human' : 'machine');
+const trustWord = (c) => c.trust === 'human' ? 'validé par vous' : c.trust === 'machine' ? 'contrôlé automatiquement' : 'à valider';
+const trustSt = (c) => st(trustWord(c), c.trust === 'none' ? 'a' : 'f', c.trust === 'none' ? '○' : '✓');
+const byDate = (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
+const isAgent = (c) => c.status !== 'deprecated' && c.fm.generated && c.fm.generated.by && !String(c.fm.generated.by).startsWith('human:');
+const toValidate = () => S.concepts.filter((c) => isAgent(c) && (c.trust !== 'human' || c.status !== 'stable')).sort(byDate);
+const validated = () => S.concepts.filter((c) => isAgent(c) && c.trust === 'human' && c.status === 'stable').sort(byDate);
 
-function linksOf(c) {
-  return [...c.body.matchAll(/\]\(([^)\s#]+?\.md)(?:#[^)]*)?\)/g)]
-    .filter((m) => !/^[a-z]+:/i.test(m[1]))
-    .map((m) => decodeURIComponent(new URL(m[1], `http://kb/${c.path}`).pathname.slice(1)));
-}
-
-function deco(c) {
-  const fm = c.frontmatter;
-  const i = c.path.lastIndexOf('/');
-  const by = actorId(fm.generated);
-  const ver = actorId(fm.verified);
-  return {
-    ...c, fm,
-    folder: i < 0 ? '.' : c.path.slice(0, i),
-    slug: c.path.slice(i + 1, -3),
-    title: fm.title || c.path,
-    type: fm.type,
-    status: fm.status || 'stable',
-    tags: [].concat(fm.tags || []),
-    by, byAt: atOf(fm.generated), ver, verAt: atOf(fm.verified), trust: trustOf(ver),
-    state: fm.state in STATES ? fm.state : 'todo',
-    pts: PTS[fm.estimate] ?? (+fm.estimate || 0),
-    links: linksOf(c),
-  };
-}
-
-// Les log.md OKF : « <acteur> <texte avec `slug`> ».
-function parseEntry(e) {
-  const m = /^([a-z][\w.-]*(?::[\w.@-]+|\/[\w.-]+))\s+(.*)$/i.exec(e.text);
-  const slug = /`([^`]+)`/.exec(e.text)?.[1];
-  return { ...e, actor: m ? m[1] : null, rest: m ? m[2] : e.text, path: slug && `${e.bundle ? `${e.bundle}/` : ''}${slug}.md` };
-}
-
-async function load(force = false) {
-  if (store.concepts && !force) return;
-  const [cs, activity, overview] = await Promise.all([api('concepts'), api('activity'), api('overview')]);
-  store.concepts = cs.map(deco);
-  store.byPath = Object.fromEntries(store.concepts.map((c) => [c.path, c]));
-  store.activity = activity.map(parseEntry);
-  store.overview = overview;
-  renderSide();
-}
-
-// --- petits composants -------------------------------------------------------
-
-const tdot = (t, lg) => h('span', { class: `tdot t-${t}${lg ? ' lg' : ''}`, title: TRUST[t].label });
-const trust = (t, long) => h('span', { class: `trust t-${t}` }, tdot(t), TRUST[t][long ? 'label' : 'short']);
-const sdot = (s) => h('span', { class: `sdot s-${s}`, title: STATES[s] });
-const statusPill = (s) => h('span', { class: `status ${s}` }, s);
-const prio = (p) => (p != null ? h('span', { class: `prio p${p}` }, `P${p}`) : null);
-const cap = (text) => h('span', { class: 'cap' }, text);
-const none = (text) => h('span', { class: 'none' }, text);
-const head = (title, ...rest) => h('header', { class: 'page-head' }, h('h1', {}, title), rest);
-
-function actor(id, full) {
-  if (!id) return null;
-  const k = kindOf(id);
-  return h('span', { class: 'actor', title: id }, h('span', { class: `glyph g-${k}`, 'aria-hidden': 'true' }, KIND[k][0]), full ? id : shortOf(id));
-}
-
-function est(t) {
-  const e = t.fm.estimate;
-  if (e == null || e === '') return null;
-  return PTS[e] ? `${e} · ${t.pts} pt${t.pts > 1 ? 's' : ''}` : `${t.pts} pts`;
-}
-
-function stack(parts, total, cls = 'stack') {
-  return h('div', { class: cls }, parts.filter(([, n]) => n).map(([c, n, title]) =>
-    h('span', { class: c, style: `width:${(n / total) * 100}%`, title: `${title}: ${n}` })));
-}
-const trustStack = (cs, cls) => stack(Object.keys(TRUST).map((t) => [`f-${t}`, cs.filter((c) => c.trust === t).length, TRUST[t].label]), cs.length || 1, cls);
-
-function chip(label, on, onclick, dot) {
-  return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(on), onclick }, dot, label);
-}
-
-function select(value, onchange, opts, label) {
-  const s = h('select', {
-    class: `sel${value ? ' on' : ''}`, 'aria-label': label,
-    onchange: (e) => { s.classList.toggle('on', !!e.target.value); onchange(e.target.value); },
-  }, opts.map(([v, l]) => h('option', { value: v }, l)));
-  s.value = value;
-  return s;
-}
-
-// Les slugs cités entre backticks deviennent des liens vers le concept quand il existe.
-function logText(e) {
-  return h('span', { class: 'logtext' }, e.rest.split('`').map((part, i) => {
-    if (!(i % 2)) return part;
-    const c = store.byPath[`${e.bundle ? `${e.bundle}/` : ''}${part}.md`];
-    return c ? h('a', { href: `#/kb/${c.path}` }, c.title) : h('code', {}, part);
-  }));
-}
-
-const verifyBtn = (c, cls, label = 'Verify') => h('button', { type: 'button', class: cls, onclick: () => verify(c) }, label);
-
-// Le serveur ne connaît pas l'utilisateur : on demande son nom une fois (clé `hosa.me`).
-function me() {
-  let name = localStorage.getItem('hosa.me');
-  if (!name) {
-    name = slugify(prompt('Your name, recorded as human:<name> in `verified`') || '');
-    if (name) localStorage.setItem('hosa.me', name);
-  }
-  return name;
-}
-
-async function verify(c) {
-  const name = me();
-  if (!name) return;
+async function load() {
+  S.err = null;
   try {
-    const at = `${new Date().toISOString().slice(0, 19)}Z`;
-    await api(`concepts/${encodePath(c.path)}`, { method: 'PATCH', json: { frontmatter: { verified: { by: `human:${name}`, at } } } });
-    await load(true);
-    toast(`“${c.title}” verified`);
-  } catch (err) {
-    showError(`Verification failed: ${err.message}`);
-  }
-  route();
+    const [ov, cs, act] = await Promise.all([api('overview'), api('concepts'), api('activity')]);
+    S.ov = ov; S.concepts = cs.map(meta); S.activity = act; S.loadedAt = new Date();
+  } catch (e) { S.err = `Impossible de lire la KB : ${plain(e)}.`; }
+  // état git et consommation : routes à ajouter côté serveur ; absentes → mention explicite
+  S.kbStatus = await api('kb-status').catch(() => null);
+  S.cov = await api('couverture').catch((e) => ({ error: e }));
+  await loadUsage();
+}
+const loadUsage = async () => {
+  const days = F.periode || 7;
+  const u = await api('usage?days=' + days).catch((e) => ({ error: e }));
+  if (days == (F.periode || 7)) S.usage = u;
+};
+const reload = async () => { await load(); paint(); toast('KB relue'); };
+
+// --- filtres conservés entre écrans ------------------------------------------
+const F = JSON.parse(sessionStorage.getItem('hosa.filtres') || '{"periode":"7"}');
+const setF = (k, v) => { F[k] = v; sessionStorage.setItem('hosa.filtres', JSON.stringify(F)); if (k === 'periode') { S.usage = undefined; loadUsage().then(route); } route(); };
+const LABELS = { statut: 'Statut', sprint: 'Sprint', q: 'Recherche', periode: 'Période', verdict: 'Verdict', origine: 'Écrit par', validation: 'Validation', espace: 'Espace', persona: 'Persona', acteur: 'Acteur', dossier: 'Dossier', type: 'Type', tag: 'Étiquette' };
+function filterBar(keys, opts = {}) {
+  return h('div', { class: 'filters', role: 'search' },
+    keys.includes('q') ? h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher', placeholder: 'Rechercher ( / )', value: F[`q`] || '', onchange: (e) => setF('q', e.target.value) }) : null,
+    ...Object.entries(opts.selects || {}).map(([k, vals]) => {
+      const set = F[k] && !(k === 'periode' && F[k] === '7');
+      const lbl = (vals.find(([v]) => v === F[k]) || [])[1] || F[k];
+      return set
+        ? h('button', { class: 'chip', type: 'button', 'aria-label': `Retirer le filtre ${LABELS[k]}`, onclick: () => setF(k, k === 'periode' ? '7' : '') }, `${LABELS[k]} : ${lbl} ✕`)
+        : h('label', { class: 'flt' }, LABELS[k], ' ', h('select', { onchange: (e) => setF(k, e.target.value) }, k === 'periode' ? null : h('option', { value: '' }, 'tous'), vals.map(([v, l]) => h('option', { value: v, selected: (F[k] || (k === 'periode' ? '7' : '')) === v }, l))));
+    }));
 }
 
-async function moveTicket(t, state) {
-  if (t.state === state) return;
-  try {
-    await api(`concepts/${encodePath(t.path)}`, { method: 'PATCH', json: { frontmatter: { state } } });
-    await load(true);
-    toast(`“${t.title}” moved to ${STATES[state]}`);
-  } catch (err) {
-    showError(`Move failed: ${err.message}`);
-  }
-  route();
+// --- vues --------------------------------------------------------------------
+const sprintName = (slug) => { const x = ((S.ov && S.ov.sprints) || []).find((y) => y.slug === slug); return x ? x.title : slug ? slug.replace(/-/g, ' ').replace(/^./, (m) => m.toUpperCase()) : 'backlog'; };
+const next = () => S.ov && S.ov.plan && S.ov.plan.next;
+function planCount() {
+  const p = S.ov.plan; if (!p) return null;
+  const all = p.sections.flatMap((s) => s.stages);
+  return { done: all.filter((x) => ['fait', 'non applicable'].includes(x.status)).length, total: all.length };
 }
-
-// --- barre latérale ------------------------------------------------------------
-
-function renderSide() {
-  const cs = store.concepts;
-  const tickets = cs.filter(isTicket);
-  const blocked = tickets.filter((t) => t.state === 'blocked').length;
-  const counts = {
-    steering: blocked ? `${blocked} blocked` : '',
-    personas: cs.filter((c) => c.type === 'Persona').length,
-    board: tickets.filter((t) => t.state !== 'done').length,
-    kb: cs.length,
-    journal: store.activity.length,
-  };
-  document.getElementById('nav').replaceChildren(...VIEWS.map(([k, label], i) =>
-    h('a', { href: `#/${k}`, 'data-nav': k }, h('span', { class: 'k' }, i + 1), label, h('span', { class: 'n' }, counts[k] || ''))));
-  document.getElementById('legend').replaceChildren(cap('Trust'), ...Object.keys(TRUST).map((t) =>
-    h('div', {}, tdot(t), h('span', { class: `l c-${t}` }, TRUST[t].label), h('span', { class: 'n' }, cs.filter((c) => c.trust === t).length))));
-}
-
-// --- Home -------------------------------------------------------------------------
-
-function renderHome() {
-  const cs = store.concepts;
-  const tickets = cs.filter(isTicket);
-  const project = store.byPath[store.overview.project?.path];
-  const types = [...new Set(cs.map((c) => c.type))].filter((t) => t !== 'Project').sort();
-  const active = tickets.filter((t) => t.state === 'doing' || t.state === 'blocked')
-    .sort((a, b) => (a.state === b.state ? byPrio(a, b) : a.state === 'blocked' ? -1 : 1));
-  const unverified = cs.filter((c) => c.trust === 'none' && c.status !== 'deprecated').sort((a, b) => b.byAt.localeCompare(a.byAt));
-
-  view().replaceChildren(h('div', { class: 'home' },
-    h('section', { class: 'hero' },
-      project ? h('div', { class: 'bar' }, project.path, trust(project.trust, true)) : null,
-      h('h1', {}, project ? project.title : 'Project not initialised'),
-      h('p', { class: 'vision' }, project
-        ? project.fm.description || ''
-        : 'Run /hosa in Claude Code: it asks for the project name, goal and audience, then creates its personas.')),
-    h('section', { class: 'counters' }, types.map((t) => {
-      const of = cs.filter((c) => c.type === t);
-      return h('a', { class: 'counter', href: '#/kb', onclick: () => Object.assign(kbFilter, KB_RESET, { folder: '', type: t }) },
-        h('span', { class: 'n' }, of.length), h('span', { class: 't' }, t), trustStack(of));
-    })),
-    h('div', { class: 'two' },
-      h('section', {},
-        h('h2', { class: 'sub' }, 'In progress and blocked'),
-        active.length ? active.map((t) => h('a', { class: `line${t.trust === 'none' ? ' unv' : ''}`, href: `#/kb/${t.path}` },
-          sdot(t.state), h('span', { class: 'num' }, num(t)), h('span', { class: 't' }, t.title), prio(t.fm.priority), tdot(t.trust)))
-          : none('Nothing in progress.')),
-      h('section', {},
-        h('h2', { class: 'sub' }, 'To review', h('small', { class: 'c-none' }, `${unverified.length} unverified`)),
-        unverified.length ? unverified.slice(0, 6).map((c) => h('div', { class: 'review' },
-          tdot(c.trust),
-          h('a', { href: `#/kb/${c.path}` }, h('span', { class: 't' }, c.title), h('span', { class: 'p' }, c.path, c.by ? ` · by ${shortOf(c.by)}` : '')),
-          verifyBtn(c, 'btn sm')))
-          : none('Everything is verified.'))),
-    h('section', { class: 'feed' },
-      h('div', { class: 'hd' }, h('h2', { class: 'sub' }, 'Recent activity'), h('a', { href: '#/journal' }, 'Open journal')),
-      store.activity.length
-        ? store.activity.slice(0, 7).map((e) => h('div', { class: 'e' }, h('span', { class: 'when' }, fd(e.date)), actor(e.actor) || h('span'), logText(e)))
-        : none('No entries yet in the KB logs.'))));
-}
-
-// --- Steering ---------------------------------------------------------------------
-
-// Statuts écrits par avancement.py → états des pastilles du board.
-const PLAN_STATES = { 'à faire': 'todo', 'en cours': 'doing', fait: 'done', bloqué: 'blocked', 'non applicable': 'skipped' };
-const PLAN_LABELS = { todo: 'To do', doing: 'In progress', done: 'Done', blocked: 'Blocked', skipped: 'Not applicable' };
-
-// Le plan d'avancement (`project/avancement.md`) : la méthode telle que les skills la tiennent.
-function planPanel(plan) {
-  const n = plan.next;
-  const row = (s) => {
-    const st = PLAN_STATES[s.status] || 'todo';
-    return h('div', { class: `pstage ps-${st}${n && s.stage === n.stage ? ' cur' : ''}`, title: s.detail || null },
-      h('span', { class: `sdot s-${st === 'skipped' ? 'todo' : st}`, title: PLAN_LABELS[st] }),
-      h('code', {}, s.stage), h('span', { class: 'st' }, PLAN_LABELS[st]),
-      h('span', { class: 'd' }, [s.detail, s.at && fd(s.at.slice(0, 10))].filter(Boolean).join(' · ')));
-  };
-  return h('section', { class: 'plan' },
-    n ? h('p', { class: 'next' }, 'Next step: ', h('strong', {}, n.stage), ` (${n.section}, ${n.status.toLowerCase()}) — run `,
-      h('code', {}, `/${n.skill}`), ' in Claude Code.')
-      : h('p', { class: 'next' }, 'Every known stage is done — plan a new sprint with ', h('code', {}, '/sprint'), '.'),
-    n?.gaps.length ? h('div', { class: 'blocked' }, h('b', {}, 'Still to prove before it is done'),
-      n.gaps.map((g) => h('div', { class: 'd' }, g))) : null,
-    plan.resume.length ? h('div', { class: 'resume' }, cap('Resume point'), plan.resume.map((l) => h('div', {}, l))) : null,
-    h('div', { class: 'psections' }, plan.sections.map((s) => {
-      const closed = s.stages.filter((x) => ['fait', 'non applicable'].includes(x.status)).length;
-      return h('div', { class: 'psection' },
-        h('div', { class: 'hd' }, h('b', {}, s.title), h('span', { class: 'mono muted' }, `${closed}/${s.stages.length}`)),
-        s.stages.map(row));
+function planCard() {
+  const p = S.ov.plan;
+  if (!p) return card("Plan d'avancement", none("Pas encore de plan d'avancement, lancer /status"));
+  const c = planCount();
+  return card(`Plan d'avancement · ${c.done}/${c.total}`, h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': c.done, 'aria-valuemax': c.total, 'aria-label': 'Étapes closes' }, h('i', { style: `width:${c.total ? (100 * c.done / c.total) : 0}%` })),
+    table(['Section', 'Étapes', 'Statut'], p.sections.map((s) => {
+      const d = s.stages.filter((x) => ['fait', 'non applicable'].includes(x.status)).length;
+      const blocked = s.stages.some((x) => x.status === 'bloqué');
+      const doing = s.stages.some((x) => x.status === 'en cours');
+      return h('tr', { class: blocked ? 'fail' : '' }, h('td', {}, s.title), h('td', { class: 'num' }, `${d}/${s.stages.length}`),
+        h('td', {}, st(blocked ? 'bloqué' : d === s.stages.length ? 'fait' : doing ? 'en cours' : 'à faire')));
     })));
 }
-
-function nextStep(ov) {
-  if (ov.plan) return planPanel(ov.plan);
-  const stage = ov.pipelines.flatMap((l) => l.stages).find((s) => s.skill === ov.next);
-  return h('p', { class: 'next' }, stage
-    ? ['Next step: ', h('strong', {}, stage.label), ' — run ', h('code', {}, `/${stage.skill}`), ' in Claude Code.']
-    : 'Every step of the method has left its trace in the KB.',
-    ' No progress plan yet: ', h('code', {}, '/status'), ' creates it.');
+function nextCard() {
+  const n = next(), p = S.ov.plan;
+  if (!p) return card('Prochaine étape', none("Pas encore de plan d'avancement, lancer /status"), cmd('status'));
+  if (!n) return card('Prochaine étape', h('p', {}, 'Toutes les étapes connues sont faites. Lancez /sprint pour en composer un nouveau.'), cmd('sprint'));
+  return card(`Prochaine étape · ${n.section}`, h('h3', {}, `${n.stage}`), cmd(n.skill), h('p', { class: 'muted' }, 'Copiez cette commande, puis collez-la dans Claude Code.'), n.detail ? h('p', {}, h('b', {}, 'Point de reprise : '), n.detail) : null);
+}
+function gapsCard() {
+  const n = next(), g = (n && n.gaps) || [];
+  return sect(`Preuves manquantes · ${g.length}`, g.length ? h('ul', {}, g.map((x) => h('li', {}, st('manquante', 'b', '✕'), ' ', x))) : none('Aucune preuve manquante pour l’étape en cours.'));
+}
+function ticketRows(list, withSprint) {
+  return list.map((t) => h('tr', { class: t.state === 'blocked' ? 'fail' : '' },
+    h('td', {}, h('a', { href: `#/tickets/${enc(t.path.replace(/\.md$/, ''))}` }, t.title)), h('td', {}, ticketSt(t)),
+    withSprint ? h('td', {}, sprintName(t.fm.sprint)) : null, h('td', { class: /\d/.test(proof(t)) ? 'num' : '' }, proof(t))));
+}
+const stemOf = (t) => t.path.replace(/^.*\//, '').replace(/\.md$/, '');
+const recettesOf = (t) => S.concepts.filter((c) => /^test\//.test(c.path) && !/-technique\.md$/.test(c.path) && c.path.replace(/^.*\//, '').startsWith(stemOf(t) + '-'));
+// couverture calculée côté serveur (GET /api/couverture) : `…` pendant le chargement
+const proof = (t) => {
+  if (!S.cov) return '…';
+  if (S.cov.error) return 'Couverture indisponible';
+  const v = t && S.cov[t.path];
+  return v && v.plan && v.total ? `${v.couverts.length}/${v.total}` : 'non testé';
+};
+function activeSprint() { return (S.ov.sprints || []).find((s) => s.state === 'active') || (S.ov.sprints || [])[0]; }
+function ticketsCard() {
+  const sp = activeSprint();
+  const list = sp ? sp.tickets.map((x) => ({ ...(S.concepts.find((c) => c.path === x.path) || {}), title: x.title, path: x.path, state: x.state, fm: (S.concepts.find((c) => c.path === x.path) || {}).fm || {} })) : [];
+  return card(`Tickets du sprint actif · ${list.length}`, sp ? table(['Ticket', 'Statut', 'Critères'], ticketRows(list)) : none('Aucun sprint — /sprint en compose un à partir du backlog'));
+}
+function validateCard(title) {
+  const l = toValidate();
+  return sect(`${title} · ${l.length}`, l.length ? validateList(l.slice(0, 3)) : none('Rien à valider : tout est validé.'),
+    l.length > 3 ? h('p', {}, h('a', { href: '#/gestion/validation' }, `Voir les ${l.length}`)) : null);
+}
+// Titre, Valider, Produit le d'abord : ce qui reste visible sur 390 px ; auteur et validateur passent sous le titre
+const byLine = (c) => h('div', { class: 'muted mob' }, `Produit par ${agentLabel(c.fm.generated.by)} · validé par ${c.fm.verified && c.fm.verified.by ? agentLabel(c.fm.verified.by) : 'personne pour l’instant'}`);
+function validateList(l, detail) {
+  return table(detail ? ['Titre', '', 'Produit le', 'Produit par', 'Validé par'] : ['Titre', '', 'Produit le'], l.map((c) => h('tr', {}, h('td', {}, c.title, detail ? byLine(c) : null),
+    h('td', {}, h('button', { class: 'btn o', type: 'button', 'aria-label': `Valider ${c.title}`, onclick: () => validate(c) }, 'Valider')),
+    h('td', { class: 'num' }, fmtDay(c.fm.generated.at)),
+    detail ? who(c.fm.generated.by) : null, detail ? who(c.fm.verified && c.fm.verified.by, 'personne pour l’instant') : null)), detail ? 'v' : '');
 }
 
-function split(label, legend, bar) {
-  return h('div', {}, h('div', { class: 'split-hd' }, h('span', {}, label), h('span', { class: 'mono' }, legend)), bar);
+function livrerCard() {
+  const rec = recettes(), fails = rec.filter((r) => r.verdict === 'FAIL'), blocked = ofType('Ticket').filter((t) => t.state === 'blocked');
+  const g = (next() && next().gaps) || [];
+  const nb = fails.length + blocked.length + g.length;
+  return h('section', { class: 'card', style: `border-color:var(${nb ? '--warn' : '--ok'})` }, h('h2', {}, 'Peut-on livrer ?'),
+    h('h3', {}, nb ? `Non — ${plural(nb, 'point bloque', 'points bloquent')}` : 'Oui — rien ne bloque'),
+    nb ? h('ul', {}, fails.map((r) => h('li', {}, 'Recette « ', recetteName(r), ' » ', verdict('FAIL'))), blocked.map((t) => h('li', {}, 'Ticket « ', t.title, ' » ', st('bloqué'))), g.map((x) => h('li', {}, 'Preuve manquante : ', x))) : h('p', { class: 'muted' }, 'Aucune recette échouée, aucun ticket bloqué.'));
+}
+function home() {
+  const rec = recettes().slice(0, 3);
+  return h('div', { class: 'grid' }, h('div', { class: 'cols' }, nextCard(), livrerCard()),
+    h('div', { class: 'cols' }, h('div', { class: 'grid' }, planCard(), gapsCard()), validateCard('À valider')),
+    ticketsCard(),
+    h('div', { class: 'cols2' }, sect('Dernières recettes', rec.length ? table(['Recette', 'Date', 'Résultat'], rec.map((r) => h('tr', { class: r.verdict === 'FAIL' ? 'fail' : '' }, h('td', {}, recetteName(r)), h('td', { class: 'muted' }, fmtDate(r.at)), h('td', {}, verdict(r.verdict))))) : none('Aucune recette pour le moment.')), usageCard(true)));
+}
+const reviewOf = (t) => { const m = (String(t.body || '').split(/^## Revue/m)[1] || '').match(/PASS-WITH-NOTES|PASS|FAIL/g); return m ? m[m.length - 1] : null; };
+const recettes = () => (S.ov && S.ov.recettes) || [];
+// « Export CSV — Martine » : premier mot du titre du persona, sinon son identifiant, sinon le titre seul
+const recetteName = (r) => { if (!r.persona) return r.titre; const p = S.concepts.find((c) => c.path === `personnas/${r.persona}.md`); return `${r.titre} — ${p && p.fm.title ? String(p.fm.title).split(/[\s,]/)[0] : r.persona}`; };
+const EMPTY_USAGE = 'Aucune donnée de consommation trouvée pour ce projet';
+function usageCard(compact) {
+  const u = S.usage;
+  const title = `Consommation · ${F.periode || 7} jours`;
+  if (!u) return sect(title, none('Chargement…'));
+  if (u.error && plain(u.error) !== EMPTY_USAGE) return sect(title, none(`Consommation indisponible : ${plain(u.error)}.`));
+  if (u.error) return sect(title, none(EMPTY_USAGE + '.'), compact ? h('p', {}, h('a', { href: '#/consommation' }, 'Voir quand les chiffres apparaissent →')) : h('p', {}, 'Les chiffres apparaissent quand des sessions de travail sont enregistrées sur ce poste. Travaillez dans Claude Code, puis cliquez sur « Relire ».'));
+  // les deux plus gros consommateurs : mot + symbole + couleur (pas sur la carte compacte, qui n'en montre que deux)
+  const tbl = (head, list) => table([head, 'Appels', 'Part'], list.map((r, i) => h('tr', { class: !compact && i < 2 ? 'top' : '' },
+    h('td', {}, r.name, !compact && i < 2 ? [' ', st('gros consommateur', 'e', '▲')] : null), h('td', { class: 'num' }, String(r.calls)), h('td', { class: 'num' }, `${roundEven(r.part)} %`))));
+  if (compact) return sect(title, tbl('Agent', (u.agents || []).slice(0, 2)), h('a', { href: '#/consommation' }, 'Voir le détail agent · skill · modèle →'));
+  return sect(title, h('h3', {}, 'Par agent et skill'), tbl('Agent ou skill', u.agents || []), h('h3', {}, 'Par modèle'), tbl('Modèle', u.models || []),
+    h('p', { class: 'muted' }, 'Part : la part du coût estimé de la période.'), u.since ? h('p', { class: 'muted' }, `Source : usage_report.py, historique depuis le ${isoDay(u.since)}`) : null);
 }
 
-function renderSteering() {
-  const ov = store.overview;
-  const tickets = store.concepts.filter(isTicket);
-  const blocked = tickets.filter((t) => t.state === 'blocked').sort(byPrio);
-  const slugs = ov.sprints.map((s) => s.slug);
-  const groups = [
-    ...ov.sprints.map((s) => ({ key: s.slug, name: s.title, path: s.path, phase: SPRINT_STATES[s.state] || s.state, ts: tickets.filter((t) => t.fm.sprint === s.slug) })),
-    { key: null, name: 'Backlog', phase: 'Not planned', ts: tickets.filter((t) => !slugs.includes(t.fm.sprint)) },
-  ].filter((g) => g.ts.length || g.path);
-
-  const group = (g) => {
-    const tot = sum(g.ts);
-    const done = sum(g.ts.filter((t) => t.state === 'done'));
-    const pct = tot ? Math.round((done / tot) * 100) : 0;
-    const byHuman = g.ts.filter((t) => t.by && kindOf(t.by) === 'human').length;
-    const n = (t) => g.ts.filter((x) => x.trust === t).length;
-    return h('div', { class: 'group' },
-      h('div', {},
-        h('div', { class: 'hd' },
-          g.key ? h('span', { class: 'k' }, g.key) : null,
-          g.path ? h('a', { class: 'nm', href: `#/kb/${g.path}` }, g.name) : h('span', { class: 'nm' }, g.name),
-          h('span', { class: 'ph' }, g.phase)),
-        h('div', { class: 'bar-row' }, h('div', { class: 'track' }, h('span', { style: `width:${pct}%` })), h('span', { class: 'pct' }, `${pct}%`)),
-        h('div', { class: 'counts' }, h('span', { class: 'mono' }, `${done} / ${tot} pts`), Object.keys(STATES).map((s) => {
-          const k = g.ts.filter((t) => t.state === s).length;
-          return k ? h('span', {}, sdot(s), `${k} ${STATES[s].toLowerCase()}`) : null;
-        }))),
-      h('div', {},
-        split('Requested by', `${byHuman} human · ${g.ts.length - byHuman} agent`,
-          stack([['f-byhuman', byHuman, 'Human'], ['f-byagent', g.ts.length - byHuman, 'Agent']], g.ts.length || 1, 'stack tall')),
-        split('Validated by', `${n('human')} human · ${n('machine')} machine · ${n('none')} none`, trustStack(g.ts, 'stack tall'))));
-  };
-
-  const agents = tickets.filter((t) => !t.by || kindOf(t.by) !== 'human').length;
-  view().replaceChildren(h('div', { class: 'page' },
-    head('Steering', h('span', { class: 'sum' }, `${tickets.length} tickets · ${agents} requested by agents · ${tickets.filter((t) => t.trust === 'none').length} unverified`)),
-    nextStep(ov),
-    blocked.length ? h('section', { class: 'blocked' },
-      h('b', {}, `${blocked.length} blocked ticket${blocked.length > 1 ? 's' : ''}`),
-      blocked.map((t) => h('a', { href: `#/kb/${t.path}` },
-        h('span', { class: 'mono muted' }, num(t)),
-        h('div', {}, h('div', {}, t.title), t.fm.description ? h('div', { class: 'd' }, t.fm.description) : null),
-        h('span', { class: 'mono muted' }, [t.fm.sprint || 'backlog', t.fm.priority != null ? `P${t.fm.priority}` : null].filter(Boolean).join(' · '))))) : null,
-    groups.length ? h('section', { class: 'groups' }, groups.map(group)) : none('No ticket yet. /backlog creates them from the requirements.'),
-    h('div', { class: 'keys' },
-      h('span', {}, h('span', { class: 'swatch f-byhuman' }), 'Requested by human'),
-      h('span', {}, h('span', { class: 'swatch f-byagent' }), 'Requested by agent'),
-      Object.keys(TRUST).map((t) => h('span', {}, h('span', { class: `swatch f-${t}` }), TRUST[t].label)))));
+function vAvancement() {
+  const p = S.ov.plan;
+  return h('div', { class: 'grid' }, h('h1', {}, "Plan d'avancement"), !p ? none("Pas encore de plan d'avancement, lancer /status") : h('div', { class: 'cols' }, h('div', { class: 'grid' }, nextCard(), gapsCard(),
+    card('Point de reprise', (p.resume.length ? p.resume : ['Aucun point de reprise.']).map((l) => h('p', {}, l)))),
+    h('div', { class: 'grid' }, p.sections.map((s) => card(s.title, table(['Étape', 'Statut', 'Date', 'Détail'], s.stages.map((x) => h('tr', { class: x.status === 'bloqué' ? 'fail' : '' }, h('td', {}, x.stage), h('td', {}, st(x.status)), h('td', { class: 'num' }, fmtDate(x.at)), h('td', { class: 'muted' }, x.detail || '')))))))));
 }
-
-// --- Personas -----------------------------------------------------------------------
-
-// Puces de la section `## <nom>` ; à défaut, le paragraphe entier.
-function listUnder(body, names) {
-  const sec = body.split(/^##\s+/m).slice(1).find((s) => names.test(s.split('\n')[0]));
-  if (!sec) return [];
-  const lines = sec.split('\n').slice(1).map((l) => l.trim()).filter(Boolean);
-  const bullets = lines.filter((l) => /^[-*]\s/.test(l)).map((l) => l.slice(2));
-  return (bullets.length ? bullets : [lines.join(' ')]).map((l) => l.replace(/[*_`]/g, '')).filter(Boolean);
+const stateName = (s) => TICKET[s].replace(/^./, (m) => m.toUpperCase());
+// arrondi à l'entier pair le plus proche sur .5, comme `:.0f` de usage_report.py
+const roundEven = (x) => { const f = Math.floor(x), d = x - f; return d < 0.5 ? f : d > 0.5 ? f + 1 : f % 2 === 0 ? f : f + 1; };
+async function moveTicket(t, sel) {
+  sel.disabled = true;
+  try { await api(`concepts/${enc(t.path)}`, { method: 'PATCH', json: { frontmatter: { state: sel.value } } }); toast(`${t.slug} : ${TICKET[sel.value]}`); await load(); }
+  catch (e) { toast(`Rien n'a changé : ${plain(e)}.`); S.err = null; }
+  route();
 }
-
-function renderPersonas() {
-  const people = store.concepts.filter((c) => c.type === 'Persona').sort((a, b) => a.title.localeCompare(b.title));
-  view().replaceChildren(h('div', { class: 'page' },
-    head('Personas', h('span', { class: 'sum' }, 'personnas/')),
-    people.length ? h('div', { class: 'personas' }, people.map((p) => h('article', { class: `persona${p.trust === 'none' ? ' unv' : ''}` },
-      h('div', { class: 'hd' },
-        h('div', { class: 'avatar', 'aria-hidden': 'true' }, initials(p.title)),
-        h('div', { class: 'who' }, h('a', { href: `#/kb/${p.path}` }, p.title), h('span', {}, p.fm.description || '')),
-        trust(p.trust)),
-      h('div', { class: 'lists' }, [['Goals', /^(objectifs|goals)\b/i], ['Frustrations', /^(pain points|frustrations)\b/i]].map(([label, rx]) => {
-        const items = listUnder(p.body, rx);
-        return h('div', {}, cap(label), items.length ? items.map((x) => h('div', { class: 'dash' }, x)) : none('Not documented'));
-      })),
-      h('div', { class: 'ft' }, p.path, p.by ? h('span', { class: 'end' }, actor(p.by), p.byAt ? ` · ${fd(p.byAt)}` : '') : null))))
-      : none('No persona. Run /hosa in Claude Code to create them from the target audience.')));
+const col = (state, list, manage) => {
+  const p = list.reduce((n, t) => n + t.points, 0);
+  return h('section', { class: 'card col' }, h('h2', {}, st(stateName(state), ...ST[TICKET[state]])),
+    h('p', { class: 'muted' }, `${plural(list.length, 'ticket', 'tickets')} · ${plural(p, 'point', 'points')}`),
+    ...list.map((t) => h('div', { class: 'tcard' },
+      h('span', { class: 'mono' }, t.slug), ' ', copyBtn(t.slug, `Copier le numéro de ${t.slug}`), ' ', h('a', { href: `#/tickets/${enc(t.path.replace(/\.md$/, ''))}` }, t.title),
+      h('div', { class: 'muted' }, t.priority == null ? 'sans priorité' : `priorité ${t.priority}`, ' · ', t.points > 0 ? `estimation ${t.estimate}` : 'non estimé', ' · ', sprintName(t.sprint)),
+      h('div', { class: 'muted' }, t.origine === 'humain' ? 'écrit par un humain' : 'écrit par Claude'),
+      h('div', { class: 'muted' }, `Critères : ${proof(t)}`),
+      trustSt({ trust: { humain: 'human', machine: 'machine' }[t.validation] || 'none' }),
+      manage ? h('select', { 'aria-label': `Déplacer ${t.slug} vers`, onchange: (e) => moveTicket(t, e.target) },
+        h('option', { value: '' }, 'Déplacer vers'), ...['todo', 'doing', 'blocked', 'done'].filter((s) => s !== state).map((s) => h('option', { value: s }, stateName(s)))) : null)));
+};
+const BACKLOG = '__backlog__';
+const VALIDATION = [['humain', 'validé par vous'], ['machine', 'contrôlé automatiquement'], ['aucune', 'à valider']];
+const clearBtn = (keys) => h('button', { class: 'btn o', onclick: () => { for (const k of keys) F[k] = ''; setF(keys[0], ''); } }, 'Retirer les filtres');
+const has = (hay) => !F.q || hay.toLowerCase().includes(F.q.toLowerCase());
+function illisiblesSect() {
+  const l = (S.ov && S.ov.illisibles) || [];
+  return l.length ? sect(`Fichiers illisibles · ${l.length}`, h('p', { class: 'muted' }, 'Ces fichiers de la KB ne peuvent pas être lus : ils manquent dans les listes tant qu’ils ne sont pas réparés.'),
+    table(['Fichier', 'Cause', ''], l.map((x) => h('tr', {}, h('td', { class: 'mono' }, x.path), h('td', {}, x.cause), h('td', {}, copyBtn(x.path)))))) : null;
 }
-
-// --- Board ----------------------------------------------------------------------------
-
-const boardFilter = { sprint: 'all', by: 'all', trust: 'all' };
-
-function card(t) {
-  return h('article', {
-    class: `card${t.trust === 'none' ? ' unv' : ''}`, draggable: 'true',
-    onclick: (e) => { if (!e.target.closest('a')) location.hash = `#/kb/${t.path}`; },
-    ondragstart: (e) => { e.dataTransfer.setData('text/plain', t.path); e.currentTarget.classList.add('dragging'); },
-    ondragend: (e) => e.currentTarget.classList.remove('dragging'),
-  },
-  h('div', { class: 'top' }, h('span', { class: 'num' }, num(t)), prio(t.fm.priority)),
-  h('a', { class: 'ttl', href: `#/kb/${t.path}`, style: 'text-decoration:none' }, t.title),
-  t.state === 'blocked' && t.fm.description ? h('div', { class: 'why' }, t.fm.description) : null,
-  est(t) || t.fm.sprint ? h('div', { class: 'tags' },
-    est(t) ? h('span', { class: 'tag' }, est(t)) : null,
-    t.fm.sprint ? h('span', { class: 'tag o' }, t.fm.sprint) : null) : null,
-  h('div', { class: 'foot' }, actor(t.by), trust(t.trust)));
+function vTickets(manage) {
+  const all = (S.ov && S.ov.board) || [];
+  const sprints = [...new Set(all.map((t) => t.sprint).filter(Boolean))].map((s) => [s, sprintName(s)]);
+  const l = all.filter((t) => (!F.sprint || (F.sprint === BACKLOG ? !t.sprint : t.sprint === F.sprint)) && (!F.origine || t.origine === F.origine)
+    && (!F.validation || t.validation === F.validation) && has(t.title + t.path));
+  return h('div', { class: 'grid' }, manage ? subnav('/gestion/tickets') : null, h('h1', {}, 'Tickets'),
+    filterBar(['q'], { selects: { sprint: [...sprints, [BACKLOG, 'Backlog non planifié']], origine: [['humain', 'Vous'], ['agent', 'Claude']], validation: VALIDATION } }),
+    all.length ? l.length ? h('div', { class: 'board' }, ['todo', 'doing', 'blocked', 'done'].map((s) => col(s, l.filter((t) => t.state === s), manage)))
+      : none('Aucun ticket ne correspond.', ' ', clearBtn(['q', 'sprint', 'origine', 'validation']))
+      : none('Aucun ticket — /backlog les crée à partir des exigences'), illisiblesSect());
 }
-
-function column(state, cards) {
-  return h('section', {
-    class: `col s-${state}`, 'aria-label': STATES[state],
-    ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add('over'); },
-    ondragleave: (e) => e.currentTarget.classList.remove('over'),
-    ondrop: (e) => {
-      e.preventDefault();
-      e.currentTarget.classList.remove('over');
-      const t = store.byPath[e.dataTransfer.getData('text/plain')];
-      if (t) moveTicket(t, state);
-    },
-  },
-  h('header', {}, sdot(state), h('b', {}, STATES[state]), h('span', { class: 'n' }, cards.length), h('span', { class: 'pts' }, `${sum(cards)} pts`)),
-  cards.length ? cards.map(card) : h('div', { class: 'empty' }, state === 'todo' ? 'No tickets. /backlog creates them.' : 'No tickets'));
+function vTicket(path) {
+  const c = S.concepts.find((x) => x.path === path + '.md');
+  if (!c) return v404();
+  const sec = (name) => secOf(c.body, name);
+  const cv = S.cov && !S.cov.error ? S.cov[c.path] : null, tests = recettesOf(c);
+  const rv = reviewOf(c), notes = sec('Revue').replace(/^.*(PASS-WITH-NOTES|PASS|FAIL).*\n?/m, '').trim();
+  return h('div', { class: 'grid' }, crumbs(['Tickets', '/tickets'], [c.title]), h('h1', {}, c.title),
+    h('div', { class: 'row' }, ticketSt(c), h('span', { class: 'muted' }, sprintName(c.fm.sprint)), h('span', {}, 'Revue : ', verdict(rv))),
+    h('div', { class: 'cols' }, h('div', { class: 'grid' },
+      card(`Critères d'acceptation · ${proof(c)}`, !cv ? none(proof(c)) : cv.criteres.length ? h('ul', {}, cv.criteres.map((a) => h('li', {}, h('span', { class: 'mono' }, a), ' ', cv.couverts.includes(a) ? st('couvert', 'f', '✓') : cv.plan ? st('non couvert', 'b', '✕') : st('non testé', 'a', '')))) : none('Aucun critère CAn dans ce ticket.')),
+      sect('Revue', notes ? h('pre', { class: 'plain' }, notes) : none('Pas encore de revue.'))),
+      h('div', { class: 'grid' }, sect('Preuves', h('p', {}, 'Plan technique : ', !cv ? st('non testé', 'a', '') : cv.plan ? st('écrit', 'f', '✓') : st('manquant', 'b', '✕')),
+        tests.length ? tests.map((t) => h('p', {}, verdict((((t.body || '').split(/^## Verdict/m)[1] || '').match(/PASS-WITH-NOTES|PASS|FAIL/) || [])[0]), ' ', t.title)) : h('p', {}, 'Recette : ', st('non testé', 'a', ''))),
+        h('details', { class: 'card' }, h('summary', {}, 'Contenu complet'), doc(c)))));
 }
-
-function renderBoard() {
-  const f = boardFilter;
-  const tickets = store.concepts.filter(isTicket);
-  const sprints = [...new Set(tickets.map((t) => t.fm.sprint).filter(Boolean))].sort();
-  const shown = tickets.filter((t) => (f.sprint === 'all' || (f.sprint === '-' ? !t.fm.sprint : t.fm.sprint === f.sprint))
-    && (f.by === 'all' || (f.by === 'human') === (!!t.by && kindOf(t.by) === 'human'))
-    && (f.trust === 'all' || t.trust === f.trust));
-  const chips = (label, key, opts) => h('div', {}, h('span', { class: 'lbl' }, label),
-    opts.map(([v, l, dot]) => chip(l, f[key] === v, () => { f[key] = v; renderBoard(); }, dot)));
-
-  view().replaceChildren(h('div', { class: 'page', style: 'max-width:none;padding:20px 24px 32px;gap:16px' },
-    head('Board', h('span', { class: 'sum' }, `tickets/ · ${shown.length} tickets · ${sum(shown)} pts`)),
-    h('div', { class: 'chips' },
-      chips('Sprint', 'sprint', [['all', 'All'], ...sprints.map((s) => [s, s]), ['-', 'Backlog']]),
-      chips('Requested by', 'by', [['all', 'All'], ['human', 'Human'], ['agent', 'Agent']]),
-      chips('Trust', 'trust', [['all', 'All'], ...Object.keys(TRUST).map((t) => [t, TRUST[t].short, tdot(t)])])),
-    h('div', { class: 'board' }, Object.keys(STATES).map((s) => column(s, shown.filter((t) => t.state === s).sort(byPrio))))));
+// corps rendu et assaini par le serveur (nh3) ; les liens vers la KB ouvrent l'écran du concept
+function doc(c, body) {
+  const box = h('div', { class: 'doc card' }, 'Chargement…');
+  api('render', { method: 'POST', json: { body: body ?? c.body ?? '' } }).then((r) => {
+    box.innerHTML = r.html || '';
+    for (const a of box.querySelectorAll('a[href]')) { const p = kbPath(c.path, a.getAttribute('href')); if (p) a.setAttribute('href', routeOf(p)); }
+  }, (e) => box.replaceChildren(errBox(`Rendu impossible : ${plain(e)}.`)));
+  return box;
 }
-
-// --- Sprints --------------------------------------------------------------------------
-
-let sprintSel = null;
-
-function renderSprints() {
-  const tickets = store.concepts.filter(isTicket);
-  const sprints = [...store.overview.sprints].sort((a, b) => a.slug.localeCompare(b.slug, undefined, { numeric: true }));
-  if (!sprints.length) {
-    return view().replaceChildren(h('div', { class: 'page' }, head('Sprints'),
-      none('No sprint yet. Run /sprint in Claude Code to plan one from the backlog.')));
-  }
-  const cur = sprints.find((s) => s.slug === sprintSel) || sprints.find((s) => s.state === 'active') || sprints[0];
-  const of = (s) => tickets.filter((t) => t.fm.sprint === s.slug);
-  const doneOf = (s) => sum(of(s).filter((t) => t.state === 'done'));
-  const order = ['blocked', 'doing', 'todo', 'done'];
-  const ts = of(cur).sort((a, b) => order.indexOf(a.state) - order.indexOf(b.state) || byPrio(a, b));
-  const committed = sum(ts);
-  const done = doneOf(cur);
-  const closed = sprints.filter((s) => s.state === 'done').map(doneOf);
-  const avg = closed.length ? closed.reduce((a, b) => a + b, 0) / closed.length : 0;
-  const open = sum(tickets.filter((t) => t.state !== 'done'));
-  const capacity = store.byPath[cur.path]?.fm.capacity;
-  const maxC = Math.max(1, ...sprints.map((s) => sum(of(s))));
-  const stat = (k, v, s) => h('div', {}, cap(k), h('span', { class: 'v' }, v), h('span', { class: 's' }, s));
-
-  view().replaceChildren(h('div', { class: 'page' },
-    h('header', { class: 'page-head', style: 'align-items:center' },
-      h('h1', {}, 'Sprints'),
-      h('div', { style: 'display:flex;gap:4px;margin-left:8px;flex-wrap:wrap' }, sprints.map((s) =>
-        chip(`${s.title}${s.state === 'active' ? ' · current' : ''}`, s === cur, () => { sprintSel = s.slug; renderSprints(); })))),
-    h('div', { class: 'stats' },
-      stat('Committed', `${committed} pts`, `${ts.length} tickets${capacity != null ? ` · capacity ${capacity}` : ''}`),
-      stat('Done', `${done} pts`, committed ? `${Math.round((done / committed) * 100)}% of commitment` : 'Nothing estimated'),
-      stat(cur.state === 'done' ? 'Carried over' : 'Remaining', `${committed - done} pts`, SPRINT_STATES[cur.state] || cur.state),
-      stat('Avg velocity', `${avg.toFixed(1)} pts`, avg ? `Open backlog ${open} pts ≈ ${(open / avg).toFixed(1)} sprints` : 'No closed sprint yet')),
-    h('section', { class: 'panel' },
-      h('h2', { class: 'sub' }, 'Velocity'),
-      h('div', { class: 'velo' }, sprints.map((s) => {
-        const c = sum(of(s));
-        const d = doneOf(s);
-        return h('div', {}, `${d}/${c}`,
-          h('div', { class: `outer${s === cur ? ' cur' : ''}`, style: `height:${(c / maxC) * 110}px` },
-            h('div', { class: 'inner', style: `height:${c ? (d / c) * 100 : 0}%` })));
-      })),
-      h('div', { class: 'velo-lbl' }, sprints.map((s) => h('span', {}, s.slug))),
-      h('span', { class: 's muted' }, 'Done / committed points. S=1, M=3, L=5.')),
-    h('section', { class: 'tlist' },
-      h('h2', { class: 'sub', style: 'margin-bottom:8px' }, 'Tickets in ', h('a', { href: `#/kb/${cur.path}` }, cur.title)),
-      cur.branch ? h('p', { class: 'muted', style: 'margin:0 0 8px' }, 'Branch ', h('code', {}, cur.branch)) : null,
-      ts.length ? ts.map((t) => h('a', { class: 'trow', href: `#/kb/${t.path}` },
-        sdot(t.state), h('span', { class: 'num' }, num(t)), h('span', {}, t.title), prio(t.fm.priority) || h('span'),
-        h('span', { class: 'mono', style: 'font-size:11px;color:var(--ink3)' }, est(t) || ''), actor(t.by) || h('span'), trust(t.trust)))
-        : none('No ticket in this sprint.'))));
+const sprintSt = (s) => s.state === 'done' ? st('terminé', 'f', '✓') : s.state === 'active' ? st('actif', 'e', '◐') : st('prévu', 'a', '○');
+const pointsLine = (s) => h('p', {}, sprintSt(s), ` ${plural(s.engages, 'point prévu', 'points prévus')} · ${plural(s.faits, 'point fait', 'points faits')} · reste ${s.restants} · ${s.done}/${s.total} tickets faits`, s.branch ? [' · branche ', h('span', { class: 'mono' }, s.branch)] : null);
+function velociteCard() {
+  const v = S.ov.velocite || {};
+  return card('Vitesse', h('p', { class: 'muted' }, 'Sprint : un groupe de tickets construits ensemble.'), v.moyenne == null ? none('Vitesse moyenne : pas encore de sprint terminé.')
+    : [h('p', {}, `vitesse moyenne (points par sprint) : ${fmtNum(v.moyenne)}`), h('p', {}, `sprints restants : ${v.restants == null ? '—' : fmtNum(v.restants)} pour ${plural(v.ouverts, 'point ouvert', 'points ouverts')}`)]);
 }
-
-// --- Knowledge ------------------------------------------------------------------------
-
-const KB_RESET = { q: '', type: '', tag: '', status: '', trust: '' };
-const kbFilter = { folder: '', ...KB_RESET };
-
-function wireInternalLinks(container, basePath) {
-  container.addEventListener('click', (e) => {
-    const a = e.target.closest('a[href]');
-    const href = a && a.getAttribute('href');
-    if (!href || /^[a-z]+:|^#/i.test(href) || !href.split('#')[0].endsWith('.md')) return;
-    e.preventDefault();
-    const resolved = new URL(href, `http://kb/${basePath}`).pathname.slice(1);
-    location.hash = `#/kb/${decodeURIComponent(resolved)}`;
-  });
+function vSprints() {
+  const sp = S.ov.sprints || [];
+  return h('div', { class: 'grid' }, h('h1', {}, 'Sprints'), sp.length ? [velociteCard(), ...sp.map((s) => card(null, h('h3', {}, h('a', { href: `#/sprints/${s.slug}` }, s.title)), h('p', { class: 'muted' }, s.description),
+    pointsLine(s), h('div', { class: 'bar' }, h('i', { style: `width:${s.engages ? 100 * s.faits / s.engages : 0}%` }))))] : none('Aucun sprint — /sprint en compose un à partir du backlog'));
 }
-
-function facts(t) {
-  const sel = h('select', { class: 'sel', 'aria-label': 'State', onchange: (e) => moveTicket(t, e.target.value) },
-    Object.entries(STATES).map(([v, l]) => h('option', { value: v }, l)));
-  sel.value = t.state;
-  const fact = (k, v) => h('div', {}, cap(k), h('span', { class: 'v' }, v));
-  return h('div', { class: 'facts' },
-    fact('State', [sdot(t.state), sel]),
-    fact('Priority', t.fm.priority != null ? `P${t.fm.priority}` : '—'),
-    fact('Estimate', est(t) || '—'),
-    fact('Sprint', t.fm.sprint || 'Backlog'));
+function vSprint(slug) {
+  const s = (S.ov.sprints || []).find((x) => x.slug === slug); if (!s) return v404();
+  const b = s.audit.bloquants;
+  return h('div', { class: 'grid' }, crumbs(['Sprints', '/sprints'], [s.title]), h('h1', {}, s.title), h('p', {}, s.description), pointsLine(s),
+    table(['Ticket', 'Statut'], s.tickets.map((t) => h('tr', {}, h('td', {}, h('a', { href: routeOf(t.path) }, t.title)), h('td', {}, ticketSt(t))))),
+    card('Audit et démo', h('p', {}, 'Bloquants : ', b == null ? st('pas encore audité', 'a', '○') : b ? st(plural(b, 'bloquant', 'bloquants'), 'b', '✕') : st('aucun bloquant', 'f', '✓')),
+      h('p', { class: 'muted' }, 'Démo : les tests T1, T2… que vous faites vous-même avant de fusionner un sprint.'),
+      s.demo.length ? h('ul', {}, s.demo.map((d) => h('li', {}, h('span', { class: 'mono' }, d.t), ' ', d.ok ? st('OK', 'f', '✓') : st('KO', 'b', '✕')))) : none('Pas encore de démo.')));
 }
-
-function detail(c, full) {
-  const body = h('div', { class: 'prose' });
-  body.innerHTML = full.bodyHtml; // assaini côté serveur (nh3)
-  wireInternalLinks(body, c.path);
-  const on = (at) => (at ? ` on ${fd(at)}` : '');
-  const sentence = {
-    human: `Validated by ${c.ver}${on(c.verAt)}.`,
-    machine: `Checked by ${c.ver}${on(c.verAt)}. No human has reviewed it.`,
-    none: `${c.by ? `Generated by ${c.by}${on(c.byAt)}` : 'No author recorded'}. Nobody has validated it yet.`,
-  }[c.trust];
-  const who = (id, at) => id && [actor(id, true), h('span', { class: 'when' }, `${KIND[kindOf(id)][1]}${at ? ` · ${fd(at)}` : ''}`)];
-  const cell = (label, content, empty) => h('div', {}, cap(label), content || none(empty));
-  const sources = [].concat(c.fm.sources || []).map(String);
-  const rel = c.links.map((p) => store.byPath[p]).filter(Boolean);
-  const back = store.concepts.filter((x) => x.links.includes(c.path) && !c.links.includes(x.path));
-  const relGroup = (label, xs) => h('div', {}, cap(label), xs.length
-    ? xs.map((x) => h('a', { href: `#/kb/${x.path}` }, tdot(x.trust), h('span', { class: 't' }, x.title), h('span', { class: 'ty' }, x.type)))
-    : none('None'));
-  const hist = store.activity.filter((e) => e.path === c.path);
-
-  return h('article', { class: 'detail' },
-    h('div', { class: 'bar' },
-      h('span', { class: 'path' }, c.path), h('span', { class: 'type' }, c.type), statusPill(c.status),
-      h('button', { type: 'button', class: 'btn sm', onclick: () => { location.hash = `#/kb/${c.path}?edit`; } }, 'Edit')),
-    h('h1', { class: 'title' }, c.title),
-    isTicket(c) ? facts(c) : null,
-    h('section', { class: 'prov' },
-      h('div', { class: `head t-${c.trust}` },
-        tdot(c.trust, true),
-        h('div', { class: 'txt' }, h('b', { class: `c-${c.trust}` }, TRUST[c.trust].label), h('span', {}, sentence)),
-        c.trust !== 'human' ? verifyBtn(c, 'btn dark', localStorage.getItem('hosa.me') ? `Verify as ${localStorage.getItem('hosa.me')}` : 'Verify') : null),
-      h('div', { class: 'cells' },
-        cell('Generated by', who(c.by, c.byAt), 'Not recorded'),
-        cell('Verified by', who(c.ver, c.verAt), 'Not verified'),
-        cell('Sources', sources.length && sources.map((s) => {
-          const x = store.byPath[s] || store.byPath[`${s}.md`];
-          return x ? h('a', { class: 'src', href: `#/kb/${x.path}` }, s) : h('span', { class: 'src' }, s);
-        }), 'None recorded'))),
-    body,
-    h('div', { class: 'rel' }, relGroup('Links to', rel), relGroup('Referenced by', back)),
-    h('div', { class: 'hist' },
-      cap(`History · ${c.folder === '.' ? '' : `${c.folder}/`}log.md`),
-      hist.length ? hist.map((e) => h('div', { class: 'e' }, h('span', { class: 'when' }, fd(e.date)), actor(e.actor) || h('span'), logText(e)))
-        : none('No entries yet')));
+const isStable = (c) => c.fm.status === 'stable';
+const statusSt = (c) => isStable(c) ? st('validée', 'f', '✓') : st('brouillon', 'a', '○');
+const serves = (c, persona) => kbLinks(c).includes(`personnas/${persona}.md`);
+const kbLinks = (c) => [...String(c.body || '').matchAll(/\]\(([^)\s]+\.md)/g)].map((m) => kbPath(c.path, m[1])).filter(Boolean);
+function vExigences() {
+  const ex = ofType('Exigence'), bad = ((S.ov && S.ov.illisibles) || []).filter((x) => x.path.startsWith('cdc/'));
+  const espaces = [...new Set(ex.map((c) => c.fm.espace).filter(Boolean))].sort().map((v) => [v, v]);
+  const rows = ex.filter((c) => has(c.title) && (!F.statut || (F.statut === 'stable') === isStable(c)) && (!F.espace || c.fm.espace === F.espace) && (!F.persona || serves(c, F.persona)));
+  const waiting = (c) => c.trust === 'none' || !isStable(c);
+  const glossaire = S.concepts.find((c) => c.path === 'cdc/glossaire.md');
+  return h('div', { class: 'grid' }, h('h1', {}, 'Exigences'), h('p', { class: 'muted' }, 'Ce que l’application doit permettre de faire. Vous validez chacune une fois qu’elle vous convient.'),
+    bad.map((x) => h('div', { class: 'alert', role: 'alert' }, h('span', {}, h('span', { class: 'mono' }, x.path), ` n’apparaît pas dans la liste : ${x.cause}.`))),
+    ex.length ? [h('p', {}, h('b', {}, `${ex.filter(isStable).length} / ${ex.length} validées`)),
+      filterBar(['q'], { selects: { statut: [['stable', 'validée'], ['draft', 'brouillon']], espace: espaces, persona: ofType('Persona').map((p) => [p.slug, p.title]) } }),
+      rows.length ? table(['Exigence', 'Statut', 'Validation', ''], rows.map((c) => h('tr', {}, h('td', {}, h('a', { href: `#/exigences/${encodeURIComponent(c.slug)}` }, c.title)), h('td', {}, statusSt(c)), h('td', {}, trustSt(c)),
+        h('td', {}, waiting(c) ? h('button', { class: 'btn o', type: 'button', 'aria-label': `Valider ${c.title}`, onclick: () => validate(c) }, 'Valider') : null))))
+        : none('Aucune exigence ne correspond.', ' ', clearBtn(['q', 'statut', 'espace', 'persona']))]
+      : none('Le cahier des charges n’est pas encore rédigé — lancer /interview puis /redaction'),
+    glossaire ? h('details', { class: 'card' }, h('summary', {}, 'Glossaire — les termes du projet et leur sens'), doc(glossaire)) : null);
 }
-
+function vExigence(slug) {
+  const c = ofType('Exigence').find((x) => x.slug === slug); if (!c) return v404();
+  return h('div', { class: 'grid' }, crumbs(['Exigences', '/exigences'], [c.title]), h('h1', {}, c.title), h('p', {}, c.fm.description || ''), h('div', { class: 'row' }, statusSt(c), trustSt(c)),
+    doc(c));
+}
+// listes Markdown d'une section, sans balisage : une ligne par puce
+const bullets = (text) => text ? h('ul', {}, text.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => h('li', {}, l.replace(/^[-*]\s+/, '').replace(/\*\*/g, '')))) : h('p', { class: 'muted' }, 'non documenté');
+function vPersonas() {
+  const ps = ofType('Persona');
+  return h('div', { class: 'grid' }, h('h1', {}, 'Personas'), h('p', { class: 'muted' }, 'Les personnes pour qui vous construisez l’application.'), ps.length ? ps.map((p) => card(null, h('h3', {}, p.title), h('p', {}, p.fm.description || ''), h('div', { class: 'row' }, trustSt(p)),
+    [['Objectifs', 'Objectifs'], ['Besoins', 'Besoins'], ['Difficultés', 'Pain points']].map(([label, name]) => [h('h2', {}, label), bullets(secOf(p.body, name))]))) : none('Aucun persona — /hosa les crée'));
+}
+function vRecettes() {
+  const r = recettes(), v = F.verdict;
+  const l = r.filter((x) => !v || x.verdict === v);
+  const audit = (a) => a ? [fmtDay(a.at), ' — ', VERD[a.verdict] ? verdict(a.verdict) : a.verdict || 'sans verdict'] : st('Jamais audité', 'a', '');
+  return h('div', { class: 'grid' }, h('h1', {}, 'Recettes'), h('p', { class: 'muted' }, 'Une recette est un test de l’application, fait comme le ferait un utilisateur.'),
+    filterBar(['verdict'], { selects: { verdict: ['PASS', 'PASS-WITH-NOTES', 'FAIL'].map((x) => [x, VERD[x][0]]) } }),
+    l.length ? table(['Recette', 'Date', 'Résultat'], l.map((x) => h('tr', { class: x.verdict === 'FAIL' ? 'fail' : '' }, h('td', {}, recetteName(x)), h('td', { class: 'num' }, fmtDate(x.at)), h('td', {}, verdict(x.verdict))))) : none(r.length ? 'Aucune recette ne correspond.' : 'Aucune recette pour le moment.'),
+    sect('Derniers audits', h('p', {}, 'Qualité : ', audit(S.ov.quality)), h('p', {}, 'Sécurité : ', audit(S.ov.security))));
+}
+function vConsommation() {
+  return h('div', { class: 'grid' }, h('h1', {}, 'Consommation'), filterBar(['periode'], { selects: { periode: [['7', '7 derniers jours'], ['30', '30 derniers jours']] } }), usageCard(false));
+}
+const KIND = { exigence: 'exigence', ticket: 'ticket', file: 'fichier', class: 'classe', function: 'fonction', method: 'méthode' };
+const nodeName = (n) => n.label || String(n.id).split(':').slice(1).join(':') || n.id;
+const nodeLink = (n) => n.kb ? h('a', { href: routeOf(n.kb) }, nodeName(n)) : nodeName(n);
+const flat = (nodes) => nodes.length ? h('ul', { class: 'flat' }, nodes.map((n) => h('li', {}, nodeLink(n)))) : null;
+function nodePanel(id, panel) {
+  panel.replaceChildren(h('p', { class: 'muted' }, 'Chargement…'));
+  api(`graph/node?id=${encodeURIComponent(id)}`).then((d) => {
+    const rel = (l, dir) => l.length ? table(['Relation', 'Élément', 'Type'], l.map((e) => h('tr', {}, h('td', {}, `${dir} ${e.rel}`), h('td', {}, nodeLink(e.node)), h('td', {}, KIND[e.node.kind] || e.node.kind)))) : null;
+    panel.replaceChildren(h('h2', {}, `${KIND[d.node.kind] || d.node.kind} · ${nodeName(d.node)}`), d.node.file ? h('p', { class: 'mono muted' }, d.node.file + (d.node.line ? `:${d.node.line}` : '')) : null,
+      sect('Relations', rel(d.out, '→'), rel(d.in, '←'), d.out.length + d.in.length ? null : none('Aucune relation.')),
+      sect('Impact', d.affected.nodes.length ? table(['Profondeur', 'Élément', 'Type'], d.affected.nodes.map((x) => h('tr', {}, h('td', { class: 'num' }, String(x.depth)), h('td', {}, nodeLink(x.node)), h('td', {}, KIND[x.node.kind] || x.node.kind)))) : none('Rien d’autre ne dépend de cet élément.')),
+      sect('Tickets concernés', flat(d.affected.tickets) || none('Aucun ticket ne touche les fichiers impactés.')));
+  }, (e) => panel.replaceChildren(errBox(e.status === 404 ? 'Élément introuvable' : `Traçabilité indisponible : ${plain(e)}.`)));
+}
+function vTracabilite() {
+  const box = h('div', {}, h('p', { class: 'muted' }, 'Chargement…')), results = h('div'), panel = h('div', { class: 'card', 'aria-live': 'polite' }, none('Choisissez un élément pour voir ses relations et son impact.'));
+  const search = (q) => { if (!q.trim()) return results.replaceChildren(); results.replaceChildren(h('p', { class: 'muted' }, 'Chargement…'));
+    api(`graph/find?q=${encodeURIComponent(q)}`).then((l) => results.replaceChildren(l.length ? table(['Élément', 'Type', 'Fichier'], l.map((n) => h('tr', {}, h('td', {}, h('button', { class: 'lnk', type: 'button', onclick: () => nodePanel(n.id, panel) }, nodeName(n))), h('td', {}, KIND[n.kind] || n.kind), h('td', { class: 'mono muted' }, n.file || '')))) : none('Aucun élément ne correspond')),
+      (e) => results.replaceChildren(errBox(`Traçabilité indisponible : ${plain(e)}.`))); };
+  api('graph/trace').then((t) => box.replaceChildren(t.length ? table(['Exigence', 'Statut', 'Tickets', 'Fichiers'], t.map((e) => {
+    const n = e.tickets.reduce((k, x) => k + x.files.length, 0), alone = e.node.status === 'stable' && !n;
+    return h('tr', { class: alone ? 'fail' : '' }, h('td', {}, nodeLink(e.node)), h('td', {}, e.node.status === 'stable' ? st('validée', 'f', '✓') : st('brouillon', 'a', '○'), alone ? [' ', st('Sans fichier lié', 'b', '✕')] : null),
+      h('td', {}, flat(e.tickets.map((x) => x.node)) || st('aucun ticket', 'a', '—')), h('td', { class: 'num' }, String(n)));
+  })) : none('Aucune exigence dans le graphe')),
+    (e) => box.replaceChildren(/graphe absent/i.test(e.message) ? errBox(`${e.message}.`, true) : errBox(`Traçabilité indisponible : ${plain(e)}.`, true)));
+  return h('div', { class: 'grid' }, h('h1', {}, 'Traçabilité'), h('p', { class: 'muted' }, 'Traçabilité : le lien entre une exigence, ses tickets et les fichiers de code.'), box,
+    sect('Rechercher un élément', h('div', { class: 'filters', role: 'search' }, h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher un élément', placeholder: 'fichier, fonction, ticket, exigence ( / )', onchange: (e) => search(e.target.value) })), results), panel);
+}
+const ACTEUR = { humain: 'Vous', processus: 'Application', agent: 'Claude' };
+function vJournal() {
+  const l = S.activity.filter((a) => has(a.text + a.bundle) && (!F.acteur || a.acteur === F.acteur) && (!F.dossier || a.bundle === F.dossier));
+  const days = [...new Set(l.map((a) => a.date))];
+  return h('div', { class: 'grid' }, h('h1', {}, 'Journal'),
+    filterBar(['q'], { selects: { acteur: Object.entries(ACTEUR), dossier: [...new Set(S.activity.map((a) => a.bundle))].sort().map((b) => [b, b || 'racine']) } }),
+    !S.activity.length ? none('Aucune entrée dans les journaux de la KB') : !l.length ? none('Aucune entrée ne correspond', ' ', clearBtn(['q', 'acteur', 'dossier']))
+      : days.map((d) => sect(isoDay(d), table(['Acteur', 'Dossier', 'Action'], l.filter((a) => a.date === d).map((a) => h('tr', {},
+        h('td', { title: a.acteurNom }, ACTEUR[a.acteur] || a.acteur), h('td', {}, a.bundle || 'racine'), h('td', {}, a.lien ? h('a', { href: routeOf(a.lien) }, a.text) : a.text)))))));
+}
+function vValidation() {
+  const l = toValidate();
+  const done = validated();
+  return h('div', { class: 'grid' }, subnav('/gestion/validation'), h('h1', {}, 'À valider'), h('p', { class: 'muted' }, 'Ce que Claude a produit et que vous n’avez pas encore validé.'),
+    l.length ? validateList(l, true) : none('Rien à valider : tout est validé.'),
+    h('details', { class: 'card' }, h('summary', {}, `Déjà validé (${done.length})`),
+      table(['Titre', '', 'Validé le', 'Produit par', 'Validé par'], done.map((c) => h('tr', {}, h('td', {}, c.title, byLine(c)),
+        h('td', {}, h('button', { class: 'lnk', type: 'button', 'aria-label': `Annuler la validation de ${c.title}`, onclick: () => { if (confirm(`Annuler la validation de « ${c.title} » ?`)) unvalidate(c); } }, 'Annuler la validation')),
+        h('td', { class: 'num' }, fmtDay(c.fm.verified.at)), who(c.fm.generated.by), who(c.fm.verified.by))), 'v')));
+}
 function editor(c) {
-  const fmInput = h('textarea', { spellcheck: 'false', rows: 12 });
-  fmInput.value = c.frontmatterYaml;
-  const bodyInput = h('textarea', { rows: 24 });
-  bodyInput.value = c.body;
-  const preview = h('div', { class: 'prose preview', 'aria-live': 'polite' });
-  preview.innerHTML = c.bodyHtml; // assaini côté serveur (nh3)
-  let timer;
-  bodyInput.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      try { preview.innerHTML = (await api('render', { method: 'POST', json: { body: bodyInput.value } })).html; } catch { /* aperçu best-effort */ }
-    }, 300);
-  });
-  const status = h('p', { class: 'form-error', role: 'alert' });
-  const leave = () => { location.hash = `#/kb/${c.path}`; };
+  const fmTa = h('textarea', { id: 'fm', class: 'fm', 'aria-label': 'En-tête', 'aria-describedby': 'fm-msg' }), ta = h('textarea', { id: 'body', 'aria-label': 'Contenu' });
+  fmTa.value = c.frontmatterYaml || ''; ta.value = c.body || '';
+  const fmMsg = h('div', { id: 'fm-msg' }), msg = h('div'), state = h('span', { class: 'muted' }, 'Aucune modification'), prev = h('div');
+  let base = c.version;
+  const dirty = () => { S.dirty = true; state.textContent = 'Modifié, pas encore enregistré'; };
+  fmTa.addEventListener('input', dirty); ta.addEventListener('input', dirty);
   const save = async (e) => {
-    e.preventDefault();
+    const btn = e.target; btn.disabled = true; fmMsg.replaceChildren(); msg.replaceChildren();
     try {
-      await api(`concepts/${encodePath(c.path)}`, { method: 'PUT', json: { frontmatter: fmInput.value, body: bodyInput.value } });
-      await load(true);
-      toast('Changes saved');
-      leave();
+      const r = await api(`concepts/${enc(c.path)}`, { method: 'PUT', json: { frontmatter: fmTa.value, body: ta.value, baseline: base } });
+      base = r.version; S.dirty = false; state.textContent = `Enregistré à ${fmtTime(new Date())}`; await load();
     } catch (err) {
-      status.textContent = err.message;
+      const box = errBox(`Rien n'a changé : ${err.data && err.data.champ ? err.message : plain(err)}.`);
+      (err.data && err.data.champ === 'frontmatter' ? fmMsg : msg).replaceChildren(box);
     }
+    btn.disabled = false;
   };
-  return h('form', { class: 'editor', onsubmit: save, onkeydown: (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') save(e); } },
-    h('div', { class: 'bar' },
-      h('span', { class: 'path' }, c.path),
-      h('div', { class: 'actions' },
-        h('button', { type: 'button', class: 'btn', onclick: leave }, 'Cancel'),
-        h('button', { type: 'submit', class: 'btn dark' }, 'Save'))),
-    h('h1', { class: 'title', style: 'font:500 26px var(--serif)' }, `Edit ${c.frontmatter.title || c.path}`),
-    status,
-    h('label', {}, h('span', {}, 'Frontmatter ', h('span', { class: 'muted' }, '— YAML; the type cannot change')), fmInput),
-    h('div', { class: 'split' },
-      h('label', {}, h('span', {}, 'Content ', h('span', { class: 'muted' }, '— Markdown')), bodyInput),
-      h('div', { class: 'field' }, h('span', {}, 'Preview'), preview)));
+  const list = (l, empty) => l.length ? h('ul', {}, l.map((x) => h('li', {}, h('a', { href: routeOf(x.path) }, x.title)))) : none(empty);
+  return [h('h1', {}, c.frontmatter.title || c.path), h('p', { class: 'muted' }, `${c.frontmatter.type} · ${trustWord(meta(c))} · `, h('span', { class: 'mono' }, c.path)),
+    h('label', { for: 'fm' }, 'En-tête (le type ne change jamais)'), fmTa, fmMsg, h('label', { for: 'body' }, 'Contenu'), ta, msg,
+    h('div', { class: 'row' }, h('button', { class: 'btn', onclick: save }, 'Enregistrer'),
+      h('button', { class: 'btn o', onclick: () => prev.replaceChildren(doc(c, ta.value)) }, 'Aperçu'),
+      h('span', { class: 'sp' }), h('a', { href: '#/gestion/concepts' }, 'Retour à la liste')), h('p', { role: 'status' }, state), prev,
+    h('div', { class: 'cols' }, h('div', {}, sect('Liens sortants', list(c.liens.sortants, 'Aucun lien')), sect('Liens entrants', list(c.liens.entrants, 'Aucun lien'))),
+      sect('Historique', c.historique.length ? table(['Date', 'Qui', 'Quoi'], c.historique.map((x) => h('tr', {}, h('td', { class: 'num' }, isoDay(x.date)), who(x.acteur), h('td', {}, x.texte)))) : none('Aucun historique')))];
 }
-
-async function renderKb(path, editing) {
-  const f = kbFilter;
-  const cs = store.concepts;
-  const sel = path && store.byPath[path];
-  const matches = (c) => (!f.folder || c.folder === f.folder) && (!f.type || c.type === f.type) && (!f.tag || c.tags.includes(f.tag))
-    && (!f.status || c.status === f.status) && (!f.trust || c.trust === f.trust)
-    && (!f.q || `${c.title} ${c.path}`.toLowerCase().includes(f.q.toLowerCase()));
-  // Arrivée sur un concept masqué par les filtres (lien depuis une autre vue) : on montre son dossier.
-  if (sel && !matches(sel)) Object.assign(f, KB_RESET, { folder: sel.folder });
-  const shown = () => cs.filter(matches).sort((a, b) => last(b).localeCompare(last(a)));
-  const current = path || shown()[0]?.path;
-
-  const folders = [...new Set(cs.map((c) => c.folder))].sort();
-  const count = h('span', { class: 'muted' });
-  const clear = h('button', { type: 'button', class: 'linkbtn', onclick: () => { Object.assign(f, KB_RESET); renderKb(path, editing); } }, 'Clear filters');
-  const rows = h('div', { class: 'rows' });
-  const refill = () => {
-    const list = shown();
-    count.textContent = `${list.length} concepts`;
-    clear.hidden = !(f.q || f.type || f.tag || f.status || f.trust);
-    rows.replaceChildren(...(list.length ? list.map((c) => h('a', { class: 'row', href: `#/kb/${c.path}`, 'aria-current': c.path === current ? 'page' : null },
-      h('span', { class: 'ic' }, tdot(c.trust)),
-      h('span', { class: 'body' },
-        h('span', { class: `ttl${c.status === 'deprecated' ? ' dep' : ''}` }, c.title),
-        h('span', { class: 'path' }, c.path),
-        h('span', { class: 'meta' }, h('span', { class: 'type' }, c.type), statusPill(c.status), h('span', { class: 'date' }, fd(last(c)))))))
-      : [h('div', { class: 'empty' }, 'No concept matches these filters.')]));
-  };
-  const setFolder = (v) => { f.folder = v; renderKb(path, editing); };
-  const filterSel = (key, opts, label) => select(f[key], (v) => { f[key] = v; refill(); }, opts, label);
-
-  let pane = none('Empty knowledge base. Create a concept with N.');
-  if (current) {
+function createForm() {
+  const v = (id) => $(id).value.trim(), msg = h('div'), opts = (id, l) => h('datalist', { id }, l.map((x) => h('option', { value: x })));
+  const uniq = (f) => [...new Set(S.concepts.map(f).filter(Boolean))].sort();
+  const submit = async (e) => {
+    e.preventDefault(); const btn = e.submitter; if (btn) btn.disabled = true; msg.replaceChildren();
+    const body = { bundle: v('new-bundle'), type: v('new-type'), title: v('new-title'), slug: v('new-slug') };
+    const bad = !body.bundle || !body.type || !body.title ? 'dossier, type et titre sont requis'
+      : !/^[a-z0-9][a-z0-9-]*$/.test(body.slug) ? 'identifiant : minuscules, chiffres et tirets uniquement' : null;
     try {
-      const full = await api(`concepts/${encodePath(current)}`);
-      pane = editing ? editor(full) : detail(store.byPath[current] || deco(full), full);
-    } catch {
-      pane = h('p', { class: 'empty' }, `Concept not found: ${current}`);
-    }
-  }
-
-  const scroll = document.querySelector('.rows')?.scrollTop;
-  view().replaceChildren(h('div', { class: 'kb' },
-    h('nav', { class: 'kb-folders', 'aria-label': 'Folders' }, cap('Folders'),
-      [['', 'all', cs.length], ...folders.map((x) => [x, `${x}/`, cs.filter((c) => c.folder === x).length])].map(([k, label, n]) =>
-        h('a', { href: '#/kb', 'aria-current': f.folder === k ? 'true' : null, onclick: (e) => { e.preventDefault(); setFolder(k); } }, label, h('span', { class: 'n' }, n)))),
-    h('div', { class: 'kb-list' },
-      h('div', { class: 'kb-tools' },
-        h('div', { class: 'hd' }, h('h1', {}, f.folder ? `${f.folder}/` : 'all'), count, clear),
-        h('div', { class: 'folder-sel' }, select(f.folder, setFolder, [['', 'All folders'], ...folders.map((x) => [x, `${x}/`])], 'Folder')),
-        h('input', { type: 'search', value: f.q, placeholder: 'Filter by title or path', 'aria-label': 'Filter', oninput: (e) => { f.q = e.target.value; refill(); } }),
-        h('div', { class: 'grid' },
-          filterSel('type', [['', 'All types'], ...[...new Set(cs.map((c) => c.type))].sort().map((t) => [t, t])], 'Type'),
-          filterSel('tag', [['', 'All tags'], ...[...new Set(cs.flatMap((c) => c.tags))].sort().map((t) => [t, `#${t}`])], 'Tag'),
-          filterSel('status', [['', 'Any status'], ['draft', 'draft'], ['stable', 'stable'], ['deprecated', 'deprecated']], 'Status'),
-          filterSel('trust', [['', 'Any trust'], ...Object.keys(TRUST).map((t) => [t, TRUST[t].label])], 'Trust'))),
-      rows),
-    h('div', { class: 'pane' }, pane)));
-  refill();
-  if (scroll) rows.scrollTop = scroll;
-}
-
-// --- Journal --------------------------------------------------------------------------
-
-const jFilter = { actor: '', folder: '' };
-
-function renderJournal() {
-  const all = store.activity;
-  const actors = [...new Set(all.map((e) => e.actor).filter(Boolean))].sort();
-  const folders = [...new Set(all.map((e) => e.bundle || '.'))].sort();
-  const shown = all.filter((e) => (!jFilter.actor || e.actor === jFilter.actor) && (!jFilter.folder || (e.bundle || '.') === jFilter.folder));
-  const days = [];
-  for (const e of shown) {
-    if (days.at(-1)?.date !== e.date) days.push({ date: e.date, entries: [] });
-    days.at(-1).entries.push(e);
-  }
-  const t = today();
-  const yesterday = new Date(Date.now() - 864e5).toLocaleDateString('en-CA');
-  const label = (d) => (d === t ? 'Today' : d === yesterday ? 'Yesterday' : new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long' }));
-  const refilter = (key) => (v) => { jFilter[key] = v; renderJournal(); };
-
-  view().replaceChildren(h('div', { class: 'page', style: 'max-width:900px;gap:18px' },
-    h('header', { class: 'page-head', style: 'align-items:center' },
-      h('h1', {}, 'Journal'),
-      h('span', { class: 'sum' }, `${shown.length} entries from ${new Set(all.map((e) => e.bundle)).size} log.md files`),
-      h('div', { style: 'margin-left:auto;display:flex;gap:6px' },
-        select(jFilter.actor, refilter('actor'), [['', 'All actors'], ...actors.map((a) => [a, a])], 'Actor'),
-        select(jFilter.folder, refilter('folder'), [['', 'All folders'], ...folders.map((x) => [x, `${x}/`])], 'Folder'))),
-    days.length ? days.map((d) => h('section', { class: 'jday' },
-      h('div', { class: 'd' }, h('b', {}, label(d.date)), h('span', {}, `${fd(d.date)} ${d.date.slice(0, 4)}`)),
-      h('div', { class: 'es' }, d.entries.map((e) => h('div', { class: 'e' },
-        h('div', { class: 'top' }, actor(e.actor), logText(e)),
-        h('span', { class: 'f' }, `${e.bundle ? `${e.bundle}/` : ''}log.md`))))))
-      : h('div', { class: 'empty' }, 'No entries for this filter.')));
-}
-
-// --- Graphe -------------------------------------------------------------------------------
-
-const GKIND = { file: 'File', class: 'Class', function: 'Function', method: 'Method', ticket: 'Ticket', exigence: 'Requirement' };
-const gLink = (n) => (n.kb ? `#/kb/${n.kb}` : `#/graph/${encodeURIComponent(n.id)}`);
-const gLoc = (n) => (n.line ? `${n.file}:${n.line}` : n.file || '');
-
-function gItem(n, extra) {
-  return h('a', { class: 'g-item', href: gLink(n) },
-    h('span', { class: `g-kind k-${n.kind}` }, GKIND[n.kind]),
-    h('span', { class: 'g-label' }, n.label),
-    h('span', { class: 'g-loc' }, gLoc(n)),
-    extra && h('span', { class: 'g-extra' }, extra));
-}
-
-// Voisinage en étoile : le nœud au centre, ses voisins directs en cercle, sans bibliothèque.
-function gSvg(center, edges) {
-  const R = 130, W = 420, H = 320, cx = W / 2, cy = H / 2;
-  const seen = new Map();
-  for (const e of edges) if (!seen.has(e.node.id)) seen.set(e.node.id, e);
-  const around = [...seen.values()].slice(0, 16);
-  const ns = 'http://www.w3.org/2000/svg';
-  const el = (tag, attrs, text) => {
-    const x = document.createElementNS(ns, tag);
-    for (const [k, v] of Object.entries(attrs)) x.setAttribute(k, v);
-    if (text) x.textContent = text;
-    return x;
+      if (bad) throw new Error(bad);
+      const r = await api('concepts', { method: 'POST', json: body });
+      await load(); toast(`« ${body.title} » créé.`); location.hash = `#/gestion/concepts/${enc(r.path)}`;
+    } catch (err) { msg.replaceChildren(errBox(`Rien n'a été créé : ${err.status === 409 ? `${body.slug} existe déjà dans ${body.bundle}` : err.status === 400 || bad ? err.message : plain(err)}.`)); }
+    if (btn) btn.disabled = false;
   };
-  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'g-svg', role: 'img', 'aria-label': `Neighbourhood of ${center.label}` });
-  const short = (s) => (s.length > 22 ? `${s.slice(0, 21)}…` : s);
-  around.forEach((e, i) => {
-    const a = (2 * Math.PI * i) / around.length - Math.PI / 2;
-    const x = cx + R * Math.cos(a), y = cy + R * 0.85 * Math.sin(a);
-    svg.append(el('line', { x1: cx, y1: cy, x2: x, y2: y, class: `g-edge${e.conf === 'ambiguous' ? ' amb' : ''}` }));
-    const g = el('a', { href: gLink(e.node) });
-    g.append(el('circle', { cx: x, cy: y, r: 6, class: `k-${e.node.kind}` }), el('text', { x, y: y - 10, 'text-anchor': 'middle' }, short(e.node.label)));
-    g.append(el('title', {}, `${e.rel} — ${e.node.id}`));
-    svg.append(g);
+  const field = (id, label, attrs = {}) => h('label', { for: id }, label, h('br'), h('input', { id, required: true, ...attrs }));
+  return h('details', { class: 'card' }, h('summary', {}, 'Nouveau concept'), h('form', { class: 'grid', onsubmit: submit },
+    field('new-bundle', 'Dossier', { list: 'dl-bundle', placeholder: 'tickets' }), opts('dl-bundle', uniq((c) => c.path.includes('/') ? c.path.split('/')[0] : '')),
+    field('new-type', 'Type', { list: 'dl-type', placeholder: 'Ticket' }), opts('dl-type', uniq((c) => c.type)),
+    field('new-title', 'Titre'), field('new-slug', 'Identifiant (slug)', { pattern: '[a-z0-9][a-z0-9\\-]*', placeholder: 'export-csv', title: 'minuscules, chiffres et tirets' }),
+    h('div', {}, h('button', { class: 'btn' }, 'Créer')), msg));
+}
+const folderOf = (c) => c.path.includes('/') ? c.path.split('/')[0] : '';
+function vConcepts(path) {
+  if (path) {
+    const box = h('div', { class: 'grid' }, h('p', { class: 'muted' }, 'Chargement…'));
+    api(`concepts/${enc(path)}`).then((c) => box.replaceChildren(...editor(c)), (e) => box.replaceChildren(e.status === 404 ? v404() : errBox(`Rendu impossible : ${plain(e)}.`)));
+    return h('div', { class: 'grid' }, subnav('/gestion/concepts'), crumbs(['Concepts', '/gestion/concepts'], [path]), box);
+  }
+  const cs = S.concepts, uniq = (f) => [...new Set(cs.flatMap(f).filter(Boolean))].sort().map((x) => [x, x]);
+  const l = cs.filter((c) => has(c.title + c.path) && (!F.dossier || folderOf(c) === F.dossier) && (!F.type || c.type === F.type)
+    && (!F.tag || (Array.isArray(c.fm.tags) && c.fm.tags.includes(F.tag))) && (!F.statut || c.fm.status === F.statut) && (!F.validation || TIER[c.trust] === F.validation));
+  return h('div', { class: 'grid' }, subnav('/gestion/concepts'), h('h1', {}, 'Concepts'), createForm(),
+    filterBar(['q'], { selects: { dossier: uniq((c) => [folderOf(c)]), type: uniq((c) => [c.type]), tag: uniq((c) => Array.isArray(c.fm.tags) ? c.fm.tags.map(String) : []), statut: uniq((c) => [c.fm.status]), validation: VALIDATION } }),
+    l.length ? table(['Concept', 'Type', 'Validation'], l.map((c) => h('tr', {}, h('td', {}, h('a', { href: `#/gestion/concepts/${enc(c.path)}` }, c.title)), h('td', {}, c.type), h('td', {}, trustSt(c)))))
+      : none('Aucun concept ne correspond', ' ', clearBtn(['q', 'dossier', 'type', 'tag', 'statut', 'validation'])));
+}
+const v404 = () => h('section', { class: 'card' }, h('h1', {}, 'Écran introuvable'), h('p', {}, 'Cet écran n’existe pas.'), h('p', {}, h('a', { class: 'btn', href: '#/' }, 'Retour à l’accueil')));
+
+// --- validation (nom demandé une fois, retenu) ----------------------------------
+function me() {
+  return new Promise((ok) => {
+    const n = localStorage.getItem('hosa.me'); if (n) return ok(n);
+    const d = $('name-dialog'); d.showModal();
+    $('name-form').onsubmit = () => { const v = $('name-input').value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, ''); if (v) localStorage.setItem('hosa.me', v); ok(v); };
   });
-  svg.append(el('circle', { cx, cy, r: 9, class: `k-${center.kind} center` }), el('text', { x: cx, y: cy + 24, 'text-anchor': 'middle', class: 'center' }, short(center.label)));
-  return svg;
 }
-
-function gGroups(edges, arrow) {
-  const rels = [...new Set(edges.map((e) => e.rel))].sort();
-  return rels.map((rel) => h('section', { class: 'g-group' },
-    cap(`${arrow} ${rel}`),
-    edges.filter((e) => e.rel === rel).map((e) => gItem(e.node, [e.line ? `L${e.line}` : '', e.conf === 'ambiguous' ? 'ambiguous' : ''].filter(Boolean).join(' ')))));
+async function setVerified(c, verified, patch, okMsg) {
+  try { await api(`concepts/${enc(c.path)}`, { method: 'PATCH', json: { frontmatter: { ...patch, verified } } }); await load(); toast(okMsg); }
+  catch (e) { toast(`Rien n'a changé : ${plain(e)}.`); S.err = null; }
+  route();
 }
-
-async function renderGraph(rest) {
-  const id = rest && rest !== 'trace' ? rest : null; // route() a déjà décodé le hash
-  const results = h('div', { class: 'g-results' });
-  const search = h('input', { type: 'search', class: 'g-search', placeholder: 'File, function, ticket, requirement…', 'aria-label': 'Search the graph' });
-  let timer;
-  search.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      const q = search.value.trim();
-      if (!q) return results.replaceChildren();
-      try {
-        const found = await api(`graph/find?q=${encodeURIComponent(q)}`);
-        results.replaceChildren(...(found.length ? found.map((n) => gItem(n, n.doc)) : [h('div', { class: 'empty' }, 'No match.')]));
-      } catch (err) {
-        results.replaceChildren(h('div', { class: 'empty' }, err.message));
-      }
-    }, 200);
-  });
-
-  let body;
-  try {
-    if (rest === 'trace') body = gTrace(await api('graph/trace'));
-    else if (id) body = gCard(await api(`graph/node?id=${encodeURIComponent(id)}`));
-    else body = h('div', { class: 'empty' }, 'Search for an element, or open the traceability view.');
-  } catch (err) {
-    body = h('div', { class: 'empty' }, err.message);
-  }
-  view().replaceChildren(h('div', { class: 'page', style: 'gap:18px' },
-    h('header', { class: 'page-head', style: 'align-items:center' },
-      h('h1', {}, 'Graph'),
-      h('div', { style: 'margin-left:auto;display:flex;gap:6px' },
-        h('a', { class: 'btn sm', href: '#/graph', 'aria-current': rest ? null : 'page' }, 'Explore'),
-        h('a', { class: 'btn sm', href: '#/graph/trace', 'aria-current': rest === 'trace' ? 'page' : null }, 'Traceability'))),
-    rest === 'trace' ? null : search, results, body));
-  if (rest !== 'trace') search.focus();
+async function validate(c) {
+  const name = await me(); if (!name) return;
+  const patch = c.type === 'Exigence' ? { status: 'stable' } : {};
+  await setVerified(c, { by: `human:${name}`, at: `${new Date().toISOString().slice(0, 19)}Z` }, patch, `« ${c.title} » validée par vous.`);
 }
+const unvalidate = (c) => setVerified(c, { by: null, at: null }, {}, `Validation de « ${c.title} » annulée.`);
 
-function gCard(d) {
-  const n = d.node;
-  const a = d.affected;
-  return h('div', { class: 'g-card' },
-    h('div', { class: 'g-head' },
-      h('span', { class: `g-kind k-${n.kind}` }, GKIND[n.kind]),
-      h('h2', { class: 'mono' }, n.label),
-      h('span', { class: 'g-loc' }, gLoc(n)),
-      n.state || n.status ? h('span', { class: 'g-extra' }, n.state || n.status) : null),
-    n.doc ? h('p', { class: 'g-doc' }, n.doc) : null,
-    h('div', { class: 'g-cols' },
-      gSvg(n, [...d.out, ...d.in]),
-      h('div', { class: 'g-rels' },
-        gGroups(d.out, '→'), gGroups(d.in, '←'),
-        !d.out.length && !d.in.length ? h('div', { class: 'none' }, 'No relation.') : null)),
-    h('section', { class: 'g-group' }, cap(`Impact (depth 2) — ${a.nodes.length} dependents`),
-      a.nodes.length ? a.nodes.map((x) => gItem(x.node, `depth ${x.depth}`)) : h('div', { class: 'none' }, 'Nothing depends on it.')),
-    h('section', { class: 'g-group' }, cap('Tickets touching the impacted files'),
-      a.tickets.length ? a.tickets.map((t) => gItem(t, t.state)) : h('div', { class: 'none' }, 'None.')));
+// --- coque, routes ---------------------------------------------------------------
+const ROUTES = [
+  [/^\/$/, home, 'Accueil'],
+  [/^\/avancement$/, vAvancement, "Plan d'avancement"], [/^\/tickets$/, () => vTickets(false), 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
+  [/^\/sprints$/, vSprints, 'Sprints'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(m[1]), 'Sprint'], [/^\/exigences$/, vExigences, 'Exigences'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(m[1]), 'Exigence'],
+  [/^\/personas$/, vPersonas, 'Personas'], [/^\/recettes$/, vRecettes, 'Recettes'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
+  [/^\/gestion\/validation$/, vValidation, 'À valider'], [/^\/gestion\/concepts$/, () => vConcepts(), 'Concepts'], [/^\/gestion\/concepts\/(.+)$/, (m) => vConcepts(decodeURIComponent(m[1])), 'Concept'], [/^\/gestion\/tickets$/, () => vTickets(true), 'Tickets'],
+];
+const here = () => (location.hash.replace(/^#/, '') || '/').replace(/\/$/, '') || '/';
+
+function paintShell() {
+  $('brand').textContent = 'Hosa';
+  const p0 = here(), p = ROUTES.some(([re]) => re.test(p0)) ? p0 : '\0';
+  const cur = (to) => p === to || (to !== '/' && p.startsWith(to + '/')) ? 'page' : null;
+  $('nav').replaceChildren(...MENU.map(([to, label]) => h('a', { href: `#${to}`, 'aria-current': cur(to) }, label)),
+    ...GESTION.map(([to, label]) => h('a', { class: 'mo', href: `#${to}`, 'aria-current': cur(to) }, `Gestion : ${label}`)));
+  $('more').hidden = false; $('more').querySelector('summary').classList.toggle('on', p.startsWith('/gestion'));
+  $('more-list').replaceChildren(...GESTION.map(([to, label]) => h('a', { href: `#${to}`, 'aria-current': cur(to) }, label)));
+  const k = S.kbStatus;
+  $('banner').replaceChildren(...(k === undefined ? [] : k && k.git && k.changed > 0 ? [h('div', { class: 'alert', role: 'alert' },
+    h('span', {}, h('b', {}, `${plural(k.changed, 'changement', 'changements')} de la KB non sauvegardé${k.changed > 1 ? 's' : ''}`), ' — lancer ', h('code', {}, '/kb-commit'), '. La KB est la base de connaissance du projet, écrite par les agents.'),
+    h('button', { class: 'btn warn', onclick: () => copy('/kb-commit') }, 'Copier /kb-commit'),
+    h('details', { class: 'files', ontoggle: (e) => { e.target.firstChild.textContent = e.target.open ? 'Masquer les fichiers' : 'Voir les fichiers'; } }, h('summary', {}, 'Voir les fichiers'),
+      h('ul', {}, (k.files || []).slice(0, 20).map((f) => h('li', {}, h('span', { class: 'mono' }, f.path), ' ', st(f.state, f.state === 'supprimé' ? 'b' : f.state === 'nouveau' ? 'e' : 'a', f.state === 'supprimé' ? '✕' : f.state === 'nouveau' ? '+' : '◐'))),
+        (k.files || []).length > 20 ? h('li', {}, `et ${k.files.length - 20} autres`) : null)))]
+    : k && !k.git ? [h('p', { class: 'muted', style: 'padding:4px 12px' }, 'KB hors git')] : k ? [] : [h('div', { class: 'alert info', role: 'status' }, h('span', {}, h('b', {}, 'Sauvegarde de la KB : état inconnu.'), ' Le serveur n’a pas pu le lire pour le moment.'), h('button', { class: 'btn o', onclick: reload }, 'Réessayer'))]));
+  $('freshness').textContent = `Dernière lecture de la KB (la base de connaissance du projet) : ${S.loadedAt ? fmtTime(S.loadedAt) : '—'}`;
+  $('user-label').textContent = localStorage.getItem('hosa.me') || 'Mon nom';
 }
-
-function gTrace(rows) {
-  if (!rows.length) return h('div', { class: 'empty' }, 'No requirement in the knowledge base.');
-  return h('div', { class: 'g-trace' }, rows.map((r) => {
-    const orphan = r.node.status === 'stable' && !r.tickets.some((t) => t.files.length);
-    return h('section', { class: `g-req${orphan ? ' orphan' : ''}` },
-      gItem(r.node, orphan ? 'stable, no code linked' : r.node.status),
-      r.tickets.length ? r.tickets.map((t) => h('div', { class: 'g-ticket' },
-        gItem(t.node, t.node.state),
-        h('div', { class: 'g-files' }, t.files.length ? t.files.map((f) => gItem(f)) : h('span', { class: 'none' }, 'No file linked yet.'))))
-        : h('div', { class: 'none g-ticket' }, 'No ticket.'));
-  }));
+function route() {
+  paintShell();
+  const p = here(), view = $('view'), main = $('main');
+  const x = ROUTES.map(([re, fn, title]) => [re.exec(p), fn, title]).find(([m]) => m);
+  let node, title = 'Écran introuvable';
+  if (S.err) node = errBox(S.err, true);
+  else if (!S.ov) node = h('p', { class: 'muted' }, 'Chargement…');
+  else if (!x) node = v404();
+  else { try { node = x[1](x[0]); title = x[2]; } catch (e) { node = errBox('Cet écran ne peut pas s’afficher pour le moment.', true); } }
+  view.replaceChildren(node);
+  document.title = `${title} — Hosa`;
 }
-
-// --- Nouveau concept --------------------------------------------------------------------
-
-const dialog = document.getElementById('new-dialog');
-const form = document.getElementById('new-form');
-const touched = { slug: false, type: false };
-let tried = false;
-
-// Type dominant d'un dossier : pré-remplit le type quand on choisit un dossier connu.
-function typeIn(folder) {
-  const n = {};
-  for (const c of store.concepts) if (c.folder === folder) n[c.type] = (n[c.type] || 0) + 1;
-  return Object.keys(n).sort((a, b) => n[b] - n[a])[0] || '';
-}
-
-const bundleOf = () => form.elements.bundle.value.trim().replace(/^\/+|\/+$/g, '');
-
-function validate() {
-  const el = form.elements;
-  const bundle = bundleOf();
-  const slug = el.slug.value;
-  document.getElementById('prefix').textContent = `${bundle || '…'}/`;
-  let slugErr = '';
-  let suggestion = '';
-  if (!slug) slugErr = tried ? 'Slug is required.' : '';
-  else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) { slugErr = 'Use lowercase letters, digits and single hyphens.'; suggestion = slugify(slug); }
-  else if (store.byPath[`${bundle}/${slug}.md`]) slugErr = `${bundle}/${slug}.md already exists.`;
-  const hints = {
-    bundle: tried && !bundle ? ['Choose a folder.', true] : [bundle && !store.concepts.some((c) => c.folder === bundle) ? 'New folder. It will be created with its own log.md.' : ''],
-    type: [tried && !el.type.value.trim() ? 'Type is required.' : '', true],
-    title: [tried && !el.title.value.trim() ? 'Title is required.' : '', true],
-    slug: slugErr ? [slugErr, true] : ['Lowercase letters, digits and hyphens.'],
-  };
-  for (const [k, [msg, isErr]] of Object.entries(hints)) {
-    const hint = form.querySelector(`[data-for=${k}]`);
-    hint.className = `hint${isErr && msg ? ' err' : ''}`;
-    hint.replaceChildren(msg, ...(k === 'slug' && suggestion && suggestion !== slug
-      ? [' ', h('button', { type: 'button', onclick: () => { el.slug.value = suggestion; validate(); } }, `Use ${suggestion}`)] : []));
-    (k === 'slug' ? el.slug.parentElement : el[k]).classList.toggle('bad', !!(isErr && msg));
-  }
-  return !!(bundle && el.type.value.trim() && el.title.value.trim() && slug && !slugErr);
-}
-
-async function openNew() {
-  await load();
-  const folders = [...new Set(store.concepts.map((c) => c.folder))].filter((f) => f !== '.').sort();
-  document.getElementById('bundles').replaceChildren(...folders.map((f) => h('option', { value: f }, typeIn(f))));
-  document.getElementById('types').replaceChildren(...[...new Set(store.concepts.map((c) => c.type))].sort().map((t) => h('option', { value: t })));
-  form.reset();
-  form.querySelector('.form-error').textContent = '';
-  tried = false;
-  touched.slug = touched.type = false;
-  validate();
-  dialog.showModal();
-}
-
-form.addEventListener('input', (e) => {
-  const el = form.elements;
-  if (e.target === el.slug) touched.slug = true;
-  if (e.target === el.type) touched.type = true;
-  if (e.target === el.title && !touched.slug) el.slug.value = slugify(el.title.value);
-  if (e.target === el.bundle && !touched.type) el.type.value = typeIn(bundleOf());
-  validate();
+const paint = route;
+let lastHash = location.hash;
+window.addEventListener('hashchange', () => {
+  if (S.dirty && !confirm('Des modifications ne sont pas enregistrées. Quitter quand même ?')) { location.hash = lastHash; return; }
+  S.dirty = false; lastHash = location.hash; route(); $('main').focus();
 });
-form.querySelector('[value=cancel]').addEventListener('click', () => dialog.close());
-dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); }); // clic sur le fond
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  tried = true;
-  if (!validate()) return;
-  const data = { ...Object.fromEntries(new FormData(form)), bundle: bundleOf() };
-  try {
-    const c = await api('concepts', { method: 'POST', json: data });
-    dialog.close();
-    await load(true);
-    toast(`“${data.title}” created`);
-    location.hash = `#/kb/${c.path}?edit`;
-  } catch (err) {
-    form.querySelector('.form-error').textContent = err.message;
-  }
+$('rename').addEventListener('click', () => { localStorage.removeItem('hosa.me'); me().then(() => { toast('Nom enregistré'); paintShell(); }); });
+$('reload').addEventListener('click', reload);
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { const s = $('search'); if (s) { e.preventDefault(); s.focus(); } }
 });
-document.getElementById('new').addEventListener('click', openNew);
-
-// --- Routage ----------------------------------------------------------------------------
-
-async function route() {
-  const [path, query] = decodeURIComponent(location.hash.slice(1) || '/').split('?');
-  const section = path.split('/')[1] || '';
-  showError('');
-  try {
-    await load();
-    for (const a of document.querySelectorAll('[data-nav]')) {
-      if (a.dataset.nav === section) a.setAttribute('aria-current', 'page');
-      else a.removeAttribute('aria-current');
-    }
-    if (section === 'kb') await renderKb(path.slice('/kb/'.length) || null, query === 'edit');
-    else if (section === 'graph') await renderGraph(path.slice('/graph/'.length) || null);
-    else ({ steering: renderSteering, personas: renderPersonas, board: renderBoard, sprints: renderSprints, journal: renderJournal }[section] || renderHome)();
-  } catch (err) {
-    showError(`Could not load: ${err.message}. Is the Hosa server still running?`);
-  }
-}
-
-window.addEventListener('keydown', (e) => {
-  if (e.target.closest?.('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey || dialog.open) return;
-  const v = VIEWS[+e.key - 1];
-  if (v) location.hash = `#/${v[0]}`;
-  else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openNew(); }
-});
-document.getElementById('refresh').addEventListener('click', async () => {
-  await load(true).catch(() => {});
-  await route();
-  toast('KB reloaded');
-});
-window.addEventListener('hashchange', route);
 route();
+load().then(route);

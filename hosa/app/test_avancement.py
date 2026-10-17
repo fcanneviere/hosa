@@ -53,6 +53,80 @@ class Check(unittest.TestCase):
         self.assertEqual(av.check(kb({}), "stack", None), [])
 
 
+def cov(k, t="t1"):
+    """`av.coverage`, or a clean test failure while it does not exist yet."""
+    if not hasattr(av, "coverage"):
+        raise AssertionError("avancement.coverage n'existe pas")
+    return av.coverage(k, t)
+
+def tk(n=3):
+    return "---\ntype: Ticket\n---\n## Critères d'acceptation\n" + "".join(f"- CA{i} — c\n" for i in range(1, n + 1))
+
+class Coverage(unittest.TestCase):
+    def test_plan_cases_cover_their_criteria(self):  # cas 1
+        k = kb({"tickets/t1.md": tk(), "test/t1-technique.md": "- [CA1] x\n- [CA3] y\n"})
+        self.assertEqual(cov(k), {"criteres": ["CA1", "CA2", "CA3"], "couverts": ["CA1", "CA3"], "total": 3, "plan": True})
+
+    def test_recette_oui_covers(self):  # cas 2
+        k = kb({"tickets/t1.md": tk(), "test/t1-technique.md": "- [CA1] x\n",
+                "test/t1-parents.md": "### Critères\n- CA2 — Oui — capture\n"})
+        self.assertIn("CA2", cov(k)["couverts"])
+
+    def test_recette_non_does_not_cover(self):  # cas 3
+        k = kb({"tickets/t1.md": tk(), "test/t1-technique.md": "- [CA1] x\n",
+                "test/t1-parents.md": "- CA2 — Non — x\n"})
+        self.assertNotIn("CA2", cov(k)["couverts"])
+
+    def test_no_plan_file(self):  # cas 4
+        self.assertIs(cov(kb({"tickets/t1.md": tk(), "test/autre.md": "x"}))["plan"], False)
+
+    def test_recette_oui_without_plan(self):  # cas 5
+        k = kb({"tickets/t1.md": tk(), "test/t1-parents.md": "- CA1 — Oui — capture\n"})
+        r = cov(k)
+        self.assertIs(r["plan"], False)
+        self.assertEqual(r["couverts"], ["CA1"])
+
+    def test_no_criteria(self):  # cas 6
+        for text in ("---\ntype: Ticket\n---\nrien\n", "---\ntype: Ticket\n---\n## Critères d'acceptation\nTexte libre\n"):
+            r = cov(kb({"tickets/t1.md": text}))
+            self.assertEqual((r["criteres"], r["total"]), ([], 0))
+
+    def test_check_gaps_unchanged_by_extraction(self):  # cas 7: lists captured from check() before the extraction
+        sp = "---\ntype: Sprint\n---\n## Tickets\n" + "".join(f"- [T{i}](../tickets/t{i}.md)\n" for i in (1, 2, 3))
+        t = "---\ntype: Ticket\nstate: done\nverified: { by: po }\n---\n" + tk().split("---\n", 2)[2]
+        k = kb({"sprints/s1.md": sp, "tickets/t1.md": t, "tickets/t2.md": t,
+                "tickets/t3.md": "---\ntype: Ticket\nstate: done\nverified: { by: po }\n---\nrien\n",
+                "test/t1-technique.md": "- [CA1] x\n## Résultats techniques\n3/3\n",
+                "test/t1-p.md": "## Verdict\nRefusé\n### Critères\n- CA2 — Non — x\n- CA3 — Oui — y\n"})
+        self.assertEqual(av.check(k, "qa-plan", "s1"), [
+            "t1 : CA2, CA3 sans cas de test [CAn] (`qa-plan`)",
+            "t2 : pas de plan `kb/test/t2-technique.md` (`qa-plan`)",
+            "t2 : CA1, CA2, CA3 sans cas de test [CAn] (`qa-plan`)",
+            "t3 : pas de plan `kb/test/t3-technique.md` (`qa-plan`)"])
+        self.assertEqual(av.check(k, "validation", "s1"), [
+            "t1-p.md : recette Refusé",
+            "t1-p.md : un critère répondu Non",
+            "t1 : CA2 prouvé(s) par aucun cas [CAn] ni recette Oui (`qa-plan`)",
+            "t2 : pas de `## Résultats techniques` (`qa`)",
+            "t2 : CA1, CA2, CA3 prouvé(s) par aucun cas [CAn] ni recette Oui (`qa-plan`)",
+            "t3 : pas de `## Résultats techniques` (`qa`)",
+            "pas de `## Audit` avec sa ligne `Bloquant : N` (`validation` étape 3a)",
+            "pas de `## Démo` (`validation` étape 3b)"])
+
+    def test_longer_identifier_does_not_cover(self):  # cas 8a
+        k = kb({"tickets/t1.md": tk(2), "test/t1-technique.md": "- [CA10] x\n- ACA1 y\n",
+                "test/t1-r.md": "- CA10 — Oui — z\n"})
+        self.assertEqual(cov(k)["couverts"], [])
+
+    def test_eleven_criteria(self):  # cas 8b
+        k = kb({"tickets/t1.md": tk(11), "test/t1-technique.md": "- [CA10] x\n- [CA11] y\n"})
+        r = cov(k)
+        self.assertEqual((r["total"], r["couverts"]), (11, ["CA10", "CA11"]))
+
+    def test_kb_without_test_dir(self):  # cas 8c
+        r = cov(kb({"tickets/t1.md": tk()}))
+        self.assertEqual((r["plan"], r["couverts"], r["total"]), (False, [], 3))
+
 class Done(unittest.TestCase):
     def test_done_refuses_a_missing_proof_unless_forced(self):
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET})

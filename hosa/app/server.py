@@ -2,6 +2,7 @@
 import json
 import mimetypes
 import os
+import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -12,6 +13,14 @@ import kb
 
 PUBLIC = Path(__file__).parent / "public"
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "[::1]"}
+
+
+def _in_git(path):
+    try:
+        return subprocess.run(["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"],
+                              capture_output=True, timeout=10).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
 
 
 def make_handler(root):
@@ -68,16 +77,31 @@ def make_handler(root):
                 return self._static(path)
             except FileExistsError as e:
                 self._error(409, f"existe déjà : {e}")
+            except kb.ConflictError as e:
+                self._error(409, str(e))
             except graph.GraphError as e:
                 self._error(404, str(e))
             except kb.KbError as e:
                 self._error(400, str(e))
+            except kb.GitError as e:
+                self._error(500, str(e))
+            except kb.UsageError as e:
+                self._error(404, str(e))
+            except kb.UsageFailed as e:
+                self._error(500, str(e))
 
         def _api(self, method, route, query):
             if method == "GET" and route == "overview":
                 return self._send(200, kb.overview(root))
+            if method == "GET" and route == "kb-status":
+                return self._send(200, kb.kb_status(root))
+            if method == "GET" and route == "couverture":
+                return self._send(200, kb.coverage(root))
             if method == "GET" and route == "activity":
                 return self._send(200, kb.activity(root, 300))
+            if method == "GET" and route == "usage":
+                days = parse_qs(urlsplit(self.path).query, keep_blank_values=True).get("days", ["7"])[0]
+                return self._send(200, kb.usage(checkout, days))
             if method == "GET" and route == "concepts":
                 concepts = kb.walk(root)
                 if "type" in query:
@@ -104,18 +128,21 @@ def make_handler(root):
                     b = self._json_body()
                     fm = b.get("frontmatter")
                     if isinstance(fm, str):
-                        fm, _ = kb.parse(f"---\n{fm}\n---\n")
+                        try:
+                            fm = kb.load_frontmatter(fm)
+                        except kb.KbError as e:
+                            return self._send(400, {"error": str(e), "champ": "frontmatter"})
                     if not isinstance(fm, dict) or not isinstance(b.get("body"), str):
                         raise kb.KbError("le corps doit être { frontmatter, body }")
-                    concept = kb.update(root, rel, fm, b["body"], merge=False)
+                    concept = kb.update(root, rel, fm, b["body"], merge=False, baseline=b.get("baseline"))
                 else:
                     return self._error(405, "méthode non autorisée")
                 return self._send(200, concept) if concept else self._error(404, "introuvable")
             return self._error(404, "route inconnue")
 
         def _graph(self, what, query):
-            if not (graph.graph_dir(checkout) / "graph.json").exists():
-                raise graph.GraphError(f"graphe absent : lancer `graph.py index` dans {checkout}")
+            if not (graph.graph_dir(checkout) / "graph.json").exists() and not _in_git(checkout):
+                raise graph.GraphError("Graphe absent : il se construit à l'ouverture d'une session Claude Code dans le projet")
             g = graph.Index(graph.refresh(checkout))  # fraîcheur : comme pour la CLI
             if what == "trace":
                 return g.trace()
@@ -123,7 +150,7 @@ def make_handler(root):
                 return [g.nodes[i] for i in g.find((query.get("q") or [""])[0])]
             nid = (query.get("id") or [""])[0]
             if nid not in g.nodes:
-                raise graph.GraphError(f"élément introuvable : {nid}")
+                raise graph.GraphError("Élément introuvable")
             return {**g.detail(nid), "affected": g.affected(nid)}
 
         def _static(self, path):
