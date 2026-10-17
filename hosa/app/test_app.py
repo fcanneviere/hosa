@@ -915,13 +915,15 @@ class BacklogApiTest(unittest.TestCase):
         self.assertIsNone(self.ov()["security"])  # CA3
         self.put("qualite/audit.md", "---\ntype: Audit Qualité\ngenerated: { by: x, at: 2026-10-01T00:00:00Z }\n---\n## Verdict\nPASS-WITH-NOTES — 2 remarques\n")
         self.put("securite/audit-2026-10-02-app.md", "---\ntype: Audit\ngenerated: { by: x, at: 2026-10-02T00:00:00Z }\n---\n## Verdict\nFAIL\n")
-        self.put("sprints/s1.md", "---\ntype: Sprint\ntitle: Sprint 1\nstate: active\n---\n## Audit\nBloquant : 5\nBloquant : 2\n## Démo\n- T1 recherche — OK\n- T2 export — KO\n")
+        self.put("sprints/s1.md", "---\ntype: Sprint\ntitle: Sprint 1\nstate: active\n---\n## Audit\nBloquant : 5\nBloquant : 2\n## Démo\n- T1 recherche — OK\n- T2 export — KO\n"
+                 "## Mesures\n2026-10-20 — x\n- Coût : 4.00 $\n\n### Propositions\n- Aucune : rien n'a dépassé les seuils.\n")
         ov = self.ov()
         self.assertEqual((ov["quality"]["at"], ov["quality"]["verdict"]), ("2026-10-01T00:00:00Z", "PASS-WITH-NOTES"))  # CA1
         self.assertEqual((ov["security"]["at"], ov["security"]["verdict"]), ("2026-10-02T00:00:00Z", "FAIL"))  # CA2
         s1 = ov["sprints"][0]
         self.assertEqual(s1["audit"], {"bloquants": 2})  # CA4
         self.assertEqual(s1["demo"], [{"t": "T1", "ok": True}, {"t": "T2", "ok": False}])  # CA5
+        self.assertEqual(s1["mesures"], ["Coût : 4.00 $", "Aucune : rien n'a dépassé les seuils."])
 
     # sprints-points-velocite
     def test_points_velocity_and_remaining_sprints(self):

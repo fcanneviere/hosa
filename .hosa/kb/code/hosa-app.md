@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T07:14:44Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T12:17:54Z'}
 ---
 
 ## Fichiers
@@ -47,31 +47,56 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T07:14:44Z'}
 - `write_code_map` — `hosa/app/graph.py:332` — Écrit kb/code/ (concepts Module + index.md). Ne réécrit que ce qui a changé ; déprécie les modules disparus.
 - `extract` — `hosa/app/graph_extract.py:101` — Faits d'un fichier : {'lang', 'doc', 'defs': [...], 'calls': [...], 'imports': [...]}.
 - `lang_of` — `hosa/app/graph_extract.py:22`
-- `KbError` — `hosa/app/kb.py:30`
-- `activity` — `hosa/app/kb.py:246`
-- `append_log` — `hosa/app/kb.py:128` — Entrée OKF §9 dans le log.md du bundle : groupée par date, plus récente en tête.
-- `create` — `hosa/app/kb.py:171`
-- `dump_frontmatter` — `hosa/app/kb.py:57`
-- `get` — `hosa/app/kb.py:109`
-- `overview` — `hosa/app/kb.py:296`
-- `parse` — `hosa/app/kb.py:42` — Retourne (frontmatter, body). Lève KbError si le YAML est invalide.
-- `plan` — `hosa/app/kb.py:272` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
-- `render` — `hosa/app/kb.py:65`
-- `resolve_kb_root` — `hosa/app/kb.py:34`
-- `serialize` — `hosa/app/kb.py:61`
-- `trust_tier` — `hosa/app/kb.py:69`
-- `update` — `hosa/app/kb.py:144` — Met à jour un concept. merge=True fusionne le frontmatter (PATCH), sinon le remplace (édition complète).
-- `walk` — `hosa/app/kb.py:91`
-- `make_handler` — `hosa/app/server.py:17`
-- `make_handler.Handler` — `hosa/app/server.py:20`
-- `serve` — `hosa/app/server.py:153`
-- `AppTest` — `hosa/app/test_app.py:32`
-- `GraphApiTest` — `hosa/app/test_app.py:137` — KB servie à l'intérieur d'un dépôt git : le graphe est celui de la racine du dépôt.
+- `ConflictError` — `hosa/app/kb.py:43`
+- `GitError` — `hosa/app/kb.py:39`
+- `KbError` — `hosa/app/kb.py:35`
+- `UsageError` — `hosa/app/kb.py:47`
+- `UsageFailed` — `hosa/app/kb.py:51`
+- `activity` — `hosa/app/kb.py:358` — Entrées des `log.md` : jour, dossier, texte, acteur (humain|processus|agent), et `lien` vers le
+- `append_log` — `hosa/app/kb.py:221` — Entrée OKF §9 dans le log.md du bundle : groupée par date, plus récente en tête.
+- `board` — `hosa/app/kb.py:477` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
+- `coverage` — `hosa/app/kb.py:436` — Couverture des critères de chaque ticket, par chemin de concept.
+- `coverage_of` — `hosa/app/kb.py:428` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
+- `create` — `hosa/app/kb.py:278`
+- `dump_frontmatter` — `hosa/app/kb.py:88`
+- `get` — `hosa/app/kb.py:175`
+- `kb_status` — `hosa/app/kb.py:610` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
+- `load_frontmatter` — `hosa/app/kb.py:63` — Le frontmatter en dict, ou KbError avec une cause lisible : jamais le message de PyYAML, qui cite le contenu.
+- `overview` — `hosa/app/kb.py:532`
+- `parse` — `hosa/app/kb.py:76` — Retourne (frontmatter, body). Lève KbError « Le fichier est illisible : <cause> » si le YAML est invalide.
+- `plan` — `hosa/app/kb.py:445` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
+- `points` — `hosa/app/kb.py:469`
+- `recettes` — `hosa/app/kb.py:499` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
+- `render` — `hosa/app/kb.py:117`
+- `resolve_kb_root` — `hosa/app/kb.py:55`
+- `serialize` — `hosa/app/kb.py:92`
+- `trust_tier` — `hosa/app/kb.py:121`
+- `update` — `hosa/app/kb.py:237` — Met à jour un concept. merge=True fusionne le frontmatter (PATCH), sinon le remplace (édition complète).
+- `usage` — `hosa/app/kb.py:404` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
+- `usage.rows` — `hosa/app/kb.py:420`
+- `version` — `hosa/app/kb.py:204` — Empreinte du fichier sur disque : un PUT qui la renvoie n'écrase pas l'écriture d'un agent.
+- `walk` — `hosa/app/kb.py:150` — Concepts de la KB. Un fichier illisible est sauté (la liste n'échoue jamais) et,
+- `make_handler` — `hosa/app/server.py:26`
+- `make_handler.Handler` — `hosa/app/server.py:29`
+- `serve` — `hosa/app/server.py:180`
+- `AppTest` — `hosa/app/test_app.py:35`
+- `BacklogApiTest` — `hosa/app/test_app.py:902` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
+- `BoardTest` — `hosa/app/test_app.py:619` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
+- `CouvertureTest` — `hosa/app/test_app.py:558` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
+- `GraphApiTest` — `hosa/app/test_app.py:199` — KB servie à l'intérieur d'un dépôt git : le graphe est celui de la racine du dépôt.
+- `KbStatusTest` — `hosa/app/test_app.py:310`
+- `RecettesTest` — `hosa/app/test_app.py:763` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
+- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:889`
+- `UsageApiTest` — `hosa/app/test_app.py:432` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
+- `ValidationProvenanceTest` — `hosa/app/test_app.py:714` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
 - `Check` — `hosa/app/test_avancement.py:34`
-- `Done` — `hosa/app/test_avancement.py:56`
-- `Next` — `hosa/app/test_avancement.py:65`
+- `Coverage` — `hosa/app/test_avancement.py:72`
+- `Done` — `hosa/app/test_avancement.py:137`
+- `Next` — `hosa/app/test_avancement.py:146`
+- `cov` — `hosa/app/test_avancement.py:63` — `av.coverage`, or a clean test failure while it does not exist yet.
 - `kb` — `hosa/app/test_avancement.py:15`
 - `run` — `hosa/app/test_avancement.py:23`
+- `tk` — `hosa/app/test_avancement.py:69`
 - `GraphTest` — `hosa/app/test_graph.py:38`
 - `git` — `hosa/app/test_graph.py:34`
 - `ExtractTest` — `hosa/app/test_graph_extract.py:17`
@@ -81,6 +106,7 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T07:14:44Z'}
 - `PluginFrontmatter` — `hosa/app/test_plugin_frontmatter.py:11`
 - `KbRoot` — `hosa/app/test_run.py:13`
 - `Setup` — `hosa/app/test_run.py:24`
+- `SprintMeasures` — `hosa/app/test_usage_report.py:45`
 - `UsageOnce` — `hosa/app/test_usage_report.py:19`
 - `line` — `hosa/app/test_usage_report.py:14`
 

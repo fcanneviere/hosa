@@ -32,7 +32,7 @@ Suggère la prochaine étape logique
 <python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/usage_report.py" . [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--session <id>]
 ```
 
-It reads Claude Code's local transcripts and reports token use per agent, per skill and per model, plus the files read the most, priced per model in dollars; `## Résultat` gives the total, the tickets delivered (cost per ticket) and the `hosa-reviewer` verdicts. Show its tables, then name the one or two biggest consumers and what would reduce them. "Est-ce que Haiku tient ?" → run it before and after the switch (`--until 2026-10-16`, then `--since 2026-10-17`) and compare cost per ticket and FAIL verdicts. Read-only.
+It reads Claude Code's local transcripts and reports token use per agent, per skill and per model, plus the files read the most, priced per model in dollars; `## Résultat` gives the total, the tickets delivered (cost per ticket) and the `hosa-reviewer` verdicts. Show its tables, then name the one or two biggest consumers and what would reduce them. "Est-ce que Haiku tient ?" → run it before and after the switch (`--until 2026-10-16`, then `--since 2026-10-17`) and compare cost per ticket and FAIL verdicts. "Combien a coûté le sprint X ?" → `--sprint <slug>`: the sprint's `## Mesures` and its propositions (read-only without `--write`, which only `bilan-sprint` uses).
 
 ## Mode Hosa (`.hosa/kb/` exists)
 

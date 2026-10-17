@@ -47,6 +47,14 @@ Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle c
 
 Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Opus ou Sonnet selon le plan d'avancement. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
 
+Deux barrières de budget (hook `budget.js`) :
+- Quand une étape s'est terminée dans une session dont le contexte dépasse 60 000 tokens, le skill de l'étape suivante est refusé une fois. Claude s'arrête et te propose `/clear`, puis « reprends ». Si tu préfères rester, il relance le skill, qui passe cette fois. Le seuil se règle avec `HOSA_CONTEXTE_MAX` (en tokens).
+- Un agent Hosa est arrêté au-delà de 50 appels d'outils pour `hosa-ux-designer`, et de 150 pour les autres. Il rend son rapport avec `## Reprise`, et un nouvel agent reprend à partir de là.
+
+Pour les couper : `HOSA_BUDGET=0`.
+
+À chaque bilan de sprint, `bilan-sprint` écrit `## Mesures` dans le fichier du sprint : coût par ticket, revues, passages du débogueur, contexte maximal, passages d'agent les plus longs, comparaison avec les sprints précédents. Il ajoute des propositions quand un seuil est dépassé, et c'est toi qui décides de les appliquer. Elles sont visibles aussi dans le tableau de bord, sur la page du sprint.
+
 Les agents d'exécution (`hosa-developer`, `hosa-implementer`, `hosa-tester`, `hosa-qa-lead`, `hosa-key-user`, `hosa-git`, `hosa-documentation`, `hosa-infra`, `hosa-dba`) tournent sur Haiku depuis le 17/10/2026, environ 20 fois moins cher que Sonnet. Pour mesurer si la qualité tient : demande « consommation par agent » avant et après cette date (coût par ticket livré, verdicts de `hosa-reviewer`). Pour revenir sur Sonnet sans attendre une version : `HOSA_HAIKU=0`.
 
 ### La base de connaissances (KB)

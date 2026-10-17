@@ -180,7 +180,7 @@ Every file you read is paid for again on every later turn:
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 - **Screenshots:** each image opened costs about 1.5k tokens on every later turn. Read `shoot.mjs`'s verdict line and `report.json` first. Open an image only for the visual check, once per screen and size. After a fix, open only the new shot of the screen you fixed.
-- **Budget:** about 40 tool calls per dispatch. Past it, stop at a clean point and return `## Reprise`: what is done, what is left, the files to read. A fresh dispatch costs less than a long context.
+- **Budget:** about 40 tool calls per dispatch. Past it, stop at a clean point and return `## Reprise`: what is done, what is left, the files to read. A fresh dispatch costs less than a long context. At 50, Hosa's hook refuses every further tool call.
 
 ## Report Style
 

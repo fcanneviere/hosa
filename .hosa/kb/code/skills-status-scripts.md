@@ -4,7 +4,7 @@ title: skills/status/scripts
 description: '!/usr/bin/env python3'
 resource: skills/status/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T12:13:03Z'}
 ---
 
 ## Fichiers
@@ -16,29 +16,42 @@ generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
 
 ## Symboles publics
 
-- `check` — `skills/status/scripts/avancement.py:139` — What the KB lacks to prove a sprint stage done. `hooks/gate.js` runs
-- `field` — `skills/status/scripts/avancement.py:134`
-- `first_open` — `skills/status/scripts/avancement.py:204`
+- `check` — `skills/status/scripts/avancement.py:158` — What the KB lacks to prove a sprint stage done. `hooks/gate.js` runs
+- `coverage` — `skills/status/scripts/avancement.py:145` — Criteria of a ticket proved by its technical plan (`[CAn]`) or a recette (`CAn — Oui`).
+- `criteria` — `skills/status/scripts/avancement.py:140`
+- `field` — `skills/status/scripts/avancement.py:135`
+- `first_open` — `skills/status/scripts/avancement.py:225`
 - `load` — `skills/status/scripts/avancement.py:49` — {section title: [[stage, status, updated, detail], …]}, resume point.
-- `locate` — `skills/status/scripts/avancement.py:95`
-- `main` — `skills/status/scripts/avancement.py:232`
-- `next_open` — `skills/status/scripts/avancement.py:214`
+- `locate` — `skills/status/scripts/avancement.py:96`
+- `main` — `skills/status/scripts/avancement.py:253`
+- `next_open` — `skills/status/scripts/avancement.py:235`
 - `now` — `skills/status/scripts/avancement.py:45`
-- `read` — `skills/status/scripts/avancement.py:111`
-- `save` — `skills/status/scripts/avancement.py:82`
-- `section` — `skills/status/scripts/avancement.py:118` — Body of the last `## <heading>` (up to the next level-2 heading).
-- `show` — `skills/status/scripts/avancement.py:222`
-- `add` — `skills/status/scripts/usage_report.py:53`
-- `blocks` — `skills/status/scripts/usage_report.py:48`
-- `count_reads` — `skills/status/scripts/usage_report.py:143`
-- `fmt` — `skills/status/scripts/usage_report.py:153`
-- `lines` — `skills/status/scripts/usage_report.py:39`
-- `main` — `skills/status/scripts/usage_report.py:166`
-- `meta_type` — `skills/status/scripts/usage_report.py:135`
-- `project_dir` — `skills/status/scripts/usage_report.py:34`
-- `scan` — `skills/status/scripts/usage_report.py:63`
-- `table` — `skills/status/scripts/usage_report.py:157`
-- `weight` — `skills/status/scripts/usage_report.py:30`
+- `read` — `skills/status/scripts/avancement.py:112`
+- `save` — `skills/status/scripts/avancement.py:83`
+- `section` — `skills/status/scripts/avancement.py:119` — Body of the last `## <heading>` (up to the next level-2 heading).
+- `show` — `skills/status/scripts/avancement.py:243`
+- `add` — `skills/status/scripts/usage_report.py:102`
+- `blocks` — `skills/status/scripts/usage_report.py:85`
+- `context` — `skills/status/scripts/usage_report.py:48`
+- `count_reads` — `skills/status/scripts/usage_report.py:306`
+- `delivered` — `skills/status/scripts/usage_report.py:211` — Tickets with a commit carrying `Hosa-Ticket: <slug>` (the `develop` gate) in the period.
+- `earlier_costs` — `skills/status/scripts/usage_report.py:242` — `Coût par ticket` of the other sprints' `## Mesures`.
+- `fmt` — `skills/status/scripts/usage_report.py:316`
+- `images` — `skills/status/scripts/usage_report.py:52`
+- `lines` — `skills/status/scripts/usage_report.py:76`
+- `main` — `skills/status/scripts/usage_report.py:329`
+- `measures` — `skills/status/scripts/usage_report.py:252` — `## Mesures` of a sprint: the figures, then what crossed a threshold, as proposals.
+- `meta_type` — `skills/status/scripts/usage_report.py:298`
+- `outside` — `skills/status/scripts/usage_report.py:66`
+- `project_dir` — `skills/status/scripts/usage_report.py:71`
+- `scan` — `skills/status/scripts/usage_report.py:113`
+- `scan.measure` — `skills/status/scripts/usage_report.py:126`
+- `sprint_file` — `skills/status/scripts/usage_report.py:223`
+- `sprint_period` — `skills/status/scripts/usage_report.py:227` — From the sprint's creation day (`generated.at`) to its merge commit's day, and its tickets.
+- `table` — `skills/status/scripts/usage_report.py:320`
+- `usage_once` — `skills/status/scripts/usage_report.py:90` — The entry's usage, or {} if its message was already counted: Claude Code
+- `usd` — `skills/status/scripts/usage_report.py:57`
+- `write_section` — `skills/status/scripts/usage_report.py:289` — Replace the file's `## Mesures` section (heading to the next level-2 heading), or append it.
 
 ## Tickets et exigences
 

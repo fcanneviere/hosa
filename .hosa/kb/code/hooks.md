@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T07:25:29Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T12:15:34Z'}
 ---
 
 ## Fichiers
@@ -13,6 +13,8 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T07:25:29Z'}
 |---|---|
 | `hooks/avancement.js` | Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md` |
 | `hooks/avancement.test.js` |  |
+| `hooks/budget.js` |  |
+| `hooks/budget.test.js` |  |
 | `hooks/compress-output.js` |  |
 | `hooks/compress-output.test.js` |  |
 | `hooks/gate.js` |  |
@@ -34,6 +36,22 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T07:25:29Z'}
 - `resumeContext` — `hooks/avancement.js:29`
 - `g` — `hooks/avancement.test.js:50`
 - `kb` — `hooks/avancement.test.js:9`
+- `agentGate` — `hooks/budget.js:81`
+- `closedStages` — `hooks/budget.js:33` — Stages done or ruled out in the managed project's plan (a worktree's copy is stale: findKbRoot skips it).
+- `contextTokens` — `hooks/budget.js:43` — Context of the main session's last call, from the tail of its transcript.
+- `deny` — `hooks/budget.js:29`
+- `hash` — `hooks/budget.js:25`
+- `load` — `hooks/budget.js:27`
+- `processPayload` — `hooks/budget.js:94`
+- `save` — `hooks/budget.js:28`
+- `stageGate` — `hooks/budget.js:64`
+- `stateDir` — `hooks/budget.js:24`
+- `stateFile` — `hooks/budget.js:26`
+- `call` — `hooks/budget.test.js:41`
+- `denied` — `hooks/budget.test.js:10`
+- `setContext` — `hooks/budget.test.js:17`
+- `setPlan` — `hooks/budget.test.js:14`
+- `skill` — `hooks/budget.test.js:19`
 - `clip` — `hooks/compress-output.js:23`
 - `dedup` — `hooks/compress-output.js:66` — Same-session only: a fresh session's context doesn't hold the earlier copy.
 - `elide` — `hooks/compress-output.js:100`
@@ -47,17 +65,18 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T07:25:29Z'}
 - `call` — `hooks/compress-output.test.js:41`
 - `commitGate` — `hooks/gate.js:67`
 - `gitCalls` — `hooks/gate.js:37` — Each git call: its directory (cd and -C applied), subcommand and arguments.
-- `mergeGate` — `hooks/gate.js:86`
+- `mergeGate` — `hooks/gate.js:91`
 - `native` — `hooks/gate.js:19`
-- `processPayload` — `hooks/gate.js:102`
+- `processPayload` — `hooks/gate.js:107`
 - `read` — `hooks/gate.js:54`
 - `section` — `hooks/gate.js:57` — Body of the last `## <heading>` section (up to the next level-2 heading).
 - `segments` — `hooks/gate.js:22` — Shell words grouped by command (split on && || ; | newline); quotes kept together.
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
 - `denied` — `hooks/gate.test.js:19`
+- `lot` — `hooks/gate.test.js:45`
 - `project` — `hooks/gate.test.js:9`
-- `sprint` — `hooks/gate.test.js:53`
+- `sprint` — `hooks/gate.test.js:62`
 - `ticket` — `hooks/gate.test.js:21`
 - `wt` — `hooks/gate.test.js:33`
 - `broadIdentGrep` — `hooks/graph.js:68`
@@ -86,7 +105,8 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T07:25:29Z'}
 - `showStatus` — `hooks/register.mjs:51`
 - `project` — `hooks/register.test.ts:10` — Plan text per call, so a test can close a stage between turns.
 - `row` — `hooks/register.test.ts:3`
-- `step` — `hooks/register.test.ts:23`
+- `spawn` — `hooks/register.test.ts:69`
+- `step` — `hooks/register.test.ts:24`
 - `processPayload` — `hooks/subagent-start.js:11`
 
 ## Tickets et exigences

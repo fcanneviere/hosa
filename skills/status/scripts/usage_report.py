@@ -3,9 +3,13 @@
 token use per agent, per skill and per model, plus the files read the most.
 
   usage_report.py [project-dir] [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--session ID] [--top N]
+  usage_report.py [project-dir] --sprint SLUG [--write]
 
 To measure a change (a model switch), run it on the period before and after:
 `## Résultat` gives the cost, the tickets delivered and the review verdicts.
+`--sprint` measures one sprint (from its creation to its merge) against the
+thresholds below and the earlier sprints, and proposes adjustments; `--write`
+records it as `## Mesures` in `kb/sprints/<slug>.md` (`bilan-sprint`).
 
 project-dir: the managed project's root (default: current directory). Its
 transcripts live in ~/.claude/projects/<path with / replaced by ->/ (main
@@ -24,6 +28,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from datetime import date
 from pathlib import Path
 
 FIELDS = ("calls", "input", "cache_write", "cache_read", "output", "thinking", "usd")
@@ -32,6 +37,21 @@ FIELDS = ("calls", "input", "cache_write", "cache_read", "output", "thinking", "
 PRICES = [("fable", 10, 50, 0.25), ("opus-5-5", 4, 20, 0.20), ("opus", 5, 25, 0.50),
           ("sonnet-5", 2, 10, 0.20), ("sonnet", 3, 15, 0.30), ("haiku-5-5", 0.10, 0.50, 0.01), ("haiku", 1, 5, 0.10)]
 VERDICT = re.compile(r"\b(PASS-WITH-NOTES|PASS|FAIL)\b")
+# Thresholds of `--sprint`. ponytail: set from the pilot and hosa-ui (2026-10), recalibrate on real sprints.
+REWRITE = 50_000        # cache tokens written by one call: the context was rewritten whole
+MAIN_CTX_MAX = 150_000  # main session context: one session per stage wasn't kept
+CAPS = {"hosa-ux-designer": 50}  # tool calls per agent pass — same values as hooks/budget.js
+CAP = 150
+COST_RISE = 1.5         # cost per ticket vs the median of the earlier sprints
+
+
+def context(usage: dict) -> int:
+    return sum(usage.get(k, 0) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+
+
+def images(entry: dict) -> int:
+    return sum(1 for b in blocks(entry) if b.get("type") == "tool_result" and isinstance(b.get("content"), list)
+               for c in b["content"] if isinstance(c, dict) and c.get("type") == "image")
 
 
 def usd(model: str, usage: dict) -> float:
@@ -100,6 +120,14 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
     sidechain: list[tuple[Path, list]] = []
     seen: set[str] = set()                              # message ids already counted
     verdicts: dict = defaultdict(int)                   # hosa-reviewer final verdict -> runs
+    # main session's largest context and screenshots; whole-context rewrites; each agent pass
+    stats = {"main_ctx": 0, "main_images": 0, "rewrites": [0, 0], "passes": {}}
+
+    def measure(usage: dict) -> int:
+        if (usage.get("cache_creation_input_tokens", 0) or 0) >= REWRITE:
+            stats["rewrites"][0] += 1
+            stats["rewrites"][1] += usage["cache_creation_input_tokens"]
+        return context(usage)
 
     files = sorted(base.rglob("*.jsonl")) if base.is_dir() else []
     for path in files:
@@ -126,6 +154,7 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
                         if b.get("type") == "tool_result" and b.get("tool_use_id") in agent_types:
                             agent_of[str(result["agentId"])] = agent_types[b["tool_use_id"]]
                 count_reads(e, pending_read, reads)
+                stats["main_images"] += images(e)
             elif e.get("type") == "assistant":
                 actor = f"skill {skill}" if skill else "session principale"
                 usage = usage_once(e, seen)
@@ -133,6 +162,7 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
                     model = (e.get("message") or {}).get("model", "?")
                     add(by_actor, actor, usage, model)
                     add(by_model, model, usage, model)
+                    stats["main_ctx"] = max(stats["main_ctx"], measure(usage))
                 for b in blocks(e):
                     if b.get("type") != "tool_use":
                         continue
@@ -150,6 +180,7 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
         kind = agent_of.get(agent_id) or meta_type(path) or "agent (type inconnu)"
         actor = f"agent {kind}"
         last_text = None
+        run = stats["passes"].setdefault(agent_id, {"kind": kind, "tools": 0, "ctx": 0, "images": 0})
         for e in entries:
             if outside(e, since, until):
                 continue
@@ -159,17 +190,22 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
                     model = (e.get("message") or {}).get("model", "?")
                     add(by_actor, actor, usage, model)
                     add(by_model, model, usage, model)
+                    run["ctx"] = max(run["ctx"], measure(usage))
                 for b in blocks(e):
                     if b.get("type") == "text":
                         last_text = b.get("text", "")
+                    if b.get("type") == "tool_use":
+                        run["tools"] += 1
                     if b.get("type") == "tool_use" and b.get("name") == "Read" and (b.get("input") or {}).get("file_path"):
                         pending_read[b["id"]] = (actor, b["input"]["file_path"])
             elif e.get("type") == "user":
                 count_reads(e, pending_read, reads)
+                run["images"] += images(e)
         if kind.endswith("hosa-reviewer") and last_text is not None:
             m = VERDICT.search(last_text)
             verdicts[m.group(1) if m else "sans verdict"] += 1
-    return by_actor, by_model, reads, verdicts
+    stats["passes"] = {k: r for k, r in stats["passes"].items() if r["tools"] or r["ctx"]}  # passes outside the period
+    return by_actor, by_model, reads, verdicts, stats
 
 
 def delivered(project: Path, since: str | None, until: str | None) -> set[str]:
@@ -182,6 +218,81 @@ def delivered(project: Path, since: str | None, until: str | None) -> set[str]:
     except (OSError, subprocess.SubprocessError):
         return set()
     return {line.strip() for line in (out or "").splitlines() if line.strip()}
+
+
+def sprint_file(project: Path, slug: str) -> Path:
+    return project / ".hosa" / "kb" / "sprints" / f"{slug}.md"
+
+
+def sprint_period(project: Path, text: str) -> tuple[str | None, str | None, list[str]]:
+    """From the sprint's creation day (`generated.at`) to its merge commit's day, and its tickets."""
+    tickets = re.findall(r"\(\.\./tickets/([^)]+)\.md\)", text.split("\n## Tickets", 1)[-1].split("\n## ", 1)[0])
+    born = re.search(r"^generated:.*?\bat:\s*(\d{4}-\d{2}-\d{2})", text, re.M)
+    merge = re.search(r"^merge_commit:\s*(\S+)", text, re.M)
+    until = None
+    if merge:
+        try:
+            until = subprocess.run(["git", "-C", str(project), "show", "-s", "--format=%cs", merge.group(1)],
+                                   capture_output=True, text=True, timeout=10).stdout.strip() or None
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return born and born.group(1), until, tickets
+
+
+def earlier_costs(project: Path, slug: str) -> list[float]:
+    """`Coût par ticket` of the other sprints' `## Mesures`."""
+    out = []
+    for p in sorted((project / ".hosa" / "kb" / "sprints").glob("*.md")):
+        if p.stem != slug:
+            m = re.findall(r"^- Coût :.*Coût par ticket : ([\d.]+) \$", p.read_text(encoding="utf-8", errors="replace"), re.M)
+            out += [float(m[-1])] if m else []
+    return out
+
+
+def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier) -> list[str]:
+    """`## Mesures` of a sprint: the figures, then what crossed a threshold, as proposals."""
+    total = sum(r["usd"] for r in by_model.values())
+    done = len(tickets)
+    per = total / done if done else None
+    passes = sorted(stats["passes"].values(), key=lambda r: -r["tools"])
+    debugger = sum(1 for r in passes if r["kind"].endswith("hosa-debugger"))
+    reviews = sum(verdicts.values())
+    fails = verdicts.get("FAIL", 0)
+    base = sorted(earlier)[len(earlier) // 2] if earlier else None
+    out = ["## Mesures", f"{date.today().isoformat()} — `usage_report.py --sprint {slug}`, prix catalogue (estimation)",
+           f"- Période : {since or '?'} → {until or 'en cours'}",
+           f"- Coût : {total:.2f} $ — tickets livrés : {done}/{len(sprint_tickets)}" + (f" — Coût par ticket : {per:.2f} $" if per else ""),
+           f"- Revues : {', '.join(f'{k} {n}' for k, n in sorted(verdicts.items())) or 'aucune'} — passages hosa-debugger : {debugger}",
+           f"- Session principale : contexte max {fmt(stats['main_ctx'])} — captures ouvertes : {stats['main_images']}",
+           f"- Réécritures complètes du cache (≥ {fmt(REWRITE)}) : {stats['rewrites'][0]} ({fmt(stats['rewrites'][1])})",
+           "- Passages d'agent les plus longs : " + (", ".join(f"{r['kind'].split(':')[-1]} {r['tools']} appels ({fmt(r['ctx'])})" for r in passes[:3]) or "aucun"),
+           f"- Sprints précédents : " + (f"coût par ticket médian {base:.2f} $ ({len(earlier)} sprint(s))" if base else "aucune mesure"),
+           "", "### Propositions"]
+    props = []
+    if reviews >= 3 and fails / reviews >= 1 / 3 and any("haiku" in m for m in by_model):
+        props.append(f"{fails}/{reviews} revues en échec avec des agents sur Haiku : essayer `HOSA_HAIKU=0` au prochain sprint et comparer.")
+    if per and base and per > COST_RISE * base:
+        props.append(f"Coût par ticket en hausse : {per:.2f} $ contre {base:.2f} $ — regarder les passages les plus longs ci-dessus.")
+    if done and debugger * 2 >= done:
+        props.append(f"{debugger} passages hosa-debugger pour {done} tickets : les plans du tech-lead ou le développeur ne suffisent pas.")
+    if stats["main_ctx"] > MAIN_CTX_MAX:
+        props.append(f"Session principale montée à {fmt(stats['main_ctx'])} : une session par étape (`/clear`, puis « reprends »).")
+    if stats["main_images"]:
+        props.append(f"{stats['main_images']} capture(s) ouverte(s) dans la session principale : donner leur chemin, ne pas les ouvrir.")
+    for r in passes:
+        cap = CAPS.get(r["kind"].split(":")[-1], CAP)
+        if r["tools"] > cap:
+            props.append(f"{r['kind'].split(':')[-1]} : un passage de {r['tools']} appels (plafond {cap}) — découper son travail en plusieurs passages.")
+    return out + ([f"- {p}" for p in props] or ["- Aucune : rien n'a dépassé les seuils."])
+
+
+def write_section(path: Path, lines: list[str]) -> None:
+    """Replace the file's `## Mesures` section (heading to the next level-2 heading), or append it."""
+    text = path.read_text(encoding="utf-8")
+    block = "\n".join(lines) + "\n"
+    m = re.search(r"^## Mesures\n.*?(?=^## |\Z)", text, re.M | re.S)
+    text = text[:m.start()] + block + ("\n" if m.end() < len(text) else "") + text[m.end():] if m else text.rstrip("\n") + "\n\n" + block
+    path.write_text(text, encoding="utf-8")
 
 
 def meta_type(path: Path) -> str | None:
@@ -222,12 +333,27 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--until")
     ap.add_argument("--session")
     ap.add_argument("--top", type=int, default=10)
+    ap.add_argument("--sprint")
+    ap.add_argument("--write", action="store_true")
     a = ap.parse_args(argv)
     base = project_dir(a.project)
     if not base.is_dir():
         print(f"error: pas d'historique Claude Code pour {a.project} ({base})", file=sys.stderr)
         return 2
-    by_actor, by_model, reads, verdicts = scan(base, a.since, a.session, a.until)
+    if a.sprint:
+        path = sprint_file(a.project, a.sprint)
+        if not path.is_file():
+            print(f"error: pas de sprint {a.sprint} ({path})", file=sys.stderr)
+            return 2
+        since, until, sprint_tickets = sprint_period(a.project, path.read_text(encoding="utf-8"))
+        _, by_model, _, verdicts, stats = scan(base, since, None, until)
+        tickets = delivered(a.project, since, until) & set(sprint_tickets)
+        out = measures(a.sprint, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier_costs(a.project, a.sprint))
+        if a.write:
+            write_section(path, out)
+        print("\n".join(out))
+        return 0
+    by_actor, by_model, reads, verdicts, _ = scan(base, a.since, a.session, a.until)
     if not by_actor:
         print("Aucun échange trouvé pour ce filtre.")
         return 0

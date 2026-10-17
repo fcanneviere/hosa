@@ -326,7 +326,8 @@ function vSprint(slug) {
     table(['Ticket', 'Statut'], s.tickets.map((t) => h('tr', {}, h('td', {}, h('a', { href: routeOf(t.path) }, t.title)), h('td', {}, ticketSt(t))))),
     card('Audit et démo', h('p', {}, 'Bloquants : ', b == null ? st('Jamais audité', 'a', '○') : b ? st(plural(b, 'bloquant', 'bloquants'), 'b', '✕') : st('aucun bloquant', 'f', '✓')),
       h('p', { class: 'muted' }, 'Démo : les tests T1, T2… que vous faites vous-même avant de fusionner un sprint.'),
-      s.demo.length ? h('ul', {}, s.demo.map((d) => h('li', {}, h('span', { class: 'mono' }, d.t), ' ', d.ok ? st('OK', 'f', '✓') : st('KO', 'b', '✕')))) : none('Pas encore de démo.')));
+      s.demo.length ? h('ul', {}, s.demo.map((d) => h('li', {}, h('span', { class: 'mono' }, d.t), ' ', d.ok ? st('OK', 'f', '✓') : st('KO', 'b', '✕')))) : none('Pas encore de démo.')),
+    card('Mesures', (s.mesures || []).length ? h('ul', {}, s.mesures.map((m) => h('li', {}, m))) : none('Pas encore mesuré : le bilan du sprint écrit ces chiffres.')));
 }
 const isStable = (c) => c.fm.status === 'stable';
 const statusSt = (c) => isStable(c) ? st('finalisée', 'f', '✓') : st('brouillon', 'a', '○');

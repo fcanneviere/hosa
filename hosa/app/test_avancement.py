@@ -49,6 +49,13 @@ class Check(unittest.TestCase):
                 "test/t1-les-parents.md": "### Critères\n- CA2 — Oui — capture\n## Verdict\nAccepté\n"})
         self.assertEqual(av.check(k, "validation", "s1"), [])
 
+    def test_qa_needs_each_required_recette(self):
+        plan = "- [CA1] x\n- [CA2] y\n## Résultats techniques\n2/2\n## Recette requise\n- [Karim](../personnas/karim.md)\n"
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})
+        self.assertEqual(av.check(k, "qa", "s1"), ["t1 : recette de karim absente (`kb/test/t1-karim.md`, `qa`)"])
+        (k / "test" / "t1-karim.md").write_text("## Verdict\nAccepté\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "qa", "s1"), [])
+
     def test_non_sprint_stages_have_no_proof_to_check(self):
         self.assertEqual(av.check(kb({}), "stack", None), [])
 

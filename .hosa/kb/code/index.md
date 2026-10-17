@@ -3,6 +3,7 @@
 * [.](racine.md) - !/usr/bin/env python3
 * [hooks](hooks.md) - Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 * [hosa/app](hosa-app.md) - Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.
+* [hosa/app/fixtures](hosa-app-fixtures.md) - Jeu de données de test du sprint 1 : une KB de référence, un dépôt git, des transcripts.
 * [hosa/app/public](hosa-app-public.md) - use strict
 * [skills/backlog/scripts](skills-backlog-scripts.md) - !/usr/bin/env python3
 * [skills/infra/scripts](skills-infra-scripts.md) - !/usr/bin/env python3

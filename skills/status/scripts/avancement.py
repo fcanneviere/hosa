@@ -188,6 +188,10 @@ def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
                 gaps.append(f"{t} : dernière `## Revue` {verdicts[-1] if verdicts else 'absente'} (`develop`)")
         if stage in ("qa", "validation") and section(plan, "Résultats techniques") is None:
             gaps.append(f"{t} : pas de `## Résultats techniques` (`qa`)")
+        if stage in ("qa", "validation"):
+            for p in re.findall(r"\(\.\./personnas/([^)]+)\.md\)", section(plan, "Recette requise") or ""):
+                if f"{t}-{p}.md" not in tests:
+                    gaps.append(f"{t} : recette de {p} absente (`kb/test/{t}-{p}.md`, `qa`)")
         if stage == "validation":
             if field(text, "state") != "done" or not field(text, "verified"):
                 gaps.append(f"{t} : pas `done` et `verified` (`validation`)")

@@ -42,7 +42,7 @@ Manual: `/qa <slug-sprint> [<slug-ticket>]` — a ticket given re-runs Steps 3-5
 
 ## Step 1: Read the Sprint and Check Preconditions
 
-Read `kb/sprints/<slug>.md` for its `## Tickets` list. For each ticket, check that `.hosa/kb/test/<slug-ticket>-technique.md` exists. If any ticket is missing its plan, say so and propose running `qa-plan` first rather than executing tests against a plan that doesn't exist — stop, don't partially execute.
+`avancement.py … start qa --sprint <slug>`: refused → it names the stage not done (`qa-plan`, `develop`…) — propose it and stop, don't partially execute. Then read `kb/sprints/<slug>.md` for its `## Tickets` list.
 
 Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. 
 

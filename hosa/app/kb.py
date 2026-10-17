@@ -566,6 +566,8 @@ def overview(root):
             "engages": engages, "faits": faits, "restants": engages - faits,
             "audit": {"bloquants": int(bloquants[-1]) if bloquants else None},
             "demo": [{"t": k, "ok": v == "OK"} for k, v in demo.items()],
+            # `## Mesures` de `usage_report.py --sprint --write` : ses lignes « - … », propositions comprises
+            "mesures": re.findall(r"^- (.+)$", av.section(s["body"], "Mesures") or "", re.M),
             "tickets": [{"path": t["path"], "title": t["frontmatter"].get("title") or t["path"],
                          "state": t["frontmatter"].get("state", "todo")} for t in mine],
         })

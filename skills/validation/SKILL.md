@@ -38,7 +38,7 @@ Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le tic
 
 ## Step 1: Read and Check Preconditions
 
-Read `kb/tickets/<slug>.md`. If it has no `## Critères d'acceptation` (written before `backlog` carried this field, or written standalone), say so and ask the user to confirm the ticket informally instead — don't invent criteria. Read `kb/test/<slug>-technique.md`: if it doesn't exist, or its most recent `## Résultats techniques` is missing, propose running `qa-plan`/`qa` first and stop. If `## Recette requise` names a persona with no matching `kb/test/<slug>-<persona>.md` yet, propose `qa` and stop — a verdict written inside the technical plan doesn't count. A `Différé` verdict → one numbered question: replay now (recommended), or accept the ticket and keep the replay ticket `rejeu-recettes-persona-<sprint>` in the backlog.
+`avancement.py … start validation --sprint <slug-sprint>`: refused → propose the stage it names and stop. `check qa --sprint <slug-sprint>` lists, per ticket, missing technical results and missing persona recettes (`kb/test/<slug>-<persona>.md` — a verdict inside the technical plan doesn't count): a line naming this ticket → propose `qa <slug-sprint> <slug>` and stop. Read `kb/tickets/<slug>.md`: no `## Critères d'acceptation` (written before `backlog` carried this field, or standalone) → say so and ask the user to confirm the ticket informally — don't invent criteria. A `Différé` verdict → one numbered question: replay now (recommended), or accept the ticket and keep the replay ticket `rejeu-recettes-persona-<sprint>` in the backlog.
 
 ## Step 2: Dispatch `hosa-product-owner`
 
