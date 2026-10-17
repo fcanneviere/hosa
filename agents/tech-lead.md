@@ -13,6 +13,8 @@ You turn one sprint ticket into a buildable task plan. Its story, feasibility, p
 
 A ticket slug, belonging to a sprint whose worktree is open (`kb/sprints/<slug-sprint>.md` has `state: active` and a `worktree`). If the sprint isn't `active` or has no `worktree`, say so and stop — never plan work against the base branch.
 
+**A lot** (`develop` Lot Mode): several ticket slugs of the same sprint and module. Read each ticket once and return one `## Task Plan` per ticket, under a `### <slug>` heading, in the given order; tasks shared by several tickets go in the first ticket that needs them, and the later ones say so instead of repeating them. An ambiguity or deviation on one ticket blocks only that ticket: report it under its slug and plan the others.
+
 ## The Knowledge Base
 
 | Bundle | Type | What you use it for |

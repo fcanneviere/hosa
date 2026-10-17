@@ -37,7 +37,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `qa-plan` | Add the tests to a sprint before it starts — one `Test Plan` per ticket in `kb/test/` (`hosa-qa-lead`), grounded in the senior dev's recorded stack decisions, with the personas who must validate it, plus the test dataset and its reset command (`hosa-data-engineer`); chained by `sprint`, required by `git` Mode 1 |
 | `qa` | Run a sprint's QA — `hosa-tester` runs each ticket's tests on its own (finds its inputs, fixes the test side, records results, cleans up), `hosa-key-user` runs each required recette, failures routed to the right owner |
 | `git` | Open a dedicated branch/worktree for a sprint when it starts, or merge it locally back into the managed project once every ticket has a passing QA record — dispatches `hosa-git`. Companion transversal skill, with dedicated hand-off points in `sprint` (start) and `validation` (finish) |
-| `develop` | Implement a single sprint ticket — tests first (`hosa-tester`), short sequential tasks (`hosa-tech-lead`, `hosa-developer`), full suite and lint, code review (`hosa-reviewer`), one commit; correction mode fixes a defect found by QA, the demo or the review inside the sprint |
+| `develop` | Implement sprint tickets, by lot of small tickets of one module by default (one plan, one test pass, one review, one session per lot), or one ticket alone — tests first (`hosa-tester`), short sequential tasks (`hosa-tech-lead`, `hosa-developer`), full suite and lint, code review (`hosa-reviewer`), one commit; correction mode fixes a defect found by QA, the demo or the review inside the sprint |
 | `validation` | Close a ticket's cycle — `hosa-product-owner` checks it against its acceptance criteria, technical results (security and NFR cases included) and recettes; once the whole sprint is accepted, runs the user demo (`hosa-qa-lead` Mode 3) required before the merge |
 | `bilan-sprint` | Sprint Review and retro once a sprint merges — dispatches `hosa-product-owner` to judge whether the objective was met, list delivered/deferred tickets, surface recurring friction, and write follow-up tickets or process Design Rules. Follow-on to `git` Mode 2 |
 | `bdd` | Any database operation — migrations (apply, roll back, conflicts), an environment's database, the test database and its reset, backup/restore, a slow query — dispatches `hosa-dba`; also the relay for `## Base de données nécessaire` |
@@ -86,7 +86,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Exécute la QA du sprint", "Teste le sprint", "Fais la recette du sprint" | `qa` |
 | "Démarre le sprint X", "Commence le sprint X" | `git` (Mode 1) |
 | "Termine le sprint X", "Fusionne le sprint X", "Merge le sprint X" | `git` (Mode 2) |
-| "Développe le ticket X", "Implémente le ticket X" | `develop` |
+| "Développe le ticket X", "Implémente le ticket X", "Développe le sprint", "Développe le lot" | `develop` |
 | "Valide le ticket X", "Accepte le ticket X" | `validation` |
 | "Fais le bilan du sprint X", "Rétro du sprint X" | `bilan-sprint` |
 | "Audite la qualité du code", "Vérifie les bonnes pratiques" | `qualite` |

@@ -1,6 +1,6 @@
 ---
 name: develop
-description: "Use to implement one sprint ticket in the sprint worktree: tests first (`hosa-tester`), tasks (`hosa-tech-lead`), code (`hosa-developer`), full checks, code review (`hosa-reviewer`), one commit; also fixes a sprint ticket's defect (correction). Triggers: \"développe le ticket X\", \"implémente le ticket X\"."
+description: "Use to implement sprint tickets in the sprint worktree: tests first (`hosa-tester`), tasks (`hosa-tech-lead`), code (`hosa-developer`), full checks, code review (`hosa-reviewer`), commit — by lot of small same-module tickets (default) or one ticket; also fixes a sprint ticket's defect (correction). Triggers: \"développe le ticket X\", \"développe le sprint\", \"développe le lot\"."
 ---
 
 # Develop
@@ -43,7 +43,7 @@ Suite : ticket suivant du sprint, ou `qa` quand tous sont faits
 
 ## Trigger
 
-Manual: `/develop <slug-ticket>`. Auto: "développe le ticket X", "implémente le ticket X" ; proposé en Suite de `git` Mode 1 et de `sprint`.
+Manual: `/develop <slug-ticket>`, `/develop lot` (next lot of the sprint) or `/develop lot <slug> <slug>…`. Auto: "développe le ticket X", "implémente le ticket X" ; proposé en Suite de `git` Mode 1 et de `sprint`.
 
 ---
 
@@ -101,6 +101,27 @@ Un seul commit pour tout le ticket. Aucun `Co-Authored-By`, aucun auteur additio
 
 Le trailer `Hosa-Ticket:` relie le ticket aux fichiers du commit dans le graphe du projet (relation `touches`) — ne jamais l'omettre.
 
+## Lot Mode
+
+Le mode par défaut quand le sprint a plusieurs tickets à faire : un ticket seul paie à chaque fois le démarrage de quatre agents, la relecture des mêmes fichiers et une confirmation ; un lot les paie une fois. Mesure du sprint 1 de hosa-ui (8 tickets, un par un) : 60 % du coût dans la session qui orchestre, 37 dispatches.
+
+**Composer le lot.** Prend les tickets `todo`/`doing` du sprint dans l'ordre de priorité et regroupe les consécutifs qui touchent le même module (`## Placement architecture`) : au plus 4 tickets et 8 points, aucun ticket au-delà de 3 points (un gros ticket reste seul, flow normal), aucune dépendance (`depends_on`) vers un ticket hors du lot ou plus loin dans le lot. Annonce le lot (slugs, points) et lance-le, sans QCM.
+
+**Dérouler.** Les étapes du flow normal, une fois pour le lot :
+1. Étapes 1-2 pour chaque ticket (`state: doing`), puis Brief Once (3a) pour tous : une seule lecture des sections, passée à chaque dispatch.
+2. Étape 3 : **un** dispatch `hosa-tech-lead` avec tous les slugs → un plan par ticket ; chacun est écrit dans son ticket. Un ticket bloqué sort du lot (il reste `doing`, son blocage est rapporté) ; les autres continuent.
+3. Étape 3b : **un** dispatch `hosa-tester` (Écrire d'abord) avec tous les slugs.
+4. Étape 4 : les lots de tâches suivent l'ordre des tickets ; le `dernier lot` de tâches est celui du dernier ticket : la suite complète et les contrôles ne tournent qu'une fois.
+5. Étape 4b une fois sur les fichiers du lot ; étape 4c : **une** revue de lot (`hosa-reviewer`, verdict par ticket), une ligne `## Revue` écrite dans chaque ticket. FAIL sur un ticket → correction de ce ticket seul, puis revue de ce ticket seul.
+6. Étape 5 : **une** présentation et **une** confirmation pour le lot, ticket par ticket.
+7. Étape 6 : un commit par ticket quand leurs fichiers sont disjoints ; sinon un commit pour le lot, avec un trailer `Hosa-Ticket:` par ticket (le hook `gate.js` vérifie la revue de chacun ; le graphe rattache les fichiers à chaque ticket). Puis 6b et 7.
+
+`avancement.py progress develop --detail "<lot> : ticket k/n fait" --reprise "develop lot <slugs restants>"` après chaque ticket commité.
+
+## Session
+
+La session qui orchestre ne fait qu'orchestrer, c'est elle qui coûte le plus : son contexte est relu à chaque appel. Elle ne lit ni le code ni les captures (les agents le font) ; elle garde de chaque rapport d'agent les sections qu'elle doit relayer, pas le reste. **Un lot (ou un gros ticket) par session** : à la fin d'un lot, l'étape `develop` reste `en cours` avec sa `--reprise`, et la Suite propose `/clear` puis « reprends » (le hook de session relit le point de reprise). Ne chaîne jamais deux lots dans la même session.
+
 ## Correction Mode
 
 `/develop <slug-ticket> correction`, or chained by `qa`, `validation` (démo) or the review: a defect on a ticket of the **active** sprint is fixed in that sprint, on its worktree — never left as a backlog ticket while the sprint waits.
@@ -134,7 +155,7 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 
 ## Suite
 [Tickets restants :]
-Suite : `develop` sur <ticket>, lancé sans attendre.
+Suite : `/clear`, puis « reprends » — prochain lot : <slugs> (une session neuve par lot).
 [Correction faite :]
 Suite : `qa` de ce ticket, lancé sans attendre.
 [Tous les tickets faits :]

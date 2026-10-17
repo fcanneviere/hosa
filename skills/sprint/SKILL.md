@@ -78,7 +78,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 [Si rien : "None"]
 
 ## Suite
-Sprint prêt, tests compris. Une fois démarré, je lance `develop` sur son premier ticket.
+Sprint prêt, tests compris. Une fois démarré, je lance `develop lot` sur son premier lot de tickets.
 
 Suite : `qa-plan`, puis démarrage du sprint (`git` Mode 1), lancé sans attendre.
 ```

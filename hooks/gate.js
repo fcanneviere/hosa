@@ -67,20 +67,25 @@ function section(text, heading) {
 function commitGate(call, cmd) {
   const m = /[\\/]\.worktrees[\\/]sprint[\\/]([^\\/]+)/.exec(call.dir);
   if (!m) return null;
-  const ticket = (/Hosa-Ticket:\s*([\w.-]+)/.exec(cmd) || [])[1];
-  if (!ticket) {
+  // a lot commit (`develop` Lot Mode) carries one trailer per ticket: each must have passed review
+  const tickets = [...cmd.matchAll(/Hosa-Ticket:\s*([\w.-]+)/g)].map((x) => x[1]);
+  if (!tickets.length) {
     if (call.args.includes('--amend')) return null; // develop Step 6b adds missed files to the ticket's commit
     return `a commit on sprint ${m[1]} must carry the trailer \`Hosa-Ticket: <slug>\` — code reaches a sprint through \`develop\` only.`;
   }
   const root = findKbRoot(call.dir);
   if (!root) return null;
-  const text = read(path.join(root, '.hosa', 'kb', 'tickets', `${ticket}.md`));
-  if (text == null) return `ticket \`${ticket}\` not found in kb/tickets/.`;
-  const verdicts = (section(text, 'Revue') || '').match(/\b(PASS-WITH-NOTES|PASS|FAIL)\b/g);
-  const last = verdicts && verdicts[verdicts.length - 1];
-  if (last === 'PASS' || last === 'PASS-WITH-NOTES') return null;
-  return `ticket \`${ticket}\` has no passed code review: its last \`## Revue\` line is ${last || 'missing'}. ` +
-    'Run `develop` Step 4c (hosa-reviewer), record the verdict, then commit.';
+  for (const ticket of tickets) {
+    const text = read(path.join(root, '.hosa', 'kb', 'tickets', `${ticket}.md`));
+    if (text == null) return `ticket \`${ticket}\` not found in kb/tickets/.`;
+    const verdicts = (section(text, 'Revue') || '').match(/\b(PASS-WITH-NOTES|PASS|FAIL)\b/g);
+    const last = verdicts && verdicts[verdicts.length - 1];
+    if (last !== 'PASS' && last !== 'PASS-WITH-NOTES') {
+      return `ticket \`${ticket}\` has no passed code review: its last \`## Revue\` line is ${last || 'missing'}. ` +
+        'Run `develop` Step 4c (hosa-reviewer), record the verdict, then commit.';
+    }
+  }
+  return null;
 }
 
 function mergeGate(call) {

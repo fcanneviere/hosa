@@ -39,6 +39,15 @@ test('a ticket commit needs a passed review', () => {
   assert.match(denied(bash(r, commit(wt(r)))), /is missing/);
 });
 
+test('a lot commit needs a passed review on every ticket it names', () => {
+  const r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — PASS — ok'), '.hosa/kb/tickets/t2.md': ticket('- 2026-10-10 — FAIL — CA1') });
+  const wt = path.join(r, '.worktrees', 'sprint', 's1');
+  const lot = (b) => `git -C "${wt}" commit -m "feat: lot" -m "Hosa-Ticket: t1" -m "Hosa-Ticket: ${b}"`;
+  assert.match(denied(bash(r, lot('t2'))), /ticket `t2`.*FAIL/);
+  fs.writeFileSync(path.join(r, '.hosa/kb/tickets/t2.md'), ticket('- 2026-10-11 — PASS — ok'));
+  assert.equal(bash(r, lot('t2')), null);
+});
+
 test('a sprint commit without a ticket is refused, except an amend', () => {
   const r = project({});
   const wt = path.join(r, '.worktrees', 'sprint', 's1');

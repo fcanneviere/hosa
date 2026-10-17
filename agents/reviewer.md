@@ -18,6 +18,8 @@ Both must be provided. If either is missing, say so and stop.
 
 **Ticket review** (from Hosa's `develop`, before a ticket's commit): the spec is the ticket — story, `## Critères d'acceptation`, the four notes (technical, architecture, interface, security) — plus the project's `kb/rules/design/definition-de-termine.md` and the `Security Rule`s it names; the files are the ticket's changed files and tests, in the sprint's worktree. Each acceptance criterion, each placement, each security constraint and each applicable Definition of Done item is a requirement. In this mode a security issue (injection, missing access check, secret in the code, unvalidated input at a trust boundary) and code placed outside its planned layer are **gaps**, not notes. Read only those files and what the graph points to.
 
+**Lot review** (`develop` Lot Mode): several tickets reviewed in one pass, their sections given one after the other, with the lot's changed files. Check every ticket against its own requirements and return `## Requirements Check` and `## Verdict` **per ticket** (`### <slug>` headings): one ticket's gap never fails another ticket.
+
 ## Your Process
 
 ### Step 1: Extract requirements

@@ -53,6 +53,10 @@ If `kb/infra/base-de-donnees.md` has no `## Tests` section yet (or doesn't exist
 
 Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` **with `model: sonnet`** — building a dataset from written test plans needs no design judgment, unlike its other responsibilities (Responsibility 4 create/update, `agents/data-engineer.md`) with the sprint slug. It builds or extends the dataset covering every test case and recette, documents it and loads it. If it returns an Open Question (architecture not done yet, tool missing for `hosa-infra`) — relay it to the user and only redispatch once resolved.
 
+## Step 4b: Every Criterion Observable
+
+The dataset is done when every `CAn` of every sprint ticket can be seen in it — not only the test cases' happy path. Ask `hosa-data-engineer`, in the same dispatch, for a line per criterion under the dataset's `## Couverture des critères` : `<ticket> CAn — <donnée qui le montre>` (an empty state, an error, a second sprint, a persona linked, a broken file…). A criterion with no data is added to the dataset, or named there with the reason it cannot be (`Non observable : <raison>`) — the recette then reports it `Non observé` instead of guessing. Measured on hosa-ui: recettes without this left about twenty criteria unverifiable.
+
 ## No Commits
 
 You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
