@@ -21,8 +21,11 @@ function refreshSummary(kbDir) {
     .on('error', () => {}).unref();
 }
 
+// Same place as run.py: ${CLAUDE_PLUGIN_DATA} survives plugin updates; hosa/app/.venv from the repo.
+const VENV = process.env.CLAUDE_PLUGIN_DATA ? path.join(process.env.CLAUDE_PLUGIN_DATA, 'venv') : path.join(APP, '.venv');
+
 function python() {
-  const venv = process.platform === 'win32' ? path.join(APP, '.venv', 'Scripts', 'python.exe') : path.join(APP, '.venv', 'bin', 'python');
+  const venv = process.platform === 'win32' ? path.join(VENV, 'Scripts', 'python.exe') : path.join(VENV, 'bin', 'python');
   return fs.existsSync(venv) ? venv : process.platform === 'win32' ? 'python' : 'python3';
 }
 
@@ -146,4 +149,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python };
+module.exports = { processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python, VENV };

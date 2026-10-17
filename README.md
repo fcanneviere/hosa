@@ -20,6 +20,7 @@ Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.
 ### Trois enchaînements
 
 1. **Cahier des charges** — `hosa` (identité du projet, personas) → `interview` → `redaction` → `fondamentaux` → `juridique` → `securite` → `relecture` → `contestation`.
+   Tu as déjà un brief en markdown ? `/hosa chemin/vers/brief.md` : Hosa en extrait les réponses et les personas, te les fait confirmer, et ne pose que les questions restantes.
    Les fonctions de base (administration, utilisateurs, logs, sauvegarde, import/export…) et les contraintes de sécurité y entrent dès le départ, pas à la fin.
 2. **Structuration** — `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (modèle de menaces) → `interface` → `backlog`.
    `infra` installe aussi les outils qualité : tests, tests navigateur, linter, formateur, CI.
@@ -132,7 +133,7 @@ Une interface locale montre l'avancement du projet dans la méthode Hosa : le pl
 
 Dans Claude Code, demande « ouvre le tableau de bord » ou tape `/pilotage`. Elle s'ouvre sur http://127.0.0.1:3000.
 
-Ses dépendances Python s'installent toutes seules dans `hosa/app/.venv` du plugin, en arrière-plan, à la première session après l'installation ou la mise à jour du plugin. Rien n'est installé dans le Python du système. Variables optionnelles :
+Ses dépendances Python s'installent toutes seules, en arrière-plan, à la première session après l'installation du plugin, dans son dossier de données (`~/.claude/plugins/data/hosa-hosa/venv`) : elles survivent aux mises à jour, et ne sont réinstallées que si leurs versions changent. Rien n'est installé dans le Python du système. Variables optionnelles :
 - `PORT` : port d'écoute (défaut `3000`) ;
 - `HOSA_KB_ROOT` : chemin vers la KB à afficher (par défaut, celle du dossier courant ou d'un parent).
 

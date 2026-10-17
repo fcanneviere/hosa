@@ -1,5 +1,8 @@
 """run.py: serves the managed project's KB (not a sprint worktree's stale copy), builds its venv once."""
 import importlib.util
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,6 +38,15 @@ class Setup(unittest.TestCase):
             (d / "requirements.txt").write_text("pyyaml\nnh3\n")
             run.setup()
             self.assertEqual(pip.call_count, 2)
+
+    def test_venv_in_plugin_data_once_installed(self):
+        # The plugin root is replaced at each update: the venv lives in ${CLAUDE_PLUGIN_DATA} to survive it.
+        d = tempfile.mkdtemp()
+        code = "import importlib.util as u, sys; s = u.spec_from_file_location('run', sys.argv[1]); m = u.module_from_spec(s); s.loader.exec_module(m); print(m.VENV)"
+        for data, want in ((d, Path(d) / "venv"), ("", Path(spec.origin).parent / "hosa" / "app" / ".venv")):
+            out = subprocess.run([sys.executable, "-c", code, spec.origin], capture_output=True, text=True, check=True,
+                                 env={**os.environ, "CLAUDE_PLUGIN_DATA": data}).stdout.strip()
+            self.assertEqual(Path(out), want)
 
 
 if __name__ == "__main__":

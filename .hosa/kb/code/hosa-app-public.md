@@ -4,7 +4,7 @@ title: hosa/app/public
 description: use strict
 resource: hosa/app/public
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T12:17:59Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers

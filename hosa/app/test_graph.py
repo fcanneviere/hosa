@@ -116,6 +116,27 @@ class GraphTest(unittest.TestCase):
         self.assertIn(("ticket:export-csv", "app/billing.py"), self.edges("mentions"))
         self.assertEqual(self.ix.nodes["ticket:export-csv"]["state"], "doing")
 
+    def test_non_code_files_symbols_and_renames_stay_traceable(self):
+        (self.root / "db").mkdir()
+        (self.root / "db/0001_init.sql").write_text("create table invoice();\n", encoding="utf-8")
+        (self.root / ".hosa/kb/tickets/export-csv.md").write_text(
+            FILES[".hosa/kb/tickets/export-csv.md"] + "Appelle `export_csv()` ; `helper` est partagé ; voir `0001_init.sql`.\n",
+            encoding="utf-8")
+        self.g = graph.refresh(self.root)
+        self.assertIn("db/0001_init.sql", {n["id"] for n in self.g["nodes"]})
+        mentions = self.edges("mentions")
+        self.assertIn(("ticket:export-csv", "app/billing.py::export_csv"), mentions)  # symbole au nom unique
+        self.assertIn(("ticket:export-csv", "db/0001_init.sql"), mentions)  # fin de chemin unique
+        self.assertFalse([d for s, d in mentions if d.endswith("::helper")])  # homonymes : pas de lien deviné
+        traced = {n["id"] for t in graph.Index(self.g).trace() for x in t["tickets"] for n in x["files"]}
+        self.assertTrue({"db/0001_init.sql", "app/billing.py"} <= traced)  # un symbole cité compte pour son fichier
+        self.assertNotIn("db", {c.stem for c in (self.root / ".hosa/kb/code").glob("*.md")})  # la carte reste du code
+
+    def test_touches_follow_renames(self):
+        git(self.root, "mv", "app/billing.py", "app/factures.py")
+        git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "rename")
+        self.assertEqual(graph.ticket_touches(self.root)["export-csv"], ["app/factures.py"])
+
     def test_incremental_replaces_and_prunes(self):
         self.touch("app/util.py", "def fmt2(x):\n    return str(x)\n\ndef helper():\n    pass\n")
         (self.root / "web/store.js").unlink()

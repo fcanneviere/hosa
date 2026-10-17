@@ -4,7 +4,7 @@ title: skills/interface/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers

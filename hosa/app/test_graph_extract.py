@@ -66,6 +66,10 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(f["defs"][0]["doc"], "Main entry")
         self.assertEqual(f["imports"], ["example.com/app/util", "fmt"])
 
+    def test_jsx_component_usage_is_a_reference(self):
+        f = gx.extract("p.tsx", b"export function Page() { return <div><Badge x={1} /><Ui.Card>t</Ui.Card></div>; }\n")
+        self.assertEqual(calls(f), {("Badge", "Page"), ("Card", "Page")})  # <div> : élément HTML, pas un composant
+
     def test_unknown_extension_has_no_language(self):
         self.assertIsNone(gx.lang_of("README.md"))
         self.assertEqual(gx.lang_of("src/App.TSX"), "tsx")

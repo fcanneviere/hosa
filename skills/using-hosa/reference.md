@@ -17,7 +17,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `debug` | Systematic root cause analysis → confirm with user → fix → commit |
 | `status` | Snapshot of project state — spec, progress, tests, next step |
 | `pilotage` | Open the local dashboard in the browser — progress plan, board, sprints, KB, graph, journal |
-| `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`.hosa/kb/`) |
+| `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`.hosa/kb/`), from a markdown brief if given (`/hosa brief.md`) |
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
 | `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` — CDC pipeline stage 2 |
@@ -64,7 +64,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Does this match the spec?", "Check requirements", "Is everything implemented?" | `review` |
 | "It's broken", "This isn't working", "I'm getting an error", "There's a bug" | `debug` |
 | "Where are we?", "What's done?", "Catch me up", "What's left?" | `status` |
-| "Initialise le projet", "Configure hosa", "Crée un persona pour..." | `hosa` |
+| "Initialise le projet", "Configure hosa", "Crée un persona pour...", "Démarre le projet à partir de ce brief" | `hosa` |
 | "Fais une recette de...", "Valide ça avec [persona]", "Est-ce que ça répond au besoin de..." | `recette` |
 | "Rédige le cahier des charges", "Interview les personas", "Démarre le cahier des charges" | `interview` |
 | "Rédige les exigences", "Écris le cahier des charges" (avec notes fournies) | `redaction` |

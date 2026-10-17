@@ -4,7 +4,7 @@ title: hosa/app/fixtures
 description: 'Jeu de données de test du sprint 1 : une KB de référence, un dépôt git, des transcripts.'
 resource: hosa/app/fixtures
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T08:21:30Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers

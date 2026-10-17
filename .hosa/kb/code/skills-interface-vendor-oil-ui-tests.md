@@ -4,7 +4,7 @@ title: skills/interface/vendor/oil-ui/tests
 description: Observable builder contracts. Run with Python's unittest discovery.
 resource: skills/interface/vendor/oil-ui/tests
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers

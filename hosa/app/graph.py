@@ -15,7 +15,7 @@ from pathlib import Path
 import graph_extract as gx
 import kb
 
-VERSION = 1
+VERSION = 2  # à augmenter quand l'extraction change : les faits en cache sont alors recalculés
 ACTOR = "process:hosa-graph"
 BUDGET = 2000  # tokens, estimés à 4 caractères/token
 # Fichiers plus gros que ça (générés, empaquetés, minifiés) : hors du graphe. HOSA_GRAPH_MAX_KB pour changer.
@@ -63,7 +63,8 @@ SKIP_PREFIXES = (".hosa/", ".worktrees/")
 
 
 def tracked_files(root):
-    """Fichiers de code suivis ou non ignorés par git (respecte .gitignore), hors `SKIP_PREFIXES`."""
+    """Fichiers suivis ou non ignorés par git (respecte .gitignore), hors `SKIP_PREFIXES`. Les fichiers hors code
+    (migrations SQL, CSS, config, docs) sont des nœuds sans symboles : un ticket qui les touche reste traçable."""
     try:
         out = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
                              capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace")
@@ -71,12 +72,13 @@ def tracked_files(root):
     except (subprocess.CalledProcessError, FileNotFoundError):
         files = [p.relative_to(root).as_posix() for p in Path(root).rglob("*")
                  if p.is_file() and not any(part.startswith(".") for part in p.relative_to(root).parts)]
-    return sorted({f for f in files if not f.startswith(SKIP_PREFIXES) and gx.lang_of(f) and _indexable(Path(root) / f)})
+    return sorted({f for f in files if not f.startswith(SKIP_PREFIXES) and _indexable(Path(root) / f)})
 
 
 def _indexable(path):
+    """Fichier présent ; le plafond de taille ne vaut que pour le code, seul à être lu et parsé."""
     try:
-        return path.is_file() and path.stat().st_size <= MAX_FILE_BYTES
+        return path.is_file() and (not gx.lang_of(path.name) or path.stat().st_size <= MAX_FILE_BYTES)
     except OSError:
         return False
 
@@ -160,6 +162,21 @@ def _resolve_import(src, target, files, by_stem, by_dir):
     return []
 
 
+def _mention_target(m, nodes, by_base, by_name):
+    """Nœud désigné par un `code` cité dans la KB : chemin exact, fin de chemin unique (`_ui/Badge.tsx`),
+    ou symbole au nom unique (`creerListe()`, `Liste.ajouter`). Sinon None : un mot quelconque ne crée pas de lien."""
+    m = m.strip().rstrip(",.;:").removesuffix("()").removeprefix("./")
+    if m in nodes:
+        return m
+    if "/" in m or "." in m.rsplit("/", 1)[-1]:
+        hits = [f for f in by_base.get(posixpath.basename(m), []) if f.endswith("/" + m.lstrip("/"))]
+        if len(hits) == 1:
+            return hits[0]
+    hits = {i for i in by_name.get(m.rsplit(".", 1)[-1], []) if nodes[i]["label"].endswith(m)}
+    # ponytail: nom unique d'au moins 4 caractères ; un nom partagé (actorFor dans 4 tests) n'est pas relié
+    return hits.pop() if len(hits) == 1 and len(m) >= 4 else None
+
+
 def build(facts, kb_items, touches):
     """Graphe complet dérivé des faits par fichier et de la KB. Pur : aucun accès disque."""
     nodes, edges, seen = {}, [], set()
@@ -178,6 +195,8 @@ def build(facts, kb_items, touches):
     for path, f in facts.items():
         nodes[path] = {"id": path, "kind": "file", "label": posixpath.basename(path), "file": path,
                        "lang": f["lang"], "doc": f["doc"]}
+        if f["lang"] is None:
+            continue
         for d in f["defs"]:
             nid = node_id(path, d["qual"])
             nodes[nid] = {"id": nid, "kind": d["kind"], "label": d["qual"], "file": path, "line": d["line"],
@@ -189,6 +208,8 @@ def build(facts, kb_items, touches):
     files = set(facts)
     by_stem, by_dir = {}, {}
     for p in files:
+        if not facts[p]["lang"]:  # hors code : seul un chemin exact (./x.module.css) y mène
+            continue
         by_stem.setdefault(_stem(p), []).append(p)
         by_dir.setdefault(posixpath.dirname(p), []).append(p)
     def family(lang):
@@ -198,7 +219,7 @@ def build(facts, kb_items, touches):
     for path, f in facts.items():
         lang = family(f["lang"])
         imported[path] = sorted({t for imp in f["imports"] for t in _resolve_import(path, imp, files, by_stem, by_dir)
-                                 if family(facts[t]["lang"]) == lang} - {path})
+                                 if facts[t]["lang"] is None or family(facts[t]["lang"]) == lang} - {path})
         for t in imported[path]:
             edge(path, t, "imports")
 
@@ -227,15 +248,19 @@ def build(facts, kb_items, touches):
                 for dst in ids:
                     edge(node_id(path, d["qual"]), dst, "inherits", conf)
 
+    by_base = {}
+    for p in files:
+        by_base.setdefault(posixpath.basename(p), []).append(p)
     for item in kb_items:
-        nodes[item["id"]] = {k: v for k, v in item.items() if k not in ("links", "mentions")}
+        nodes[item["id"]] ={k: v for k, v in item.items() if k not in ("links", "mentions")}
     for item in kb_items:
         for target in item.get("links", []):
             if target in nodes:
                 edge(item["id"], target, "implements")
-        for path in item.get("mentions", []):
-            if path in nodes:
-                edge(item["id"], path, "mentions")
+        for m in item.get("mentions", []):
+            target = _mention_target(m, nodes, by_base, by_name)
+            if target:
+                edge(item["id"], target, "mentions")
     for slug, paths in touches.items():
         if f"ticket:{slug}" in nodes:
             for p in paths:
@@ -276,19 +301,33 @@ def kb_items(root):
 def ticket_touches(root):
     """{slug: [fichiers]} lus dans les commits portant le trailer `Hosa-Ticket: <slug>`."""
     try:
-        out = subprocess.run(["git", "-C", str(root), "log", "--no-merges", "--name-only",
+        out = subprocess.run(["git", "-C", str(root), "-c", "core.quotePath=false", "log", "--no-merges", "--name-status", "-M",
                               "--format=%x1e%(trailers:key=Hosa-Ticket,valueonly,separator=%x2c)"],
                              capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace")
     except (subprocess.CalledProcessError, FileNotFoundError):
         return {}
-    touches = {}
+    touches, renamed = {}, {}
     for record in out.split("\x1e")[1:]:
         head, _, rest = record.partition("\n")  # 1re ligne : valeurs du trailer (vide si absent), puis les fichiers
-        paths = [l.strip() for l in rest.splitlines() if l.strip()]
+        paths = []
+        for line in rest.splitlines():
+            cols = line.split("\t")
+            if len(cols) < 2:
+                continue
+            if cols[0].startswith("R") and len(cols) == 3:
+                renamed.setdefault(cols[1], cols[2])  # du plus récent au plus ancien : le premier vu est le dernier
+            paths.append(cols[-1])
         for s in (x.strip() for x in head.split(",")):
             if s:
                 touches.setdefault(s, set()).update(paths)
-    return {s: sorted(p) for s, p in touches.items()}
+
+    def current(p):  # suit les déplacements jusqu'au chemin d'aujourd'hui
+        seen = set()
+        while p in renamed and p not in seen:
+            seen.add(p)
+            p = renamed[p]
+        return p
+    return {s: sorted({current(p) for p in ps}) for s, ps in touches.items()}
 
 
 # --- Carte OKF (kb/code/) ------------------------------------------------------
@@ -302,7 +341,7 @@ def _module_concepts(graph):
     by_id = {n["id"]: n for n in graph["nodes"]}
     files_by_dir = {}
     for n in graph["nodes"]:
-        if n["kind"] == "file":
+        if n["kind"] == "file" and n["lang"]:  # la carte ne décrit que le code
             files_by_dir.setdefault(posixpath.dirname(n["file"]), []).append(n)
     implements, linked = {}, {}
     for e in graph["edges"]:
@@ -411,13 +450,16 @@ def refresh(root, paths=None):
                     rel = Path(p).resolve().relative_to(root).as_posix() if Path(p).is_absolute() else Path(p).as_posix()
                 except ValueError:  # fichier hors du checkout
                     continue
-                if not gx.lang_of(rel) or rel.startswith(SKIP_PREFIXES):
+                if rel.startswith(SKIP_PREFIXES):
                     continue
                 if _indexable(root / rel):
                     current.add(rel)
                 else:
                     files.pop(rel, None)
         for rel in sorted(current):
+            if not gx.lang_of(rel):  # hors code : nœud fichier seul, jamais lu
+                files.setdefault(rel, {"facts": {"lang": None, "doc": "", "defs": [], "calls": [], "imports": []}})
+                continue
             st = (root / rel).stat()
             entry = files.get(rel)
             if entry and "error" in entry["facts"]:  # extraction en échec : on retente à chaque refresh
@@ -535,16 +577,17 @@ class Index:
             tickets = []
             for e in self.inc.get(i, []):
                 if e["rel"] == "implements":
-                    files = sorted({x["dst"] for x in self.out.get(e["src"], []) if x["rel"] in ("touches", "mentions")})
+                    files = sorted({self.nodes[x["dst"]]["file"] for x in self.out.get(e["src"], [])
+                                    if x["rel"] in ("touches", "mentions") and self.nodes[x["dst"]]["file"] in self.nodes})
                     tickets.append({"node": self.nodes[e["src"]], "files": [self.nodes[f] for f in files]})
             out.append({"node": n, "tickets": sorted(tickets, key=lambda t: t["node"]["id"])})
         return out
 
 
 def fmt(n, prefix=""):
-    loc = f"{n['file']}:{n['line']}" if n.get("line") else n.get("file", "")
+    loc = f"{n['file']}:{n['line']}" if n.get("line") else "" if n.get("file") == n["id"] else n.get("file", "")
     extra = n.get("state") or n.get("status") or ""
-    return f"{prefix}{n['kind']:<8} {n['id']}  {loc}" + (f"  [{extra}]" if extra else "")
+    return f"{prefix}{n['kind']:<8} {n['id']}" + (f"  {loc}" if loc else "") + (f"  [{extra}]" if extra else "")
 
 
 def budgeted(lines, budget=BUDGET):
@@ -582,9 +625,10 @@ def status(root):
         entry = files.get(rel)
         if not entry:
             missing.append(rel)
-        elif entry["mtime"] != (root / rel).stat().st_mtime:
+        elif "mtime" in entry and entry["mtime"] != (root / rel).stat().st_mtime:
             stale.append(rel)
-        langs[gx.lang_of(rel)] = langs.get(gx.lang_of(rel), 0) + 1
+        lang = gx.lang_of(rel) or "hors code"
+        langs[lang] = langs.get(lang, 0) + 1
     errors = [r for r, e in files.items() if "error" in e.get("facts", {})]
     big = []
     try:

@@ -4,7 +4,7 @@ title: skills/interface/vendor/oil-ui/assets/vendor
 description: '! Alpine.js 3.17.4 | MIT License | https://github.com/alpinejs/alpine'
 resource: skills/interface/vendor/oil-ui/assets/vendor
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-11T07:00:52Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers

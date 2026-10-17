@@ -1,6 +1,6 @@
 ---
 name: hosa
-description: "Use to set up or update the managed project's identity and personas, to note an out-of-band concept (exigence, ticket, rule), or to answer \"qui a demandé X ?\" from the KB. Triggers: \"initialise le projet\", \"crée un persona\"."
+description: "Use to set up or update the managed project's identity and personas, to note an out-of-band concept (exigence, ticket, rule), or to answer \"qui a demandé X ?\" from the KB. Triggers: \"initialise le projet\", \"démarre le projet depuis ce brief\", \"crée un persona\"."
 ---
 
 # Hosa

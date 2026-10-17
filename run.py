@@ -2,20 +2,22 @@
 """Hosa dashboard launcher.
 
   python run.py            from the managed project: serves its .hosa/kb on http://127.0.0.1:3000
-  python run.py --setup    only (re)builds hosa/app/.venv — the SessionStart hook runs it in the background
+  python run.py --setup    only (re)builds the venv — the SessionStart hook runs it in the background
 
-The app's dependencies live in hosa/app/.venv, never in the system Python (PEP 668).
-They're reinstalled when requirements.txt changes (stamp in the venv).
+The app's dependencies live in a venv, never in the system Python (PEP 668): ${CLAUDE_PLUGIN_DATA}/venv once
+installed (kept across plugin updates, the plugin root is replaced at each one), hosa/app/.venv from the repo.
+They're reinstalled when requirements.txt changes (stamp in the venv), with uv when it's on the PATH, pip otherwise.
 """
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import venv
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent / "hosa" / "app"
-VENV = APP / ".venv"
+VENV = Path(os.environ["CLAUDE_PLUGIN_DATA"]) / "venv" if os.environ.get("CLAUDE_PLUGIN_DATA") else APP / ".venv"
 PY = VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 REQS = APP / "requirements.txt"
 STAMP = VENV / "hosa-requirements.sha1"
@@ -25,9 +27,16 @@ def setup():
     want = hashlib.sha1(REQS.read_bytes()).hexdigest()
     if PY.exists() and STAMP.exists() and STAMP.read_text() == want:
         return
+    uv = shutil.which("uv")  # much faster when present; --seed keeps pip in the venv should uv go away later
     if not PY.exists():
-        venv.create(VENV, with_pip=True)
-    subprocess.check_call([str(PY), "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", str(REQS)])
+        if uv:
+            subprocess.check_call([uv, "venv", "-q", "--seed", "--python", sys.executable, str(VENV)])
+        else:
+            venv.create(VENV, with_pip=True)
+    if uv:
+        subprocess.check_call([uv, "pip", "install", "-q", "--python", str(PY), "-r", str(REQS)])
+    else:
+        subprocess.check_call([str(PY), "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", str(REQS)])
     STAMP.write_text(want)
 
 

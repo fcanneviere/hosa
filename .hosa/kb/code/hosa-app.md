@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T13:02:15Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers
@@ -27,26 +27,27 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T13:02:15Z'}
 ## Symboles publics
 
 - `GraphError` — `hosa/app/graph.py:30`
-- `Index` — `hosa/app/graph.py:454` — Vue indexée d'un graphe pour les requêtes.
-- `budgeted` — `hosa/app/graph.py:550`
-- `build` — `hosa/app/graph.py:163` — Graphe complet dérivé des faits par fichier et de la KB. Pur : aucun accès disque.
-- `build.edge` — `hosa/app/graph.py:167`
-- `build.family` — `hosa/app/graph.py:194`
-- `build.resolve` — `hosa/app/graph.py:205` — Même fichier -> fichiers importés -> tout le dépôt (même langage). Retourne (ids, conf).
+- `Index` — `hosa/app/graph.py:496` — Vue indexée d'un graphe pour les requêtes.
+- `budgeted` — `hosa/app/graph.py:593`
+- `build` — `hosa/app/graph.py:180` — Graphe complet dérivé des faits par fichier et de la KB. Pur : aucun accès disque.
+- `build.edge` — `hosa/app/graph.py:184`
+- `build.family` — `hosa/app/graph.py:215`
+- `build.resolve` — `hosa/app/graph.py:226` — Même fichier -> fichiers importés -> tout le dépôt (même langage). Retourne (ids, conf).
 - `checkout_root` — `hosa/app/graph.py:36` — Racine git du checkout qui contient `start` ; à défaut, le dossier qui porte `.hosa/`, sinon `start`.
-- `fmt` — `hosa/app/graph.py:544`
+- `fmt` — `hosa/app/graph.py:587`
 - `graph_dir` — `hosa/app/graph.py:50`
-- `kb_items` — `hosa/app/graph.py:254` — Tickets et exigences de la KB du checkout, avec leurs liens vers les exigences et les chemins cités.
-- `main` — `hosa/app/graph.py:640`
+- `kb_items` — `hosa/app/graph.py:279` — Tickets et exigences de la KB du checkout, avec leurs liens vers les exigences et les chemins cités.
+- `main` — `hosa/app/graph.py:684`
 - `node_id` — `hosa/app/graph.py:54` — Unique point de construction des identifiants : `chemin` ou `chemin::Qual.nom`.
-- `refresh` — `hosa/app/graph.py:390` — Met le graphe à jour et le retourne. `paths` = fichiers à revérifier (défaut : tout le dépôt).
-- `run` — `hosa/app/graph.py:609` — Exécute une commande de requête et retourne le texte à afficher.
-- `status` — `hosa/app/graph.py:572` — État de l'index, sans le reconstruire : taille, fraîcheur, fichiers à réindexer ou exclus.
-- `ticket_touches` — `hosa/app/graph.py:276` — {slug: [fichiers]} lus dans les commits portant le trailer `Hosa-Ticket: <slug>`.
-- `tracked_files` — `hosa/app/graph.py:65` — Fichiers de code suivis ou non ignorés par git (respecte .gitignore), hors `SKIP_PREFIXES`.
-- `write_code_map` — `hosa/app/graph.py:334` — Écrit kb/code/ (concepts Module + index.md). Ne réécrit que ce qui a changé ; déprécie les modules disparus.
-- `extract` — `hosa/app/graph_extract.py:101` — Faits d'un fichier : {'lang', 'doc', 'defs': [...], 'calls': [...], 'imports': [...]}.
-- `lang_of` — `hosa/app/graph_extract.py:22`
+- `refresh` — `hosa/app/graph.py:429` — Met le graphe à jour et le retourne. `paths` = fichiers à revérifier (défaut : tout le dépôt).
+- `run` — `hosa/app/graph.py:653` — Exécute une commande de requête et retourne le texte à afficher.
+- `status` — `hosa/app/graph.py:615` — État de l'index, sans le reconstruire : taille, fraîcheur, fichiers à réindexer ou exclus.
+- `ticket_touches` — `hosa/app/graph.py:301` — {slug: [fichiers]} lus dans les commits portant le trailer `Hosa-Ticket: <slug>`.
+- `ticket_touches.current` — `hosa/app/graph.py:324`
+- `tracked_files` — `hosa/app/graph.py:65` — Fichiers suivis ou non ignorés par git (respecte .gitignore), hors `SKIP_PREFIXES`. Les fichiers hors code
+- `write_code_map` — `hosa/app/graph.py:373` — Écrit kb/code/ (concepts Module + index.md). Ne réécrit que ce qui a changé ; déprécie les modules disparus.
+- `extract` — `hosa/app/graph_extract.py:109` — Faits d'un fichier : {'lang', 'doc', 'defs': [...], 'calls': [...], 'imports': [...]}.
+- `lang_of` — `hosa/app/graph_extract.py:23`
 - `ConflictError` — `hosa/app/kb.py:43`
 - `GitError` — `hosa/app/kb.py:39`
 - `KbError` — `hosa/app/kb.py:35`
@@ -105,8 +106,8 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T13:02:15Z'}
 - `defs` — `hosa/app/test_graph_extract.py:9`
 - `KbIndex` — `hosa/app/test_kb_index.py:13`
 - `PluginFrontmatter` — `hosa/app/test_plugin_frontmatter.py:11`
-- `KbRoot` — `hosa/app/test_run.py:13`
-- `Setup` — `hosa/app/test_run.py:24`
+- `KbRoot` — `hosa/app/test_run.py:16`
+- `Setup` — `hosa/app/test_run.py:27`
 - `SprintMeasures` — `hosa/app/test_usage_report.py:45`
 - `UsageOnce` — `hosa/app/test_usage_report.py:19`
 - `line` — `hosa/app/test_usage_report.py:14`

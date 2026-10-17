@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T12:15:34Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 ---
 
 ## Fichiers
@@ -79,18 +79,18 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T12:15:34Z'}
 - `sprint` — `hooks/gate.test.js:62`
 - `ticket` — `hooks/gate.test.js:21`
 - `wt` — `hooks/gate.test.js:33`
-- `broadIdentGrep` — `hooks/graph.js:68`
-- `commandLine` — `hooks/graph.js:50`
-- `findKbRoot` — `hooks/graph.js:39` — committed copy of `.hosa/kb` — skip it and keep walking up to the project root.
-- `findUp` — `hooks/graph.js:30` — Closest ancestor of `dir` containing `marker` (a relative path), or null.
-- `guardGrep` — `hooks/graph.js:74`
-- `mtime` — `hooks/graph.js:104`
-- `processPayload` — `hooks/graph.js:107` — Hook payload → hook output object, or null.
-- `python` — `hooks/graph.js:24`
-- `queryGraph` — `hooks/graph.js:57` — `graph.py find` output, or '' on failure/no hit. Stays under the 5 s hook timeout.
+- `broadIdentGrep` — `hooks/graph.js:71`
+- `commandLine` — `hooks/graph.js:53`
+- `findKbRoot` — `hooks/graph.js:42` — committed copy of `.hosa/kb` — skip it and keep walking up to the project root.
+- `findUp` — `hooks/graph.js:33` — Closest ancestor of `dir` containing `marker` (a relative path), or null.
+- `guardGrep` — `hooks/graph.js:77`
+- `mtime` — `hooks/graph.js:107`
+- `processPayload` — `hooks/graph.js:110` — Hook payload → hook output object, or null.
+- `python` — `hooks/graph.js:27`
+- `queryGraph` — `hooks/graph.js:60` — `graph.py find` output, or '' on failure/no hit. Stays under the 5 s hook timeout.
 - `refreshSummary` — `hooks/graph.js:19` — Rewrites `.hosa/kb/sommaire.md` (one line per KB concept) in the background.
-- `runGraph` — `hooks/graph.js:52`
-- `sessionStart` — `hooks/graph.js:93` — (a full first build can exceed the hook timeout). Returns the context line, or ''.
+- `runGraph` — `hooks/graph.js:55`
+- `sessionStart` — `hooks/graph.js:96` — (a full first build can exceed the hook timeout). Returns the context line, or ''.
 - `deny` — `hooks/graph.test.js:57`
 - `hit` — `hooks/graph.test.js:56`
 - `project` — `hooks/graph.test.js:9`

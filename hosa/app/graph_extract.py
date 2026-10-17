@@ -11,7 +11,8 @@ LANGS = {".py": "python", ".js": "javascript", ".mjs": "javascript", ".cjs": "ja
 DEF_KINDS = {"class": "class", "interface": "class", "function": "function", "method": "method"}
 REF_KINDS = {"call", "send", "class"}  # appel, envoi de message (C#/Ruby), instanciation/usage de type
 QUERY_BASE = {"typescript": "javascript", "tsx": "javascript"}  # la requête TS ne couvre que ses ajouts à JS
-WRAPPERS = {"export_statement", "decorated_definition"}
+JSX_LANGS = {"javascript", "tsx"}
+WRAPPERS ={"export_statement", "decorated_definition"}
 BASE_NOISE = {"extends", "implements", "public", "private", "protected", "internal", "abstract", "sealed", "static",
               "final", "partial", "class", "interface", "struct", "where", "new", "object", "readonly", "export", "default"}
 IMPORT_LINE = re.compile(r"^[ \t]*(import|from|use|using|require|require_relative|require_once|include|include_once)\b(.*)$", re.M)
@@ -30,6 +31,13 @@ def _query(lang):
             text = tsp.get_tags_query(QUERY_BASE[lang]) + "\n" + text
         _queries[lang] = Query(tsp.get_language(lang), text)
     return _queries[lang]
+
+
+def _jsx_query(lang):
+    key = f"jsx:{lang}"
+    if key not in _queries:
+        _queries[key] = Query(tsp.get_language(lang), "(jsx_opening_element name: (_) @n) (jsx_self_closing_element name: (_) @n)")
+    return _queries[key]
 
 
 def _clean(raw):
@@ -114,7 +122,12 @@ def extract(path, source):
             if tag == "definition" and sub in DEF_KINDS:
                 raw_defs.append((nodes[0], names[0], DEF_KINDS[sub]))
             elif tag == "reference" and sub in REF_KINDS:
-                raw_calls.append((nodes[0], names[0]))
+                raw_calls.append((nodes[0], names[0].text.decode("utf-8", "replace")))
+    if lang in JSX_LANGS:  # <Badge /> est un usage du composant Badge, invisible pour la requête tags
+        for _, caps in QueryCursor(_jsx_query(lang)).matches(tree.root_node):
+            name = caps["n"][0].text.decode("utf-8", "replace").rsplit(".", 1)[-1]
+            if name[:1].isupper():
+                raw_calls.append((caps["n"][0], name))
 
     raw_defs.sort(key=lambda d: (d[0].start_byte, -d[0].end_byte))
     defs, stack = [], []
@@ -134,10 +147,10 @@ def extract(path, source):
 
     spans = [(n.start_byte, n.end_byte, d["qual"]) for (n, _, _), d in zip(raw_defs, defs)]
     calls = []
-    for node, name_node in raw_calls:
+    for node, name in raw_calls:
         inner = [s for s in spans if s[0] <= node.start_byte and node.end_byte <= s[1]]
         scope = min(inner, key=lambda s: s[1] - s[0])[2] if inner else None
-        calls.append({"name": name_node.text.decode("utf-8", "replace"), "line": node.start_point[0] + 1, "scope": scope})
+        calls.append({"name": name, "line": node.start_point[0] + 1, "scope": scope})
 
     return {"lang": lang, "doc": _file_doc(tree.root_node), "defs": defs, "calls": calls,
             "imports": _imports(source.decode("utf-8", "replace"), lang)}
