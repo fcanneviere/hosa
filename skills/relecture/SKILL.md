@@ -36,7 +36,7 @@ Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier de
 
 ## Step 1: Scope
 
-In the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
+**`kb/cdc/relecture.md` exists** (an earlier pass, maybe a cut session) → read it first and never redo that pass: re-check only its anomalies still `ouverte` and the exigences changed since its `generated.at` (`git log` on `hosa-kb`). Otherwise: in the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
 
 ## Step 2: Precision and Completeness Check
 
@@ -64,9 +64,27 @@ For each anomaly: which exigence, the exact problem, and whether it needs a **re
 
 If no anomalies: report "Propre" and propose `contestation` as the next step.
 
-## No Commits
+## Step 5: Record the Report
 
-This skill only reads and reports — it doesn't edit `kb/cdc/` itself. Fixes happen in `redaction`.
+Before reporting, write `kb/cdc/relecture.md` — the anomalies survive a cut session, and `redaction` works from this list:
+
+```markdown
+---
+type: Revue Relecture
+title: Relecture du cahier des charges
+description: Anomalies de précision, de complétude et de cohérence, et leur suite
+tags: [relecture]
+generated: { by: relecture, at: <ISO8601> }
+---
+## Anomalies
+- A1 — [exigence](<slug>.md) — <problème précis> — → redaction | → interview — ouverte
+## Verdict
+<Propre / N anomalie(s) ouverte(s)>
+```
+
+Number anomalies A1…An, stable across passes. A re-run updates the file in place: a fixed anomaly becomes `corrigée`, a new one takes the next number. Then the git checkpoint (`using-hosa`), and `block relecture --detail "N anomalies ouvertes, voir kb/cdc/relecture.md"` while any stays `ouverte`.
+
+This skill never edits an exigence: fixes happen in `redaction` (or `interview`), which marks each anomaly it closes `corrigée` in `kb/cdc/relecture.md`.
 
 ## Output
 

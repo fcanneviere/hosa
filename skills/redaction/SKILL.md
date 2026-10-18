@@ -31,6 +31,8 @@ Manual: `/redaction`. Auto: immediately after `interview` finishes, or "rédige 
 
 ## Step 1: Get the Notes
 
+**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Fix each exigence, mark the anomaly `corrigée` in `kb/cdc/relecture.md` as soon as it is fixed — a cut session restarts at the next one — then chain on `relecture`, not `fondamentaux`.
+
 If `interview` just ran in this session, use its notes directly. Otherwise ask: "Quelles sont les notes à rédiger ?" — accept whatever structure the user provides; you don't require `interview`'s exact format.
 
 ## Step 2: Write One `Exigence` Per Process
