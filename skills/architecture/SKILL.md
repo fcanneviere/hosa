@@ -5,6 +5,8 @@ description: "Use to design and scaffold the managed project's software architec
 
 # Architecture
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start architecture`; refused → name the missing stage to the user and stop. Stopped on a user question: `block architecture --detail "<question>"`. Once the stage's output is written and committed: `done architecture`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 Turns the business logic, the chosen stack, and the finished data architecture into a real, scaffolded software architecture in the managed project — including the minimal observability baseline every later module builds on. This skill is the only one that talks to the user — the actual design and scaffold is `hosa-architect`'s.
 
 ## Flow

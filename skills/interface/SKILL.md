@@ -5,6 +5,8 @@ description: "Use to design and scaffold a complete, navigable interface: style 
 
 # Interface
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start interface`; refused → name the missing stage to the user and stop. Stopped on a user question: `block interface --detail "<question>"`. Once the stage's output is written and committed: `done interface`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 Turns the business logic (CDC), what each persona needs to see, and the existing software architecture into a real, scaffolded interface layer in the managed project — plus a visual identity and design rules for the whole project. This skill is the only one that talks to the user or dispatches other agents — the actual interview, proposal, design, and scaffold is `hosa-ux-designer`'s.
 
 ## Flow

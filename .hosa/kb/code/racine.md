@@ -4,7 +4,7 @@ title: .
 description: '!/usr/bin/env python3'
 resource: .
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-17T19:38:30Z'}
 ---
 
 ## Fichiers
@@ -15,8 +15,8 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 
 ## Symboles publics
 
-- `kb_root` — `run.py:43`
-- `setup` — `run.py:26`
+- `kb_root` — `run.py:46`
+- `setup` — `run.py:28`
 
 ## Tickets et exigences
 

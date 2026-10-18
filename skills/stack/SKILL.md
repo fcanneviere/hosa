@@ -5,6 +5,8 @@ description: "Use to propose (2-3 options) and record the managed project's tech
 
 # Stack
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start stack`; refused → name the missing stage to the user and stop. Stopped on a user question: `block stack --detail "<question>"`. Once the stage's output is written and committed: `done stack`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 Turns "what the application must do" (the stable cahier des charges) into a chosen technical stack, recorded before any data structure or architecture work begins. This skill is the only one that talks to the user — the actual analysis, proposal, and recording is `hosa-senior-dev`'s.
 
 ## Flow

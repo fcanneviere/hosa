@@ -1,6 +1,7 @@
 # Log — kb/code
 
 ## 2026-10-17
+- process:hosa-graph a mis à jour `racine`
 - process:hosa-graph a mis à jour `skills-status-scripts`
 - process:hosa-graph a mis à jour `skills-okf-scripts`
 - process:hosa-graph a mis à jour `skills-kb-commit-scripts`

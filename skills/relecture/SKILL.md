@@ -5,6 +5,8 @@ description: "Use to check every exigence for precision, completeness and consis
 
 # Relecture
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start relecture`; refused → name the missing stage to the user and stop. Stopped on a user question: `block relecture --detail "<question>"`. Once the stage's output is written and committed: `done relecture`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 Reads the cahier des charges as written and checks it holds up — not a rewrite, a precision check.
 
 ## Flow

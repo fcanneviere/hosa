@@ -5,6 +5,8 @@ description: "Use to put every basic software function (administration, users, r
 
 # Fondamentaux
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start fondamentaux`; refused → name the missing stage to the user and stop. Stopped on a user question: `block fondamentaux --detail "<question>"`. Once the stage's output is written and committed: `done fondamentaux`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 Personas describe what they need to *do*; they never ask for the plumbing that makes an application usable, operable and safe — an admin panel, user management, error logs, a change history, backups, exports. Making sure those are in the cahier des charges is the Product Owner's job, not the personas'. This stage checks `kb/cdc/` against a standard checklist and writes every missing basic as an `Exigence` — included by default, never silently dropped.
 
 ## Flow

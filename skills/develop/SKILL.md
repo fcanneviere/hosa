@@ -5,6 +5,8 @@ description: "Use to implement sprint tickets in the sprint worktree: tests firs
 
 # Develop
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start develop --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block develop --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done develop --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 Implémente un ticket de sprint (`kb/tickets/<slug>.md`) dans le worktree déjà ouvert par `git` Mode 1 : découpage en tâches courtes et séquentielles (`hosa-tech-lead`), puis implémentation une tâche à la fois (`hosa-developer`) — jamais de déviation de la structure déjà scaffoldée par `hosa-architect`/`hosa-data-engineer` sans arrêt et remontée.
 
 ## Flow

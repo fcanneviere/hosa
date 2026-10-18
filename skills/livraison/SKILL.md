@@ -5,6 +5,8 @@ description: "Use to ship merged work: scope done tickets, quality gate (`qualit
 
 # Livraison
 
+**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start livraison --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block livraison --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done livraison --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+
 `git` Mode 2 merges a sprint locally; nothing after that checks the whole, versions it, deploys it, or tells anyone what shipped. This skill closes that gap: scope what's new, pass the quality gate, write it down, tag a tested version, deploy it if asked, record the release, and push only if asked.
 
 ## Flow
