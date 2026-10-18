@@ -17,7 +17,7 @@ const KB_INDEX_PY = path.join(pluginRoot, 'skills', 'okf', 'scripts', 'kb_index.
 
 // Rewrites `.hosa/kb/sommaire.md` (one line per KB concept) in the background.
 function refreshSummary(kbDir) {
-  spawn(python(), [KB_INDEX_PY, kbDir], { detached: true, stdio: 'ignore', windowsHide: true })
+  spawn(pythonBackground(), [KB_INDEX_PY, kbDir], { detached: true, stdio: 'ignore', windowsHide: true })
     .on('error', () => {}).unref();
 }
 
@@ -27,6 +27,14 @@ const VENV = process.env.CLAUDE_PLUGIN_DATA ? path.join(process.env.CLAUDE_PLUGI
 function python() {
   const venv = process.platform === 'win32' ? path.join(VENV, 'Scripts', 'python.exe') : path.join(VENV, 'bin', 'python');
   return fs.existsSync(venv) ? venv : process.platform === 'win32' ? 'python' : 'python3';
+}
+
+// Detached on Windows: python.exe is a console program, and with no console to inherit it (and the venv launcher's child)
+// opens a window. pythonw.exe never does; its stdout is None, which is fine for stdio: 'ignore'.
+function pythonBackground() {
+  const py = python();
+  const w = py.replace(/python\.exe$/i, 'pythonw.exe');
+  return process.platform === 'win32' && w !== py && fs.existsSync(w) ? w : py;
 }
 
 // Closest ancestor of `dir` containing `marker` (a relative path), or null.
@@ -99,7 +107,7 @@ function sessionStart(cwd) {
   const gdir = path.join(root, '.hosa', 'graph');
   fs.mkdirSync(gdir, { recursive: true });
   fs.writeFileSync(path.join(gdir, 'session'), String(Date.now()));
-  spawn(python(), [GRAPH_PY, '--root', root, 'index'], { detached: true, stdio: 'ignore', windowsHide: true })
+  spawn(pythonBackground(), [GRAPH_PY, '--root', root, 'index'], { detached: true, stdio: 'ignore', windowsHide: true })
     .on('error', () => {}).unref(); // python introuvable : pas de graphe, la session démarre quand même
   return `\n\n## Project graph\n\nQuery it before grepping: \`${commandLine()} ticket <slug> | explain <name> | affected <name> | find <text> [--path <glob>] [--kind <kind>] [--offset <n>] | map | status\``;
 }
@@ -149,4 +157,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python, VENV };
+module.exports = { pythonBackground, processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python, VENV };

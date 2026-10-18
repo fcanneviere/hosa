@@ -21,7 +21,7 @@ try {
   const g = require('./graph');
   const venvReady = fs.existsSync(path.join(g.VENV, 'hosa-requirements.sha1'));
   if (!venvReady) {
-    require('child_process').spawn(process.platform === 'win32' ? 'python' : 'python3', [path.join(root, 'run.py'), '--setup'],
+    require('child_process').spawn(process.platform === 'win32' ? 'pythonw' : 'python3', [path.join(root, 'run.py'), '--setup'],
       { detached: true, stdio: 'ignore', windowsHide: true }).on('error', () => {}).unref();
   }
   context += `\n\n## Python\n\n\`<python>\` in skills and agents means \`"${g.python()}"\`.` +
