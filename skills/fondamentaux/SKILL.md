@@ -86,6 +86,8 @@ With the same list, show the `espace` the PO proposes for any functional exigenc
 
 Then ask, grouped, only what's needed to write the items kept: the actor or rule the PO couldn't derive, and the concrete target for each NFR (number, level, threshold — "pas encore de chiffre" is a valid answer, never invented).
 
+In the same round, ask the context `juridique` and `securite` will need, so the user is questioned once for the three stages: country or countries of use, B2B or B2C, sector, planned release date, AI vendor if any, data sensitivity and the risks the user is ready to accept. Record the answers in `kb/cdc/fondamentaux.md` under `## Contexte`.
+
 ## Step 4: Write (PO)
 
 Redispatch `hosa-product-owner` with the kept items and the user's answers. It writes:
@@ -100,6 +102,8 @@ description: Couverture du cahier des charges sur la checklist des fondamentaux
 tags: [fondamentaux]
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
+## Contexte
+- <pays / B2B-B2C / secteur / date de mise en production / fournisseur d'IA / sensibilité des données / risques acceptés> : <réponse>
 ## Bilan
 - <item> — Couvert : [exigence](<slug>.md)
 - <item> — Ajouté : [exigence](<slug>.md)

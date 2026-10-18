@@ -19,7 +19,7 @@ LOCAL_HOSTS = {"localhost", "127.0.0.1", "[::1]"}
 def _in_git(path):
     try:
         return subprocess.run(["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"],
-                              capture_output=True, timeout=10).returncode == 0
+                              capture_output=True, timeout=10, **graph.NO_WINDOW).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False
 

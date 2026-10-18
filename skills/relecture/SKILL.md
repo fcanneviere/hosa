@@ -36,7 +36,7 @@ Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier de
 
 ## Step 1: Scope
 
-**`kb/cdc/relecture.md` exists** (an earlier pass, maybe a cut session) → read it first and never redo that pass: re-check only its anomalies still `ouverte` and the exigences changed since its `generated.at` (`git log` on `hosa-kb`). Otherwise: in the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
+**`kb/cdc/relecture.md` exists** (an earlier pass, maybe a cut session) → read it first and never redo that pass: re-check only its anomalies still `ouverte` and the exigences changed since its `generated.at`: files of `kb/cdc/` modified after that date (file time — `redaction` doesn't commit, so a fix it just made is not in `git log` yet) plus those committed on `hosa-kb` since. Otherwise: in the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
 
 ## Step 2: Precision and Completeness Check
 
@@ -60,7 +60,7 @@ Check pairs of exigences that plausibly connect (one's output feeds another's in
 
 ## Step 4: Report and Route
 
-For each anomaly: which exigence, the exact problem, and whether it needs a **rewrite** (route to `redaction`) or is missing **information that was never gathered** (route to `interview`).
+For each anomaly: which exigence and which section (`redaction` fixes it without searching), the exact problem, and whether it needs a **rewrite** (route to `redaction`) or is missing **information that was never gathered** (route to `interview`).
 
 If no anomalies: report "Propre" and propose `contestation` as the next step.
 
@@ -77,7 +77,7 @@ tags: [relecture]
 generated: { by: relecture, at: <ISO8601> }
 ---
 ## Anomalies
-- A1 — [exigence](<slug>.md) — <problème précis> — → redaction | → interview — ouverte
+- A1 — [exigence](<slug>.md) § <section> — <problème précis> — → redaction | → interview — ouverte
 ## Verdict
 <Propre / N anomalie(s) ouverte(s)>
 ```

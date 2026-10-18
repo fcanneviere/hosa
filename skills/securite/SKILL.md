@@ -46,7 +46,7 @@ Progress-plan stages: `securite` (Analyse, CDC pipeline) and `menaces` (Structur
 
 ## Analyse (Mode 1)
 
-1. Dispatch `hosa-security` (Mode 1 Phase 1). It reads `kb/cdc/juridique.md`: the regulations, retention periods, data location and vendors decided there are applied, not asked again. Relay its `## Open Questions` (data classification, risk acceptance) and redispatch with the answers until the analysis is complete.
+1. Dispatch `hosa-security` (Mode 1 Phase 1). It reads `kb/cdc/juridique.md` and the `## Contexte` of `kb/cdc/fondamentaux.md` (data sensitivity, accepted risks: already answered): the regulations, retention periods, data location and vendors decided there are applied, not asked again. Relay its `## Open Questions` (data classification, risk acceptance) and redispatch with the answers until the analysis is complete.
 2. Present the data and their sensitivity, then per exigence the threats and the proposed measure, then the proposed security exigences, constraints and rules. The user validates, adjusts, or drops a measure. A dropped measure on a real threat is an **accepted risk**: ask for the reason and keep it, recorded rather than forgotten.
 3. Redispatch `hosa-security` (Mode 1 Phase 2) with the validated choices and the accepted risks. It seeds `kb/rules/security/`, writes the security exigences (`status: draft`, `tags: [securite]`), adds `## Contraintes de sécurité` to the exigences concerned, and writes `kb/cdc/securite.md`.
 

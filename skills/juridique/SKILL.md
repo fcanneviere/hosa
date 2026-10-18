@@ -39,7 +39,7 @@ Manual: `/juridique [analyse|livraison]`. Auto: immediately after `fondamentaux`
 
 ## Step 1: Analyse
 
-Dispatch `hosa-legal` (Mode 1 Phase 1). Relay its `## Open Questions` (country, B2B/B2C, sector, release date, AI vendor) and redispatch with the answers until the analysis is complete.
+Dispatch `hosa-legal` (Mode 1 Phase 1) with the `## Contexte` of `kb/cdc/fondamentaux.md` as answers already given. Relay only the `## Open Questions` that context leaves open and redispatch with the answers until the analysis is complete.
 
 ## Step 2: Confirm
 

@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import posixpath
 import re
+import os
 import subprocess
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -10,6 +11,8 @@ from pathlib import Path
 import markdown
 import nh3
 import yaml
+
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 RESERVED_FILENAMES = {"index.md", "log.md"}
 UNREADABLE = "Le fichier est illisible : "
@@ -613,11 +616,11 @@ def kb_status(root):
     (carte du code régénérée par le graphe) est exclu par pathspec : ouvrir un écran ne change pas le compte."""
     try:
         inside = subprocess.run(["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
-                                capture_output=True, text=True, timeout=10)
+                                capture_output=True, text=True, timeout=10, **NO_WINDOW)
         if inside.returncode != 0:
             return {"git": False, "changed": 0, "files": []}
         st = subprocess.run(["git", "-c", "core.quotePath=false", "-C", str(root), "status", "--short", "--", ".", ":(exclude)code"],
-                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10, **NO_WINDOW)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise GitError("état de la KB illisible") from e
     if st.returncode != 0:

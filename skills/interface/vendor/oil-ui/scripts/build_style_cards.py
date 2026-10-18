@@ -288,7 +288,8 @@ def build(cfg_path: Path, out: Path, force: bool) -> dict:
             (stage / cand["source"]).write_text(card_html(cfg, card, i), encoding="utf-8")
         (stage / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         cmd = [sys.executable, str(EXPLORER), str(stage / "manifest.json"), "--output", str(stage / page.name)]
-        result = subprocess.run(cmd, capture_output=True, encoding="utf-8", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        result = subprocess.run(cmd, capture_output=True, encoding="utf-8", env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+                                **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}))
         if result.returncode:
             details = [f"échec de la page de comparaison (code de sortie {result.returncode})"]
             for label, stream in (("stdout", result.stdout), ("stderr", result.stderr)):

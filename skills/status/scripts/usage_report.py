@@ -25,11 +25,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import os
 import subprocess
 import sys
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
+
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 FIELDS = ("calls", "input", "cache_write", "cache_read", "output", "thinking", "usd")
 # $ per million tokens: input, output, cache read; a cache write is 1.25 × input. First match wins.
@@ -214,7 +217,7 @@ def delivered(project: Path, since: str | None, until: str | None) -> set[str]:
     cmd += [f"--since={since} 00:00"] if since else []
     cmd += [f"--until={until} 23:59:59"] if until else []
     try:
-        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30).stdout
+        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30, **NO_WINDOW).stdout
     except (OSError, subprocess.SubprocessError):
         return set()
     return {line.strip() for line in (out or "").splitlines() if line.strip()}
@@ -233,7 +236,7 @@ def sprint_period(project: Path, text: str) -> tuple[str | None, str | None, lis
     if merge:
         try:
             until = subprocess.run(["git", "-C", str(project), "show", "-s", "--format=%cs", "--end-of-options", merge.group(1)],
-                                   capture_output=True, text=True, timeout=10).stdout.strip() or None
+                                   capture_output=True, text=True, timeout=10, **NO_WINDOW).stdout.strip() or None
         except (OSError, subprocess.SubprocessError):
             pass
     return born and born.group(1), until, tickets

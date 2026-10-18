@@ -19,9 +19,12 @@ from __future__ import annotations
 
 import json
 import re
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 PROJECT = "com.docker.compose.project"
 WORKDIR = "com.docker.compose.project.working_dir"
@@ -80,7 +83,7 @@ def orphans(projects: list[dict], root: str) -> list[str]:
 
 
 def docker(*args: str) -> str:
-    r = subprocess.run(["docker", *args], capture_output=True, text=True)
+    r = subprocess.run(["docker", *args], capture_output=True, text=True, **NO_WINDOW)
     if r.returncode:
         raise RuntimeError(r.stderr.strip() or f"docker {' '.join(args)} failed")
     return r.stdout

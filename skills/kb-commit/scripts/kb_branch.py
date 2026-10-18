@@ -30,19 +30,21 @@ import sys
 import tempfile
 from pathlib import Path
 
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+
 BRANCH = "hosa-kb"
 
 
 def git(root: Path, *args: str, env: dict | None = None, check: bool = True) -> str:
     r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
-                       env={**os.environ, **(env or {})})
+                       env={**os.environ, **(env or {})}, **NO_WINDOW)
     if check and r.returncode:
         raise SystemExit(f"✗ git {' '.join(args)} : {r.stderr.strip()}")
     return r.stdout.strip()
 
 
 def has_branch(root: Path, name: str) -> bool:
-    return subprocess.run(["git", "-C", str(root), "show-ref", "--verify", "--quiet", name]).returncode == 0
+    return subprocess.run(["git", "-C", str(root), "show-ref", "--verify", "--quiet", name], **NO_WINDOW).returncode == 0
 
 
 def is_kb_worktree(kb: Path) -> bool:
@@ -142,7 +144,7 @@ def orphan_commit_from(root: Path, folder: Path, message: str) -> str:
     with tempfile.TemporaryDirectory() as tmp:
         env = {"GIT_INDEX_FILE": str(Path(tmp) / "index"), "GIT_WORK_TREE": str(folder)}
         r = subprocess.run(["git", "-C", str(root), "--work-tree", str(folder), "add", "-A", "."],
-                           capture_output=True, text=True, env={**os.environ, **env}, cwd=folder)
+                           capture_output=True, text=True, env={**os.environ, **env}, cwd=folder, **NO_WINDOW)
         if r.returncode:
             raise SystemExit(f"✗ git add (KB) : {r.stderr.strip()}")
         tree = git(root, "write-tree", env=env)

@@ -31,7 +31,7 @@ Manual: `/redaction`. Auto: immediately after `interview` finishes, or "rédige 
 
 ## Step 1: Get the Notes
 
-**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Fix each exigence, mark the anomaly `corrigée` in `kb/cdc/relecture.md` as soon as it is fixed — a cut session restarts at the next one — then chain on `relecture`, not `fondamentaux`.
+**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut session restarts at the first one not marked. Over 15 anomalies, dispatch one pass per theme instead of one long pass: a pass is cut at 150 tool calls. Then chain on `relecture`, not `fondamentaux`.
 
 If `interview` just ran in this session, use its notes directly. Otherwise ask: "Quelles sont les notes à rédiger ?" — accept whatever structure the user provides; you don't require `interview`'s exact format.
 
