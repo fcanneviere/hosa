@@ -9,15 +9,22 @@
 <body>
 <a class="skip" href="#main">Aller au contenu</a>
 <header class="top">
-  <a class="brand" href="#/" id="brand">Hosa</a>
-  
-  <nav id="nav" aria-label="Menu principal"></nav>
-  <details class="more" id="more"><summary>Gestion ▾</summary><div id="more-list"></div></details>
+  <a class="brand" href="#/" id="brand"><span class="logo" aria-hidden="true">H</span>Hosa</a>
+  <span class="project" id="project"></span>
+  <span class="phase" id="phase"></span>
+  <form class="gsearch" id="gsearch-form" role="search">
+    <label for="gsearch" class="vh">Rechercher dans la KB</label>
+    <input id="gsearch" type="search" placeholder="Rechercher un document, une exigence…" autocomplete="off">
+    <kbd aria-hidden="true">/</kbd>
+  </form>
   <span class="sp"></span>
-  <button type="button" class="lnk" id="rename" title="Changer le nom enregistré lors d’une validation"><span id="user-label">Mon nom</span></button>
+  <button type="button" class="btn o" id="rename" title="Changer le nom enregistré lors d’une validation"><span id="user-label">Mon nom</span></button>
 </header>
 <div id="banner" role="status"></div>
-<main id="main" tabindex="-1"><div id="view"></div></main>
+<div class="layout">
+  <nav id="nav" class="side" aria-label="Menu principal"></nav>
+  <main id="main" tabindex="-1"><div id="view"></div></main>
+</div>
 <footer class="foot"><span id="freshness"></span> <button type="button" id="reload" class="btn o">Relire</button></footer>
 <div id="toast" role="status" aria-live="polite"></div>
 <dialog id="name-dialog">

@@ -3,9 +3,16 @@
 
 const $ = (id) => document.getElementById(id);
 const S = { concepts: [], ov: null, activity: [], kbStatus: undefined, usage: undefined, loadedAt: null, err: null };
-// Un seul utilisateur : tout est accessible. Menu : Suivi (lecture) puis Gestion (écriture).
-const MENU = [['/', 'Accueil'], ['/avancement', "Plan d'avancement"], ['/exigences', 'Exigences'], ['/tickets', 'Tickets'], ['/sprints', 'Sprints'], ['/recettes', 'Recettes'], ['/consommation', 'Consommation'], ['/tracabilite', 'Traçabilité'], ['/journal', 'Journal'], ['/personas', 'Personas']];
-const GESTION = [['/gestion/validation', 'À valider'], ['/gestion/concepts', 'Concepts'], ['/gestion/tickets', 'Tickets']];
+// Un seul utilisateur : tout est accessible. Menu latéral : Pilotage, Documents (lecture de la KB), Gestion (écriture).
+// `/kb@<groupe>` : premier document du groupe dans le lecteur
+const NAV = [
+  ['Pilotage', [['/', 'Vue d’ensemble'], ['/avancement', "Plan d'avancement"], ['/tickets', 'Tickets'], ['/sprints', 'Sprints'], ['/recettes', 'Recettes'], ['/tracabilite', 'Traçabilité'], ['/consommation', 'Consommation'], ['/journal', 'Journal']]],
+  ['Documents', [['/kb@Cahier des charges', 'Cahier des charges'], ['/exigences', 'Exigences'], ['/personas', 'Personas'], ['/kb@Socle technique', 'Socle technique'], ['/kb@Conception', 'Conception'], ['/kb', 'Toute la KB']]],
+  ['Gestion', [['/gestion/validation', 'À valider'], ['/gestion/concepts', 'Concepts'], ['/gestion/tickets', 'Tickets']]],
+];
+// groupes du lecteur, par dossier de la KB ; un dossier absent d'ici tombe dans « Autres »
+const DOC_GROUPS = [['Cahier des charges', ['project', 'cdc', 'personnas', 'juridique']], ['Socle technique', ['stack', 'infra', 'rules']],
+  ['Conception', ['interface', 'securite', 'code', 'documentation']], ['Suivi', ['sprints', 'tickets', 'test', 'qualite']]];
 
 // --- utilitaires -----------------------------------------------------------
 function h(tag, attrs = {}, ...kids) {
@@ -54,7 +61,6 @@ const pl = (n, one, many) => (n > 1 ? many : one);
 const sect = (title, ...kids) => h('section', { class: 'sect' }, title ? h('h2', {}, title) : null, ...kids);
 const none = (text, ...extra) => h('p', { class: 'hint' }, text, ...extra);
 const errBox = (text, retry) => h('div', { class: 'alert err', role: 'alert' }, h('span', {}, text), retry ? h('button', { class: 'btn warn', onclick: reload }, 'Réessayer') : null);
-const subnav = (cur) => h('nav', { class: 'subnav', 'aria-label': 'Gestion' }, GESTION.map(([to, l]) => h('a', { href: `#${to}`, 'aria-current': cur === to ? 'page' : null }, l)));
 const crumbs = (...parts) => h('div', { class: 'crumbs' }, parts.flatMap((p, i) => [i ? ' › ' : '', p[1] ? h('a', { href: `#${p[1]}` }, p[0]) : p[0]]));
 const copyBtn = (text, label) => h('button', { class: 'lnk', type: 'button', 'aria-label': label || `Copier ${text}`, onclick: () => copy(text) }, 'Copier');
 const secOf = (body, name) => ((String(body || '').split(new RegExp(`^## ${name}`, 'm'))[1] || '').split(/^## /m)[0] || '').trim();
@@ -81,7 +87,7 @@ function routeOf(path) {
   if (c && c.type === 'Ticket') return `#/tickets/${enc(path.replace(/\.md$/, ''))}`;
   if (c && c.type === 'Exigence') return `#/exigences/${encodeURIComponent(c.slug)}`;
   if (c && c.type === 'Persona') return `#/personas/${encodeURIComponent(c.slug)}`;
-  return `#/gestion/concepts/${enc(path)}`;
+  return `#/kb/${enc(path)}`;
 }
 // lien relatif d'un corps Markdown (`../personnas/x.md`) → chemin dans la KB, ou null hors KB
 function kbPath(from, href) {
@@ -94,7 +100,8 @@ const trustWord = (c) => c.trust === 'human' ? 'validé par vous' : c.trust === 
 const trustSt = (c) => st(trustWord(c), c.trust === 'none' ? 'a' : 'f', c.trust === 'none' ? '○' : '✓');
 const byDate = (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
 const isAgent = (c) => c.status !== 'deprecated' && c.fm.generated && c.fm.generated.by && !String(c.fm.generated.by).startsWith('human:');
-const toValidate = () => S.concepts.filter((c) => isAgent(c) && (c.trust !== 'human' || c.status !== 'stable')).sort(byDate);
+const waitsForYou = (c) => isAgent(c) && (c.trust !== 'human' || c.status !== 'stable');
+const toValidate = () => S.concepts.filter(waitsForYou).sort(byDate);
 const validated = () => S.concepts.filter((c) => isAgent(c) && c.trust === 'human' && c.status === 'stable').sort(byDate);
 
 async function load() {
@@ -144,19 +151,6 @@ function planCount() {
   const all = p.sections.flatMap((s) => s.stages);
   return { done: all.filter((x) => ['fait', 'non applicable'].includes(x.status)).length, total: all.length };
 }
-function planCard() {
-  const p = S.ov.plan;
-  if (!p) return card("Plan d'avancement", none("Pas encore de plan d'avancement, lancer /status"));
-  const c = planCount();
-  return card(`Plan d'avancement · ${c.done}/${c.total}`, h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': c.done, 'aria-valuemax': c.total, 'aria-label': 'Étapes closes' }, h('i', { style: `width:${c.total ? (100 * c.done / c.total) : 0}%` })),
-    table(['Section', 'Étapes', 'Statut'], p.sections.map((s) => {
-      const d = s.stages.filter((x) => ['fait', 'non applicable'].includes(x.status)).length;
-      const blocked = s.stages.some((x) => x.status === 'bloqué');
-      const doing = s.stages.some((x) => x.status === 'en cours');
-      return h('tr', { class: blocked ? 'fail' : '' }, h('td', {}, s.title), h('td', { class: 'num' }, `${d}/${s.stages.length}`),
-        h('td', {}, st(blocked ? 'bloqué' : d === s.stages.length ? 'fait' : doing ? 'en cours' : 'à faire')));
-    })));
-}
 function nextCard() {
   const n = next(), p = S.ov.plan;
   if (!p) return card('Prochaine étape', none("Pas encore de plan d'avancement, lancer /status"), cmd('status'));
@@ -187,11 +181,6 @@ function ticketsCard() {
   const list = sp ? sp.tickets.map((x) => ({ ...(S.concepts.find((c) => c.path === x.path) || {}), title: x.title, path: x.path, state: x.state, fm: (S.concepts.find((c) => c.path === x.path) || {}).fm || {} })) : [];
   return card(`Tickets du sprint actif · ${list.length}`, sp ? table(['Ticket', 'Statut', 'Critères'], ticketRows(list)) : none('Aucun sprint — /sprint en compose un à partir du backlog'));
 }
-function validateCard(title) {
-  const l = toValidate();
-  return sect(`${title} · ${l.length}`, l.length ? validateList(l.slice(0, 3)) : none('Rien à valider : tout est validé.'),
-    l.length > 3 ? h('p', {}, h('a', { href: '#/gestion/validation' }, `Voir les ${l.length}`)) : null);
-}
 // Titre, Valider, Produit le d'abord : ce qui reste visible sur 390 px ; auteur et validateur passent sous le titre
 const byLine = (c) => h('div', { class: 'muted mob' }, `Produit par ${agentLabel(c.fm.generated.by)} · validé par ${verifier(c.fm.verified && c.fm.verified.by)}`);
 function validateList(l, detail) {
@@ -209,12 +198,63 @@ function livrerCard() {
     h('h3', {}, nb ? `Non — ${plural(nb, 'point bloque', 'points bloquent')}` : 'Oui — rien ne bloque'),
     nb ? h('ul', {}, fails.map((r) => h('li', {}, 'Recette « ', recetteName(r), ' » ', verdict('FAIL'))), blocked.map((t) => h('li', {}, 'Ticket « ', t.title, ' » ', st('bloqué'))), g.map((x) => h('li', {}, 'Preuve manquante : ', x))) : h('p', { class: 'muted' }, 'Aucune recette échouée, aucun ticket bloqué.'));
 }
+const projectTitle = () => (S.ov && S.ov.project && S.ov.project.frontmatter && S.ov.project.frontmatter.title) || 'le projet';
+const isClosed = (x) => ['fait', 'non applicable'].includes(x.status);
+const stageChip = (x) => { const [k, sym] = ST[x.status] || ST['à faire']; return h('span', { class: `stg ${x.status === 'en cours' ? 'e' : k}`, title: x.detail || x.status }, `${sym} ${x.stage}`); };
+function nextBand() {
+  const p = S.ov.plan, n = next();
+  const band = (eyebrow, title, detail, skill, extra) => h('section', { class: 'band' }, h('div', { class: 'band-t' }, h('div', { class: 'eyebrow' }, eyebrow), h('h2', {}, title), detail ? h('p', {}, detail) : null, extra),
+    h('div', { class: 'band-c' }, h('code', {}, `/${skill}`), h('button', { class: 'btn', type: 'button', onclick: () => copy(`/${skill}`) }, 'Copier')));
+  if (!p) return band('Pour commencer', "Pas encore de plan d'avancement", 'Lancez /status pour l’écrire.', 'status');
+  if (!n) return band('Prochaine étape', 'Toutes les étapes connues sont faites', 'Composez un nouveau sprint.', 'sprint');
+  const g = n.gaps || [];
+  return band(`Prochaine étape · ${n.section}`, n.stage, n.detail ? `Point de reprise : ${n.detail}` : 'Copiez la commande, puis collez-la dans Claude Code.', n.skill,
+    g.length ? h('ul', { class: 'gaps' }, g.map((x) => h('li', {}, `Preuve manquante : ${x}`))) : null);
+}
+const kpi = (label, value, hint, href) => h('a', { class: 'kpi', href }, h('span', { class: 'muted' }, label), h('b', {}, value), h('span', { class: 'muted' }, hint));
+function planBlock() {
+  const p = S.ov.plan;
+  if (!p) return card("Plan d'avancement", none("Pas encore de plan d'avancement, lancer /status"));
+  const c = planCount();
+  return h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', {}, "Plan d'avancement"), h('a', { href: '#/avancement' }, `${c.done} / ${c.total} étapes · détail`)),
+    p.sections.map((s) => {
+      const d = s.stages.filter(isClosed).length, pct = s.stages.length ? 100 * d / s.stages.length : 0;
+      return h('div', { class: 'phase' }, h('div', { class: 'phase-h' }, h('b', {}, s.title), h('span', { class: 'muted' }, s.stages.length ? `${d} / ${s.stages.length}` : 'pas commencé')),
+        h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': d, 'aria-valuemax': s.stages.length, 'aria-label': s.title }, h('i', { class: pct === 100 ? 'ok' : '', style: `width:${pct}%` })),
+        h('div', { class: 'stgs' }, s.stages.map(stageChip)));
+    }));
+}
+function readCard() {
+  const l = toValidate();
+  return h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', {}, `À relire · ${l.length}`), h('span', { class: 'muted' }, 'Écrit par Claude, pas encore validé par vous')),
+    l.length ? h('ul', { class: 'rows' }, l.slice(0, 6).map((c) => h('li', {}, h('div', {}, h('a', { href: readerHref(c) }, c.title),
+      h('div', { class: 'muted' }, `${groupOf(c)} · ${agentLabel(c.fm.generated.by)} · ${fmtDay(c.fm.generated.at)}`)),
+      h('a', { class: 'btn o', href: readerHref(c) }, 'Lire')))) : none('Rien à relire : tout est validé.'),
+    l.length > 6 ? h('p', {}, h('a', { href: '#/gestion/validation' }, `Voir les ${l.length}`)) : null);
+}
+function activityCard() {
+  const l = S.activity.slice(0, 6);
+  return h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', {}, 'Activité récente'), h('a', { href: '#/journal' }, 'Journal')),
+    l.length ? h('ol', { class: 'act' }, l.map((a) => h('li', {}, h('span', { class: 'num muted' }, isoDay(a.date)), h('div', {}, h('b', {}, ACTEUR[a.acteur] || a.acteur), ' · ', a.lien ? linkSlug(a.text, a.lien) : a.text))))
+      : none('Aucune entrée dans les journaux de la KB'));
+}
 function home() {
-  const rec = recettes().slice(0, 3);
-  return h('div', { class: 'grid' }, h('div', { class: 'cols' }, nextCard(), livrerCard()),
-    h('div', { class: 'cols' }, h('div', { class: 'grid' }, planCard(), gapsCard()), validateCard('À valider')),
-    ticketsCard(),
-    h('div', { class: 'cols2' }, sect('Dernières recettes', rec.length ? table(['Recette', 'Date', 'Résultat'], rec.map((r) => h('tr', { class: r.verdict === 'FAIL' ? 'fail' : '' }, h('td', {}, recetteName(r)), h('td', { class: 'muted' }, fmtDate(r.at)), h('td', {}, verdict(r.verdict))))) : none('Aucune recette pour le moment.')), usageCard(true)));
+  const p = S.ov.plan, n = next(), ex = ofType('Exigence'), board = S.ov.board || [], sp = activeSprint();
+  const sec = n && p ? p.sections.find((s) => s.title === n.section) : null;
+  const where = !p ? "Pas encore de plan d'avancement." : !n ? 'Toutes les étapes connues sont faites.'
+    : sec ? `${n.section} : étape ${sec.stages.findIndex((x) => x.stage === n.stage) + 1} sur ${sec.stages.length}.` : `${n.section}.`;
+  const okEx = ex.filter((c) => c.trust === 'human').length;
+  return h('div', { class: 'grid home' },
+    h('div', {}, h('div', { class: 'eyebrow' }, 'Vue d’ensemble'), h('h1', {}, `Où en est ${projectTitle()}`), h('p', { class: 'muted' }, where)),
+    nextBand(),
+    h('div', { class: 'kpis' },
+      kpi('Exigences validées', ex.length ? `${okEx} / ${ex.length}` : '—', ex.length ? `${ex.filter((c) => !isStable(c)).length} en brouillon` : 'pas encore rédigées', '#/exigences'),
+      kpi('À relire', String(toValidate().length), 'écrit par Claude', '#/gestion/validation'),
+      kpi('Tickets faits', board.length ? `${board.filter((t) => t.state === 'done').length} / ${board.length}` : '—', board.length ? `${board.filter((t) => t.state === 'blocked').length} bloqués` : 'écrits par /backlog', '#/tickets'),
+      kpi('Sprint actif', sp ? sp.title : 'Aucun', sp ? `${sp.done} / ${sp.total} tickets faits` : 'après le backlog', '#/sprints')),
+    planBlock(),
+    h('div', { class: 'cols' }, readCard(), activityCard()),
+    sp ? h('div', { class: 'cols' }, ticketsCard(), livrerCard()) : null);
 }
 const reviewOf = (t) => { const m = (String(t.body || '').split(/^## Revue/m)[1] || '').match(/PASS-WITH-NOTES|PASS|FAIL/g); return m ? m[m.length - 1] : null; };
 const recettes = () => (S.ov && S.ov.recettes) || [];
@@ -277,7 +317,7 @@ function vTickets(manage) {
   const sprints = [...new Set(all.map((t) => t.sprint).filter(Boolean))].map((s) => [s, sprintName(s)]);
   const l = all.filter((t) => (!F.sprint || (F.sprint === BACKLOG ? !t.sprint : t.sprint === F.sprint)) && (!F.origine || t.origine === F.origine)
     && (!F.validation || t.validation === F.validation) && has(t.title + t.path));
-  return h('div', { class: 'grid' }, manage ? subnav('/gestion/tickets') : null, h('h1', {}, 'Tickets'),
+  return h('div', { class: 'grid' }, h('h1', {}, 'Tickets'),
     filterBar(['q'], { selects: { sprint: [...sprints, [BACKLOG, 'Backlog non planifié']], origine: [['humain', 'Vous'], ['agent', 'Claude']], validation: VALIDATION } }),
     all.length ? l.length ? h('div', { class: 'board' }, ['todo', 'doing', 'blocked', 'done'].map((s) => col(s, l.filter((t) => t.state === s), manage)))
       : none('Aucun ticket ne correspond.', ' ', clearBtn(['q', 'sprint', 'origine', 'validation']))
@@ -299,11 +339,12 @@ function vTicket(path) {
         h('details', { class: 'card' }, h('summary', {}, 'Contenu complet'), doc(c)))));
 }
 // corps rendu et assaini par le serveur (nh3) ; les liens vers la KB ouvrent l'écran du concept
-function doc(c, body) {
+function doc(c, body, done) {
   const box = h('div', { class: 'doc card' }, 'Chargement…');
   api('render', { method: 'POST', json: { body: body ?? c.body ?? '' } }).then((r) => {
     box.innerHTML = r.html || '';
     for (const a of box.querySelectorAll('a[href]')) { const p = kbPath(c.path, a.getAttribute('href')); if (p) a.setAttribute('href', routeOf(p)); }
+    if (done) done(box);
   }, (e) => box.replaceChildren(errBox(`Rendu impossible : ${plain(e)}.`)));
   return box;
 }
@@ -421,7 +462,7 @@ function vJournal() {
 function vValidation() {
   const l = toValidate();
   const done = validated();
-  return h('div', { class: 'grid' }, subnav('/gestion/validation'), h('h1', {}, 'À valider'), h('p', { class: 'muted' }, 'Ce que Claude a produit et que vous n’avez pas encore validé.'),
+  return h('div', { class: 'grid' }, h('h1', {}, 'À valider'), h('p', { class: 'muted' }, 'Ce que Claude a produit et que vous n’avez pas encore validé.'),
     l.length ? validateList(l, true) : none('Rien à valider : tout est validé.'),
     h('details', { class: 'card' }, h('summary', {}, `Déjà validé (${done.length})`),
       table(['Titre', '', 'Validé le', 'Produit par', 'Validé par'], done.map((c) => h('tr', {}, h('td', {}, c.title, byLine(c)),
@@ -482,15 +523,62 @@ function vConcepts(path) {
   if (path) {
     const box = h('div', { class: 'grid' }, h('p', { class: 'muted' }, 'Chargement…'));
     api(`concepts/${enc(path)}`).then((c) => box.replaceChildren(...editor(c)), (e) => box.replaceChildren(e.status === 404 ? v404() : errBox(`Rendu impossible : ${plain(e)}.`)));
-    return h('div', { class: 'grid' }, subnav('/gestion/concepts'), crumbs(['Concepts', '/gestion/concepts'], [path]), box);
+    return h('div', { class: 'grid' }, crumbs(['Concepts', '/gestion/concepts'], [path]), box);
   }
   const cs = S.concepts, uniq = (f) => [...new Set(cs.flatMap(f).filter(Boolean))].sort().map((x) => [x, x]);
   const l = cs.filter((c) => has(c.title + c.path) && (!F.dossier || folderOf(c) === F.dossier) && (!F.type || c.type === F.type)
     && (!F.tag || (Array.isArray(c.fm.tags) && c.fm.tags.includes(F.tag))) && (!F.statut || c.fm.status === F.statut) && (!F.validation || TIER[c.trust] === F.validation));
-  return h('div', { class: 'grid' }, subnav('/gestion/concepts'), h('h1', {}, 'Concepts'), createForm(),
+  return h('div', { class: 'grid' }, h('h1', {}, 'Concepts'), createForm(),
     filterBar(['q'], { selects: { dossier: uniq((c) => [folderOf(c)]), type: uniq((c) => [c.type]), tag: uniq((c) => Array.isArray(c.fm.tags) ? c.fm.tags.map(String) : []), statut: uniq((c) => [c.fm.status]), validation: VALIDATION } }),
     l.length ? table(['Concept', 'Type', 'Validation'], l.map((c) => h('tr', {}, h('td', {}, h('a', { href: `#/gestion/concepts/${enc(c.path)}` }, c.title)), h('td', {}, c.type), h('td', {}, trustSt(c)))))
       : none('Aucun concept ne correspond', ' ', clearBtn(['q', 'dossier', 'type', 'tag', 'statut', 'validation'])));
+}
+// --- lecteur de la KB : liste par groupe, document rendu, sommaire ------------------
+const GROUPS = [...DOC_GROUPS.map(([g]) => g), 'Autres'];
+const groupOf = (c) => (DOC_GROUPS.find(([, fs]) => fs.includes(folderOf(c))) || ['Autres'])[0];
+const folderRank = (c) => { const f = DOC_GROUPS.flatMap(([, fs]) => fs).indexOf(folderOf(c)); return f < 0 ? 99 : f; };
+// ordre de lecture : dossier, `index` d'abord, puis par type et par titre
+const docOrder = (a, b) => folderRank(a) - folderRank(b) || folderOf(a).localeCompare(folderOf(b)) || (b.slug === 'index') - (a.slug === 'index')
+  || String(a.type).localeCompare(String(b.type)) || a.title.localeCompare(b.title);
+const readerHref = (c) => `#/kb/${enc(c.path)}`;
+const firstDoc = (g) => S.concepts.filter((c) => groupOf(c) === g).sort(docOrder)[0];
+function vKb(path) {
+  const c = path ? S.concepts.find((x) => x.path === path) : null;
+  if (path && !c) return v404();
+  const l = S.concepts.filter((x) => x === c || has(`${x.title} ${x.path}`)).sort(docOrder);
+  const link = (x) => h('a', { class: 'dl', href: readerHref(x), 'aria-current': x === c ? 'page' : null }, h('span', {}, x.title), h('i', { class: `dot ${x.trust}`, title: trustWord(x) }));
+  // plus de 6 concepts d'un même type (exigences, tickets…) : repliés sous leur type
+  const byType = (docs) => {
+    const types = {}; for (const x of docs) (types[x.type] ||= []).push(x);
+    return Object.entries(types).flatMap(([t, xs]) => xs.length > 6 ? [h('details', { class: 'dt', open: xs.includes(c) || !!F.q }, h('summary', {}, `${t} · ${xs.length}`), xs.map(link))] : xs.map(link));
+  };
+  const aside = h('aside', { class: 'docnav', 'aria-label': 'Documents de la KB' }, filterBar(['q']),
+    GROUPS.map((g) => { const docs = l.filter((x) => groupOf(x) === g); return docs.length ? h('details', { class: 'dg', open: !c || groupOf(c) === g || !!F.q }, h('summary', {}, g, h('span', { class: 'muted' }, ` ${docs.length}`)), byType(docs)) : null; }),
+    l.length ? null : none('Aucun document ne correspond', ' ', clearBtn(['q'])));
+  if (!c) {
+    return h('div', { class: 'reader-wrap' }, aside, h('article', { class: 'reader card' }, h('div', { class: 'eyebrow' }, 'Documents'), h('h1', {}, 'Base de connaissance'),
+      h('p', { class: 'muted' }, 'Tout ce que les agents ont écrit sur le projet. Choisissez un document à gauche pour le lire.'),
+      table(['Groupe', 'Documents', 'À relire'], GROUPS.map((g) => { const docs = S.concepts.filter((x) => groupOf(x) === g), f = firstDoc(g);
+        return docs.length ? h('tr', {}, h('td', {}, f ? h('a', { href: readerHref(f) }, g) : g), h('td', { class: 'num' }, String(docs.length)), h('td', { class: 'num' }, String(docs.filter(waitsForYou).length))) : null; }))));
+  }
+  const toc = h('nav', { class: 'toc', 'aria-label': 'Sommaire du document' });
+  const fillToc = (box) => {
+    const heads = [...box.querySelectorAll('h2, h3')];
+    toc.replaceChildren(...(heads.length ? [h('div', { class: 'gt' }, 'Sur cette page'),
+      ...heads.map((x) => h('button', { type: 'button', class: x.tagName === 'H3' ? 'sub' : '', onclick: () => x.scrollIntoView({ block: 'start' }) }, x.textContent))] : []));
+  };
+  const body = doc(c, undefined, fillToc); body.classList.remove('card');
+  const i = l.indexOf(c), prev = l[i - 1], nxt = l[i + 1], gen = c.fm.generated || {};
+  return h('div', { class: 'reader-wrap' }, aside,
+    h('article', { class: 'reader card' }, crumbs(['Documents', '/kb'], [groupOf(c)], [folderOf(c) || 'racine']), h('h1', {}, c.title),
+      h('div', { class: 'row meta' }, trustSt(c), c.type === 'Exigence' ? statusSt(c) : null, h('span', {}, c.type),
+        gen.by ? h('span', {}, `Écrit par ${agentLabel(gen.by)}${gen.at ? ` le ${fmtDay(gen.at)}` : ''}`) : null, h('span', { class: 'mono' }, c.path)),
+      c.fm.description ? h('p', { class: 'lead' }, c.fm.description) : null,
+      h('div', { class: 'row acts' }, waitsForYou(c) ? h('button', { class: 'btn', type: 'button', onclick: () => validate(c) }, 'Valider ce document') : null,
+        h('a', { class: 'btn o', href: `#/gestion/concepts/${enc(c.path)}` }, 'Modifier'), h('button', { class: 'btn o', type: 'button', onclick: () => copy(c.path) }, 'Copier le chemin')),
+      body,
+      h('div', { class: 'row pn' }, prev ? h('a', { class: 'btn o', href: readerHref(prev) }, `← ${prev.title}`) : h('span'), nxt ? h('a', { class: 'btn o', href: readerHref(nxt) }, `${nxt.title} →`) : null)),
+    toc);
 }
 const v404 = () => h('section', { class: 'card' }, h('h1', {}, 'Écran introuvable'), h('p', {}, 'Cet écran n’existe pas.'), h('p', {}, h('a', { class: 'btn', href: '#/' }, 'Retour à l’accueil')));
 
@@ -520,18 +608,27 @@ const ROUTES = [
   [/^\/avancement$/, vAvancement, "Plan d'avancement"], [/^\/tickets$/, () => vTickets(false), 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
   [/^\/sprints$/, vSprints, 'Sprints'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(m[1]), 'Sprint'], [/^\/exigences$/, vExigences, 'Exigences'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(m[1]), 'Exigence'],
   [/^\/personas$/, () => vPersonas(), 'Personas'], [/^\/personas\/([^/]+)$/, (m) => vPersonas(decodeURIComponent(m[1])), 'Persona'], [/^\/recettes$/, vRecettes, 'Recettes'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
+  [/^\/kb$/, () => vKb(), 'Base de connaissance'], [/^\/kb\/(.+)$/, (m) => vKb(decodeURIComponent(m[1])), 'Document'],
   [/^\/gestion\/validation$/, vValidation, 'À valider'], [/^\/gestion\/concepts$/, () => vConcepts(), 'Concepts'], [/^\/gestion\/concepts\/(.+)$/, (m) => vConcepts(decodeURIComponent(m[1])), 'Concept'], [/^\/gestion\/tickets$/, () => vTickets(true), 'Tickets'],
 ];
 const here = () => (location.hash.replace(/^#/, '') || '/').replace(/\/$/, '') || '/';
 
 function paintShell() {
-  $('brand').textContent = 'Hosa';
   const p0 = here(), p = ROUTES.some(([re]) => re.test(p0)) ? p0 : '\0';
-  const cur = (to) => p === to || (to !== '/' && p.startsWith(to + '/')) ? 'page' : null;
-  $('nav').replaceChildren(...MENU.map(([to, label]) => h('a', { href: `#${to}`, 'aria-current': cur(to) }, label)),
-    ...GESTION.map(([to, label]) => h('a', { class: 'mo', href: `#${to}`, 'aria-current': cur(to) }, `Gestion : ${label}`)));
-  $('more').hidden = false; $('more').querySelector('summary').classList.toggle('on', p.startsWith('/gestion'));
-  $('more-list').replaceChildren(...GESTION.map(([to, label]) => h('a', { href: `#${to}`, 'aria-current': cur(to) }, label)));
+  // document ouvert dans le lecteur : son groupe éclaire l'entrée du menu
+  const open = p.startsWith('/kb/') ? S.concepts.find((c) => c.path === decodeURIComponent(p.slice(4))) : null, og = open && groupOf(open);
+  const cur = (to) => {
+    if (to.startsWith('/kb@')) return og === to.slice(4) ? 'page' : null;
+    if (to === '/kb') return p === '/kb' || (open && !NAV[1][1].some(([t]) => t === `/kb@${og}`)) ? 'page' : null;
+    return p === to || (to !== '/' && p.startsWith(to + '/')) ? 'page' : null;
+  };
+  const href = (to) => { if (!to.startsWith('/kb@')) return `#${to}`; const f = firstDoc(to.slice(4)); return f ? readerHref(f) : '#/kb'; };
+  const n = toValidate().length;
+  $('nav').replaceChildren(...NAV.map(([g, items]) => h('div', { class: 'grp' }, h('div', { class: 'gt' }, g),
+    items.map(([to, label]) => h('a', { href: href(to), 'aria-current': cur(to) }, h('span', {}, label), to === '/gestion/validation' && n ? h('span', { class: 'badge', 'aria-label': `${n} à valider` }, String(n)) : null)))));
+  $('project').textContent = S.ov ? projectTitle() : '';
+  $('phase').textContent = (next() && next().section) || '';
+  $('phase').hidden = !$('phase').textContent;
   const k = S.kbStatus;
   $('banner').replaceChildren(...(k === undefined ? [] : k && k.git && k.changed > 0 ? [h('div', { class: 'alert', role: 'alert' },
     h('span', {}, h('b', {}, `${plural(k.changed, 'changement', 'changements')} de la KB non sauvegardé${k.changed > 1 ? 's' : ''}`), ' — lancer ', h('code', {}, '/kb-commit'), '. La KB est la base de connaissance du projet, écrite par les agents.'),
@@ -564,7 +661,9 @@ window.addEventListener('hashchange', () => {
 $('rename').addEventListener('click', () => { localStorage.removeItem('hosa.me'); me().then(() => { toast('Nom enregistré'); paintShell(); }); });
 $('reload').addEventListener('click', reload);
 document.addEventListener('keydown', (e) => {
-  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { const s = $('search'); if (s) { e.preventDefault(); s.focus(); } }
+  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { const s = $('search') || $('gsearch'); if (s) { e.preventDefault(); s.focus(); } }
 });
+// recherche de la barre du haut : ouvre le lecteur filtré
+$('gsearch-form').addEventListener('submit', (e) => { e.preventDefault(); const q = $('gsearch').value.trim(); $('gsearch').value = ''; F.q = q; sessionStorage.setItem('hosa.filtres', JSON.stringify(F)); if (location.hash === '#/kb') route(); else location.hash = '#/kb'; });
 route();
 load().then(route);
