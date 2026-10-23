@@ -84,4 +84,4 @@ Report the agent's verdict, scénarios, pain points, and quick wins in plain lan
 
 ## No Commits
 
-This skill does not commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
+This skill does not commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa`, "Git checkpoints".

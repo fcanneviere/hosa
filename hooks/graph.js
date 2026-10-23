@@ -60,11 +60,13 @@ function findKbRoot(dir) {
 }
 
 // The KB file's header error as the app reports it ("Le fichier est illisible : …"), or ''.
-const CHECK_PY = 'import sys; sys.path.insert(0, sys.argv[1])\n' +
+const CHECK_PY = 'import sys; sys.path.insert(0, sys.argv[1]); sys.stdout.reconfigure(encoding="utf-8")\n' +
   'try:\n import kb\nexcept Exception: sys.exit(0)\n' +
   'try: kb.parse(open(sys.argv[2], encoding="utf-8").read())\nexcept kb.KbError as e: print(e)\nexcept Exception: pass';
 function checkHeader(file) {
-  const r = spawnSync(python(), ['-c', CHECK_PY, APP, file], { timeout: 4000, encoding: 'utf8', windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
+  // -I and cwd: a module in the managed project's folder never shadows the app's imports
+  // (-I also drops PYTHONIOENCODING: CHECK_PY sets UTF-8 itself).
+  const r = spawnSync(python(), ['-I', '-c', CHECK_PY, APP, file], { cwd: APP, timeout: 4000, encoding: 'utf8', windowsHide: true });
   return (r.stdout || '').trim();
 }
 

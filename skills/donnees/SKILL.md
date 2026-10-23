@@ -50,7 +50,7 @@ Redispatch `hosa-data-engineer` with `model: sonnet` (Responsibility 1 Phase 2) 
 
 ## No Commits
 
-You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
+You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa`, "Git checkpoints".
 
 ## Output
 

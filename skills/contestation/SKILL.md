@@ -64,7 +64,7 @@ Once at least one `Exigence` has been validated to `stable` in this session, cha
 
 ## No Commits
 
-This skill doesn't commit. Report what changed (including any `status`/`verified` updates, and any persona Pain points/Quick wins `hosa-key-user` appended and logged to `kb/personnas/log.md` during Step 1). The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa` Core Rules, "Git checkpoints".
+This skill doesn't commit. Report what changed (including any `status`/`verified` updates, and any persona Pain points/Quick wins `hosa-key-user` appended and logged to `kb/personnas/log.md` during Step 1). The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa`, "Git checkpoints".
 
 ## Output
 
