@@ -57,7 +57,7 @@ One file per recette session, `.hosa/kb/test/<slug-target>-<slug-persona>.md`:
 ---
 type: Test Plan
 title: Recette — <target> (<persona>)
-description: <one line: what was validated, for whom>
+description: "<one line: what was validated, for whom>"
 tags: [recette]
 status: stable
 generated: { by: hosa-key-user/1.0, at: <ISO8601> }

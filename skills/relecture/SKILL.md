@@ -72,7 +72,7 @@ Before reporting, write `kb/cdc/relecture.md` — the anomalies survive a cut se
 ---
 type: Revue Relecture
 title: Relecture du cahier des charges
-description: Anomalies de précision, de complétude et de cohérence, et leur suite
+description: "Anomalies de précision, de complétude et de cohérence, et leur suite"
 tags: [relecture]
 generated: { by: relecture, at: <ISO8601> }
 ---

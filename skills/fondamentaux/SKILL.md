@@ -98,7 +98,7 @@ Redispatch `hosa-product-owner` with the kept items and the user's answers. It w
 ---
 type: Revue Fondamentaux
 title: Fonctions de base du logiciel
-description: Couverture du cahier des charges sur la checklist des fondamentaux
+description: "Couverture du cahier des charges sur la checklist des fondamentaux"
 tags: [fondamentaux]
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---

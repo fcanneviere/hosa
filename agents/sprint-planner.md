@@ -45,7 +45,7 @@ Naming the sprint, stating its objective and sizing it are yours to propose; the
 ---
 type: Sprint
 title: <nom du sprint>
-description: <objectif ou période>
+description: "<objectif ou période>"
 tags: []
 state: planned
 generated: { by: hosa-sprint-planner/1.0, at: <ISO8601> }

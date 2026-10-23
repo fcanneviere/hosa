@@ -45,7 +45,7 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 ---
 type: Test Plan
 title: Tests techniques — <titre du ticket>
-description: <une ligne : ce qui est couvert>
+description: "<une ligne : ce qui est couvert>"
 tags: [technique]
 status: stable
 generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }

@@ -8,12 +8,16 @@ Si tu as rencontré un problème avec Hosa lui-même — deux consignes contradi
 - Problème|Idée — <fichier Hosa concerné, étape> — <ce qui s'est passé> → <proposition>
 Sinon : "None". Il s'agit de tes propres consignes Hosa, jamais du code du projet géré. N'écris pas ce retour toi-même dans la KB : le skill qui t'a lancé s'en charge.`;
 
-function processPayload(payload) {
+// Windows: Bash eats the backslashes of an unquoted `C:\…` passed to a script.
+const WINDOWS_PATHS = 'Pass every path argument in double quotes, with forward slashes (`"C:/dev/projet"`): Bash strips the backslashes of an unquoted `C:\\…`.';
+
+function processPayload(payload, platform = process.platform) {
   if (!/(^|:)hosa-/.test(payload.agent_type || '')) return null;
-  return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: RULE } };
+  const context = platform === 'win32' ? `${RULE}\n\n${WINDOWS_PATHS}` : RULE;
+  return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context } };
 }
 
-module.exports = { processPayload };
+module.exports = { processPayload, WINDOWS_PATHS };
 
 if (require.main === module) {
   let input = '';

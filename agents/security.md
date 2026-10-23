@@ -67,7 +67,7 @@ If the mode isn't clear, return an Open Question rather than guessing. You never
 ---
 type: Analyse de sécurité
 title: Analyse de sécurité
-description: Données sensibles, menaces et mesures retenues dès la conception
+description: "Données sensibles, menaces et mesures retenues dès la conception"
 tags: [securite]
 generated: { by: hosa-security/1.0, at: <ISO8601> }
 ---
@@ -99,7 +99,7 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 ---
 type: Modèle de Menaces
 title: Modèle de menaces — <projet>
-description: <une ligne : nombre de frontières, de menaces, de cas d'abus>
+description: "<une ligne : nombre de frontières, de menaces, de cas d'abus>"
 tags: [securite]
 status: stable
 generated: { by: hosa-security/1.0, at: <ISO8601> }
@@ -166,7 +166,7 @@ Seed only what applies (Mode 1 step 6, Mode 3 step 6). The user can edit, drop o
 ---
 type: Audit Sécurité
 title: Audit sécurité — <scope>
-description: <une ligne>
+description: "<une ligne>"
 tags: [securite]
 status: stable
 generated: { by: hosa-security/1.0, at: <ISO8601> }

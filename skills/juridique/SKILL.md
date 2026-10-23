@@ -52,9 +52,11 @@ Show the user, in this order:
 
 A legal obligation is dropped only with the user's reason, recorded in `kb/cdc/juridique.md` — never silently. Tell the user once that this analysis prepares the design and doesn't replace a lawyer or a DPO; the points marked « à valider » need one.
 
+Once the user has answered, before Step 3, write `kb/cdc/juridique.md` (`type: Analyse juridique`, `status: draft`) with only `## Choix validés`: each answer, each dropped obligation with its reason. Then `avancement.py progress juridique --detail "choix validés" --reprise "Step 3 : Phase 2 depuis kb/cdc/juridique.md ## Choix validés"`. A cut session resumes at Step 3 without asking again.
+
 ## Step 3: Write
 
-Redispatch `hosa-legal` (Mode 1 Phase 2) with the validated choices and the reasons for what was dropped. It writes the legal exigences (`status: draft`, `tags: [juridique]`), adds `## Contraintes juridiques` to the exigences concerned, and writes `kb/cdc/juridique.md`.
+Redispatch `hosa-legal` (Mode 1 Phase 2) with the `## Choix validés` of `kb/cdc/juridique.md`; it moves them into the file's own sections. It writes the legal exigences (`status: draft`, `tags: [juridique]`), adds `## Contraintes juridiques` to the exigences concerned, and writes `kb/cdc/juridique.md`.
 
 ## Livraison (Mode 2)
 

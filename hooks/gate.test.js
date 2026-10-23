@@ -103,3 +103,11 @@ test('other git commands pass', () => {
   assert.equal(bash(r, 'git -C .worktrees/sprint/s1 merge --no-ff main'), null);
   assert.equal(bash(r, 'git status'), null);
 });
+
+test('a cd into the KB is refused, a subshell or another folder passes', () => {
+  const r = project({});
+  assert.match(denied(bash(r, 'cd .hosa/kb/cdc && ls')), /inside the KB/);
+  assert.match(denied(bash(r, `cd "${path.join(r, '.hosa')}"`)), /git -C/);
+  assert.equal(bash(r, '(cd .hosa/kb && git status)'), null);
+  assert.equal(bash(r, 'cd .worktrees/sprint/s1 && ls'), null);
+});

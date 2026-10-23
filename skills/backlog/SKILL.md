@@ -79,7 +79,7 @@ An `Exigence` tagged `nfr` (performance, availability, data protection, accessib
 ---
 type: Design Rule
 title: Définition de terminé
-description: Ce que chaque ticket doit respecter avant d'être accepté
+description: "Ce que chaque ticket doit respecter avant d'être accepté"
 tags: [process, nfr]
 status: stable
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
@@ -108,7 +108,7 @@ Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
 ---
 type: Ticket
 title: <titre>
-description: <description courte>
+description: "<description courte>"
 tags: []
 state: todo
 depends_on: []          # tickets à livrer avant celui-ci — retiré si vide

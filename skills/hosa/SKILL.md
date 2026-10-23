@@ -101,7 +101,7 @@ mkdir -p .hosa/kb/project/
 ---
 type: Project
 title: <nom>
-description: <objectif>
+description: "<objectif>"
 tags: []
 status: stable
 generated: { by: human:<user>, at: <ISO8601> }
@@ -155,7 +155,7 @@ One file per persona in `.hosa/kb/personnas/<slug>.md` (slug = kebab-case of the
 ---
 type: Persona
 title: <nom du persona>
-description: <description>
+description: "<description>"
 tags: []
 status: stable
 generated: { by: human:<user>, at: <ISO8601> }

@@ -66,7 +66,7 @@ Check: every migration reversible or explicitly documented as not; `vérifier` p
 ---
 type: Infra
 title: Base de données — <projet>
-description: Outillage, environnements, tests et sauvegardes de la base
+description: "Outillage, environnements, tests et sauvegardes de la base"
 tags: [bdd]
 status: stable
 generated: { by: hosa-dba/1.0, at: <ISO8601> }

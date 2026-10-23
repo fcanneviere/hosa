@@ -15,7 +15,7 @@ One markdown file = one concept. YAML frontmatter, then a markdown body.
 ---
 type: Ticket
 title: Export CSV des factures
-description: Export des factures du mois au format CSV.
+description: "Export des factures du mois au format CSV."
 tags: [facturation]
 status: draft
 generated: { by: hosa-product-owner/1.0, at: 2026-09-27T10:00:00Z }
@@ -24,7 +24,7 @@ Lié à : [exigence](../cdc/facturation.md)
 ```
 
 - **`type` is the only required field** — without it the concept is invisible (the app and the graph skip it). Use the type the owning bundle already uses (`Ticket`, `Exigence`, `Persona`, `Sprint`, `Module`…); never invent a variant spelling.
-- `title`, `description`, `tags`, `resource` are optional but expected when known. `description` is one sentence — it is what `index.md` shows.
+- `title`, `description`, `tags`, `resource` are optional but expected when known. `description` is one sentence — it is what `index.md` shows — always in double quotes: a ` : ` inside an unquoted value breaks the header.
 - **Filename = slug**: lowercase, digits, single hyphens (`export-csv.md`). The slug is the concept's identity — tickets, the graph and links use it. Never rename a concept others link to; deprecate it and create a new one.
 - **`status`** ∈ `draft` | `stable` | `deprecated`. Never delete a concept others may reference: set `status: deprecated` and say in the body what replaces it.
 - Dates are ISO 8601 strings (`2026-09-27T10:00:00Z`), quoted if a YAML parser could read them as a date.

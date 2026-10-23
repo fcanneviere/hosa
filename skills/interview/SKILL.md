@@ -87,7 +87,7 @@ Write `.hosa/kb/cdc/interviews/<ISO-date>-interview.md` (one file per interview 
 ---
 type: Compte Rendu
 title: Interview cahier des charges — <date>
-description: <une ligne : processus couverts>
+description: "<une ligne : processus couverts>"
 tags: [interview]
 status: stable
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }

@@ -77,7 +77,7 @@ Judge whether the **objective** was met, not just whether tickets closed: from d
 ---
 type: Sprint Review
 title: Bilan — <titre du sprint>
-description: <une ligne : objectif atteint ou non, et pourquoi>
+description: "<une ligne : objectif atteint ou non, et pourquoi>"
 tags: [retro]
 status: stable
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }

@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { WINDOWS_PATHS } = require('./subagent-start');
 
 const root = process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..');
 const skillPath = path.join(root, 'skills', 'using-hosa', 'SKILL.md');
@@ -25,6 +26,7 @@ try {
       { detached: true, stdio: 'ignore', windowsHide: true }).on('error', () => {}).unref();
   }
   context += `\n\n## Python\n\n\`<python>\` in skills and agents means \`"${g.python()}"\`.` +
+    (process.platform === 'win32' ? ` ${WINDOWS_PATHS}` : '') +
     (venvReady ? '' : ' Hosa is installing its Python dependencies in the background (first session after install or update): if a script fails on a missing module, wait a minute and retry.');
 } catch (e) {} // best-effort — never block session start
 try {

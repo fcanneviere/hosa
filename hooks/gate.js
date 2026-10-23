@@ -5,7 +5,8 @@
 //   last `## Revue` is PASS or PASS-WITH-NOTES (`develop` Step 4c);
 // - `git merge … sprint/<slug>` (landing): `git` Mode 2's QA gate, i.e.
 //   `avancement.py check validation` — tickets done and verified, every CA
-//   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO.
+//   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO;
+// - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
 
 const fs = require('fs');
@@ -104,14 +105,27 @@ ${r.stdout.trim()}
 Fix each gap through its skill, then merge.`;
 }
 
+// A `cd` into `.hosa/` sticks to the session: agents dispatched next keep their memory
+// (`.claude/agent-memory-local/`) inside the KB, and later git commands hit `hosa-kb`.
+function cdGate(cmd, cwd) {
+  const seg = segments(cmd).find((s) => s[0] === 'cd' && s[1] && /[\\/]\.hosa([\\/]|$)/.test(path.resolve(cwd, native(s[1]))));
+  return seg && `\`cd ${seg[1]}\` would leave the session inside the KB. ` +
+    'Stay at the project root: use `git -C <path>` and absolute paths.';
+}
+
 function processPayload(p) {
   if (process.env.HOSA_GATE === '0' || !p || p.tool_name !== 'Bash') return null;
   const cmd = (p.tool_input || {}).command;
-  if (!cmd || !/\bgit\b/.test(cmd)) return null;
-  for (const call of gitCalls(cmd, native(p.cwd || process.cwd()))) {
+  if (!cmd) return null;
+  const cwd = native(p.cwd || process.cwd());
+  const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
+    permissionDecisionReason: `[hosa gate] ${reason}` } });
+  const cd = cdGate(cmd, cwd);
+  if (cd) return deny(cd);
+  if (!/\bgit\b/.test(cmd)) return null;
+  for (const call of gitCalls(cmd, cwd)) {
     const reason = call.sub === 'commit' ? commitGate(call, cmd) : call.sub === 'merge' ? mergeGate(call) : null;
-    if (reason) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
-      permissionDecisionReason: `[hosa gate] ${reason}` } };
+    if (reason) return deny(reason);
   }
   return null;
 }

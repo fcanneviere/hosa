@@ -125,7 +125,7 @@ You get the screenshots, the identity, the design rules and the personas' main t
 ---
 type: Plan de navigation
 title: Plan de navigation
-description: Inventaire des écrans, navigation par rôle et fondamentaux UX
+description: "Inventaire des écrans, navigation par rôle et fondamentaux UX"
 tags: [ux]
 generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 ---
@@ -152,7 +152,7 @@ generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 ---
 type: Lexique interface
 title: Lexique de l'interface
-description: Un seul nom par fonction, objet, action et écran, et les conventions de nommage
+description: "Un seul nom par fonction, objet, action et écran, et les conventions de nommage"
 tags: [ux]
 generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 ---

@@ -47,7 +47,7 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 ---
 type: Infra
 title: Environnement Docker — <projet>
-description: Services Docker du projet géré, versions épinglées
+description: "Services Docker du projet géré, versions épinglées"
 tags: []
 status: stable
 generated: { by: hosa-infra/1.0, at: <ISO8601> }
@@ -105,7 +105,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ---
 type: Infra
 title: <élément installé> — <projet>
-description: <ce qui a été installé et pourquoi>
+description: "<ce qui a été installé et pourquoi>"
 tags: []
 status: stable
 generated: { by: hosa-infra/1.0, at: <ISO8601> }

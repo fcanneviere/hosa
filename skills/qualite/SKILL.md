@@ -70,7 +70,7 @@ For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui 
 ---
 type: Audit Qualité
 title: Audit qualité — <scope>
-description: <une ligne>
+description: "<une ligne>"
 tags: []
 status: stable
 generated: { by: hosa-senior-dev/1.0, at: <ISO8601> }

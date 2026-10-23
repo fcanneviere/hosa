@@ -8,3 +8,9 @@ test('injects the auto-audit rule into Hosa agents only', () => {
   assert.equal(processPayload({ agent_type: 'Explore' }), null);
   assert.equal(processPayload({}), null);
 });
+
+test('adds the path quoting rule on Windows only', () => {
+  const ctx = (platform) => processPayload({ agent_type: 'hosa-git' }, platform).hookSpecificOutput.additionalContext;
+  assert.match(ctx('win32'), /forward slashes/);
+  assert.doesNotMatch(ctx('linux'), /forward slashes/);
+});

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Hosa — graph hooks. PostToolUse (Edit|Write|MultiEdit): reindexes the edited
-// file in the project graph (.hosa/graph/). PreToolUse (Grep|Glob): refuses once a
+// file in the project graph (.hosa/graph/) and, for a KB file, checks its header parses
+// (an unreadable header is sent back to the agent to fix). PreToolUse (Grep|Glob): refuses once a
 // tree-wide Grep for an identifier the graph already locates (answer in the refusal), and reminds the
 // agent once per session that the graph answers "where is X / what does it
 // impact" before grepping. Fail-open: never blocks, never errors out.
@@ -56,6 +57,15 @@ function findKbRoot(dir) {
     root = findUp(parts.slice(0, i).join(path.sep) || path.sep, path.join('.hosa', 'kb'));
   }
   return null;
+}
+
+// The KB file's header error as the app reports it ("Le fichier est illisible : …"), or ''.
+const CHECK_PY = 'import sys; sys.path.insert(0, sys.argv[1])\n' +
+  'try:\n import kb\nexcept Exception: sys.exit(0)\n' +
+  'try: kb.parse(open(sys.argv[2], encoding="utf-8").read())\nexcept kb.KbError as e: print(e)\nexcept Exception: pass';
+function checkHeader(file) {
+  const r = spawnSync(python(), ['-c', CHECK_PY, APP, file], { timeout: 4000, encoding: 'utf8', windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
+  return (r.stdout || '').trim();
 }
 
 const commandLine = () => `"${python()}" "${GRAPH_PY}"`;
@@ -115,7 +125,7 @@ function sessionStart(cwd) {
 const mtime = (p) => { try { return fs.statSync(p).mtimeMs; } catch (e) { return 0; } };
 
 // Hook payload → hook output object, or null.
-function processPayload(p, run = runGraph, summarize = refreshSummary, query = queryGraph) {
+function processPayload(p, run = runGraph, summarize = refreshSummary, query = queryGraph, check = checkHeader) {
   if (!p) return null;
   if (p.hook_event_name === 'PostToolUse') {
     const file = p.tool_input && p.tool_input.file_path;
@@ -125,6 +135,9 @@ function processPayload(p, run = runGraph, summarize = refreshSummary, query = q
     const i = parts.indexOf('.hosa');
     if (i >= 0 && parts[i + 1] === 'kb' && path.basename(file) !== 'sommaire.md') {
       summarize(parts.slice(0, i + 2).join(path.sep) || path.sep);
+      const error = file.endsWith('.md') && check(file);
+      if (error) return { decision: 'block', reason: `[hosa] ${file}: ${error}. ` +
+        'Fix the YAML header: put a value containing ": " (or starting with a quote, [, {, # or &) in double quotes.' };
     }
     return null;
   }

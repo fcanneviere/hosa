@@ -98,7 +98,7 @@ Write `.hosa/kb/infra/derniere-livraison.md`:
 ---
 type: Infra
 title: Dernière livraison — <version>
-description: <une ligne>
+description: "<une ligne>"
 tags: [livraison]
 status: stable
 generated: { by: human:<user>, at: <ISO8601> }

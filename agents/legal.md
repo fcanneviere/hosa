@@ -103,7 +103,7 @@ Go through each item. Keep only what applies, with the reason; the rest goes und
 ---
 type: Analyse juridique
 title: Analyse juridique
-description: Réglementations applicables, registre des traitements et contraintes retenues dès la conception
+description: "Réglementations applicables, registre des traitements et contraintes retenues dès la conception"
 tags: [juridique]
 generated: { by: hosa-legal/1.0, at: <ISO8601> }
 ---
@@ -150,7 +150,7 @@ Input: the version about to ship, the planned release date, and the date of the 
 ---
 type: Porte Juridique
 title: Porte juridique — <version>
-description: <une ligne : Go / No-Go et nombre de points KO>
+description: "<une ligne : Go / No-Go et nombre de points KO>"
 tags: [juridique]
 status: stable
 generated: { by: hosa-legal/1.0, at: <ISO8601> }

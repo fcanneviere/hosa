@@ -47,7 +47,7 @@ For each process, `.hosa/kb/cdc/<slug-processus>.md` (slug = kebab-case of the p
 ---
 type: Exigence
 title: <nom du processus>
-description: <une ligne : ce que ce processus accomplit>
+description: "<une ligne : ce que ce processus accomplit>"
 tags: []
 espace: [front-office]   # [back-office], ou [front-office, back-office]
 status: draft
@@ -86,6 +86,8 @@ A process with no rule of its own (pure data entry, say) writes `Aucune règle p
 
 If a process serves no specific persona (purely transverse — e.g. a compliance step), write `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` instead of a persona link. Every other section is still required — "transverse" doesn't excuse vagueness.
 
+Each `<besoin précis>` must be found in the linked persona's `Besoins` (`kb_query.py .hosa/kb --type Persona --slug <slug> --sections "Besoins"`). A need the persona doesn't state is either the persona's real need, left unwritten → ask the user, then add it through `hosa` (persona update); or an invented one → remove the line. Never cite a need the persona doesn't hold: `contestation` re-checks exigences against personas.
+
 Every section must be filled with the specific content gathered — a section with no matching information from the notes means you're missing input, not that you should write a placeholder. If information is missing, ask the user rather than writing something generic.
 
 ## Step 2b: Glossary
@@ -96,7 +98,7 @@ Keep `.hosa/kb/cdc/glossaire.md` — the domain vocabulary, so the CDC, the tick
 ---
 type: Glossaire
 title: Glossaire du domaine
-description: Les termes métier du projet et leur sens unique
+description: "Les termes métier du projet et leur sens unique"
 tags: [glossaire]
 status: draft
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }

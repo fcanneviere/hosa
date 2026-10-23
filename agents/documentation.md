@@ -98,7 +98,7 @@ Every `kb/documentation/<slug>.md` you write or update follows this shape:
 ---
 type: Documentation
 title: <section> — <projet>
-description: <une ligne>
+description: "<une ligne>"
 tags: []
 status: stable
 path: <chemin du fichier dans le projet géré>

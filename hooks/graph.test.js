@@ -82,8 +82,22 @@ test('refreshes the KB summary when a KB file is written', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-kb-'));
   const kb = path.join(root, '.hosa', 'kb');
   const seen = [];
-  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(kb, 'tickets', 'a.md') } }, () => {}, (d) => seen.push(d));
-  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(kb, 'sommaire.md') } }, () => {}, (d) => seen.push(d));
-  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(root, 'src', 'a.py') } }, () => {}, (d) => seen.push(d));
+  const ok = () => '';
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(kb, 'tickets', 'a.md') } }, () => {}, (d) => seen.push(d), undefined, ok);
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(kb, 'sommaire.md') } }, () => {}, (d) => seen.push(d), undefined, ok);
+  processPayload({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: path.join(root, 'src', 'a.py') } }, () => {}, (d) => seen.push(d), undefined, ok);
   assert.deepEqual(seen, [kb]);
+});
+
+test('sends an unreadable KB header back to the agent', () => {
+  const kb = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-kb-')), '.hosa', 'kb');
+  fs.mkdirSync(kb, { recursive: true });
+  const file = path.join(kb, 'guide.md');
+  const p = { hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: file } };
+  fs.writeFileSync(file, '---\ntype: Documentation\ndescription: Guide : connexion, listes\n---\n');
+  const out = processPayload(p, () => {}, () => {});
+  assert.equal(out.decision, 'block');
+  assert.match(out.reason, /l'en-tête est mal écrit \(ligne 3\)/);
+  fs.writeFileSync(file, '---\ntype: Documentation\ndescription: "Guide : connexion, listes"\n---\n');
+  assert.equal(processPayload(p, () => {}, () => {}), null);
 });
