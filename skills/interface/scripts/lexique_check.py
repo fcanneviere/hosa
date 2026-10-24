@@ -12,6 +12,7 @@ Exit: 0 consistent, 1 problems listed (file:line), 2 bad invocation. Stdlib only
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -21,7 +22,8 @@ EXTENSIONS = {".html", ".htm", ".vue", ".svelte", ".jsx", ".tsx", ".js", ".ts", 
               ".j2", ".erb", ".hbs", ".ejs", ".php", ".cshtml", ".razor", ".dart", ".kt",
               ".swift", ".py", ".rb", ".md", ".txt", ".strings", ".arb"}
 SKIP = {"node_modules", ".git", ".hosa", ".worktrees", "dist", "build", "vendor", "coverage",
-        "migrations", "__pycache__", ".venv", "venv", ".next", ".nuxt", "target"}
+        "migrations", "__pycache__", ".venv", "venv", ".next", ".nuxt", "target",
+        "docs", ".claude", "staticfiles", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
 
 
 def section(text: str, heading: str) -> str:
@@ -46,7 +48,8 @@ def lexicon(kb: Path) -> tuple[dict[str, list[str]], list[str], list[str]]:
         c = cells(r) + ["", "", "", ""]
         if c[0]:
             terms[c[0]] = [s.strip() for s in re.split(r"[,;]", c[3]) if s.strip() and s.strip() not in ("—", "-")]
-    folders = [m.strip().strip("`") for m in re.findall(r"^- (.+)$", section(text, "Dossiers analysés"), re.M)]
+    # the path only: the backticked part, else the first word — a comment after it is not part of it
+    folders = [a or b for a, b in re.findall(r"^- (?:`([^`]+)`|(\S+))", section(text, "Dossiers analysés"), re.M)]
     return terms, folders, ([] if terms else ["`## Termes` vide — aucun terme défini"])
 
 
@@ -59,21 +62,28 @@ def screens(kb: Path) -> list[str]:
     return [cells(r)[0] for r in rows if cells(r)[0]]
 
 
+def files(root: Path, base: Path):
+    if base.is_file():
+        yield base
+        return
+    for d, dirs, names in os.walk(base):
+        dirs[:] = [x for x in dirs if x not in SKIP]  # never walk into them: .venv alone took minutes
+        for n in names:
+            if Path(n).suffix.lower() in EXTENSIONS and ".min." not in n:
+                yield Path(d) / n
+
+
 def scan(root: Path, folders: list[str], terms: dict[str, list[str]]) -> list[str]:
     out = []
-    bases = [root / f for f in folders] or [root]
-    for synonym, term in ((s, t) for t, syns in terms.items() for s in syns):
-        pattern = re.compile(rf"(?<![\w-]){re.escape(synonym)}(?![\w-])", re.I)
-        for base in bases:
-            files = [base] if base.is_file() else base.rglob("*")
-            for f in files:
-                if f.suffix.lower() not in EXTENSIONS or SKIP & set(f.relative_to(root).parts) or not f.is_file():
-                    continue
-                try:
-                    lines = f.read_text(encoding="utf-8").splitlines()
-                except (UnicodeDecodeError, OSError):
-                    continue
-                for n, line in enumerate(lines, 1):
+    pairs = [(re.compile(rf"(?<![\w-]){re.escape(s)}(?![\w-])", re.I), s, t) for t, syns in terms.items() for s in syns]
+    for base in [root / f for f in folders] or [root]:
+        for f in files(root, base):
+            try:
+                lines = f.read_text(encoding="utf-8").splitlines()
+            except (UnicodeDecodeError, OSError):
+                continue
+            for n, line in enumerate(lines, 1):
+                for pattern, synonym, term in pairs:
                     if pattern.search(line):
                         out.append(f"{f.relative_to(root)}:{n} — « {synonym} » au lieu de « {term} »")
     return out

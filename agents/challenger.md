@@ -101,11 +101,11 @@ Return this structure exactly:
 
 ## Fonctions de base
 - [Item] — [ce qui manque réellement, ou "revue fondamentaux absente"]
-- [If none: "Aucune"]
+- [If none: "Aucune" / audit scoped to a few exigences (`changement`): "Non évalué — hors de la portée demandée"]
 
 ## Sécurité
 - [Exigence ou zone] — [menace sans mesure ni risque accepté, ou "analyse de sécurité absente"]
-- [If none: "Aucune"]
+- [If none: "Aucune" / audit scoped: "Non évalué — hors de la portée demandée" unless the scoped exigences touch security]
 
 ## Exigences hors objectifs
 - [Exigence] — ne sert aucun objectif mesurable [— correspond au non-objectif : <lequel>, si applicable]

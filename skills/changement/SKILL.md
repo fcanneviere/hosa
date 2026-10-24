@@ -61,6 +61,8 @@ For each ticket from Step 2 that isn't `state: todo`, dispatch the agent(s) whos
 
 Each returns whether it's impacted and how, in its normal Output format — no agent writes anything yet at this step, this is read-only impact reporting.
 
+**Feasibility first.** The new wording relies on a platform capability (notifications, Web Push, camera, offline, background work, a browser or OS API) → dispatch `hosa-senior-dev` (Verification mode) on the platforms the CDC imposes, even when no ticket is built yet. A capability a platform lacks goes into Step 4 before anything is rewritten — relecture and contestation check the wording, not whether it can run (pilot2: two rounds refined a rule that doesn't work on iPhone).
+
 ## Step 4: Confirm With the User
 
 Present the full impact (tickets, data, architecture, interface, docs) before touching anything. If the impact is large enough that the user wants to reconsider the change itself, stop here — nothing has been modified yet.
@@ -81,7 +83,7 @@ Then edit the affected sections of the Exigence body itself with the new content
 
 ## Step 6: Mini Relecture/Contestation Loop
 
-Invoke `relecture` — its own Step 1 already scopes to "exigences modifiées dans cette session", which is just this one. Then invoke `contestation`, but scope both passes to this Exigence plus the personas/tickets found in Step 2 — not the whole `kb/cdc/`, that's what makes this loop "mini" rather than a full pipeline re-run. Anomaly in either pass → back to Step 5. Clean on both → ask the user for final sign-off, same as `contestation`'s own last step; on yes, dispatch `hosa-product-owner` to set `status: stable` + `verified: { by: human:<user>, at: <ISO8601> }`.
+Invoke `relecture` — its own Step 1 already scopes to "exigences modifiées dans cette session", which is just this one. Then invoke `contestation`. Neither calls `avancement.py` inside this loop: their stages are done, and a `start` would reopen them and move the resume point off the stage in progress — record `avancement.py reprise "changement <slug> : mini boucle"` instead. Scope both passes to this Exigence plus the personas/tickets found in Step 2 — not the whole `kb/cdc/`, that's what makes this loop "mini" rather than a full pipeline re-run. Anomaly in either pass → back to Step 5. Clean on both → ask the user for final sign-off, same as `contestation`'s own last step; on yes, dispatch `hosa-product-owner` to set `status: stable` + `verified: { by: human:<user>, at: <ISO8601> }`.
 
 ## Step 7: Follow-Up Tickets
 

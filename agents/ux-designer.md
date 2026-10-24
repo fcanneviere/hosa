@@ -175,6 +175,8 @@ generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 - `<fichiers de traduction>`
 ```
 
+`## Dossiers analysés`: one bare path per line, relative to the root — only where the interface's text lives (templates, components, translations), never `docs/` or generated static files. `Synonymes interdits`: only the words a user could take for another thing of the domain — never a common word (« liste », « valider ») that the code uses in other senses: each one floods the check with false positives.
+
 ## Context Diet
 
 Every file you read is paid for again on every later turn:

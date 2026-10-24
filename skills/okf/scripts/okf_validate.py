@@ -377,11 +377,17 @@ def check_log(path: Path, rel: str, report: Report) -> None:
     raw, _ = split_frontmatter(text)
     if raw is not None:
         report.warn(rel, "§9 log.md should contain no frontmatter")
+    days = []
     for line in text.splitlines():
         if line.startswith("## "):
             heading = line[3:].strip()
             if not ISO_DATE.match(heading):
                 report.warn(rel, f"§9 date heading `{heading}` is not ISO 8601 YYYY-MM-DD")
+            days.append(heading[:10])
+    if days != sorted(days, reverse=True):
+        report.warn(rel, "§9 date headings must run newest first")
+    if len(set(days)) < len(days):
+        report.warn(rel, "§9 one heading per day: append under today's")
 
 
 def collect_link_targets(path: Path) -> list[str]:

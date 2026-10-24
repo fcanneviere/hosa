@@ -11,7 +11,7 @@ the work stopped, in the right order.
   avancement.py <kb> start    <stage> [--sprint S] [--detail D] [--reprise R] [--force]
   avancement.py <kb> progress <stage> [--sprint S]  --detail D  [--reprise R]
   avancement.py <kb> done     <stage> [--sprint S] [--detail D] [--force]
-  avancement.py <kb> block    <stage> [--sprint S]  --detail D
+  avancement.py <kb> block    <stage> [--sprint S]  --detail D   (D: the questions in full, one line each)
   avancement.py <kb> skip     <stage> [--sprint S]  --detail D   (non applicable)
   avancement.py <kb> reprise  "<next action>"                     (outside the pipeline)
 
@@ -341,8 +341,9 @@ def main(argv: list[str]) -> int:
         row[1:] = [DONE, now(), a.detail]
         resume = ""
     elif a.action == "block":
-        row[1:] = [BLOCKED, now(), a.detail]
-        resume = f"- Bloqué : {where} — {a.detail}"
+        # the questions in full survive a /clear in the resume point; the table keeps their first line
+        row[1:] = [BLOCKED, now(), a.detail.strip().splitlines()[0]]
+        resume = f"- Bloqué : {where} — {a.detail.strip()}"
     elif a.action == "skip":
         row[1:] = [SKIPPED, now(), a.detail]
     save(path, sections, resume)

@@ -131,7 +131,7 @@ Input: the producer (`hosa-infra`/`hosa-architect`/`hosa-data-engineer`/`hosa-se
 ## Mode 2 — Cold Check (dispatched by the `documentation` skill)
 
 1. Read every entry in `kb/documentation/`. None yet → say so; nothing to check until at least one section has been written.
-2. For each entry, compare the date of each of its `sources` (the source bundle's latest log entry, or the `generated.at` of the concerned `Exigence`/`Stack Decision`/`Infra`) to the entry's own `generated.at`.
+2. For each entry, compare the date of each of its `sources` to the entry's own `generated.at`: a concept source → its `generated.at`, whatever its type (`Exigence`, `Stack Decision`, `Infra`, `Security Rule`, `Design Rule`…); a bundle source (`kb/rules/security/`) → the newest `generated.at` among its concepts (`kb_query.py --bundle <b> --fields generated`), not its log, which can be out of order.
 3. A source newer than the entry → refresh the section (same write as Mode 1, Steps 3-4). Source unchanged → nothing to do, list it as up to date. Source with no readable date to compare → list it as non vérifiable, never as up to date — an unreadable date means drift can't be ruled out.
 4. Refresh the `CLAUDE.md` index (see `CLAUDE.md` Index) — also catches a doc file deleted or added by hand.
 5. Report, section by section, what was refreshed, what was already current, and what couldn't be verified.

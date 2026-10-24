@@ -143,6 +143,16 @@ class Done(unittest.TestCase):
         self.assertEqual(run(k, "done", "qa-plan", "--sprint", "s1", "--force")[0], 0)
 
 
+class Block(unittest.TestCase):
+    def test_block_keeps_the_questions_in_full(self):
+        k = kb({})
+        q = "2 questions bloquantes\nQ1. Clé primaire ? A. uuid (recommandé) B. entier\nQ2. Casse des e-mails ? A. citext B. lower()"
+        self.assertEqual(run(k, "block", "schema-db", "--detail", q)[0], 0)
+        sections, resume = av.load(k / "project" / "avancement.md")
+        self.assertIn("Q2. Casse des e-mails ? A. citext B. lower()", resume)
+        self.assertEqual(next(r for r in sections["Structuration"] if r[0] == "schema-db")[3], "2 questions bloquantes")
+
+
 class Next(unittest.TestCase):
     def test_next_without_a_plan_points_to_status(self):
         self.assertIn("le skill `status` le crée", run(kb({}), "next")[1])

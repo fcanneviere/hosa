@@ -66,6 +66,8 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 - Tests : <commande de la suite complète, service où elle tourne>
 ```
 
+   Write `${CLAUDE_PLUGIN_ROOT}` as is in the KB, never its resolved path: that path carries the plugin version and breaks at the next update.
+
 8. **Quality tooling** — before any code is written, so every ticket is tested and checked from the first sprint. Install, in the stack's usual tools (never one per taste):
    - a unit and integration **test runner**, with one passing sample test. Its command needs no manual step: the same command on the host and in the container (no shell glob one shell expands and another skips — let the runner find the files), its environment variables loaded by the command itself, and the test data reset before the run (`hosa-dba`'s test database reset). A run that silently skips files or depends on leftover data passes for green;
    - a **database migration tool** when the stack has a database, with its migrations folder and an initial migration (`hosa-dba` operates it afterwards);
@@ -98,7 +100,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
    - something already in place covers it (Redis up can serve as a simple queue) → counter-propose it, with the reason;
    - it conflicts with a `Stack Decision` or an infrastructure choice → Open Question: which one wins? Never pick silently;
    - new and consistent → go on.
-3. Once confirmed: pin a version, add it to the composition or the project's dependency manifest (its package manager's conventions), rebuild, check it works.
+3. Once confirmed: pin a version, add it to the composition or the project's dependency manifest (its package manager's conventions), rebuild, check it works. A dependency needed on one platform only (`tzdata` on Windows) carries its marker in the manifest (`tzdata; sys_platform == "win32"`) before the lock is recompiled — never removed from the lock by hand: the next recompilation brings it back. Check the lock diff with `git --no-pager diff` (a filtered or folded diff hides the lines that matter).
 4. Write `.hosa/kb/infra/<slug-service>.md`:
 
 ```markdown

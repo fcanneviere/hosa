@@ -14,9 +14,16 @@ const KB_PATHS = 'Read and write the KB by absolute path (`<root>/.hosa/kb/…`,
 // Windows: Bash eats the backslashes of an unquoted `C:\…` passed to a script.
 const WINDOWS_PATHS = 'Pass every path argument in double quotes, with forward slashes (`"C:/dev/projet"`): Bash strips the backslashes of an unquoted `C:\\…`.';
 
+// Agents don't see the session start's `## Python`: a bare `python` lacks PyYAML (okf_validate.py).
+function pythonLine() {
+  try {
+    return `\`<python>\` in your instructions means \`"${require('./graph').python()}"\` — never a bare \`python\`, which may lack the scripts' modules.`;
+  } catch (e) { return null; }
+}
+
 function processPayload(payload, platform = process.platform) {
   if (!/(^|:)hosa-/.test(payload.agent_type || '')) return null;
-  const context = [RULE, KB_PATHS, ...(platform === 'win32' ? [WINDOWS_PATHS] : [])].join('\n\n');
+  const context = [RULE, KB_PATHS, pythonLine(), ...(platform === 'win32' ? [WINDOWS_PATHS] : [])].filter(Boolean).join('\n\n');
   return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context } };
 }
 
