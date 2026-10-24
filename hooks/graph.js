@@ -70,7 +70,27 @@ function checkHeader(file) {
   return (r.stdout || '').trim();
 }
 
-const commandLine = () => `"${python()}" "${GRAPH_PY}"`;
+// `<hosa>`: the one way to run a Hosa script — `<hosa> <name> [args]` (run.py). Its shim lives in
+// ${CLAUDE_PLUGIN_DATA}, which survives plugin updates, as the venv does: the versioned cache path
+// doesn't, and a session or a KB note that kept it broke at the next update (pilot2).
+const DATA = process.env.CLAUDE_PLUGIN_DATA;
+const SHIM = DATA ? path.join(DATA, 'hosa.py') : path.join(pluginRoot, 'run.py');
+const shimText = (root) => `# Hosa — stable launcher, rewritten at each session start: python hosa.py <script> [args]
+import glob, os, runpy, sys
+root = ${JSON.stringify(root)}
+if not os.path.isfile(os.path.join(root, "run.py")):  # plugin updated since: the newest installed version
+    found = sorted(glob.glob(os.path.join(os.path.dirname(root), "*", "run.py")), key=os.path.getmtime)
+    root = os.path.dirname(found[-1]) if found else root
+sys.argv[0] = os.path.join(root, "run.py")
+runpy.run_path(sys.argv[0], run_name="__main__")
+`;
+function writeShim() {
+  if (!DATA) return;
+  fs.mkdirSync(DATA, { recursive: true });
+  fs.writeFileSync(SHIM, shimText(path.resolve(pluginRoot)));
+}
+const hosaCommand = () => `"${python()}" "${SHIM}"`;
+const commandLine = () => `${hosaCommand()} graph`;
 
 function runGraph(root, args) {
   spawnSync(python(), [GRAPH_PY, '--root', root, ...args], { timeout: 10000, stdio: 'ignore', windowsHide: true });
@@ -172,4 +192,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { pythonBackground, processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python, VENV };
+module.exports = { pythonBackground, processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python, VENV,
+  hosaCommand, writeShim, shimText, pluginRoot };

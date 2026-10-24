@@ -31,7 +31,7 @@ Naming the sprint, stating its objective and sizing it are yours to propose; the
 2. Order by `priority` (1 first); tickets without one come after, in creation order. Not a single ticket has a `priority` → Open Question asking `hosa-product-owner` for the order.
 3. Run the checker on the eligible tickets, from the managed project's root:
    ```bash
-   <python> "${CLAUDE_PLUGIN_ROOT}/skills/backlog/scripts/ticket_check.py" .hosa/kb <ticket files>
+   <hosa> ticket_check .hosa/kb <ticket files>
    ```
    It checks the story, the acceptance criteria and the four notes — technique, architecture, interface, sécurité — including their "pas encore" fallback lines. Each ticket it marks incomplete goes under `## Tickets écartés` with the gap it lists, proposing `/backlog <ticket>` (or the missing stage: `stack`, `architecture`, `interface`, `securite`). Never put an incomplete ticket in a sprint. A note present but vague is a gap too: each must carry `backlog`'s bullets and name real things (a file path, an entity or route, a component). A bullet still saying `inconnu — …`, or `à créer — owner: …` (a structural gap), → `## Tickets écartés`, naming the bullet and its owner. A plain `à créer` (a new file in an existing module) is normal work.
 4. Walk the complete tickets in order up to the capacity → `## Tickets prêts` (tentative, nothing written). **Dependencies:** a ticket whose `depends_on` names a ticket neither `done` nor already taken in this sprint goes under `## Tickets écartés` ("attend `<slug>`"), unless that ticket fits in the capacity too — then take both, the dependency first. List `## Tickets prêts` in the order they must be built. Fewer than the capacity → list them all and say so.
@@ -60,7 +60,7 @@ generated: { by: hosa-sprint-planner/1.0, at: <ISO8601> }
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
+- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 

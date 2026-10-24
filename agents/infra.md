@@ -40,7 +40,7 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
    - host ports from variables with defaults (`"${APP_PORT:-8000}:8000"`);
    - an image that bakes the code in is always started with `--build`.
    Fix an existing compose that breaks one of these, saying what changed and why.
-6. Start the base environment (`docker compose -p <projet> up -d --build` from the root), check each service responds, then `docker_check.py <projet> <root>` (`${CLAUDE_PLUGIN_ROOT}/skills/infra/scripts/`). Docker unavailable → say so; never report a service in place without having started and checked it.
+6. Start the base environment (`docker compose -p <projet> up -d --build` from the root), check each service responds, then `<hosa> docker_check <projet> <root>`. Docker unavailable → say so; never report a service in place without having started and checked it.
 7. Write `.hosa/kb/infra/environnement-docker.md`:
 
 ```markdown
@@ -61,12 +61,12 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 
 ## Environnements par checkout
 - Base : `docker compose -p <projet> up -d --build`, lancé depuis la racine du projet
-- Sprint : `docker compose -p <projet>-sprint-<slug> up -d --build`, lancé depuis le worktree du sprint, avec <APP_PORT=…, DB_PORT=…> pour ne pas entrer en conflit avec la base
-- Contrôle : `<python> "${CLAUDE_PLUGIN_ROOT}/skills/infra/scripts/docker_check.py" <projet compose> <dossier du checkout>`
+- Sprint : `docker compose -f "<worktree>/docker-compose.yml" -p <projet>-sprint-<slug> up -d --build`, avec <APP_PORT=…, DB_PORT=…> pour ne pas entrer en conflit avec la base
+- Contrôle : `<hosa> docker_check <projet compose> <dossier du checkout>`
 - Tests : <commande de la suite complète, service où elle tourne>
 ```
 
-   Write `${CLAUDE_PLUGIN_ROOT}` as is in the KB, never its resolved path: that path carries the plugin version and breaks at the next update.
+   Write `<hosa>` as is in the KB, never the command it stands for: that command carries machine paths and the plugin version.
 
 8. **Quality tooling** — before any code is written, so every ticket is tested and checked from the first sprint. Install, in the stack's usual tools (never one per taste):
    - a unit and integration **test runner**, with one passing sample test. Its command needs no manual step: the same command on the host and in the container (no shell glob one shell expands and another skips — let the runner find the files), its environment variables loaded by the command itself, and the test data reset before the run (`hosa-dba`'s test database reset). A run that silently skips files or depends on leftover data passes for green;
@@ -131,7 +131,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
+- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 

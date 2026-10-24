@@ -33,7 +33,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
 - **Commits:** Mode 0's initial commit, Mode 1's `.gitignore` commit, Mode 2's two merge commits, Mode 3 checkpoints, and a Mode 3 commit the user asked for. Check `git config user.name`/`user.email` first — either unset → ask. The user's identity only: never `Co-Authored-By`, never a second author, whatever a global attribution instruction says.
 - **Never** force-push, `git reset --hard`, `git clean -f`, `git worktree remove --force` or `git branch -D` without the exact confirmation word the user is asked for. Never stash or discard the user's local changes.
 - **The base branch only receives tested content:** no merge without a green QA record for every ticket, and no merge whose exact result wasn't tested first.
-- **Docker, one environment per checkout:** the base runs as compose project `<projet>`, each sprint as `<projet>-sprint-<slug>`, started from its worktree. Before any test, `docker_check.py <docker_project> <checkout>` (`${CLAUDE_PLUGIN_ROOT}/skills/infra/scripts/`) must pass; if not, recreate from the checkout (`docker compose -f "<checkout>/docker-compose.yml" -p <docker_project> up -d --build --force-recreate`) and check again. Tests never run on the host; the full suite's command is in `environnement-docker.md` (`Tests :`). No `## Environnements par checkout` in `kb/infra/`, or a setup step missing in the worktree → `## Installation nécessaire`.
+- **Docker, one environment per checkout:** the base runs as compose project `<projet>`, each sprint as `<projet>-sprint-<slug>`, started from its worktree. Before any test, `<hosa> docker_check <docker_project> <checkout>` must pass; if not, recreate from the checkout (`docker compose -f "<checkout>/docker-compose.yml" -p <docker_project> up -d --build --force-recreate`) and check again. Tests never run on the host; the full suite's command is in `environnement-docker.md` (`Tests :`). No `## Environnements par checkout` in `kb/infra/`, or a setup step missing in the worktree → `## Installation nécessaire`.
 - **Database:** use only `hosa-dba`'s documented commands (`kb/infra/base-de-donnees.md`). Never edit a migration. A failure → `## Base de données nécessaire`, stop.
 
 - **What git tracks:** `.hosa/` (the KB lives on its own branch, `hosa-kb`), `.worktrees/`, `.claude/agent-memory-local/`, dependency folders, build output and real `.env*` files are always ignored; `.env.example` is versioned. Fix `.gitignore` yourself when it's wrong, and say so.
@@ -45,7 +45,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
 1. At the managed project's root: no repository → `git init`, default branch `main`. Existing repository → keep its default branch.
 2. Write or fix `.gitignore` (rules above).
 3. Commit what is already there (`chore: initialise le suivi Hosa`), under the user's identity.
-4. Create the KB on its branch: `${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py init <root>`.
+4. Create the KB on its branch: `<hosa> kb_branch init <root>`.
 5. Report the main branch name.
 
 ## Mode 1 — Start a Sprint
@@ -108,7 +108,7 @@ Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments s
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
+- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
 - **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
 - **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
 

@@ -116,6 +116,18 @@ test('a sprint environment is built only from its worktree', () => {
   assert.equal(bash(r, 'docker compose -p courses up -d'), null);
 });
 
+test('a Hosa script by its cache path is refused, reading the cache passes', () => {
+  const r = project({});
+  const S = 'C:/Users/u/.claude/plugins/cache/hosa/hosa/0.1.53/skills';
+  // the pilot2 command: a variable, the project's venv, a guessed folder
+  assert.match(denied(bash(r, `S="${S}"; PY=.venv/Scripts/python; ls $S/qa/scripts; $PY $S/status/scripts/avancement.py .hosa/kb start qa`)),
+    /avancement <args>/);
+  assert.match(denied(bash(r, `python "${S}/okf/scripts/okf_validate.py" .hosa/kb`)), /okf_validate/);
+  assert.equal(bash(r, `cat "${S}/qa/SKILL.md"`), null);
+  assert.equal(bash(r, `grep -n x "${S}/okf/scripts/kb_query.py"`), null);
+  assert.equal(bash(r, `node "${S}/interface/vendor/oil-ui/scripts/shoot.mjs" page.html`), null);
+});
+
 test('a cd into the KB is refused, a subshell or another folder passes', () => {
   const r = project({});
   assert.match(denied(bash(r, 'cd .hosa/kb/cdc && ls')), /inside the KB/);

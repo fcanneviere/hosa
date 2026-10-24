@@ -5,7 +5,7 @@ description: "Use to write the database migrations (`hosa-data-engineer`), then 
 
 # Schema DB
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start schema-db`; refused → name the missing stage to the user and stop. Stopped on a user question: `block schema-db --detail "<question>"`. Once the stage's output is written and committed: `done schema-db`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start schema-db`; refused → name the missing stage to the user and stop. Stopped on a user question: `block schema-db --detail "<question>"`. Once the stage's output is written and committed: `done schema-db`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Turns the application-side data structures into real database schema — migrations or DDL, in whatever style the managed project already uses. This skill is the only one that talks to the user — the actual derivation and write is `hosa-data-engineer`'s.
 

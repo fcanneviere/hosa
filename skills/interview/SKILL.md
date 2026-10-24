@@ -5,7 +5,7 @@ description: "Use to gather the cahier des charges: business processes, who does
 
 # Interview
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start interview`; refused → name the missing stage to the user and stop. Stopped on a user question: `block interview --detail "<question>"`. Once the stage's output is written and committed: `done interview`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interview`; refused → name the missing stage to the user and stop. Stopped on a user question: `block interview --detail "<question>"`. Once the stage's output is written and committed: `done interview`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Gathers raw material for the cahier des charges: which business processes exist, who's involved, and — persona by persona, via `hosa-key-user` — what each process means for them. Writes no `Exigence` itself; that's `redaction`'s job. It does write a `Compte Rendu` of the session itself — the raw notes, before `redaction` turns them into structured `Exigence` concepts — so "qui a demandé X, et quand" stays answerable even after an `Exigence` is edited later. `hosa-key-user` may still append newly surfaced Pain points/Quick wins to a persona's own KB entry during the process-interview dispatch (same convention as during a recette) — report any such change and its log entry, don't treat it as silent.
 

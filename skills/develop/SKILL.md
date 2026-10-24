@@ -5,7 +5,7 @@ description: "Use to implement sprint tickets in the sprint worktree: tests firs
 
 # Develop
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start develop --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block develop --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done develop --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start develop --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block develop --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done develop --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Implémente un ticket de sprint (`kb/tickets/<slug>.md`) dans le worktree déjà ouvert par `git` Mode 1 : découpage en tâches courtes et séquentielles (`hosa-tech-lead`), puis implémentation une tâche à la fois (`hosa-developer`) — jamais de déviation de la structure déjà scaffoldée par `hosa-architect`/`hosa-data-engineer` sans arrêt et remontée.
 
@@ -77,7 +77,7 @@ Avant la première tâche : lit le `docker_project` du sprint (absent → `git` 
 
 ## Step 4b: Naming Check
 
-Si le ticket touche l'interface et que `kb/interface/lexique.md` existe : lance `<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/lexique_check.py" .hosa/kb <worktree>`. Une incohérence dans un fichier du ticket → redispatch `hosa-developer` avec la ligne à corriger ; un terme absent du lexique → `interface` (`hosa-ux-designer`) l'ajoute d'abord, jamais le développeur. Une incohérence antérieure, hors des fichiers du ticket → signale-la, sans la corriger dans ce ticket.
+Si le ticket touche l'interface et que `kb/interface/lexique.md` existe : lance `<hosa> lexique_check .hosa/kb <worktree>`. Une incohérence dans un fichier du ticket → redispatch `hosa-developer` avec la ligne à corriger ; un terme absent du lexique → `interface` (`hosa-ux-designer`) l'ajoute d'abord, jamais le développeur. Une incohérence antérieure, hors des fichiers du ticket → signale-la, sans la corriger dans ce ticket.
 
 ## Step 4c: Code Review
 

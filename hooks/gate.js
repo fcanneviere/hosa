@@ -7,7 +7,8 @@
 //   `avancement.py check validation` — tickets done and verified, every CA
 //   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO;
 // - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root;
-// - `docker compose -p <projet>-sprint-<slug> up|create|run` from anywhere but that worktree.
+// - `docker compose -p <projet>-sprint-<slug> up|create|run` from anywhere but that worktree;
+// - a Hosa script run by its versioned path under the plugin cache, not through `<hosa>`.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
 
 const fs = require('fs');
@@ -151,6 +152,23 @@ function composeGate(cmd, cwd) {
   return null;
 }
 
+// A Hosa script run by its path under the plugin cache: that path carries the version and breaks at the
+// next update, and the Python picked (the project's .venv on pilot2) may lack the scripts' modules.
+// Reading the files there (cat, grep, ls…) passes; node tools (oil-ui's shoot.mjs) too.
+const CACHE_RE = /plugins[\\/]+cache[\\/]+hosa[\\/]+hosa[\\/]+\d[^\\/\s"']*/;
+const READERS = new Set(['cat', 'head', 'tail', 'sed', 'grep', 'rg', 'ls', 'less', 'wc', 'find', 'echo', 'test', 'stat', 'awk', 'diff', 'cd']);
+function scriptGate(cmd) {
+  if (!CACHE_RE.test(cmd)) return null;
+  const script = /([\w-]+)\.py\b/.exec(cmd);
+  if (!script) return null;
+  const runs = segments(cmd).some((s) => !READERS.has(s[0]) && !/^\w+=/.test(s[0]));
+  if (!runs) return null;
+  let hosa = '<hosa>';
+  try { hosa = require('./graph').hosaCommand(); } catch (e) {}
+  return `Hosa scripts run through \`<hosa>\`, never by their path under the plugin cache (it changes at each update). ` +
+    `Run: \`${hosa} ${script[1]} <args>\` — from any folder; \`${hosa} --list\` gives the names.`;
+}
+
 function processPayload(p) {
   if (process.env.HOSA_GATE === '0' || !p || p.tool_name !== 'Bash') return null;
   const cmd = (p.tool_input || {}).command;
@@ -158,7 +176,7 @@ function processPayload(p) {
   const cwd = native(p.cwd || process.cwd());
   const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
     permissionDecisionReason: `[hosa gate] ${reason}` } });
-  const cd = cdGate(cmd, cwd) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd) : null);
+  const cd = cdGate(cmd, cwd) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd) : null) || scriptGate(cmd);
   if (cd) return deny(cd);
   if (!/\bgit\b/.test(cmd)) return null;
   for (const call of gitCalls(cmd, cwd)) {

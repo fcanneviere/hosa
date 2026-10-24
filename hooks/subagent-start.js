@@ -14,10 +14,15 @@ const KB_PATHS = 'Read and write the KB by absolute path (`<root>/.hosa/kb/…`,
 // Windows: Bash eats the backslashes of an unquoted `C:\…` passed to a script.
 const WINDOWS_PATHS = 'Pass every path argument in double quotes, with forward slashes (`"C:/dev/projet"`): Bash strips the backslashes of an unquoted `C:\\…`.';
 
-// Agents don't see the session start's `## Python`: a bare `python` lacks PyYAML (okf_validate.py).
+// Agents don't see the session start's `## Scripts Hosa`: a bare `python` lacks PyYAML (okf_validate.py),
+// a path under the plugin cache breaks at the next update.
 function pythonLine() {
   try {
-    return `\`<python>\` in your instructions means \`"${require('./graph').python()}"\` — never a bare \`python\`, which may lack the scripts' modules.`;
+    const g = require('./graph');
+    return `\`<hosa>\` in your instructions means \`${g.hosaCommand()}\`: \`<hosa> <script> [args]\` runs a Hosa script by name ` +
+      '(`<hosa> --list`), from any folder; a script named `x.py` in your instructions is `<hosa> x` — ' +
+      'never a path under the plugin cache, never a bare `python`. ' +
+      `\`<python>\` means \`"${g.python()}"\`; \`\${CLAUDE_PLUGIN_ROOT}\`, to read Hosa's own files, is \`${g.pluginRoot.replace(/\\/g, '/')}\`.`;
   } catch (e) { return null; }
 }
 

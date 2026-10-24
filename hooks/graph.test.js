@@ -34,7 +34,7 @@ test('nudges once per session, never blocks', () => {
   const root = project();
   const p = { hook_event_name: 'PreToolUse', tool_name: 'Grep', cwd: path.join(root, 'src'), session_id: 's1' };
   const out = processPayload(p);
-  assert.match(out.hookSpecificOutput.additionalContext, /graph\.py" explain\|affected\|ticket\|find/);
+  assert.match(out.hookSpecificOutput.additionalContext, /" graph explain\|affected\|ticket\|find/);
   assert.equal(out.hookSpecificOutput.permissionDecision, undefined);
   assert.equal(processPayload(p), null);
   assert.ok(processPayload({ ...p, session_id: 's2' }));
@@ -74,8 +74,20 @@ test('session start marks the session and returns the command line, only inside 
   assert.equal(sessionStart(root), '');
   fs.mkdirSync(path.join(root, '.hosa', 'kb'), { recursive: true });
   fs.mkdirSync(path.join(root, 'src'));
-  assert.match(sessionStart(path.join(root, 'src')), /## Project graph[\s\S]*graph\.py" ticket <slug>/);
+  assert.match(sessionStart(path.join(root, 'src')), /## Project graph[\s\S]*" graph ticket <slug>/);
   assert.ok(fs.existsSync(path.join(root, '.hosa', 'graph', 'session')));
+});
+
+test('the shim survives a plugin update: a vanished root falls back to the newest version', () => {
+  const { shimText } = require('./graph');
+  const cache = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-cache-'));
+  const v2 = path.join(cache, '0.1.54');
+  fs.mkdirSync(v2);
+  fs.writeFileSync(path.join(v2, 'run.py'), 'import sys; print("v2", sys.argv[1:])\n');
+  const shim = path.join(cache, 'hosa.py');
+  fs.writeFileSync(shim, shimText(path.join(cache, '0.1.53')));  // the old version is gone
+  const r = require('child_process').spawnSync(process.platform === 'win32' ? 'python' : 'python3', [shim, 'avancement', 'x'], { encoding: 'utf8' });
+  assert.match(r.stdout, /v2 \['avancement', 'x'\]/);
 });
 
 test('refreshes the KB summary when a KB file is written', () => {

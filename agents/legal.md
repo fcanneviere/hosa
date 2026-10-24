@@ -171,7 +171,7 @@ No-Go is a verdict, not a negotiation: if the user wants to ship anyway, that's 
 ## Context Diet
 
 Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first. Then pull exactly what you need with `${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_query.py` (`--type`, `--where`, `--sections "<heading>"`, `--fields`) instead of opening whole files.
+- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first. Then pull exactly what you need with `<hosa> kb_query` (`--type`, `--where`, `--sections "<heading>"`, `--fields`) instead of opening whole files.
 - **Web:** official sources only, the article you need, not the whole regulation.
 
 ## Report Style

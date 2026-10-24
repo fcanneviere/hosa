@@ -4,9 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { findKbRoot } = require('./graph');
-
-const SCRIPT = path.join(process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..'), 'skills', 'status', 'scripts', 'avancement.py');
+const { findKbRoot, hosaCommand } = require('./graph');
 
 // Where the KB lives: on its own branch (worktree at .hosa/kb, with a .git file) or still
 // tracked in the code branches (to migrate). Fast, read-only, never blocks.
@@ -32,7 +30,7 @@ function resumeContext(cwd) {
   const note = kbLayoutNote(root);
   const kb = path.join(root, '.hosa', 'kb');
   const file = path.join(kb, 'project', 'avancement.md');
-  const how = `Keep it current: \`${process.platform === 'win32' ? 'python' : 'python3'} "${SCRIPT}" "${kb}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; \`next\` gives the stage to run, its skill and what it still lacks.`;
+  const how = `Keep it current: \`${hosaCommand()} avancement "${kb.replace(/\\/g, '/')}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; \`next\` gives the stage to run, its skill and what it still lacks.`;
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
     return `${note}\n\n## Plan d'avancement\n\nNo progress plan yet for this project — the \`status\` skill creates it from the KB. ${how}`;

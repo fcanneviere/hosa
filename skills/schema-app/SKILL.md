@@ -5,7 +5,7 @@ description: "Use to derive entities from qualified exigences and write the appl
 
 # Schema App
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start schema-app`; refused → name the missing stage to the user and stop. Stopped on a user question: `block schema-app --detail "<question>"`. Once the stage's output is written and committed: `done schema-app`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start schema-app`; refused → name the missing stage to the user and stop. Stopped on a user question: `block schema-app --detail "<question>"`. Once the stage's output is written and committed: `done schema-app`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Turns qualified cahier des charges data into real application-side data structures — and documents them — in the managed project, never in `hosa/app`. This skill is the only one that talks to the user — the actual derivation, scaffold, and write is `hosa-data-engineer`'s.
 

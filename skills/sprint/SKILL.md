@@ -5,7 +5,7 @@ description: "Use to compose a sprint from the backlog in priority order, up to 
 
 # Sprint
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start sprint --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block sprint --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done sprint --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start sprint --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block sprint --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done sprint --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line. This skill is the only one that talks to the user — the actual scoping, classification, and write is `hosa-sprint-planner`'s.
 

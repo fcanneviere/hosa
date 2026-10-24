@@ -34,7 +34,7 @@ Manual: `/kb-commit`, `/kb-commit migrer`. Auto: never on natural language alone
 ## Step 1: Where the KB Lives
 
 ```bash
-<python> "${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py" status <root>
+<hosa> kb_branch status <root>
 ```
 
 - **In place** → Step 2.
@@ -46,7 +46,7 @@ Manual: `/kb-commit`, `/kb-commit migrer`. Auto: never on natural language alone
 `git -C <root>/.hosa/kb status --short` → nothing → "Rien à committer dans la KB." Otherwise summarize the bundles touched, then:
 
 ```bash
-<python> "${CLAUDE_PLUGIN_ROOT}/skills/kb-commit/scripts/kb_branch.py" commit <root> -m "kb: <résumé des bundles touchés, ex: update tickets, sprints>"
+<hosa> kb_branch commit <root> -m "kb: <résumé des bundles touchés, ex: update tickets, sprints>"
 ```
 
 It checks `user.name`/`user.email` first and commits under the user's identity only — never `Co-Authored-By`, never another author. It adds `Hosa-Code-Commit: <sha>`, the code commit the KB was written against. One commit for the whole pending diff unless the user asks for finer grain.

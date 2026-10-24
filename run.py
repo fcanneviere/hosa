@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Hosa dashboard launcher.
+"""Hosa launcher — the one entry point of every Hosa script.
 
-  python run.py            from the managed project: serves its .hosa/kb on http://127.0.0.1:3000
-  python run.py --setup    only (re)builds the venv — the SessionStart hook runs it in the background
+  python run.py <script> [args]   runs a Hosa script by name (`avancement`, `kb_query`, `docker_check`, `graph`…),
+                                  from any folder, with Hosa's own Python — never its path under the plugin cache
+  python run.py --list            the script names
+  python run.py                   from the managed project: serves its .hosa/kb on http://127.0.0.1:3000
+  python run.py --setup           only (re)builds the venv — the SessionStart hook runs it in the background
+
+Sessions call it through `<hosa>`, a shim in ${CLAUDE_PLUGIN_DATA} that survives plugin updates (hooks/graph.js).
 
 The app's dependencies live in a venv, never in the system Python (PEP 668): ${CLAUDE_PLUGIN_DATA}/venv once
 installed (kept across plugin updates, the plugin root is replaced at each one), hosa/app/.venv from the repo.
@@ -10,6 +15,7 @@ They're reinstalled when requirements.txt changes (stamp in the venv), with uv w
 """
 import hashlib
 import os
+import runpy
 import shutil
 import subprocess
 import sys
@@ -43,6 +49,35 @@ def setup():
     STAMP.write_text(want)
 
 
+def scripts():
+    root = Path(__file__).resolve().parent
+    found = {p.stem: p for p in sorted(root.glob("skills/*/scripts/*.py")) + sorted(root.glob("skills/*/vendor/*/scripts/*.py"))}
+    found["graph"] = APP / "graph.py"
+    return found
+
+
+def run_script(name, args):
+    table = scripts()
+    path = table.get(name.removesuffix(".py"))
+    if path is None:
+        print(f"Script Hosa inconnu : {name}. Scripts : {', '.join(sorted(table))}", file=sys.stderr)
+        return 2
+    try:
+        setup()
+        py = PY
+    except Exception as exc:  # no network to build the venv: a stdlib script still runs, say why a yaml one fails
+        print(f"[hosa] venv indisponible ({exc}) — script lancé avec {sys.executable}", file=sys.stderr)
+        py = Path(sys.executable)
+    sys.argv = [str(path), *args]
+    if Path(sys.executable).resolve() == py.resolve():  # already Hosa's Python: no child process, no window
+        sys.path.insert(0, str(path.parent))
+        runpy.run_path(str(path), run_name="__main__")
+        return 0
+    # No NO_WINDOW here: the child shares our console, and with it the venv's python.exe redirector
+    # loses the inherited stdout (tested on Windows, 2026-10-24).
+    return subprocess.call([str(py), str(path), *args])
+
+
 def kb_root(start):
     # Like hooks/graph.js findKbRoot: a sprint worktree's copy of .hosa/kb is stale, keep walking up.
     for d in (start, *start.parents):
@@ -52,6 +87,11 @@ def kb_root(start):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--list"]:
+        print("\n".join(sorted(scripts())))
+        raise SystemExit(0)
+    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
+        raise SystemExit(run_script(sys.argv[1], sys.argv[2:]))
     setup()
     if "--setup" in sys.argv:
         raise SystemExit(0)

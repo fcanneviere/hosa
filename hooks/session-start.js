@@ -30,7 +30,12 @@ try {
     require('child_process').spawn(process.platform === 'win32' ? 'pythonw' : 'python3', [path.join(root, 'run.py'), '--setup'],
       { detached: true, stdio: 'ignore', windowsHide: true }).on('error', () => {}).unref();
   }
-  context += `\n\n## Python\n\n\`<python>\` in skills and agents means \`"${g.python()}"\`.` +
+  g.writeShim();
+  context += `\n\n## Scripts Hosa\n\n\`<hosa>\` in skills and agents means \`${g.hosaCommand()}\`: \`<hosa> <script> [args]\` runs any Hosa script by name ` +
+    '(`avancement`, `kb_query`, `kb_branch`, `okf_validate`, `ticket_check`, `docker_check`, `usage_report`, `graph`… — `<hosa> --list`), from any folder, ' +
+    'with Hosa\'s own Python. A script named `x.py` in your instructions is `<hosa> x`. ' +
+    'Never a script\'s path under the plugin cache, never the project\'s Python: the hook refuses them.' +
+    `\n\`<python>\` means \`"${g.python()}"\`.` +
     (process.platform === 'win32' ? ` ${WINDOWS_PATHS}` : '') +
     (venvReady ? '' : ' Hosa is installing its Python dependencies in the background (first session after install or update): if a script fails on a missing module, wait a minute and retry.');
 } catch (e) {} // best-effort — never block session start

@@ -5,7 +5,7 @@ description: "Use to put every legal constraint (RGPD, AI Act, cookies, LCEN, co
 
 # Juridique
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start juridique`; refused → name the missing stage to the user and stop. Stopped on a user question: `block juridique --detail "<question>"`. Once the stage's output is written and committed: `done juridique`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start juridique`; refused → name the missing stage to the user and stop. Stopped on a user question: `block juridique --detail "<question>"`. Once the stage's output is written and committed: `done juridique`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Compliance by design. `hosa-legal` reads the cahier des charges right after the basics are in, says which regulations apply, and turns each obligation into a testable exigence. A consent screen, a retention period or a human review of an AI decision is then in the backlog from day one — not a surprise at the recette. It runs before `securite`: `hosa-security` reads the legal decisions (retention, data location, vendors) and designs the technical measures on top of them. Before each release, a gate checks that every legal constraint was delivered and that nothing new — a tracker, a vendor, an AI feature — slipped in behind the register's back.
 

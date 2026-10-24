@@ -64,17 +64,17 @@ Relations are plain relative markdown links in the body (OKF §6.1): `[exigence]
 After any KB write, run the validator on the KB root and fix every error before reporting done:
 
 ```bash
-<python> "${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/okf_validate.py" <project>/.hosa/kb
+<hosa> okf_validate <project>/.hosa/kb
 ```
 
 Then refresh the KB summary — one line per concept, the file every agent reads before opening anything else:
 
 ```bash
-<python> "${CLAUDE_PLUGIN_ROOT}/skills/okf/scripts/kb_index.py" <project>/.hosa/kb
+<hosa> kb_index <project>/.hosa/kb
 ```
 
 The hooks also refresh it after each Edit/Write in the KB and at session start; running it here covers writes made by scripts.
 
-To **read** precise parts of the KB without opening whole files, use `kb_query.py` (same folder): filter by `--type`, `--bundle`, `--where key=value` / `key~text`, `--slug`, `--grep`, then show `--fields`, `--sections "<heading prefix>"`, `--full` or `--count`. Exact text, no summary. `--grep` misses long free-text fields: for those, select by `--type` or `--slug`, then `--sections`.
+To **read** precise parts of the KB without opening whole files, use `<hosa> kb_query`: filter by `--type`, `--bundle`, `--where key=value` / `key~text`, `--slug`, `--grep`, then show `--fields`, `--sections "<heading prefix>"`, `--full` or `--count`. Exact text, no summary. `--grep` misses long free-text fields: for those, select by `--type` or `--slug`, then `--sections`.
 
-`<python>` is the interpreter given at session start (the Hosa venv) or any Python with PyYAML — a bare `python` fails on `import yaml`; without the venv, `uv run "<script>"` installs it (the script declares it). Exit code `0` = conformant; `1` = errors listed (fix them, rerun); `2` = bad invocation. Warnings are not blocking but mention them in your report. `--json` gives machine-readable output.
+`<hosa>` (given at session start) runs the validator with Hosa's own Python, which has PyYAML. Exit code `0` = conformant; `1` = errors listed (fix them, rerun); `2` = bad invocation. Warnings are not blocking but mention them in your report. `--json` gives machine-readable output.

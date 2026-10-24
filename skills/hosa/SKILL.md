@@ -5,7 +5,7 @@ description: "Use to set up or update the managed project's identity and persona
 
 # Hosa
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Init flow, right after the Bootstrap (the KB exists from then on): `avancement.py start hosa`; refused → name the missing stage to the user and stop. Stopped on a user question: `block hosa --detail "<question>"`. Once the stage's output is written and committed: `done hosa`. Updating an existing identity or persona is not a stage: no call. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Init flow, right after the Bootstrap (the KB exists from then on): `avancement.py start hosa`; refused → name the missing stage to the user and stop. Stopped on a user question: `block hosa --detail "<question>"`. Once the stage's output is written and committed: `done hosa`. Updating an existing identity or persona is not a stage: no call. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Initializes or updates the managed project's identity and personas in `.hosa/kb/`, creates any other OKF concept a natural-language request implies (when no more specific pipeline skill already owns it), and answers provenance questions by reading `generated`/`sources` straight from the KB.
 

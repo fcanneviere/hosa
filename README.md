@@ -129,6 +129,8 @@ La méthode et les outils viennent d'[oil-ui](https://github.com/oil-oil/oil-ui)
 | opérer la base de données | `/bdd` (migrations, sauvegarde, base de test…) |
 | livrer | « prépare la release » |
 
+Les scripts de Hosa passent tous par une seule commande, `<hosa> <script>` (la session et les agents la reçoivent au démarrage ; `<hosa> --list` donne les noms). Elle reste valable d'une version à l'autre et utilise toujours le Python de Hosa. Un script appelé par son chemin dans le cache du plugin est refusé, avec la bonne commande dans le message.
+
 ## Le tableau de bord
 
 Une interface locale montre l'avancement du projet dans la méthode Hosa : le plan d'avancement (étape en cours, preuves manquantes, prochain skill à lancer), le tableau des tickets, les sprints, la KB, le graphe et le journal. Elle lit et modifie les fichiers de la KB, elle n'appelle jamais Claude.

@@ -5,7 +5,7 @@ description: "Use to design and scaffold a complete, navigable interface: style 
 
 # Interface
 
-**Plan d'avancement.** `avancement.py` = `<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/avancement.py" <root>/.hosa/kb`. Before anything: `avancement.py start interface`; refused → name the missing stage to the user and stop. Stopped on a user question: `block interface --detail "<question>"`. Once the stage's output is written and committed: `done interface`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interface`; refused → name the missing stage to the user and stop. Stopped on a user question: `block interface --detail "<question>"`. Once the stage's output is written and committed: `done interface`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Turns the business logic (CDC), what each persona needs to see, and the existing software architecture into a real, scaffolded interface layer in the managed project — plus a visual identity and design rules for the whole project. This skill is the only one that talks to the user or dispatches other agents — the actual interview, proposal, design, and scaffold is `hosa-ux-designer`'s.
 
@@ -89,8 +89,8 @@ Each dispatch gets the validated choices and the paths, not the previous report.
 Run the checker yourself, from the managed project's root:
 
 ```bash
-<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb
-<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/lexique_check.py" .hosa/kb .
+<hosa> interface_check .hosa/kb
+<hosa> lexique_check .hosa/kb .
 ```
 
 Exit `1`, or a `## Vérification` reporting a failed build or routes that don't render → redispatch `hosa-ux-designer` (Phase 3) with the exact gaps, and repeat. A gap on an exigence's missing `espace` isn't the designer's to fix: propose `fondamentaux`, where `hosa-product-owner` sets it with the user, then come back. After two rounds that still leave gaps, stop and show the user what's left rather than looping. Then dispatch a **fresh** `hosa-ux-designer` in **Review** mode, with only the screenshot paths from `## Vérification`, the identity, the design rules and each persona's main tasks — not the Phase 3 report: the review stays independent. A score under 8, or any issue that blocks a task, → redispatch Phase 3 with the numbered issues, then review again. After two review rounds, show the user the score and the remaining issues, and let them decide. No screenshots (no Node or Chrome) → the T-tests replace the review; say so.

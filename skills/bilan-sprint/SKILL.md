@@ -36,7 +36,7 @@ Manual: `/bilan-sprint <slug-sprint>`. Auto: "fais le bilan du sprint X", "rétr
 
 ## Step 1b: Measure the Sprint
 
-`<python> "${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/usage_report.py" <root> --sprint <slug> --write` writes `## Mesures` in `kb/sprints/<slug>.md`: cost per ticket, review verdicts, `hosa-debugger` passes, the main session's largest context, the longest agent passes, compared with the earlier sprints — and `### Propositions` for what crossed a threshold (e.g. `HOSA_HAIKU=0` when reviews fail on Haiku). Never apply a proposition yourself.
+`<hosa> usage_report <root> --sprint <slug> --write` writes `## Mesures` in `kb/sprints/<slug>.md`: cost per ticket, review verdicts, `hosa-debugger` passes, the main session's largest context, the longest agent passes, compared with the earlier sprints — and `### Propositions` for what crossed a threshold (e.g. `HOSA_HAIKU=0` when reviews fail on Haiku). Never apply a proposition yourself.
 
 ## Step 2: Dispatch `hosa-product-owner`
 
