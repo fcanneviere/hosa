@@ -6,7 +6,8 @@
 // - `git merge … sprint/<slug>` (landing): `git` Mode 2's QA gate, i.e.
 //   `avancement.py check validation` — tickets done and verified, every CA
 //   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO;
-// - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root.
+// - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root;
+// - `docker compose -p <projet>-sprint-<slug> up|create|run` from anywhere but that worktree.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
 
 const fs = require('fs');
@@ -113,6 +114,43 @@ function cdGate(cmd, cwd) {
     'Stay at the project root: use `git -C <path>` and absolute paths.';
 }
 
+// `docker compose … up|create|run` builds containers from the project directory's files and `.env`:
+// a sprint's project (`<projet>-sprint-<slug>`) from anywhere but its worktree runs another checkout's
+// code on the sprint's name (pilot2: the tester started it from the root, Mailpit stayed there).
+const COMPOSE_VALUE = new Set(['-p', '--project-name', '-f', '--file', '--project-directory', '--env-file',
+  '--profile', '--ansi', '--progress', '--parallel']);
+function composeGate(cmd, cwd) {
+  let dir = cwd;
+  for (const seg of segments(cmd)) {
+    if (seg[0] === 'cd' && seg[1]) { dir = path.resolve(dir, native(seg[1])); continue; }
+    const i = seg.indexOf('compose');
+    if (i < 1 || seg[i - 1] !== 'docker') continue;
+    let name = null, file = null, projectDir = null, sub = null;
+    for (let j = i + 1; j < seg.length && !sub; j++) {
+      const [opt, inline] = seg[j].split(/=(.*)/s);
+      if (!seg[j].startsWith('-')) { sub = seg[j]; break; }
+      if (!COMPOSE_VALUE.has(opt)) continue;
+      const v = inline != null ? inline : seg[++j];
+      if (opt === '-p' || opt === '--project-name') name = v;
+      else if ((opt === '-f' || opt === '--file') && file == null) file = v;
+      else if (opt === '--project-directory') projectDir = v;
+    }
+    if (!name || !['up', 'create', 'run'].includes(sub)) continue;
+    const from = path.resolve(dir, native(projectDir || (file ? path.dirname(native(file)) : '.')));
+    const where = from.replace(/\\/g, '/');
+    const m = /-sprint-(.+)$/.exec(name);
+    if (m && !where.includes(`/.worktrees/sprint/${m[1]}`)) {
+      return `\`docker compose -p ${name} ${sub}\` would build the sprint's containers from ${from}, not from its worktree. ` +
+        `Use \`docker compose -f "<root>/.worktrees/sprint/${m[1]}/docker-compose.yml" -p ${name} ${sub} …\`.`;
+    }
+    if (!m && where.includes('/.worktrees/')) {
+      return `\`docker compose -p ${name} ${sub}\` would build the base environment from a sprint worktree (${from}). ` +
+        'Use `docker compose -f "<root>/docker-compose.yml" …`.';
+    }
+  }
+  return null;
+}
+
 function processPayload(p) {
   if (process.env.HOSA_GATE === '0' || !p || p.tool_name !== 'Bash') return null;
   const cmd = (p.tool_input || {}).command;
@@ -120,7 +158,7 @@ function processPayload(p) {
   const cwd = native(p.cwd || process.cwd());
   const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
     permissionDecisionReason: `[hosa gate] ${reason}` } });
-  const cd = cdGate(cmd, cwd);
+  const cd = cdGate(cmd, cwd) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd) : null);
   if (cd) return deny(cd);
   if (!/\bgit\b/.test(cmd)) return null;
   for (const call of gitCalls(cmd, cwd)) {

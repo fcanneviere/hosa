@@ -3,7 +3,8 @@
 
   docker_check.py <compose-project> <checkout-dir>
       Every container of <compose-project> must be running, have been started
-      from <checkout-dir> (compose's working_dir label), and bind-mount nothing
+      from <checkout-dir> (compose's working_dir label) with compose files of
+      that checkout only, and bind-mount nothing
       from the managed project other than <checkout-dir> — no other sprint's
       worktree, no base checkout when a sprint is targeted.
 
@@ -28,6 +29,7 @@ NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" el
 
 PROJECT = "com.docker.compose.project"
 WORKDIR = "com.docker.compose.project.working_dir"
+CONFIG = "com.docker.compose.project.config_files"
 
 
 def norm(path: str) -> str:
@@ -57,11 +59,19 @@ def problems(containers: list[dict], checkout: str) -> list[str]:
     for c in containers:
         name = c.get("Name", "?").lstrip("/")
         labels = (c.get("Config") or {}).get("Labels") or {}
+        sprint = re.search(r"-sprint-(.+)$", labels.get(PROJECT, ""))
+        if sprint and f"/.worktrees/sprint/{sprint.group(1)}" not in norm(checkout):
+            # checked against the wrong checkout, the check itself would pass on the wrong files
+            return [f"{labels[PROJECT]} est un projet de sprint : son checkout est "
+                    f"{root}/.worktrees/sprint/{sprint.group(1)}, pas {checkout}"]
         if not (c.get("State") or {}).get("Running"):
             out.append(f"{name} : arrêté")
         wd = labels.get(WORKDIR)
         if wd and norm(wd) != norm(checkout):
             out.append(f"{name} : démarré depuis {wd}, pas depuis {checkout}")
+        for cfg in filter(None, labels.get(CONFIG, "").split(",")):
+            if not inside(cfg.strip(), checkout):
+                out.append(f"{name} : fichier compose hors du checkout — {cfg.strip()}")
         for m in c.get("Mounts") or []:
             src = m.get("Source", "")
             wrong = not inside(src, checkout) or (

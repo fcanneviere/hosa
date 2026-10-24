@@ -104,6 +104,18 @@ test('other git commands pass', () => {
   assert.equal(bash(r, 'git status'), null);
 });
 
+test('a sprint environment is built only from its worktree', () => {
+  const r = project({});
+  const wt = path.join(r, '.worktrees', 'sprint', 's1');
+  const up = 'docker compose -p courses-sprint-s1 up -d --build --force-recreate';
+  assert.match(denied(bash(r, `cd "${r}" && ${up}`)), /not from its worktree/);         // the pilot2 case
+  assert.equal(bash(r, `cd "${wt}" && ${up}`), null);
+  assert.equal(bash(r, `docker compose -f "${wt}/docker-compose.yml" -p courses-sprint-s1 up -d`), null);
+  assert.equal(bash(r, 'docker compose -p courses-sprint-s1 exec -T app pytest'), null); // no new container
+  assert.match(denied(bash(r, 'docker compose -p courses up -d', wt)), /base environment from a sprint worktree/);
+  assert.equal(bash(r, 'docker compose -p courses up -d'), null);
+});
+
 test('a cd into the KB is refused, a subshell or another folder passes', () => {
   const r = project({});
   assert.match(denied(bash(r, 'cd .hosa/kb/cdc && ls')), /inside the KB/);
