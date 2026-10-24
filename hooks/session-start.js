@@ -33,7 +33,8 @@ try {
   g.writeShim();
   context += `\n\n## Scripts Hosa\n\n\`<hosa>\` in skills and agents means \`${g.hosaCommand()}\`: \`<hosa> <script> [args]\` runs any Hosa script by name ` +
     '(`avancement`, `kb_query`, `kb_branch`, `okf_validate`, `ticket_check`, `docker_check`, `usage_report`, `graph`… — `<hosa> --list`), from any folder, ' +
-    'with Hosa\'s own Python. A script named `x.py` in your instructions is `<hosa> x`. ' +
+    'with Hosa\'s own Python. A script named `x.py` in your instructions, a plan or the KB that is in that list is `<hosa> x`: ' +
+    'it ships with Hosa — never look for it in the project, never install it. ' +
     'Never a script\'s path under the plugin cache, never the project\'s Python: the hook refuses them.' +
     `\n\`<python>\` means \`"${g.python()}"\`.` +
     (process.platform === 'win32' ? ` ${WINDOWS_PATHS}` : '') +

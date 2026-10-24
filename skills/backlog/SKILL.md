@@ -89,7 +89,7 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - Lint, format et types sans erreur — commandes de `## Outillage qualité`
 - Revue de code PASS — `hosa-reviewer`
 - Contraintes de la note sécurité respectées et testées
-- Textes conformes au lexique — `lexique_check.py`
+- Textes conformes au lexique — `<hosa> lexique_check .hosa/kb <checkout>` (script de Hosa, pas du projet : rien à installer)
 - Documentation utilisateur à jour quand le ticket change ce qu'un utilisateur voit
 
 ## Exigences non fonctionnelles

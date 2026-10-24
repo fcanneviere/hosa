@@ -20,7 +20,8 @@ function pythonLine() {
   try {
     const g = require('./graph');
     return `\`<hosa>\` in your instructions means \`${g.hosaCommand()}\`: \`<hosa> <script> [args]\` runs a Hosa script by name ` +
-      '(`<hosa> --list`), from any folder; a script named `x.py` in your instructions is `<hosa> x` — ' +
+      '(`<hosa> --list`), from any folder; a script named `x.py` in your instructions, a plan or the KB that is in that list is `<hosa> x` — ' +
+      'never look for it in the project, never ask to install it; ' +
       'never a path under the plugin cache, never a bare `python`. ' +
       `\`<python>\` means \`"${g.python()}"\`; \`\${CLAUDE_PLUGIN_ROOT}\`, to read Hosa's own files, is \`${g.pluginRoot.replace(/\\/g, '/')}\`.`;
   } catch (e) { return null; }
