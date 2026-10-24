@@ -11,7 +11,10 @@ A ticket is complete when it has, in its body:
   - a `depends_on` (if any) naming existing tickets, without a cycle,
   - grounded notes (`backlog`'s Grounding Rule): the technical, architecture
     and interface notes carry their labelled bullets, none still `inconnu — …`
-    and none a structural gap `à créer — owner: …`.
+    and none a structural gap `à créer — owner: …`,
+  - every `dir/file.ext` its technical and architecture notes cite as existing
+    (no `à créer` on the line) present in the project — or created by a ticket
+    it `depends_on`.
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
@@ -103,6 +106,48 @@ def cycle_from(slug: str, tickets: Path, seen: tuple = ()) -> list[str] | None:
     return None
 
 
+PATH = re.compile(r"`([\w.-]+(?:/[\w.-]+)+\.\w+)(?::[\w.]+)?`")  # `dir/file.ext` or `dir/file.ext:symbol`
+CITED = ("## Note technique (senior dev)", "## Placement architecture (architecte)")
+
+
+def creators(tickets: Path) -> dict[str, str]:
+    """{path: slug of the ticket whose notes mark it `à créer`}."""
+    out = {}
+    for f in sorted(tickets.glob("*.md")):
+        body = split(f.read_text(encoding="utf-8"))[1]
+        for heading in CITED:
+            for line in (section(body, heading) or "").splitlines():
+                if "à créer" in line:
+                    for p in PATH.findall(line):
+                        out.setdefault(p, f.stem)
+    return out
+
+
+def phantom_paths(path: Path, front: str, body: str) -> list[str]:
+    """Paths cited as existing that the project doesn't have: the ticket that creates
+    them must be a `depends_on`, or the sprint takes this ticket without its creator."""
+    kb = path.parent.parent
+    if kb.name != "kb" or kb.parent.name != ".hosa":
+        return []
+    root, deps, made, out = kb.parent.parent, set(depends_on(front)), None, []
+    for heading in CITED:
+        for line in (section(body, heading) or "").splitlines():
+            if "à créer" in line:
+                continue
+            for p in PATH.findall(line):
+                if (root / p).exists() or p.startswith(("kb/", ".hosa/")):  # KB paths aren't project files
+                    continue
+                made = creators(path.parent) if made is None else made
+                by = made.get(p)
+                if by == path.stem or by in deps:
+                    continue
+                gap = (f"`{p}` cité comme existant, créé par `{by}` → ajouter `depends_on: [{by}]`" if by
+                       else f"`{p}` cité comme existant, absent du projet → `à créer` ou chemin à corriger")
+                if gap not in out:
+                    out.append(gap)
+    return out
+
+
 def gaps(path: Path) -> list[str]:
     front, body = split(path.read_text(encoding="utf-8"))
     if field(front, "type") != "Ticket":
@@ -127,6 +172,7 @@ def gaps(path: Path) -> list[str]:
     for dep in depends_on(front):
         if not (path.parent / f"{dep}.md").is_file():
             missing.append(f"`depends_on` cite `{dep}`, ticket introuvable")
+    missing += phantom_paths(path, front, body)
     loop = cycle_from(path.stem, path.parent)
     if loop:
         missing.append("dépendances en boucle : " + " → ".join(loop))

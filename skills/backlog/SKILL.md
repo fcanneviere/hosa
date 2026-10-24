@@ -139,6 +139,7 @@ Number the criteria `CA1`, `CA2`… and never renumber one: test plans, recettes
 These notes are what a developer builds from, not a summary for a manager. Write them from the real project:
 - First read the data dictionary (its path is in the `Infra` entry), the architecture and interface documentation, and query the project graph: `map` once per run, then `find`/`explain` on every module, entity, route or component the ticket touches.
 - **Every bullet names something real** — a path, an entity with its exact fields and types, a route, a function or component — as the dictionary, the documentation or the graph give it. Something that doesn't exist yet is `à créer`: a new file in an existing module is plain `à créer`; a missing module, layer, entity, field or screen is `à créer — owner: <hosa-architect | hosa-data-engineer | hosa-ux-designer>`, a structural gap `sprint` won't plan until its owner fills it.
+- A file another ticket marks `à créer` is cited by its path **and** that ticket goes into `depends_on` — never as if it already existed: `sprint` would plan this ticket without its creator (pilot2: `core/limitation.py`). The checker lists every path cited as existing that the project lacks.
 - No bullet without a reference: "faisable avec la stack", "couche service", "écran principal" are not answers. Can't name it → `inconnu — <ce qu'il faudrait lire ou décider>`, a visible gap.
 - A bullet that doesn't apply says `aucun`; never leave a bullet out.
 
