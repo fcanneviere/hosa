@@ -36,6 +36,17 @@ test('a light session chains freely', () => {
   assert.equal(skill('qa', 's2'), null);
 });
 
+test('past the ceiling any Hosa skill is refused once, then every 60 k more', () => {
+  setPlan(3); setContext(130000);
+  assert.ok(denied(skill('hosa:changement', 's5')));
+  assert.equal(skill('hosa:changement', 's5'), null);   // the user chose to stay
+  assert.equal(skill('ponytail', 's5'), null);          // not a Hosa skill
+  setContext(170000);
+  assert.equal(skill('hosa:relecture', 's5'), null);
+  setContext(195000);
+  assert.ok(denied(skill('hosa:relecture', 's5')));
+});
+
 test('a hosa- subagent past its cap is refused every further call', () => {
   processPayload({ hook_event_name: 'SubagentStart', session_id: 's3', agent_id: 'a1', agent_type: 'hosa:hosa-ux-designer' });
   const call = () => processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Bash', session_id: 's3', agent_id: 'a1' });

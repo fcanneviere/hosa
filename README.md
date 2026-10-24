@@ -44,14 +44,14 @@ Les skills orchestrent, les agents font le travail, chacun dans son domaine : `h
 
 Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle consomme l'essentiel des tokens, bien plus que les agents.
 
-- **Cahier des charges et structuration** (de `interview` à `backlog`) : Opus. Ces choix engagent tout le projet.
-- **Sprints** (`sprint`, `develop`, `qa`, `validation`, `livraison`) : `/model sonnet` suffit. Les jugements difficiles restent sur Opus, portés par leurs agents : `hosa-reviewer`, `hosa-debugger`, `hosa-security`.
+- **Toutes les phases** : Sonnet. La session orchestre : elle lance les agents, relaie leurs questions et écrit ce que tu décides. Les jugements difficiles restent sur Opus, portés par leurs agents : `hosa-challenger`, `hosa-legal`, `hosa-security`, `hosa-senior-dev`, `hosa-architect`, `hosa-reviewer`, `hosa-debugger`. Sur le pilote 2, Opus dans la session principale faisait 81 % de son coût.
 - **Une session par étape.** La session relit tout son historique à chaque tour. Après chaque étape ou chaque ticket, lance `/clear`, puis « reprends » : le plan d'avancement garde tout. Une session laissée ouverte une semaine a dépassé 500 000 tokens de contexte.
 
-Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Opus ou Sonnet selon le plan d'avancement. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
+Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Sonnet dans un projet Hosa. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
 
-Deux barrières de budget (hook `budget.js`) :
+Trois barrières de budget (hook `budget.js`) :
 - Quand une étape s'est terminée dans une session dont le contexte dépasse 60 000 tokens, le skill de l'étape suivante est refusé une fois. Claude s'arrête et te propose `/clear`, puis « reprends ». Si tu préfères rester, il relance le skill, qui passe cette fois. Le seuil se règle avec `HOSA_CONTEXTE_MAX` (en tokens).
+- Au-delà du double de ce seuil (120 000 tokens), tout skill Hosa est refusé une fois, étape terminée ou non, puis de nouveau tous les 60 000 tokens de plus. Même proposition : `/clear`, puis « reprends ».
 - Un agent Hosa est arrêté au-delà de 50 appels d'outils pour `hosa-ux-designer`, et de 150 pour les autres. Il rend son rapport avec `## Reprise`, et un nouvel agent reprend à partir de là.
 
 Pour les couper : `HOSA_BUDGET=0`.

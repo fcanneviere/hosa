@@ -3,6 +3,7 @@
 // - PreToolUse Skill, main session: a stage of the progress plan closed in this session and the
 //   context is heavy → the next pipeline stage is refused once: /clear then « reprends »
 //   (README « Une session par étape »). The retry passes: the user chose to stay.
+// - Same refusal for any Hosa skill once the context passes CEILING, stage closed or not.
 // - PreToolUse, in a hosa- subagent: past its cap of tool calls, every further call is refused
 //   but the final report (SubagentHandback), so the agent ends with it and `## Reprise`.
 // SubagentStart records each agent's type. Fail-open. Kill switch: HOSA_BUDGET=0.
@@ -17,6 +18,9 @@ const { findKbRoot } = require('./graph');
 const CAPS = { 'hosa-ux-designer': 50 };
 const CAP = 150;
 const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 60000; // tokens: /clear restarts at 20-30 k
+// Past it, any Hosa skill is refused once, then again every HEAVY more: `changement` closes no stage,
+// and a pilot2 session chained four skills up to 244 k without a single refusal.
+const CEILING = 2 * HEAVY;
 const STAGES = new Set(['hosa', 'interview', 'redaction', 'fondamentaux', 'juridique', 'securite', 'relecture', 'contestation',
   'stack', 'infra', 'donnees', 'schema-app', 'schema-db', 'architecture', 'interface', 'backlog',
   'sprint', 'qa-plan', 'git', 'develop', 'qa', 'validation', 'bilan-sprint', 'livraison']);
@@ -62,15 +66,25 @@ function contextTokens(transcript) {
 }
 
 function stageGate(p) {
-  const skill = String((p.tool_input || {}).skill || '').split(':').pop();
-  if (!STAGES.has(skill)) return null;
+  const raw = String((p.tool_input || {}).skill || '');
+  const skill = raw.split(':').pop();
+  if (!STAGES.has(skill) && !/^hosa:/.test(raw)) return null;
   const closed = closedStages(p.cwd || process.cwd());
   if (closed == null) return null;
   const file = stateFile(p.session_id);
   const s = load(file);
-  if (s.closed == null) { save(file, { closed }); return null; }
+  const now = contextTokens(p.transcript_path);
+  if (now >= CEILING && now >= (s.ceiling || 0) + HEAVY) {
+    save(file, { ...s, ceiling: now });
+    return deny(`the context is at ${Math.round(now / 1000)} k tokens. ` +
+      `Stop here and tell the user, in one line: « Pour économiser les tokens : /clear, puis « reprends » — le plan d'avancement garde tout. » ` +
+      `Before that, record where you are: \`avancement.py reprise "<next action>"\` (or \`progress\` inside a stage). ` +
+      `Only if the user answers they want to go on in this session, invoke \`${raw}\` again: it will pass.`);
+  }
+  if (!STAGES.has(skill)) return null;
+  if (s.closed == null) { save(file, { ...s, closed }); return null; }
   if (closed <= s.closed || s.refused === closed) return null;
-  const tokens = contextTokens(p.transcript_path);
+  const tokens = now;
   if (tokens < HEAVY) return null;
   save(file, { ...s, refused: closed });
   return deny(`a stage closed in this session and its context is at ${Math.round(tokens / 1000)} k tokens. ` +

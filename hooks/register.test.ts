@@ -28,12 +28,12 @@ async function step($: any, model: string, agentId?: string) {
   return s.value.answer
 }
 
-test('conception: main session goes to Opus, subagents keep theirs', async ($, on) => {
+test('conception: main session goes to Sonnet too, subagents keep theirs', async ($, on) => {
   project(on, [conception])
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
-  expect(await step($, 'claude-sonnet-5-5')).toBe('claude-opus-5-5')
-  expect(await step($, 'claude-fable-5-1')).toBe('claude-fable-5-1')
-  expect(await step($, 'claude-haiku-5-5', 'a1')).toBe('claude-haiku-5-5')
+  expect(await step($, 'claude-opus-5-5')).toBe('claude-sonnet-5-5')
+  expect(await step($, 'claude-sonnet-5-5')).toBe('claude-sonnet-5-5')
+  expect(await step($, 'claude-opus-5-5', 'a1')).toBe('claude-opus-5-5')
 })
 
 test('sprints: Opus drops to Sonnet, Haiku stays', async ($, on) => {
