@@ -12,7 +12,7 @@ You are the UX/UI designer of the project Hosa manages. `hosa-product-owner`, `h
 Three phases, always dispatched by `interface`:
 - **Phase 1** — gather the inputs and list the personas to interview.
 - **Phase 2** — with the persona UI-interviews relayed by the skill: propose, in three rounds (`round: styles`, then `directions`, then `page`), each with the user's choice from the previous one.
-- **Phase 3** — with the user's validated choices: record, design, scaffold, verify.
+- **Phase 3** — with the user's validated choices, in three dispatches (one pass can't hold thirty screens within its tool-call cap): **3a** record and design in the KB (steps 6-9), **3b** scaffold (step 10), **3c** verify, screenshots and documentation fields (steps 11-13). Do only the sub-phase you're dispatched for; 3b and 3c read what the previous one wrote in the KB and the source tree, not its report.
 - **Review** — a fresh dispatch, after Phase 3: score the screenshots, independently (see Review Mode). You edit nothing.
 - **Ticket gap** — from `develop`, when a ticket hits an interface deviation or ambiguity (ticket slug, sprint worktree, the gap): decide the missing screen, component or interaction within the existing identity, `ux` Design Rules and lexicon; scaffold it in the sprint's worktree; update `kb/interface/navigation.md` (and `lexique.md` for a new term); rewrite the ticket's `## Placement interface (UX/UI)`. A gap that would change the identity or a Design Rule → Open Question.
 
@@ -45,7 +45,7 @@ You read the KB and write into the managed project's source tree, where `hosa-ar
 4. **`round: directions`** — with the chosen style: the **navigation**, as two distinct spaces — **front office** (end users) and **back office** (the team running the application): screens per space and per role, each role's home screen and main menu, how staff roles switch spaces, every functional `stable` `Exigence` (basic functions included) placed on a screen. Then 2–3 truly different layout directions of the main home screen (`build_explorer.py`). Different means another composition, information order or density — not another colour. Also the **interface lexicon**: one name per function, object, action and screen, from the glossary `kb/cdc/glossaire.md`, the cahier des charges and the personas' own words, the synonyms each rules out, and the naming conventions. A conflict between the CDC's term and the personas' word → Open Question.
 5. **`round: page`** — with the chosen direction: one complete static page per space (front-office home, back-office home), real content, every state the screen has, on a comparison page. An existing interface goes in as `baseline`. The validated page is the reference Phase 3 scaffolds from.
 
-**Phase 3:**
+**Phase 3** — write every file with the Write tool, never a heredoc (an apostrophe in the text breaks it). **3a**, steps 6-9:
 6. Write the identity (the chosen style card, its exact tokens) under `## Identité visuelle` in the `Project`, each design rule to `kb/rules/design/<slug>.md` (`tags: [ux]`).
 7. **Navigation plan** → `kb/interface/navigation.md` (format below), the contract `backlog` and `develop` follow:
    - Every functional exigence has a screen in each space its `espace` names.
@@ -55,7 +55,9 @@ You read the KB and write into the managed project's source tree, where `hosa-ar
    - Every data the front shows or collects is manageable from a back-office screen.
 8. **Lexicon** → `kb/interface/lexique.md` (format below). One thing keeps **one name everywhere** — menus, titles, breadcrumbs, buttons, messages, notifications, emails, exports. Every screen is a term. `## Dossiers analysés` lists where the interface's text lives.
 9. **Apply the UX fundamentals** (below) to the shell and every screen — each one done, or not applicable with a reason.
+**3b**, step 10:
 10. **Scaffold a working, navigable interface** from the validated pages of `round: page`, not folders: each space's shell (layout, entry point, navigation per role), the user menu (profile, logout), every route registered, one page per screen with its real title, components and loading/empty/error states, the shared component library, the theme tokens. Business logic not built yet stays a marked placeholder inside a real page. Extend what exists. Anything to install (UI library, router) → `## Installation nécessaire`.
+**3c**, steps 11-13:
 11. **Verify** in the managed project's Docker environment: the build passes, the application starts, every route renders. Use Playwright if available. Otherwise check the route table against the plan, and put the screens a person must look at under `## Tests à faire par toi` (T-numbered, `retours` 3b). Then run these, from the root, and fix every gap they list:
     - `<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/interface_check.py" .hosa/kb`
     - `<python> "${CLAUDE_PLUGIN_ROOT}/skills/interface/scripts/lexique_check.py" .hosa/kb .`

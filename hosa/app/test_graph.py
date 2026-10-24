@@ -137,6 +137,15 @@ class GraphTest(unittest.TestCase):
         git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "rename")
         self.assertEqual(graph.ticket_touches(self.root)["export-csv"], ["app/factures.py"])
 
+    def test_touches_of_a_lot_commit(self):
+        # `-m` par trailer : git en fait deux paragraphes, %(trailers) ne lirait que le dernier
+        (self.root / "app/util.py").write_text(FILES["app/util.py"] + "\n# lot\n", encoding="utf-8")
+        git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "feat: lot",
+            "-m", "Hosa-Ticket: t1", "-m", "Hosa-Ticket: t2")
+        touches = graph.ticket_touches(self.root)
+        self.assertIn("app/util.py", touches["t1"])
+        self.assertIn("app/util.py", touches["t2"])
+
     def test_incremental_replaces_and_prunes(self):
         self.touch("app/util.py", "def fmt2(x):\n    return str(x)\n\ndef helper():\n    pass\n")
         (self.root / "web/store.js").unlink()

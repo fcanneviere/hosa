@@ -197,6 +197,8 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
                 for b in blocks(e):
                     if b.get("type") == "text":
                         last_text = b.get("text", "")
+                    if b.get("type") == "tool_use" and b.get("name") == "SubagentHandback":
+                        last_text = (b.get("input") or {}).get("message", "")  # the report, when sent by the tool
                     if b.get("type") == "tool_use":
                         run["tools"] += 1
                     if b.get("type") == "tool_use" and b.get("name") == "Read" and (b.get("input") or {}).get("file_path"):
@@ -213,14 +215,15 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
 
 def delivered(project: Path, since: str | None, until: str | None) -> set[str]:
     """Tickets with a commit carrying `Hosa-Ticket: <slug>` (the `develop` gate) in the period."""
-    cmd = ["git", "-C", str(project), "log", "--all", "--format=%(trailers:key=Hosa-Ticket,valueonly)"]
+    # the whole message, not %(trailers): a lot commit made with one `-m` per trailer splits them into paragraphs
+    cmd = ["git", "-C", str(project), "log", "--all", "--format=%B"]
     cmd += [f"--since={since} 00:00"] if since else []
     cmd += [f"--until={until} 23:59:59"] if until else []
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30, **NO_WINDOW).stdout
     except (OSError, subprocess.SubprocessError):
         return set()
-    return {line.strip() for line in (out or "").splitlines() if line.strip()}
+    return set(re.findall(r"^Hosa-Ticket:\s*(\S+)", out or "", re.M))
 
 
 def sprint_file(project: Path, slug: str) -> Path:

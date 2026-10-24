@@ -42,6 +42,7 @@ test('a hosa- subagent past its cap is refused every further call', () => {
   for (let i = 0; i < 50; i++) assert.equal(call(), null);
   assert.ok(denied(call()));
   assert.ok(denied(call()));
+  assert.equal(processPayload({ hook_event_name: 'PreToolUse', tool_name: 'SubagentHandback', session_id: 's3', agent_id: 'a1' }), null);
   const other = processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Bash', session_id: 's3', agent_id: 'a2', agent_type: 'Explore' });
   assert.equal(other, null);
 });

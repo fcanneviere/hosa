@@ -96,7 +96,7 @@ Vérifie `git -C <worktree> config user.name`/`user.email` avant tout commit ; s
 ```bash
 git -C <worktree> status
 git -C <worktree> add <uniquement les fichiers listés sous "Files Changed" par hosa-developer et sous "New Tests Written" par hosa-tester (étape 3b) pour ce ticket — jamais kb/tickets/ ni un autre fichier de la KB Hosa>
-git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 caractères>" -m "Hosa-Ticket: <slug-ticket>"   # fix: … pour une correction
+git -C <worktree> commit -m "feat: <description impérative du ticket, ≤72 caractères>" --trailer "Hosa-Ticket: <slug-ticket>"   # fix: … pour une correction
 ```
 
 Un seul commit pour tout le ticket. Aucun `Co-Authored-By`, aucun auteur additionnel — identité git de l'utilisateur uniquement.
@@ -116,7 +116,7 @@ Le mode par défaut quand le sprint a plusieurs tickets à faire : un ticket seu
 4. Étape 4 : les lots de tâches suivent l'ordre des tickets ; le `dernier lot` de tâches est celui du dernier ticket : la suite complète et les contrôles ne tournent qu'une fois.
 5. Étape 4b une fois sur les fichiers du lot ; étape 4c : **une** revue de lot (`hosa-reviewer`, verdict par ticket), une ligne `## Revue` écrite dans chaque ticket. FAIL sur un ticket → correction de ce ticket seul, puis revue de ce ticket seul.
 6. Étape 5 : **une** présentation et **une** confirmation pour le lot, ticket par ticket.
-7. Étape 6 : un commit par ticket quand leurs fichiers sont disjoints ; sinon un commit pour le lot, avec un trailer `Hosa-Ticket:` par ticket (le hook `gate.js` vérifie la revue de chacun ; le graphe rattache les fichiers à chaque ticket). Puis 6b et 7.
+7. Étape 6 : un commit par ticket quand leurs fichiers sont disjoints ; sinon un commit pour le lot, avec un `--trailer "Hosa-Ticket: <slug>"` par ticket — jamais un `-m` par trailer, qui les sépare en paragraphes (le hook `gate.js` vérifie la revue de chacun ; le graphe rattache les fichiers à chaque ticket). Puis 6b et 7.
 
 `avancement.py progress develop --detail "<lot> : ticket k/n fait" --reprise "develop lot <slugs restants>"` après chaque ticket commité.
 

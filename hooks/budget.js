@@ -3,8 +3,8 @@
 // - PreToolUse Skill, main session: a stage of the progress plan closed in this session and the
 //   context is heavy → the next pipeline stage is refused once: /clear then « reprends »
 //   (README « Une session par étape »). The retry passes: the user chose to stay.
-// - PreToolUse, in a hosa- subagent: past its cap of tool calls, every further call is refused,
-//   so the agent ends with its report and `## Reprise`; a fresh dispatch continues.
+// - PreToolUse, in a hosa- subagent: past its cap of tool calls, every further call is refused
+//   but the final report (SubagentHandback), so the agent ends with it and `## Reprise`.
 // SubagentStart records each agent's type. Fail-open. Kill switch: HOSA_BUDGET=0.
 
 const fs = require('fs');
@@ -83,6 +83,7 @@ function agentGate(p) {
   const s = load(file);
   const type = String(p.agent_type || s.type || '').split(':').pop();
   if (!/^hosa-/.test(type)) return null;
+  if (p.tool_name === 'SubagentHandback') return null; // the final report: refusing it loses the pass
   const calls = (s.calls || 0) + 1;
   save(file, { type, calls });
   const cap = CAPS[type] || CAP;

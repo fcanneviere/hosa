@@ -302,13 +302,14 @@ def ticket_touches(root):
     """{slug: [fichiers]} lus dans les commits portant le trailer `Hosa-Ticket: <slug>`."""
     try:
         out = subprocess.run(["git", "-C", str(root), "-c", "core.quotePath=false", "log", "--no-merges", "--name-status", "-M",
-                              "--format=%x1e%(trailers:key=Hosa-Ticket,valueonly,separator=%x2c)"],
+                              "--format=%x1e%B%x1f"],
                              capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace")
     except (subprocess.CalledProcessError, FileNotFoundError):
         return {}
     touches, renamed = {}, {}
     for record in out.split("\x1e")[1:]:
-        head, _, rest = record.partition("\n")  # 1re ligne : valeurs du trailer (vide si absent), puis les fichiers
+        # le message entier puis les fichiers : un commit de lot fait d'un `-m` par trailer les sépare en paragraphes
+        body, _, rest = record.partition("\x1f")
         paths = []
         for line in rest.splitlines():
             cols = line.split("\t")
@@ -317,9 +318,8 @@ def ticket_touches(root):
             if cols[0].startswith("R") and len(cols) == 3:
                 renamed.setdefault(cols[1], cols[2])  # du plus récent au plus ancien : le premier vu est le dernier
             paths.append(cols[-1])
-        for s in (x.strip() for x in head.split(",")):
-            if s:
-                touches.setdefault(s, set()).update(paths)
+        for s in re.findall(r"^Hosa-Ticket:\s*(\S+)", body, re.M):
+            touches.setdefault(s, set()).update(paths)
 
     def current(p):  # suit les déplacements jusqu'au chemin d'aujourd'hui
         seen = set()

@@ -4,6 +4,7 @@ const { processPayload } = require('./subagent-start');
 
 test('injects the auto-audit rule into Hosa agents only', () => {
   assert.match(processPayload({ agent_type: 'hosa-security' }).hookSpecificOutput.additionalContext, /## Retour Hosa/);
+  assert.match(processPayload({ agent_type: 'hosa-security' }, 'linux').hookSpecificOutput.additionalContext, /never `cd` into `\.hosa\/`/);
   assert.ok(processPayload({ agent_type: 'hosa:hosa-git' }));
   assert.equal(processPayload({ agent_type: 'Explore' }), null);
   assert.equal(processPayload({}), null);

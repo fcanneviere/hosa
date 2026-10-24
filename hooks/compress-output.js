@@ -118,9 +118,13 @@ function transform(text, tool) {
   return text.length - t.length >= MIN_WIN ? t : null;
 }
 
+// A spill file's own name, as `spill()` writes it: searching it must not spill again.
+const SPILL_RE = /spill[\\/]+\w+-[0-9a-f]{12}\.txt/;
+
 // Hook payload → replacement tool_response, or null to leave it untouched.
 function processPayload(p) {
   if (process.env.HOSA_COMPRESS === '0' || !p || !SAFE_TOOLS.includes(p.tool_name)) return null;
+  if (SPILL_RE.test(JSON.stringify(p.tool_input || {}))) return null;
   const text = extractText(p.tool_response);
   if (!text) return null;
   const updated = dedup(p.tool_name, text, p.session_id, p.tool_use_id) || transform(text, p.tool_name);

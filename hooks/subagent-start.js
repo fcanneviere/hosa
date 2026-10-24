@@ -8,12 +8,15 @@ Si tu as rencontré un problème avec Hosa lui-même — deux consignes contradi
 - Problème|Idée — <fichier Hosa concerné, étape> — <ce qui s'est passé> → <proposition>
 Sinon : "None". Il s'agit de tes propres consignes Hosa, jamais du code du projet géré. N'écris pas ce retour toi-même dans la KB : le skill qui t'a lancé s'en charge.`;
 
+// gate.js refuses a `cd` into `.hosa/`: 41 refusals across 13 agents on the pilot2 run.
+const KB_PATHS = 'Read and write the KB by absolute path (`<root>/.hosa/kb/…`, `kb_query.py`, `git -C`): never `cd` into `.hosa/` — the hook refuses it.';
+
 // Windows: Bash eats the backslashes of an unquoted `C:\…` passed to a script.
 const WINDOWS_PATHS = 'Pass every path argument in double quotes, with forward slashes (`"C:/dev/projet"`): Bash strips the backslashes of an unquoted `C:\\…`.';
 
 function processPayload(payload, platform = process.platform) {
   if (!/(^|:)hosa-/.test(payload.agent_type || '')) return null;
-  const context = platform === 'win32' ? `${RULE}\n\n${WINDOWS_PATHS}` : RULE;
+  const context = [RULE, KB_PATHS, ...(platform === 'win32' ? [WINDOWS_PATHS] : [])].join('\n\n');
   return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context } };
 }
 

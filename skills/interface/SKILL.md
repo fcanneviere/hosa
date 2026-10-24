@@ -24,9 +24,10 @@ styles (cartes de style) → directions (navigation, lexique,
 2–3 mises en page) → page (pages complètes front/back)
         ↓ chaque manche : page de comparaison → l'utilisateur choisit
         ↓
-Redispatch hosa-ux-designer (Phase 3) avec les choix validés
-→ plan de navigation, fondamentaux UX, scaffold navigable,
-vérification (build, routes, interface_check, captures)
+Redispatch hosa-ux-designer (Phase 3) avec les choix validés,
+en trois passages : 3a KB (identité, règles, navigation,
+lexique) → 3b scaffold navigable → 3c vérification (build,
+routes, interface_check, captures)
         ↓ Installation nécessaire → hosa-infra, redispatch
         ↓ manques → redispatch avec la liste, jusqu'à complet
 Dispatch hosa-ux-designer (Review), sans le raisonnement :
@@ -74,7 +75,12 @@ After each answer: `avancement.py … progress interface --detail "manche <round
 
 ## Step 4: Dispatch to Record and Design
 
-Redispatch `hosa-ux-designer` (Phase 3) with the user's validated choices. It writes the visual identity to `kb/project/` and each design rule to `kb/rules/design/`, writes `kb/interface/navigation.md`, applies the UX fundamentals, scaffolds a navigable interface, verifies it, and returns a `## Documentation à produire` field.
+Redispatch `hosa-ux-designer` (Phase 3) with the user's validated choices, as three fresh dispatches in a row — one pass ran past its tool-call cap on thirty screens:
+1. **3a** — writes the visual identity to `kb/project/`, each design rule to `kb/rules/design/`, `kb/interface/navigation.md` and `lexique.md`, and applies the UX fundamentals.
+2. **3b** — scaffolds the navigable interface from `navigation.md` and the validated pages. A `## Reprise` → a fresh 3b with it, before 3c.
+3. **3c** — verifies it, takes the screenshots and returns `## Vérification` and `## Documentation à produire`.
+
+Each dispatch gets the validated choices and the paths, not the previous report. A gap redispatch (Step 4b) goes to the sub-phase that owns it: KB → 3a, missing screen or route → 3b, then 3c again.
 
 - **`## Installation nécessaire`** → dispatch `hosa-infra` (Mode 2) with it, then redispatch `hosa-ux-designer` (Phase 3) once confirmed.
 

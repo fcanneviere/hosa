@@ -38,6 +38,8 @@ Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier de
 
 **`kb/cdc/relecture.md` exists** (an earlier pass, maybe a cut session) → read it first and never redo that pass: re-check only its anomalies still `ouverte` and the exigences changed since its `generated.at`: files of `kb/cdc/` modified after that date (file time — `redaction` doesn't commit, so a fix it just made is not in `git log` yet) plus those committed on `hosa-kb` since. Otherwise: in the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
 
+**Who reads.** Steps 2-3 are dispatched to `hosa-challenger` in **Relecture** mode, with `model: sonnet`, the scope (file paths) and the open anomalies of `kb/cdc/relecture.md` — never to a `general-purpose` agent, which runs on the session's model without Hosa's rules. It returns the anomalies; you route them and write Step 5.
+
 ## Step 2: Precision and Completeness Check
 
 For each exigence, check every section against these standards — mark **OK** or **Anomalie** with the exact problem:

@@ -100,6 +100,8 @@ A target still "pas encore de chiffre" → the item says so; `qa-plan` then test
 
 ## Step 2: Write the Story (PO role)
 
+**By batches.** Dispatch `hosa-product-owner` for this step on at most 8 exigences at a time, a fresh dispatch per batch, each given its exigence paths and the slugs already written (for `depends_on`) — one pass over a whole cahier des charges (51 tickets on the pilot) hits its tool-call cap six times. A report with `## Reprise` → a fresh dispatch on what it lists.
+
 For each `Exigence` left after Step 1, **split it into tickets** first. A ticket is a **vertical slice**: something a persona can exercise end to end, through every layer it needs (data, logic, interface) — never one layer of many features ("toutes les tables", "toute l'API"). Built, tested and demonstrated alone inside one sprint: one screen with its action, one rule, one import. The first ticket of an exigence is the thinnest path that works; the next ones widen it. A process with several screens, roles or rules gives several tickets. An exigence that is already that small stays one ticket. When a ticket can't work before another (it needs its data, its screen or its endpoint: authentication, a reference table, a creation before its edition), give it `depends_on: [<slug>]` — a real dependency only, never "plus logique après". A cycle means the split is wrong: re-slice. Unsure where to cut, or which comes first → ask the user.
 
 Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:

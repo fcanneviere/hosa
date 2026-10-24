@@ -17,6 +17,9 @@ test('elides a big Bash output, salvages the error line, spills the full text', 
   assert.equal(out.interrupted, false);
   const spilled = out.stdout.match(/Full output: (\S+)/)[1];
   assert.match(fs.readFileSync(spilled, 'utf8'), /ok 499/);
+  // searching the spill file returns its result whole
+  assert.equal(processPayload({ tool_name: 'Grep', tool_input: { path: spilled }, tool_response: bigLog }), null);
+  assert.equal(processPayload({ tool_name: 'Bash', tool_input: { command: `grep ok "${spilled}"` }, tool_response: { stdout: bigLog } }), null);
 });
 
 test('never touches Read, Edit, Write or Agent', () => {
