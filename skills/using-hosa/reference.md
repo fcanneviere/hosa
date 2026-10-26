@@ -46,7 +46,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `qualite` | Audit the managed project's source code — `hosa-senior-dev` for best practices and performance, `hosa-security` for security (conformity to the rules set at design time, plus the unforeseen holes) — classifies findings by severity, routes blocking ones; also each sprint's `audit` stage, after `develop` and before `qa` |
 | `documentation` | Check whether the managed project's technical and functional documentation is in sync with its sources, and refresh whatever has drifted — dispatches `hosa-documentation` in cold-check mode. Companion check usable anytime, not a pipeline stage |
 | `changement` | Handle a change to a `stable` Exigence — impact analysis (tickets/entities/migrations/screens/docs affected), revert to `draft`, a mini relecture/contestation loop, then follow-up tickets. Companion to the CDC pipeline, usable anytime after `contestation` has run once |
-| `livraison` | Release the managed project — quality audit (`qualite`), security and legal gates (`securite`, `juridique`), release notes and user documentation (`hosa-documentation`), tested tag (`hosa-git`), optional deployment with a database backup first (`hosa-dba`, `hosa-infra`), optional push/PR |
+| `livraison` | Release the managed project — quality audit (`qualite`), security and legal gates (`securite`, `juridique`), release notes and user documentation (`hosa-documentation`), tested tag (`hosa-git`), optional deployment on a test target (no backup, no legal gate, release prerequisites listed) or a production one (backup first, every gate blocking), promotion of a version tried in test (`hosa-dba`, `hosa-infra`), optional push/PR |
 | `kb-commit` | Commit whatever's accumulated under `.hosa/kb/` as a dedicated commit in the managed project's own git history, separate from the rest of that project's commits and from Hosa's own tooling commits. Companion skill, usable anytime |
 | `okf` | Rules every file under `.hosa/kb/` must follow (Open Knowledge Format 0.2) and the validator run that closes every KB write. Companion skill, applied by every skill or agent that writes the KB |
 
@@ -95,5 +95,5 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Fais une revue de sécurité", "Audite la sécurité du code", "Modèle de menaces", "Est-ce que c'est sécurisé ?" | `securite` |
 | "Vérifie que la documentation est à jour" | `documentation` |
 | "Cette exigence a changé", "Modifie le cahier des charges sur X (déjà stable)" | `changement` |
-| "Livre le projet", "Déploie", "Prépare la release" | `livraison` |
+| "Livre le projet", "Déploie", "Prépare la release", "Livre en test", "Passe en prod" | `livraison` |
 | "Committe la KB", "Sauvegarde les changements de la KB" | `kb-commit` |

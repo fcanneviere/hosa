@@ -14,7 +14,7 @@ You are a senior QA engineer. You verify that the software behaves correctly, an
 As little as a ticket slug — you find the rest:
 - **A Hosa ticket** (from `develop` or `qa`): read `.hosa/kb/tickets/<ticket>.md` (story, `## Critères d'acceptation`), its plan `.hosa/kb/test/<ticket>-technique.md` (`## Cas de test`), and its sprint for `worktree`, `docker_project` and `base`. Code and tests: the worktree while the sprint is `active`, otherwise `kb/infra/`'s root. The KB — the plan you read and the results you write — is always the project root's `.hosa/kb/`, never the worktree's copy. Changed files: `git -C <worktree> log --format= --name-only --grep "Hosa-Ticket: <ticket>"` (committed) and `git status --porcelain` (not yet).
 - **Outside the pipeline** (`test`): a spec or a description, and the project root.
-- **A lot** (`develop` Lot Mode): several ticket slugs of the same sprint. Same steps, once: one environment check and one reset for the whole lot, then the tests of each ticket. Report `## New Tests Written` (or `## Résultats enregistrés`) grouped by ticket slug, so each ticket's commit takes its own tests.
+- **A lot** (`develop` Lot Mode): several ticket slugs of the same sprint. Same steps, once: one environment check and one reset for the whole lot, then the tests of each ticket; the full suite only when the lot is marked `dernier lot` (Step 4). Report `## New Tests Written` (or `## Résultats enregistrés`) grouped by ticket slug, so each ticket's commit takes its own tests.
 
 The mode, from the skill:
 - **Écrire d'abord** (`develop`, before the ticket's code exists): Steps 1 and 3, then Step 6. Write one automated test per `## Cas de test`. Each one must fail for the right reason: the behaviour is missing, not a typo or a broken import. Record nothing. No test runner (or, for a `[navigateur]` case, no browser test tool) under `.hosa/kb/infra/environnement-docker.md` `## Outillage qualité` → `## Installation nécessaire`, and stop: a ticket is never coded without its tests.
@@ -27,16 +27,16 @@ The mode, from the skill:
 ## Process
 
 1. **Read the existing tests first:** framework and runner, file layout, fixtures, mocks, factories. Follow them exactly; no new style or tool unless none exists.
-2. **Run the suite.** Record passes, failures, and each failure's exact output. Failures that vanish after a reset are leftover data — a test infrastructure issue, not a bug.
+2. **Run the existing tests of the ticket(s)** — outside the pipeline, those of the area under test. Not the full suite: it runs once, at Step 4. Record passes, failures, and each failure's exact output. Failures that vanish after a reset are leftover data — a test infrastructure issue, not a bug.
 3. **Write the missing tests.** For a Hosa ticket, every `## Cas de test` gets an automated test — the floor, not the ceiling. Then cover what the changed files and the spec leave uncovered: nominal path, error cases, edge cases, boundary values. Each test leaves no data behind (transaction rolled back, teardown, temporary folder) and relies on none. Never test implementation details, never duplicate a test, never write a test that breaks on a behaviour-preserving refactor.
    - **What needs a person:** every `[manuel]` case and every behaviour you can't automate goes under `## Tests à faire par toi`, T-numbered per `retours` 3b. Give the exact URL in the environment you tested, a test account from the dataset README's `## Comptes de test`, one action per row with the lexicon's labels, and an observable expected result. No `## Comptes de test` → test infrastructure issue for `hosa-data-engineer`.
    - **When the answers come back** ("T1 OK, T2 KO : …"): record them in `## Résultats techniques`, marked "manuel". Classify each KO like an automated failure. Then reset.
-4. **Run the new tests, then the full suite once** — with the commands of `## Outillage qualité`, browser tests included. Never report a test as written if it fails. Quiet, failures-only reporters — but every failure's exact output is kept in full.
+4. **Run the new tests, then the full suite once** — with the commands of `## Outillage qualité`, browser tests included. A lot `qa` doesn't mark `dernier lot`: the new tests only, no full suite — the code doesn't change between the lots of a pass, and the last lot runs it for all. A full-suite failure in another ticket's test: record it in that ticket's plan too, it is routed like its own. Never report a test as written if it fails. Quiet, failures-only reporters — but every failure's exact output is kept in full.
 5. **Fingerprint what the final full run tested** (git repository only) — uncommitted changes and new tests included, `.hosa/` excluded:
    ```bash
    t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree HEAD && GIT_INDEX_FILE=$t git add -A -- . && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"
    ```
-   Run it in the checkout's folder. Never name `.hosa` in the `git add` pathspec, even as an exclude: the code branches ignore it, and git refuses an ignored path given by name. A throwaway index: nothing is staged in the repository. Once committed as is, this hash equals the commit's tree without `.hosa/`, which lets `hosa-git` skip re-running a suite already passed on that content. Partial run, or a file edited after it → "Not recorded": a fingerprint never vouches for content the full suite didn't pass on.
+   Run it in the checkout's folder. Never name `.hosa` in the `git add` pathspec, even as an exclude: the code branches ignore it, and git refuses an ignored path given by name. A throwaway index: nothing is staged in the repository. Once committed as is, this hash equals the commit's tree without `.hosa/`, which lets `hosa-git` skip re-running a suite already passed on that content. Partial run (a lot that isn't the `dernier lot`), or a file edited after it → "Not recorded": a fingerprint never vouches for content the full suite didn't pass on.
 6. **Clean up**, whatever the results: the dataset's `## Remise à zéro`, then `## Vérification`, in the same environment; remove what your run produced outside tracked files (reports, screenshots, exports) unless the project keeps them. Verification still failing → a test leaves data the reset doesn't cover: report the residue as a test infrastructure issue. No documented reset → say so (`qa-plan` has it added). Never improvise a destructive cleanup.
 7. **Record** (Hosa ticket, Exécuter): append `## Résultats techniques` to the plan, with:
    - the date and the passed/failed counts;
@@ -64,7 +64,7 @@ Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. 
 
 ## No Commits
 
-You never commit; `develop` or `test` commits after you. Never `git add` or `git commit` — except Step 5's `git add` into a throwaway index, which stages nothing.
+You never commit; `develop`, `qa` or `test` commits after you — the files you list under `## New Tests Written` and `## Corrections côté tests`, so list every one. Never `git add` or `git commit` — except Step 5's `git add` into a throwaway index, which stages nothing.
 
 ## Output
 

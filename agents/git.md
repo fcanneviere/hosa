@@ -80,7 +80,7 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
    - `kb/test/<ticket>-technique.md` exists and its **last** `## Résultats techniques` is entirely passed;
    - `## Recette requise` reads "Aucune…", or each persona named has `kb/test/<ticket>-<persona>.md` with `## Verdict` exactly `Accepté` (the verdict, not the per-scénario judgments).
    - the sprint has a `## Audit` section (`qualite`, stage `audit`, before `qa`) with no Bloquant left. Missing → blocking, propose `qualite sprint <slug>`.
-   - the sprint has a `## Démo` section (`validation`): every T-test OK, or the user's recorded choice to skip it. Missing → blocking, propose `validation`.
+   - the sprint has a `## Démo` section (`validation`): every T-test OK (a ticket noted `joué en QA` has none), or the user's recorded choice to skip it. Missing → blocking, propose `validation`.
    `Accepté avec réserves` or `Différé` → listed apart under `## Open Questions` with its reservations or reason (and, for `Différé`, its replay ticket); blocking until the user or `hosa-product-owner` accepts the risk. A missing file, `Refusé`, or `Échoué`/`Partiel` technical results → list every blocking ticket and what it lacks, suggest `qa`/`debug`/`hosa-product-owner`, stop. Never a partial merge.
 3. Uncommitted source in the worktree → stop and list it; the user decides.
 4. **Integrate:** `git merge-base --is-ancestor <base> sprint/<slug>` succeeds → nothing to do. Otherwise `git merge --no-ff <base> -m "Merge <base> into sprint/<slug>"` in the worktree; conflict → `git merge --abort`, list the files, stop (`state` stays `active`; resolved on the sprint branch, then Mode 2 again).
@@ -99,7 +99,7 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 - Nothing to commit → say so, no error.
 
 **Ad hoc:** handle the request directly under the rules above. One more request comes from a Hosa skill:
-- **Release** (`livraison`): on the base branch in the root, commit the release notes and documentation files `livraison` lists (`docs: version <version>`), then run the full suite and the `## Outillage qualité` checks in the base environment; red → stop and report. Green → annotated tag `v<version>` (`git tag -a v<version> -m "<version>"`) on the base's tip; report the tag and the commit. Push the tag only with the push the user asked for.
+- **Release** (`livraison`): on the base branch in the root, commit the release notes and documentation files `livraison` lists (`docs: version <version>`), then run the full suite and the `## Outillage qualité` checks in the base environment; red → stop and report. Skip the suite when `git diff --name-only <merge_commit> HEAD` (the last merged sprint's `merge_commit`, given by `livraison`) lists only the files `livraison` listed: Mode 2 tested that tree, and documentation runs no code. Lint, format and types always run. Report run or skip, with the `merge_commit`. Green → annotated tag `v<version>` (`git tag -a v<version> -m "<version>"`) on the base's tip; report the tag and the commit. Push the tag only with the push the user asked for.
 
 Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments still running on a vanished sprint folder — stop each (`docker compose -p <name> down`) once the user confirms. No KB write unless it concerns a sprint (then Mode 1/2 applies).
 

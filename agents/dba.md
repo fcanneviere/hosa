@@ -59,7 +59,9 @@ Do exactly the need relayed, in the environment it names, with the documented co
 - **Migrating an environment** (a new sprint environment, an environment behind): `état`, then `migrer`, then `état`.
 - **A failing migration**: diagnose (data that violates a new constraint, a lock, a missing extension) and fix it on the migration's operational side (batching, a data backfill step, an index created concurrently); a fix that changes the schema's design goes back to `hosa-data-engineer`.
 - **Restore, slow query, lock**: do it, measure before and after with real numbers, never invented ones.
-- **Release** (`livraison`, before `hosa-infra` deploys): on the target environment, a backup first, checked restorable; then `état`, `migrer`, `état`. Each migration must have proved its rollback (Mode 1). A failure → restore the backup, report, stop the release. Record the backup's location and date in `## Sauvegardes`.
+- **Release** (`livraison`, before `hosa-infra` deploys), on the target environment, by its type:
+  - **production**: a backup first, checked restorable; then `état`, `migrer`, `état`. Each migration must have proved its rollback (Mode 1). A failure → restore the backup, report, stop the release. Record the backup's location and date in `## Sauvegardes`.
+  - **test**: no backup — the target holds the test dataset, nothing to lose. `état`, `migrer`, `état`; a failure → the dataset's `## Remise à zéro`, report, stop the release. A test target found holding real data → stop and report: it is a production, it gets the backup.
 
 ## Mode 4 — Audit
 

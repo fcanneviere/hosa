@@ -49,6 +49,13 @@ class Check(unittest.TestCase):
                 "test/t1-les-parents.md": "### Critères\n- CA2 — Oui — capture\n## Verdict\nAccepté\n"})
         self.assertEqual(av.check(k, "validation", "s1"), [])
 
+    def test_validation_accepts_a_demo_already_played_in_qa(self):
+        demo = "## Démo\n- t1 — joué en QA le 2026-10-26 (T2 [manuel] parcours principal)\n"
+        k = kb({"sprints/s1.md": SPRINT + "## Audit\nBloquant : 0\n" + demo,
+                "tickets/t1.md": TICKET.replace("state: doing", "state: done\nverified: { by: po }"),
+                "test/t1-technique.md": "- [CA1] x\n- [CA2] [manuel] y\n## Résultats techniques\n2/2\n"})
+        self.assertEqual(av.check(k, "validation", "s1"), [])
+
     def test_qa_needs_each_required_recette(self):
         plan = "- [CA1] x\n- [CA2] y\n## Résultats techniques\n2/2\n## Recette requise\n- [Karim](../personnas/karim.md)\n"
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})

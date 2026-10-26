@@ -60,7 +60,7 @@ Read `kb/infra/` for the root — missing → stop. Scope: the file list given b
 
 ## Livraison (Mode 4)
 
-Dispatch `hosa-security` (Mode 4) with the version and the date of the previous release. Return the verdict to `livraison`. **No-Go** → one numbered question: fix first (recommended), or ship anyway knowingly. Shipping anyway is written in `kb/securite/livraison-<version>.md` under `## Dérogation` with `generated.by: human:<user>` — the user's decision, written down, never implied.
+Dispatch `hosa-security` (Mode 4) with the version, the target's type (test, production, promotion) and the date of the previous release of that type. Return the verdict to `livraison`. **No-Go** → one numbered question: fix first (recommended), or ship anyway knowingly. Shipping anyway is written in `kb/securite/livraison-<version>.md` under `## Dérogation` with `generated.by: human:<user>` — the user's decision, written down, never implied.
 
 ## Commits
 

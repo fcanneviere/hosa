@@ -30,7 +30,7 @@ Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.
 3. **Chaque sprint** — `sprint` → `qa-plan` → démarrage (`git`) → `develop` → audit (`qualite`) → `qa` → `validation` → fusion (`git`) → `bilan-sprint` → `livraison`.
    Les tests sont écrits avant le code, sécurité comprise. Chaque ticket passe la suite complète, le linter et une revue de code avant son commit. Un défaut trouvé est corrigé dans le sprint. Chaque critère d'acceptation (CA1, CA2…) est prouvé par un test nommé. Avant la fusion, le code du sprint passe un audit qualité et sécurité, puis tu fais une courte démo (tests T1, T2…). Chaque sprint a sa branche, son worktree et son propre environnement Docker. La fusion ne touche la branche principale qu'avec du code déjà testé.
    Ces étapes ne sont pas que des consignes : un hook refuse le commit d'un ticket sans revue PASS, et la fusion d'un sprint sans audit, démo ou recettes validées.
-   La livraison passe un audit qualité, crée une version testée et taguée, puis la déploie si tu le demandes, après une sauvegarde de la base.
+   La livraison passe un audit qualité, crée une version testée et taguée, puis la déploie si tu le demandes : en test, sans sauvegarde ni porte juridique ; en production, après une sauvegarde de la base et toutes les portes. Une version essayée en test passe en production sans refaire ses contrôles.
 
 Hosa enchaîne les étapes tout seul. Il ne s'arrête que pour tes vraies décisions : choix produit, validation du cahier des charges, proposition de sprint, démo, fusion, livraison.
 

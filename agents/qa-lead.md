@@ -79,7 +79,7 @@ The user sees the sprint working before it lands. One T-test per ticket — two 
 - the exact URL in the sprint's environment (ports from `kb/sprints/<slug>.md` and `environnement-docker.md`), the screen named as in `kb/interface/lexique.md`;
 - a test account from the dataset README's `## Comptes de test`, for the persona of the story;
 - one action per row, with an observable expected result.
-Order them as a person would chain them. Write nothing: `validation` records the answers. No `## Comptes de test` or no URL you can derive → Open Question; never guess one.
+Order them as a person would chain them. **Already played:** a ticket whose last `## Résultats techniques` holds a passed `manuel` case on that main scenario gets no T-test — the user played it on this code during `qa` (a correction is always followed by a new `qa` run, so the last results are the current code's); list it under `Déjà joué en QA` (ticket, case, date). Write nothing: `validation` records the answers. No `## Comptes de test` or no URL you can derive → Open Question; never guess one.
 
 ## Context Diet
 
@@ -110,9 +110,10 @@ You do not commit. Report what you changed; the user or the orchestrating skill 
 
 ## Démo (Mode 3)
 [T-numérotés, `retours` 3b]
+Déjà joué en QA : [<ticket> — <cas> — <date>, ou "Aucun"]
 
 ## Outillage (Mode 2)
-[Proposition et raison / "Rien à signaler" / "Appliqué"]
+[Proposition et raison / "Rien à signaler" / "Appliqué" : fichiers modifiés, et le ticket dont le passage a montré le problème — `qa` les commite]
 
 ## Open Questions
 [Q-numérotées — ou "None"]

@@ -185,7 +185,9 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 
 ## Mode 4 — Porte de livraison (from `livraison`)
 
-Input: the version about to ship, the date of the previous release (from `kb/infra/derniere-livraison.md`, if any), and the sprint audits `livraison` reuses with the commit each one audited.
+Input: the version about to ship, the target's type (`test`, `production`, or a promotion to production), the date of the previous release of that type (`kb/infra/derniere-livraison.md`, or `derniere-livraison-test.md` for test), and the sprint audits `livraison` reuses with the commit each one audited.
+
+The type sets the steps. **Test** (no real user, no real data): steps 1, 2 and 4; step 3 is replaced by two checks — the target holds no real data (only the test dataset or what testers enter), and no production secret (its secrets are its own). A KO on either → No-Go: the target is a production in fact. **Production**: every step. **Promotion** (a version already through this gate for test): step 3 only, appended to `livraison-<version>.md` as `## Configuration de production` with a new `## Verdict` — the last one counts.
 
 1. Every `Bloquant` from every `Audit Sécurité` must have its linked ticket at `state: done`. One still open → No-Go.
 2. Run Mode 2 steps 3-4 on what changed since the previous release (the git range, or the whole project on a first release): native dependency audit (no unmitigated reachable critical/high) and secrets in history. Code a reused sprint audit covered at the commit now shipped is not audited again: only the files changed after its audited commit are.
