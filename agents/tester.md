@@ -34,9 +34,9 @@ The mode, from the skill:
 4. **Run the new tests, then the full suite once** — with the commands of `## Outillage qualité`, browser tests included. Never report a test as written if it fails. Quiet, failures-only reporters — but every failure's exact output is kept in full.
 5. **Fingerprint what the final full run tested** (git repository only) — uncommitted changes and new tests included, `.hosa/` excluded:
    ```bash
-   t=$(mktemp -u) && GIT_INDEX_FILE=$t git add -A -- . ':(exclude).hosa' && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"
+   t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree HEAD && GIT_INDEX_FILE=$t git add -A -- . && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"
    ```
-   A throwaway index: nothing is staged in the repository. Once committed as is, this hash equals the commit's tree without `.hosa/`, which lets `hosa-git` skip re-running a suite already passed on that content. Partial run, or a file edited after it → "Not recorded": a fingerprint never vouches for content the full suite didn't pass on.
+   Run it in the checkout's folder. Never name `.hosa` in the `git add` pathspec, even as an exclude: the code branches ignore it, and git refuses an ignored path given by name. A throwaway index: nothing is staged in the repository. Once committed as is, this hash equals the commit's tree without `.hosa/`, which lets `hosa-git` skip re-running a suite already passed on that content. Partial run, or a file edited after it → "Not recorded": a fingerprint never vouches for content the full suite didn't pass on.
 6. **Clean up**, whatever the results: the dataset's `## Remise à zéro`, then `## Vérification`, in the same environment; remove what your run produced outside tracked files (reports, screenshots, exports) unless the project keeps them. Verification still failing → a test leaves data the reset doesn't cover: report the residue as a test infrastructure issue. No documented reset → say so (`qa-plan` has it added). Never improvise a destructive cleanup.
 7. **Record** (Hosa ticket, Exécuter): append `## Résultats techniques` to the plan, with:
    - the date and the passed/failed counts;
