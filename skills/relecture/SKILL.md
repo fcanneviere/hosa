@@ -38,6 +38,8 @@ Manual: `/relecture`. Auto: immediately after `securite`, or "relis le cahier de
 
 **`kb/cdc/relecture.md` exists** (an earlier pass, maybe a cut session) → read it first and never redo that pass: re-check only its anomalies still `ouverte` and the exigences changed since its `generated.at`: files of `kb/cdc/` modified after that date (file time — `redaction` doesn't commit, so a fix it just made is not in `git log` yet) plus those committed on `hosa-kb` since. Otherwise: in the pipeline, `relecture` runs after `securite`: check every `Exigence` written or changed in this session by `redaction`, `fondamentaux`, `juridique` and `securite`. Invoked alone, read every `Exigence` in `.hosa/kb/cdc/`.
 
+**Exigences tagged `socle-comptes`.** Their standard text was reviewed once, in `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md`: don't re-check it. Check only what the project filled in — no `{paramètre}` left, values matching `kb/cdc/fondamentaux.md` § Socle comptes, generic roles replaced by the project's, the matrice des rôles complete (every role of the project, its espace, what it sees and does) — and every rule or error case the project added. A socle rule missing or weakened → **Anomalie** (→ `redaction`).
+
 **Who reads.** Steps 2-3 are dispatched to `hosa-challenger` in **Relecture** mode, with `model: sonnet`, the scope (file paths) and the open anomalies of `kb/cdc/relecture.md` — never to a `general-purpose` agent, which runs on the session's model without Hosa's rules. It returns the anomalies; you route them and write Step 5.
 
 ## Step 2: Precision and Completeness Check

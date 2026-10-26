@@ -43,10 +43,7 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 - **Front office et back office** : deux espaces distincts — celui des utilisateurs finaux et celui de l'équipe qui exploite l'application — avec leurs accès, leurs rôles et leur point d'entrée
 - **Gestion back-office de chaque donnée du front** : pour tout ce que le front office affiche ou collecte, qui le crée, le valide/modère, le corrige, le supprime et le suit, depuis le back office
 - **Interface d'administration** : back-office pour gérer contenus, données de référence, paramètres
-- **Gestion des utilisateurs** : création/invitation, modification, désactivation et suppression de comptes, profil utilisateur
-- **Authentification** : connexion, déconnexion, gestion et expiration de session
-- **Récupération de compte** : mot de passe oublié, réinitialisation
-- **Gestion des droits et rôles** : qui peut voir/faire quoi, attribution des rôles
+- **Socle comptes** : invitation ou inscription, connexion avec limitation des tentatives et double authentification, session et déconnexion, mot de passe et mot de passe oublié, changement d'email, administration des comptes, rôles et droits, suppression, journal de sécurité — exigences standard déjà rédigées dans `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md`, jamais réécrites projet par projet (voir Step 1b)
 - **Paramétrage / configuration** : réglages modifiables sans redéploiement
 - **Notifications** : email/in-app sur les événements clés, préférences de notification
 
@@ -74,9 +71,13 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 - **Accessibilité** : niveau visé (RGAA/WCAG), publics concernés
 - **Compatibilité** : navigateurs, appareils, OS à supporter
 
+## Step 1b: Socle comptes
+
+Accounts are the same in every application, so they are not drafted here: `socle-comptes.md` holds the exigences, their security controls, their abuse cases and their ticket split. This stage only fills in what the project decides — 3 variants and a block of parameters with defaults — plus the project's matrice des rôles. Struck out only for an application with no accounts at all (a public site with no login), with that reason.
+
 ## Step 2: Coverage Check (PO)
 
-Dispatch `hosa-product-owner` **with `model: opus`** — judging what the cahier des charges is missing is the PO's hardest call (Responsibility 8, `agents/product-owner.md`) with the checklist above, every `Exigence` in `kb/cdc/`, `kb/personnas/`, `kb/project/identity.md`, and the existing `kb/cdc/fondamentaux.md` if one exists (items already confirmed out of scope there aren't re-asked). It returns, per item: **Couvert** (citing the exigence that actually covers it — judged on content, not keywords) or **Manquant**, with a one-line example of what it means for *this* project, and its recommendation.
+Dispatch `hosa-product-owner` **with `model: opus`** — judging what the cahier des charges is missing is the PO's hardest call (Responsibility 8, `agents/product-owner.md`) with the checklist above, every `Exigence` in `kb/cdc/`, `kb/personnas/`, `kb/project/identity.md`, and the existing `kb/cdc/fondamentaux.md` if one exists (items already confirmed out of scope there aren't re-asked). It returns, per item: **Couvert** (citing the exigence that actually covers it — judged on content, not keywords) or **Manquant**, with a one-line example of what it means for *this* project, and its recommendation. For **Socle comptes**, it also returns the project exigences that already cover one of its processes (they get merged, not duplicated), the variants it recommends from the identity and personas, and the project's roles.
 
 ## Step 3: Confirm Once, Included by Default
 
@@ -86,12 +87,15 @@ With the same list, show the `espace` the PO proposes for any functional exigenc
 
 Then ask, grouped, only what's needed to write the items kept: the actor or rule the PO couldn't derive, and the concrete target for each NFR (number, level, threshold — "pas encore de chiffre" is a valid answer, never invented).
 
+For the socle comptes, in the same round: the 3 variants (`socle-comptes.md` § Variantes, the PO's recommendation as option a) and the whole parameter table with its defaults filled in — "je garde les valeurs par défaut" is one answer — then the matrice des rôles (roles × espace × what each sees and does), drafted by the PO from the personas for the user to correct. MFA, session lengths and the attempt limits are settled here: `securite` doesn't ask them again.
+
 In the same round, ask the context `juridique` and `securite` will need, so the user is questioned once for the three stages: country or countries of use, B2B or B2C, sector, planned release date, AI vendor if any, data sensitivity and the risks the user is ready to accept. Record the answers in `kb/cdc/fondamentaux.md` under `## Contexte`.
 
 ## Step 4: Write (PO)
 
 Redispatch `hosa-product-owner` with the kept items and the user's answers. It writes:
 - one `Exigence` per kept item, `status: draft`, in `redaction`'s structure — `espace` set (most basics are `back-office`; login, account recovery, notifications or user help are usually `front-office` too), `tags: [nfr]` for an NFR — linking a matching persona if one exists (e.g. an "Administrateur" for admin items), otherwise `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` — expected for most of this list, not a gap;
+- for the socle comptes, every exigence the variants keep, copied from `socle-comptes.md` as its Rules of use say: text unchanged, parameters replaced by the chosen values, roles renamed, matrice des rôles filled in, `tags: [socle-comptes]`; a project exigence on the same process is merged, not duplicated;
 - `kb/cdc/fondamentaux.md`, the record `contestation` checks for:
 
 ```markdown
@@ -104,6 +108,10 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 ## Contexte
 - <pays / B2B-B2C / secteur / date de mise en production / fournisseur d'IA / sensibilité des données / risques acceptés> : <réponse>
+## Socle comptes
+- Version : socle-comptes/1.0
+- Variantes : V1 <mot-de-passe / sso / lien-magique> · V2 <invitation / auto-inscription> · V3 <mono / multi-organisation>
+- <paramètre> : <valeur> (défaut | choisi par l'utilisateur)
 ## Bilan
 - <item> — Couvert : [exigence](<slug>.md)
 - <item> — Ajouté : [exigence](<slug>.md)

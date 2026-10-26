@@ -104,6 +104,8 @@ A target still "pas encore de chiffre" → the item says so; `qa-plan` then test
 
 For each `Exigence` left after Step 1, **split it into tickets** first. A ticket is a **vertical slice**: something a persona can exercise end to end, through every layer it needs (data, logic, interface) — never one layer of many features ("toutes les tables", "toute l'API"). Built, tested and demonstrated alone inside one sprint: one screen with its action, one rule, one import. The first ticket of an exigence is the thinnest path that works; the next ones widen it. A process with several screens, roles or rules gives several tickets. An exigence that is already that small stays one ticket. When a ticket can't work before another (it needs its data, its screen or its endpoint: authentication, a reference table, a creation before its edition), give it `depends_on: [<slug>]` — a real dependency only, never "plus logique après". A cycle means the split is wrong: re-slice. Unsure where to cut, or which comes first → ask the user.
 
+**Exigences tagged `socle-comptes`** are not re-sliced: take the split of `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md` § Découpage en tickets, the tickets the variants keep, with its `depends_on`. Rate limiting is in `connexion`'s criteria, never a later ticket (pilot2: login shipped without it). In Step 6, propose these tickets first, in the split's order.
+
 Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
 
 ```markdown
@@ -215,7 +217,7 @@ Read `kb/cdc/securite.md`, the `Security Rule`s in `kb/rules/security/`, and the
 
 ```markdown
 ## Note sécurité (expert cybersécurité)
-[Contraintes applicables à ce ticket — données sensibles touchées, contrôle d'accès attendu, journalisation, règles `kb/rules/security/` concernées — ou "Aucune contrainte propre à ce ticket — règles générales de `kb/rules/security/` applicables." quand c'est le cas]
+[Contraintes applicables à ce ticket — données sensibles touchées, contrôle d'accès attendu, journalisation, règles `kb/rules/security/` concernées, cas d'abus de `kb/cdc/securite.md` pour l'exigence du ticket (recopiés) — ou "Aucune contrainte propre à ce ticket — règles générales de `kb/rules/security/` applicables." quand c'est le cas]
 ```
 
 If `kb/cdc/securite.md` doesn't exist yet (`securite` never ran), append instead:
