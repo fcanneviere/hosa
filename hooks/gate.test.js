@@ -59,6 +59,14 @@ test('commits outside a sprint worktree pass', () => {
   assert.equal(bash(project({}), 'git commit -m "chore: x"'), null);
 });
 
+test('a co-author line is refused in a Hosa project, anywhere else it passes', () => {
+  const r = project({ '.hosa/kb/index.md': '' });
+  const heredoc = 'git commit -F - <<\'EOF\'\nfix(infra): x\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\nEOF';
+  assert.match(denied(bash(r, heredoc)), /Co-Authored-By/);                              // the pilot2 case
+  assert.match(denied(bash(r, commit(path.join(r, '.worktrees', 'sprint', 's1')) + ' -m "co-authored-by: x"')), /identity only/);
+  assert.equal(bash(project({}), heredoc), null);
+});
+
 const sprint = (extra) => `---\ntype: Sprint\n---\n## Tickets\n- [T1](../tickets/t1.md)\n${extra}`;
 const done = '---\ntype: Ticket\nstate: done\nverified: { by: hosa-product-owner/1.0, at: x }\n---\n';
 const full = {

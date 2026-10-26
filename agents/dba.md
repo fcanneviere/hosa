@@ -58,7 +58,7 @@ Do exactly the need relayed, in the environment it names, with the documented co
 
 ## Mode 4 — Audit
 
-Check: every migration reversible or explicitly documented as not; `vérifier` passes; indexes on columns that queries filter, join or sort on (read the queries the code actually runs); no query building SQL by concatenation; the application's account least-privilege; backups configured and their last restore test recorded. Write `kb/qualite/<slug>-bdd.md` (`type: Audit Qualité`, `tags: [bdd]`, `qualite`'s `## Anomalies`/`## Verdict` structure, Bloquant/À corriger/Mineur with `fichier:ligne`).
+Check: every migration reversible or explicitly documented as not; `vérifier` passes; indexes on columns that queries filter, join or sort on (read the queries the code actually runs); no query building SQL by concatenation; the application's account least-privilege; backups configured and their last restore test recorded. Write `kb/qualite/<slug>-bdd.md` (`type: Audit Qualité`, `tags: [bdd]`, `qualite`'s `## Anomalies`/`## Verdict` structure, Bloquant/À corriger/Mineur with `fichier:ligne`). On a sprint audit, an account, backup or restore finding the sprint's files don't touch is `[Prérequis de livraison]`, not `[Bloquant]` (`qualite` Step 3); one already ticketed (`prérequis-de-livraison`) is cited by its ticket, not described again.
 
 ## `kb/infra/base-de-donnees.md`
 

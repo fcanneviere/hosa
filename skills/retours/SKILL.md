@@ -61,11 +61,11 @@ Every question that needs an answer, and every `## Open Questions` item an agent
 ```
 
 - **Number them Q1, Q2, Q3…** in the order they must be answered. Restart at Q1 in each message.
-- **Offer lettered options** when the answer is a choice, and mark the recommended one, with its reason in the consequence line. A question with a free answer says what form the answer takes ("un nombre de tickets", "un chemin").
+- **Offer lettered options** when the answer is a choice, and mark the recommended one, with its reason in the consequence line. **The recommended option is always `a)`**: users answer "Q1 a" by habit (pilot2: a recommended `b)` got "Q1 a", the opposite choice). A skill's template that lists options in another order is reordered. A question with a free answer says what form the answer takes ("un nombre de tickets", "un chemin").
 - **Mark blocking questions** "(bloquante)": the work stops until it's answered. Non-blocking questions say what you do by default if there's no answer.
 - **One question = one decision.** Never two questions in one item.
 - The user can answer in one line: **"Q1 a, Q2 b, Q3 : 5"**. Accept that form, and partial answers: re-ask only what's missing, with its original number.
-- **Relaying an agent's questions:** the skill renumbers them into its own Q1…Qn for the user, keeps the mapping, and passes each answer back to the right agent with the agent's original number.
+- **Relaying an agent's questions:** the skill renumbers them into its own Q1…Qn for the user, keeps the mapping, and passes each answer back to the right agent with the agent's original number. Every one is relayed: never drop or merge one. A report that looks cut → read the file the agent wrote before saying so.
 
 ## 3b. Tests a person must run — numbered T1, T2…
 

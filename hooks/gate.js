@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Hosa — gates. PreToolUse on Bash: a sprint's git commands pass only with
 // their proof in the KB, so a skipped step is refused instead of trusted.
+// - commit in a Hosa project: no `Co-Authored-By` line;
 // - commit in a sprint worktree: carries `Hosa-Ticket: <slug>` and the ticket's
 //   last `## Revue` is PASS or PASS-WITH-NOTES (`develop` Step 4c);
 // - `git merge … sprint/<slug>` (landing): `git` Mode 2's QA gate, i.e.
@@ -68,6 +69,11 @@ function section(text, heading) {
 }
 
 function commitGate(call, cmd) {
+  // the session's global attribution adds a co-author line; Hosa commits carry the user's identity only
+  // (pilot2: 4 sprint commits carried `Co-Authored-By` despite the written rule)
+  if (/co-authored-by:/i.test(cmd) && findKbRoot(call.dir)) {
+    return 'a commit on a Hosa project carries the user\'s identity only: remove the `Co-Authored-By` line, then commit.';
+  }
   const m = /[\\/]\.worktrees[\\/]sprint[\\/]([^\\/]+)/.exec(call.dir);
   if (!m) return null;
   // a lot commit (`develop` Lot Mode) carries one trailer per ticket: each must have passed review

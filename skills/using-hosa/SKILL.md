@@ -36,9 +36,9 @@ These apply in every skill and every agent.
   1. Line one is the answer. Reading only the bold gives the whole answer.
   2. Say the least that fully answers. Never cut a warning, a precondition or an exact number; a warning goes before what it protects.
   3. ASD-STE100 adapted to French: one idea per sentence, ≤20 words for an instruction, ≤25 for a description, active voice, imperative, the glossary's terms.
-  4. Questions you need answered come last, as **Q1, Q2…**: one decision each, lettered options, the recommended one marked, "(bloquante)" if work stops. Advice is a plain sentence. A next pipeline stage is announced, not asked.
+  4. Questions you need answered come last, as **Q1, Q2…**: one decision each, lettered options, the recommended one always `a)` and marked, "(bloquante)" if work stops. Advice is a plain sentence. A next pipeline stage is announced, not asked — and launched in the same turn: never end a turn on « je lance X » without the call.
   5. Tests a person runs are **T1, T2…** (`retours` 3b), answered in one line ("T1 OK, T2 KO : …").
-  6. An agent's `## Open Questions` become your Q1…Qn: keep the mapping, pass each answer back under the agent's number. Accept "Q1 a, Q2 b" and partial answers; re-ask only what's missing.
+  6. An agent's `## Open Questions` become your Q1…Qn, every one of them: keep the mapping, pass each answer back under the agent's number. A report that looks cut → read the file it wrote first. Accept "Q1 a, Q2 b" and partial answers; re-ask only what's missing.
 - **Self-contained.** No Hosa skill or agent delegates to another plugin's skills; every procedure is written in Hosa.
 - **Skills orchestrate, agents execute.** An agent is a subagent: one final report, no dialogue, never dispatches another agent. A pipeline skill dispatches its agent for the real work; the agent's needs come back in its output (`## Open Questions`, `## Installation nécessaire`, `## Base de données nécessaire`, `## Documentation à produire`, `## Personas à interviewer`), the skill gets the answer (user, `hosa-infra`, `hosa-dba`, `hosa-documentation`, `hosa-key-user`), then redispatches. Dispatch with `subagent_type: "hosa:<name>"` (`hosa-git` → `hosa:hosa-git`). Every agent ships with the plugin: never do its work in the main session instead. A refused call → show the user the exact error and stop.
 

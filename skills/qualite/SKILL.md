@@ -60,7 +60,7 @@ Règle d'honnêteté des métriques : sans outil de mesure réel (profiler, APM,
 
 ## Step 3: Classify
 
-For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui corrompt des données), **À corriger** (non-bloquant mais doit être fait), **Mineur** (style, lisibilité).
+For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui corrompt des données), **À corriger** (non-bloquant mais doit être fait), **Mineur** (style, lisibilité). On a sprint audit, a Bloquant about production setup that the sprint's files don't touch (database account rights, backups, restore test, production configuration) is a **Prérequis de livraison**: it blocks the deployment, not the merge (`validation` Step 3a). Already ticketed with the tag `prérequis-de-livraison` → cite the ticket, create none.
 
 ## Step 4: Write and Log
 
@@ -76,7 +76,7 @@ status: stable
 generated: { by: hosa-senior-dev/1.0, at: <ISO8601> }
 ---
 ## Anomalies
-- [Bloquant/À corriger/Mineur] — <fichier:ligne> — <problème précis>
+- [Bloquant/Prérequis de livraison/À corriger/Mineur] — <fichier:ligne> — <problème précis>
 
 ## Verdict
 <Propre / N anomalie(s)>

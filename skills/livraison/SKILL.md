@@ -19,8 +19,9 @@ Scope = tickets state: done depuis cette dernière livraison
         ↓ aucun → rien à livrer, stoppe
 Demande la version (semver) à l'utilisateur — jamais devinée
         ↓
-Barrière qualité : `qualite` sur le code changé depuis la
-dernière livraison → aucun Bloquant ouvert
+Barrière qualité : audits des sprints repris, `qualite` sur le
+seul code changé depuis le dernier commit audité → aucun
+Bloquant ouvert
         ↓
 Porte de sécurité : `securite` (Livraison) → Go, ou No-Go :
 corrige d'abord, ou dérogation explicite de l'utilisateur
@@ -65,11 +66,13 @@ Ask the user for the version number (semver or the managed project's own scheme)
 
 ## Step 3: Quality Gate
 
-Run `qualite` on the code changed since the last release (`git diff --name-only <last tag or derniere-livraison's commit>..HEAD`; first release → the whole codebase). It audits best practices, performance and security. Any **Bloquant** → stop the release: each becomes a ticket fixed in a sprint, then come back. **À corriger** findings are shown; the user decides whether they wait.
+**Reuse the sprint audits first.** Each sprint merged since the last release has a `## Audit` (`validation` Step 3a) naming its reports and the commit it audited. Take them as the evidence for the files they covered: never audit the same tree again (pilot2: the user stopped a full re-audit of a sprint audited the day before). Run `qualite` only on the files changed after the last audited commit (`git diff --name-only <audited commit>..HEAD`, and on a first release add any code file no sprint audit covered); empty list → no new audit, say so. An open Bloquant in a reused report counts as one found here. Any **Bloquant** → stop the release: each becomes a ticket fixed in a sprint, then come back. **À corriger** findings are shown; the user decides whether they wait.
+
+**Prérequis de livraison** (open tickets tagged `prérequis-de-livraison`: database account, backups, production configuration) block the deployment (Step 6), not the tested tag: list them here, go on to the tag, and recommend not to deploy while one is open.
 
 ## Step 3b: Security Gate
 
-Invoke `securite` in Livraison mode with the version and the previous release's date. **Go** → continue. **No-Go** → `securite` asks the user: fix first (stop here; each blocking finding is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `securite`; continue and say so in the Output).
+Invoke `securite` in Livraison mode with the version, the previous release's date and the security audit reports reused in Step 3 with their audited commits. **Go** → continue. **No-Go** → `securite` asks the user: fix first (stop here; each blocking finding is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `securite`; continue and say so in the Output).
 
 ## Step 3c: Legal Gate
 
@@ -85,7 +88,7 @@ Dispatch `hosa-git` (Mode 3, « release ») with the version and the files `hosa
 
 ## Step 6: Deployment (Optional)
 
-Ask one numbered question: deploy `v<version>` now? Yes:
+Ask one numbered question: deploy `v<version>` now? An open `prérequis-de-livraison` ticket (Step 3) → name it, and the recommended option is not to deploy. Yes:
 1. With a database, dispatch `hosa-dba` (Mode 3, « release ») on the target: a backup checked restorable, then the migrations. A failure restores the backup and stops here.
 2. Dispatch `hosa-infra` (Mode 3): it deploys the tag, verifies it, and rolls back on failure. No `kb/infra/deploiement.md` yet → relay its Open Questions (target, access, secrets location, rollback) to the user first.
 `hosa-infra` and `hosa-dba` stay the only agents that provision or touch a database; this skill never runs a deploy command itself.

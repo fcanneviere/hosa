@@ -75,4 +75,5 @@ You don't commit — neither in the managed project nor in Hosa's own KB.
 [Pour chaque ligne de `### Propositions` autre que « Aucune », une question numérotée :]
 **Q3 — <la proposition> : je l'applique pour le prochain sprint ?**
   a) Oui. b) Non, on garde le réglage actuel.
+[Puis chaque question de `## Open Questions` de `hosa-product-owner`, toutes, à la suite — une leçon du bilan reste sans effet si sa question se perd.]
 ```

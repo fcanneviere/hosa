@@ -183,10 +183,10 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 
 ## Mode 4 — Porte de livraison (from `livraison`)
 
-Input: the version about to ship and the date of the previous release (from `kb/infra/derniere-livraison.md`, if any).
+Input: the version about to ship, the date of the previous release (from `kb/infra/derniere-livraison.md`, if any), and the sprint audits `livraison` reuses with the commit each one audited.
 
 1. Every `Bloquant` from every `Audit Sécurité` must have its linked ticket at `state: done`. One still open → No-Go.
-2. Run Mode 2 steps 3-4 on what changed since the previous release (the git range, or the whole project on a first release): native dependency audit (no unmitigated reachable critical/high) and secrets in history.
+2. Run Mode 2 steps 3-4 on what changed since the previous release (the git range, or the whole project on a first release): native dependency audit (no unmitigated reachable critical/high) and secrets in history. Code a reused sprint audit covered at the commit now shipped is not audited again: only the files changed after its audited commit are.
 3. Check the release configuration itself: debug mode off, security headers and CORS configured for the production origin, rate limiting active on auth routes, error bodies generic, production secrets coming from the environment and not from the repository or the CI configuration.
 4. Write `.hosa/kb/securite/livraison-<version>.md` (`type: Porte Sécurité`, same frontmatter as above) with one line per check (OK / KO + reason) and `## Verdict` `Go` or `No-Go`.
 
