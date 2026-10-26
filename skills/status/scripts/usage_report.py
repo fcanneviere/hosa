@@ -245,6 +245,25 @@ def sprint_period(project: Path, text: str) -> tuple[str | None, str | None, lis
     return born and born.group(1), until, tickets
 
 
+def corrections(project: Path, tickets: list[str]) -> dict:
+    """`## Corrections` lines of the sprint's tickets (`develop` Correction Mode): their type, and
+    how many reported findings a failing test proved — the relevance of reviews, audits and recettes."""
+    out = dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits"), 0)
+    for t in tickets:
+        path = project / ".hosa" / "kb" / "tickets" / f"{t}.md"
+        text = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
+        body = re.search(r"^## Corrections\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+        for row in re.findall(r"^- .+$", body.group(1) if body else "", re.M):
+            out["n"] += 1
+            kind = re.search(r"\b(technique|fonctionnelle)\b", row)
+            if kind:
+                out[kind.group(1)] += 1
+            proved, missed = re.search(r"(\d+) prouvé", row), re.search(r"(\d+) non reproduit", row)
+            out["prouves"] += int(proved.group(1)) if proved else 0
+            out["non_reproduits"] += int(missed.group(1)) if missed else 0
+    return out
+
+
 def earlier_costs(project: Path, slug: str) -> list[float]:
     """`Coût par ticket` of the other sprints' `## Mesures`."""
     out = []
@@ -255,8 +274,10 @@ def earlier_costs(project: Path, slug: str) -> list[float]:
     return out
 
 
-def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier) -> list[str]:
+def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier, fixes=None) -> list[str]:
     """`## Mesures` of a sprint: the figures, then what crossed a threshold, as proposals."""
+    fixes = fixes or dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits"), 0)
+    found = fixes["prouves"] + fixes["non_reproduits"]
     total = sum(r["usd"] for r in by_model.values())
     done = len(tickets)
     per = total / done if done else None
@@ -269,6 +290,8 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
            f"- Période : {since or '?'} → {until or 'en cours'}",
            f"- Coût : {total:.2f} $ — tickets livrés : {done}/{len(sprint_tickets)}" + (f" — Coût par ticket : {per:.2f} $" if per else ""),
            f"- Revues : {', '.join(f'{k} {n}' for k, n in sorted(verdicts.items())) or 'aucune'} — passages hosa-debugger : {debugger}",
+           (f"- Corrections : {fixes['n']} (technique {fixes['technique']}, fonctionnelle {fixes['fonctionnelle']})"
+            f" — constats prouvés {fixes['prouves']}, non reproduits {fixes['non_reproduits']}" if fixes["n"] else "- Corrections : aucune"),
            f"- Session principale : contexte max {fmt(stats['main_ctx'])} — captures ouvertes : {stats['main_images']}",
            f"- Réécritures complètes du cache (≥ {fmt(REWRITE)}) : {stats['rewrites'][0]} ({fmt(stats['rewrites'][1])})",
            "- Passages d'agent les plus longs : " + (", ".join(f"{r['kind'].split(':')[-1]} {r['tools']} appels ({fmt(r['ctx'])})" for r in passes[:3]) or "aucun"),
@@ -277,6 +300,9 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
     props = []
     if reviews >= 3 and fails / reviews >= 1 / 3 and any("haiku" in m for m in by_model):
         props.append(f"{fails}/{reviews} revues en échec avec des agents sur Haiku : essayer `HOSA_HAIKU=0` au prochain sprint et comparer.")
+    if fixes["non_reproduits"] and fixes["non_reproduits"] * 3 >= found:
+        props.append(f"{fixes['non_reproduits']}/{found} constats de revue, d'audit ou de recette non reproduits : "
+                     "ces passages signalent ce qu'ils ne prouvent pas — relire leurs constats non reproduits avec l'utilisateur.")
     if per and base and per > COST_RISE * base:
         props.append(f"Coût par ticket en hausse : {per:.2f} $ contre {base:.2f} $ — regarder les passages les plus longs ci-dessus.")
     if done and debugger * 2 >= done:
@@ -354,7 +380,8 @@ def main(argv: list[str]) -> int:
         since, until, sprint_tickets = sprint_period(a.project, path.read_text(encoding="utf-8"))
         _, by_model, _, verdicts, stats = scan(base, since, None, until)
         tickets = delivered(a.project, since, until) & set(sprint_tickets)
-        out = measures(a.sprint, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier_costs(a.project, a.sprint))
+        out = measures(a.sprint, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier_costs(a.project, a.sprint),
+                       corrections(a.project, sprint_tickets))
         if a.write:
             write_section(path, out)
         print("\n".join(out))

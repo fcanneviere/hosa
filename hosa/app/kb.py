@@ -337,6 +337,7 @@ PIPELINES = [
         ("qa-plan", "Plan de test", lambda cs: bool(_of(cs, "Test Plan"))),
         ("git", "Branche", lambda cs: any(c["frontmatter"].get("branch") or c["frontmatter"].get("state") in ("active", "done") for c in _of(cs, "Sprint"))),
         ("develop", "Développement", lambda cs: any(c["frontmatter"].get("state") in ("doing", "done") for c in _of(cs, "Ticket"))),
+        ("audit", "Audit", lambda cs: _any_body(cs, "Sprint", r"^## Audit")),
         ("qa", "QA", lambda cs: _any_body(cs, "Test Plan", r"^## Résultats techniques")),
         ("validation", "Validation", lambda cs: any(c["frontmatter"].get("state") == "done" for c in _of(cs, "Ticket"))),
         ("bilan-sprint", "Bilan", lambda cs: bool(_of(cs, "Sprint Review"))),

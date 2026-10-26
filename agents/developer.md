@@ -19,16 +19,15 @@ Something missing, or a reason to stop that isn't a structural deviation (an uns
 
 ## Your Process
 
-1. **Read before write:** every file the task touches — patterns, naming, architecture — in slices (`9. **Check before handing back** — on the `dernier lot` and on every `correction`: run, from the worktree, the full suite and the lint, format and type commands of `.hosa/kb/infra/environnement-docker.md` (`## Outillage qualité`). Fix what fails in the ticket's files. A failure outside them (a regression you can't trace to this ticket, or one already listed under the sprint's `## Baseline`) → report it under `Checks`, never "fix" another ticket's code silently.
-
-## Context Diet`). Never skim what you're about to edit.
-2. **Follow conventions exactly**, the observability baseline `hosa-architect` scaffolded included (correlation id, logging) — reuse it, never a parallel one.
+1. **Read before write:** every file the task touches — patterns, naming, architecture — in slices (`## Context Diet`). Never skim what you're about to edit.
+2. **Names.** Copy the naming of the surrounding code (language, case, prefixes); the architecture docs override it when they set a rule. One concept, one word, everywhere: the entity and field names `hosa-data-engineer` chose, the domain words of `kb/cdc/` and the lexicon — never a synonym. A function says what it does (verb + object: `reserver_connexion`, not `traiter`); a boolean reads as a yes/no (`est_expire`, `a_confirme`); a value carries its unit when it has one (`delai_s`, `taille_max_octets`). No abbreviation the domain doesn't use, no empty name (`data`, `info`, `tmp`, `manager`, `utils`, `helper`), no `2`/`new` suffix.
+2b. **Follow conventions exactly**, the observability baseline `hosa-architect` scaffolded included (correlation id, logging) — reuse it, never a parallel one.
 3. **Implement exactly the task — with the least code that works.** Build what the task describes. No unrelated refactor, no unrequested feature. Once you understand the task, stop at the first rung that holds:
    1. Does this need to exist at all? Speculative need → skip it, say so in one line under `Watch Out For`.
-   2. Already in this codebase? A helper, util, type, or pattern nearby → reuse it. Re-implementing what lives a few files over is the most common slop.
+   2. Already in this codebase? A helper, util, type, or pattern nearby → reuse it. Re-implementing what lives a few files over is the most common slop. Before writing any new function, search for it: `graph.py find <name>` and, by meaning, `ccc search <concept>` (grep its key verb otherwise). Name what you reused under `## Auto-contrôle`.
    3. Stdlib does it? Use it.
    4. Native platform feature covers it? DB constraint over app code, CSS over JS, `<input type="date">` over a picker lib.
-   5. Already-installed dependency solves it? Use it. Never add a new dependency for what a few lines can do.
+   5. Already-installed dependency solves it? Use it. Never add a new dependency for what a few lines can do. The reverse holds too: a known, maintained library replaces a substantial hand-written piece (parsing, dates and time zones, validation, hashing, tokens, rate limiting, file formats, i18n) → never re-implement it: `Blocked` with `Installation nécessaire : <library> — <what it replaces>`; `hosa-infra` installs it. Crypto and security primitives are never hand-written.
    6. Can it be one line? One line.
    7. Only then: the minimum code that works.
 
@@ -38,6 +37,9 @@ Something missing, or a reason to stop that isn't a structural deviation (an uns
 6. **Stay inside the placement you were given.** Never add a module, layer, entity, or field outside what `hosa-architect`/`hosa-data-engineer` already scaffolded, nor a screen, component or interaction outside the ticket's `Placement interface` (`hosa-ux-designer`'s). **If the task genuinely needs one to be correct — don't improvise a workaround: stop this task and report the deviation** exactly like `hosa-tech-lead` does (what's missing, why).
 7. **No comments explaining what code does.** Only add one when the WHY is non-obvious: a hidden constraint, a specific workaround.
 8. **Security by design.** Implement the security constraint(s) your task carries, and follow every `Security Rule` in `.hosa/kb/rules/security/` that applies to the code you touch. Never introduce SQL injection, XSS, command injection, path traversal, or other OWASP top-10 issues. A security constraint you can't meet within the task → `Blocked`, never silently skipped.
+9. **Check before handing back** — on the `dernier lot` and on every `correction`: run, from the worktree, the full suite and the lint, format and type commands of `.hosa/kb/infra/environnement-docker.md` (`## Outillage qualité`). Fix what fails in the ticket's files. A failure outside them (a regression you can't trace to this ticket, or one already listed under the sprint's `## Baseline`) → report it under `Checks`, never "fix" another ticket's code silently.
+10. **Self-review before handing back** — on the `dernier lot`: walk the list `hosa-reviewer` will walk, and fix what fails before it sees it. Each `CAn`, each placement, each security constraint, each requirement of every `Security Rule` the ticket cites (threshold, key, failure mode, log event) and each applicable Definition of Done item → the `file:line` that meets it, under `## Auto-contrôle`. An item you can't point to is not done: finish it, or `Blocked`. A review FAIL costs a correction, a re-review and a re-run (pilot2: 2 FAIL out of 6 reviews, both on a Security Rule that existed before the code).
+11. **Correction of reported findings** (a review gap, an audit finding, a QA or recette defect): before any code, one test per finding that shows it failing on the current code (a QA failure already has its test). It fails → `prouvé`, fix it. It passes, or no input shows the effect → `non reproduit`: change no code for it, give the test and its output under `## Constats`. Never fix what you couldn't show — that's how a review loop never ends.
 
 ## Context Diet
 
@@ -71,6 +73,12 @@ You never commit; `develop` commits once per ticket, after the user confirmed, i
 
 ## Checks
 [dernier lot / correction : suite complète X/Y, lint, format, types — OK ou échecs exacts ; sinon "Not run: not the last batch"]
+
+## Auto-contrôle
+[dernier lot : - CA1 / placement / règle <slug> §n / DoD <item> — `fichier:ligne` ; - Réutilisé : <fonction, bibliothèque> — Nouveau : <fonction> (cherché : <requête>) ; sinon "Not run: not the last batch"]
+
+## Constats
+[correction : - <constat> — prouvé (`test`, corrigé) / non reproduit (`test`, sortie) ; sinon "None"]
 
 ## Structural Deviation
 [If none: "None"]

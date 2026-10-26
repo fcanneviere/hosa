@@ -1,6 +1,6 @@
 ---
 name: qualite
-description: "Use to audit the managed project's code: best practices and performance (`hosa-senior-dev`), security (`hosa-security`), database (`hosa-dba`); blocking findings become tickets. Triggers: \"audite la qualité du code\", \"revue de sécurité du code\"."
+description: "Use to audit the managed project's code: best practices and performance (`hosa-senior-dev`), security (`hosa-security`), database (`hosa-dba`); blocking findings become tickets. Also the sprint audit (stage `audit`, after `develop`, before `qa`). Triggers: \"audite la qualité du code\", \"revue de sécurité du code\", \"audite le sprint\"."
 ---
 
 # Qualité
@@ -22,14 +22,15 @@ Classe chaque anomalie : Bloquant / À corriger / Mineur
         ↓
 Écrit kb/qualite/<slug>.md (Audit Qualité) + log
         ↓
-Bloquant trouvé → propose debug
+Bloquant trouvé → propose debug (audit de sprint :
+`develop <ticket> correction`, puis ré-audit, puis `qa`)
         ↓
 Rapporte le verdict
 ```
 
 ## Trigger
 
-Manual: `/qualite`. Auto: "audite la qualité du code", "vérifie les bonnes pratiques", "fais une revue de sécurité du code", "check la sécurité du projet".
+Manual: `/qualite`, `/qualite sprint <slug>` (the sprint's `audit` stage, chained by `develop`). Auto: "audite la qualité du code", "vérifie les bonnes pratiques", "fais une revue de sécurité du code", "check la sécurité du projet".
 
 ---
 
@@ -37,7 +38,7 @@ Manual: `/qualite`. Auto: "audite la qualité du code", "vérifie les bonnes pra
 
 Read `kb/infra/` for the managed project's root path (same as `stack` Step 1 — if missing, stop and say so, this skill has nothing to audit without it).
 
-Scope: from `livraison`, the file list it gives (the code changed since the last release); this audit is then the release gate, and a Bloquant stops it. From `validation` (sprint audit), the files the sprint changed; a Bloquant stops the merge. Even on a scoped audit, `hosa-senior-dev` checks **Duplication** against the whole codebase: code a ticket copied from an existing file is only visible from outside the diff. If invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
+Scope: from `livraison`, the file list it gives (the code changed since the last release); this audit is then the release gate, and a Bloquant stops it. From the sprint's `audit` stage (Sprint Audit below), the files the sprint changed; a Bloquant stops the QA and the merge. Even on a scoped audit, `hosa-senior-dev` checks **Duplication** against the whole codebase: code a ticket copied from an existing file is only visible from outside the diff. If invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
 
 ## Step 2: Audit Checklist
 
@@ -60,7 +61,7 @@ Règle d'honnêteté des métriques : sans outil de mesure réel (profiler, APM,
 
 ## Step 3: Classify
 
-For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui corrompt des données), **À corriger** (non-bloquant mais doit être fait), **Mineur** (style, lisibilité). On a sprint audit, a Bloquant about production setup that the sprint's files don't touch (database account rights, backups, restore test, production configuration) is a **Prérequis de livraison**: it blocks the deployment, not the merge (`validation` Step 3a). Already ticketed with the tag `prérequis-de-livraison` → cite the ticket, create none.
+For each anomaly found: **Bloquant** (faille de sécurité exploitable, bug qui corrompt des données), **À corriger** (non-bloquant mais doit être fait), **Mineur** (style, lisibilité). **Pertinence** — each anomaly cites the rule, exigence or checklist item it breaks, or its concrete consequence; none → drop it. A Bloquant carries its proof: the test, request or input that shows the effect (a secret readable in the repository is its own proof); a Bloquant read statically with no input to show it is À corriger. An audit with no anomaly is a normal result — never a Mineur to fill the report. **Re-audit** after a correction (Sprint Audit below): verify each previous Bloquant and the lines the correction changed — no new audit of the rest. On a sprint audit, a Bloquant about production setup that the sprint's files don't touch (database account rights, backups, restore test, production configuration) is a **Prérequis de livraison**: it blocks the deployment, not the merge (Sprint Audit below). Already ticketed with the tag `prérequis-de-livraison` → cite the ticket, create none.
 
 ## Step 4: Write and Log
 
@@ -86,7 +87,16 @@ Log to `kb/qualite/log.md` (create if missing) — OKF §9: chronological, most 
 
 ## Step 5: Route Blocking Findings
 
-Any **Bloquant** anomaly, from either audit: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: <hosa-senior-dev or hosa-security>/1.0, at: <ISO8601> }` — whichever audit surfaced it, not the user. Run `backlog`'s Single-Ticket Mode on it so it's complete, then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger** anomalies from a sprint audit: one `Ticket` per fix, grouped by cause (all missing indexes = one ticket), so they reach a sprint instead of piling up until the release. Otherwise **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise. Each new `Security Rule` `hosa-security` proposes from an unforeseen finding: ask the user, and on yes it's written to `kb/rules/security/` so the next tickets are built with it.
+On a sprint audit, a **Bloquant** in the code of a sprint ticket is fixed by `develop <ticket> correction` (Sprint Audit below), with no new ticket. Any other **Bloquant** anomaly, from either audit: dispatch `hosa-product-owner` (Responsibility 2/4) to create a `Ticket` (`state: todo`) linked to `kb/qualite/<slug>.md` and the finding's exact `fichier:ligne`, `generated: { by: <hosa-senior-dev or hosa-security>/1.0, at: <ISO8601> }` — whichever audit surfaced it, not the user. Run `backlog`'s Single-Ticket Mode on it so it's complete, then propose `debug` scoped to that ticket. Don't fix it inline from this skill — `qualite` audits, it doesn't patch. **À corriger** anomalies from a sprint audit: one `Ticket` per fix, grouped by cause (all missing indexes = one ticket), so they reach a sprint instead of piling up until the release. Otherwise **À corriger**/**Mineur** anomalies stay in the report only — don't create a ticket per minor finding, that's backlog noise. Each new `Security Rule` `hosa-security` proposes from an unforeseen finding: ask the user, and on yes it's written to `kb/rules/security/` so the next tickets are built with it.
+
+## Sprint Audit (stage `audit`)
+
+`avancement.py … start audit --sprint <slug>` once `develop` is done — every ticket of the sprint reviewed and committed, before `qa`. Audit the files `git diff --name-only <base>...<branch>` lists (from `kb/sprints/<slug>.md`). Found here, before QA, a flaw costs one correction and its review: no test run, recette or validation to redo, since none has run yet (pilot2: an audit after validation reopened a `done` ticket and replayed QA, validation and the audit). Found at release, it costs a sprint. Write `## Audit` in `kb/sprints/<slug>.md`: the date, the audit files, the commit audited (`livraison` reuses the audit up to that commit), and the line `Bloquant : N — À corriger : N — Mineur : N`. A new audit appends a new line; the last one counts. The `gate.js` hook refuses the merge unless it reads `Bloquant : 0`. A re-audit after a correction covers only the files changed since the last audited commit, and **verifies the correction — it doesn't audit again**: each previous Bloquant is closed or not (a `non reproduit` is judged on the developer's test: closed unless the auditor shows the failing input); new findings only on the lines the correction changed. A flaw the first audit missed elsewhere goes to the backlog (À corriger), unless it is a proved Bloquant. Pilot2: the re-audit of sprint 1 added 5 new findings; at that rate a sprint never closes.
+- **Pertinence** — a Bloquant carries its proof (Step 3). One the developer couldn't reproduce costs a correction for nothing: it stays counted under `## Corrections` (`non reproduit`) and in `## Mesures`.
+- **Prérequis de livraison** — a blocking finding on production setup the sprint's diff doesn't touch (database account rights, backups and their restore test, production configuration) doesn't block the merge: it gets one ticket tagged `prérequis-de-livraison` (none if one already exists) and is counted by `livraison` before deploying, not in this line. Write `Prérequis de livraison : N` next to it (pilot2: B1-B3 of the database audit stopped the merge twice and needed the user's acceptance each time).
+- **Bloquant** → `develop <ticket> correction` on the ticket that introduced it — the QA hasn't run yet, so nothing else to replay — then this audit again, as a re-audit. `Bloquant : 0` → `done audit --sprint <slug>`, then `qa`, launched without waiting.
+- **À corriger** → Step 5: `hosa-product-owner` creates the tickets; they go to the backlog, not this sprint.
+- **Mineur** → stays in the audit.
 
 ## No Commits
 

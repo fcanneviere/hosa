@@ -35,10 +35,12 @@ PIPELINES = [
     ("Structuration", ["stack", "infra", "donnees", "schema-app", "schema-db",
                        "architecture", "menaces", "interface", "backlog"]),
 ]
-SPRINT = ["sprint", "qa-plan", "git-demarrage", "develop", "qa", "validation",
+SPRINT = ["sprint", "qa-plan", "git-demarrage", "develop", "audit", "qa", "validation",
           "git-fusion", "bilan-sprint", "livraison"]
 TODO, DOING, DONE, BLOCKED, SKIPPED = "à faire", "en cours", "fait", "bloqué", "non applicable"
 CLOSED = {DONE, SKIPPED}
+# a sprint begun before the `audit` stage existed had its audit inside `validation`
+AFTER_AUDIT = {"validation", "git-fusion", "bilan-sprint", "livraison"}
 ROW = re.compile(r"^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
 
 
@@ -75,6 +77,9 @@ def load(path: Path) -> tuple[dict[str, list[list[str]]], str]:
     for title, rows in sections.items():
         if title.startswith("Sprint "):
             known = {r[0] for r in rows}
+            if "audit" not in known and any(r[0] in AFTER_AUDIT and r[1] in CLOSED for r in rows):
+                rows.append(["audit", SKIPPED, "", "audit dans `validation` (ordre d'avant 0.1.59)"])
+                known.add("audit")
             rows[:] = [next((r for r in rows if r[0] == s), [s, TODO, "", ""]) for s in SPRINT] + \
                       [r for r in rows if r[0] not in SPRINT and r[0] in known]
     return sections, resume.strip()
@@ -106,7 +111,7 @@ def locate(sections: dict, stage: str, sprint: str | None) -> tuple[str, list[li
     raise SystemExit(f"error: unknown stage `{stage}` — use `reprise` for work outside the pipeline")
 
 
-SKILL = {"git-demarrage": "git", "git-fusion": "git", "menaces": "securite"}
+SKILL = {"git-demarrage": "git", "git-fusion": "git", "menaces": "securite", "audit": "qualite"}
 
 
 def read(path: Path) -> str | None:
@@ -205,12 +210,13 @@ def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
             unproved = [ca for ca in cov["criteres"] if ca not in cov["couverts"]]
             if unproved:
                 gaps.append(f"{t} : {', '.join(unproved)} prouvé(s) par aucun cas [CAn] ni recette Oui (`qa-plan`)")
-    if stage == "validation":
+    if stage in ("audit", "validation"):
         bloquants = re.findall(r"Bloquant\s*:\s*(\d+)", section(s, "Audit") or "")
         if not bloquants:
-            gaps.append("pas de `## Audit` avec sa ligne `Bloquant : N` (`validation` étape 3a)")
+            gaps.append("pas de `## Audit` avec sa ligne `Bloquant : N` (`qualite`, étape `audit`)")
         elif bloquants[-1] != "0":
             gaps.append(f"`## Audit` : Bloquant : {bloquants[-1]}")
+    if stage == "validation":
         demo = section(s, "Démo")
         if demo is None:
             gaps.append("pas de `## Démo` (`validation` étape 3b)")

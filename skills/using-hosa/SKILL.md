@@ -11,7 +11,7 @@ A full dev-lifecycle skill set: generic skills to understand, build, test, revie
 
 1. **Cahier des charges:** `hosa` (identity, personas) → `interview` → `redaction` → `fondamentaux` → `juridique` → `securite` → `relecture` → `contestation`.
 2. **Structuration:** `stack` → `infra` (with test, lint and CI tooling) → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (threat model) → `interface` → `backlog` (tickets split, dependencies, definition of done; foundation commit).
-3. **Each sprint:** `sprint` → `qa-plan` → `git` (start) → `develop` (tests first, full checks, code review) → `qa` → `validation` (user demo) → `git` (merge) → `bilan-sprint` → `livraison` (quality audit, tested tag, deployment). A defect found in `qa`, the demo or the review is fixed in the sprint: `develop <ticket> correction`.
+3. **Each sprint:** `sprint` → `qa-plan` → `git` (start) → `develop` (tests first, full checks, code review) → sprint audit (`qualite`, before QA) → `qa` → `validation` (user demo) → `git` (merge) → `bilan-sprint` → `livraison` (quality audit, tested tag, deployment). A defect found in `qa`, the demo or the review is fixed in the sprint: `develop <ticket> correction`.
 
 Companions, usable anytime: `status`, `recette`, `bdd`, `qualite`, `documentation`, `changement`, `kb-commit`, `okf`, `retours`. Generic: `understand`, `build`, `iterate`, `dispatch`, `test`, `review`, `debug`.
 

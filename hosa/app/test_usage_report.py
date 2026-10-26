@@ -79,6 +79,22 @@ class SprintMeasures(unittest.TestCase):
         self.assertIn("## Démo\n- T1 OK\n\n## Mesures", text)
         self.assertEqual(ur.earlier_costs(project, "s2"), [2.0])
 
+    def test_corrections_measure_relevance(self):
+        project = Path(tempfile.mkdtemp())
+        tickets = project / ".hosa" / "kb" / "tickets"
+        tickets.mkdir(parents=True)
+        (tickets / "t1.md").write_text("---\ntype: Ticket\n---\n## Revue\n- 2026-10-25 — FAIL — x\n## Corrections\n"
+                                       "- 2026-10-25 — revue — technique — 2 prouvé(s), 0 non reproduit(s) — abc1234\n"
+                                       "- 2026-10-26 — audit — technique — 0 prouvé(s), 2 non reproduit(s) — aucun\n"
+                                       "- 2026-10-26 — recette Les parents — fonctionnelle : CA3 — 1 prouvé(s), 0 non reproduit(s) — def5678\n",
+                                       encoding="utf-8")
+        fixes = ur.corrections(project, ["t1", "absent"])
+        self.assertEqual(fixes, {"n": 3, "technique": 2, "fonctionnelle": 1, "prouves": 3, "non_reproduits": 2})
+        stats = {"main_ctx": 0, "main_images": 0, "rewrites": [0, 0], "passes": {}}
+        out = "\n".join(ur.measures("s1", None, None, {"t1"}, ["t1"], {}, {}, stats, [], fixes))
+        self.assertIn("Corrections : 3 (technique 2, fonctionnelle 1) — constats prouvés 3, non reproduits 2", out)
+        self.assertIn("2/5 constats de revue, d'audit ou de recette non reproduits", out)
+
     def test_merge_commit_must_be_a_sha(self):
         out = Path(tempfile.mkdtemp()) / "pwned"
         text = f"---\ngenerated: {{ by: x, at: 2026-10-17T07:00:00Z }}\nmerge_commit: --output={out}\n---\n"

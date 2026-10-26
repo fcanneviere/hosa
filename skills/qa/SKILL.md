@@ -36,7 +36,7 @@ Rapporte le verdict global du sprint
 
 ## Trigger
 
-Manual: `/qa <slug-sprint> [<slug-ticket>]` — a ticket given re-runs Steps 3-5 for it alone (after a correction). Auto: "exécute la QA du sprint", "teste le sprint", "fais la recette du sprint".
+Manual: `/qa <slug-sprint> [<slug-ticket> [technique]]` — a ticket given re-runs the QA for it alone, after a correction, scoped by the correction's type (its last `## Corrections` line, `develop` Correction Mode): **technique** → Step 3 only; its recettes stay valid — the correction changed nothing a persona sees — and the report says so (`recette : conservée, correction technique <commit>`). **Fonctionnelle** → Step 3, then Step 4 for the `CAn` that line names only, with only the personas whose recette covers them; the other criteria keep their recorded answer. Auto: "exécute la QA du sprint", "teste le sprint", "fais la recette du sprint".
 
 ---
 
@@ -54,7 +54,7 @@ Group the sprint's tickets in lots — the lots `develop` used (its log names th
 
 ## Step 4: Run Recette Per Persona
 
-Collect, from every ticket's `## Recette requise` (in `kb/test/<slug-ticket>-technique.md`), the tickets each persona must accept. For each persona: **one** `hosa-key-user` dispatch with a recette request (same contract `recette` already sends) listing all its tickets, asking one section per ticket (each `CAn` answered `Oui`/`Non`/`Non observé`, its defects, its verdict). Personas run one after the other — they share the sprint's environment — each starting from the dataset's reset. Measured on hosa-ui: 3 persona passes for 22 tickets cost about 0.27 $ on Haiku and found two blocking defects. A ticket whose `## Recette requise` reads "Aucune..." gets no recette — say so explicitly in the report, don't omit any mention of it. Any Échoué or Partiel scenario: the ticket's own `## Critères d'acceptation` not met → `develop <ticket> correction` in this sprint, like a bug. The persona wants something the criteria never asked for → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) and run `backlog`'s Single-Ticket Mode on it: a new need goes to the backlog, it doesn't block this sprint.
+Collect, from every ticket's `## Recette requise` (in `kb/test/<slug-ticket>-technique.md`), the tickets each persona must accept. For each persona: **one** `hosa-key-user` dispatch with a recette request (same contract `recette` already sends) listing all its tickets, asking one section per ticket (each `CAn` answered `Oui`/`Non`/`Non observé`, its defects, its verdict). Personas run one after the other — they share the sprint's environment — each starting from the dataset's reset. Measured on hosa-ui: 3 persona passes for 22 tickets cost about 0.27 $ on Haiku and found two blocking defects. A ticket whose `## Recette requise` reads "Aucune..." gets no recette — say so explicitly in the report, don't omit any mention of it. Pass each persona the ticket's last `## Résultats techniques`: a `CAn` it can't observe but a passed case proves is `Non observé — prouvé par le test`, not a reservation. Only a `CAn` answered `Non` is a defect: `develop <ticket> correction` in this sprint, like a bug. An irritant the criteria never asked for (a word, a step, a speed) is a pain point, never a correction — the recette would otherwise always find one more. The persona wants something the criteria never asked for, and it's a need, not a taste → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the sprint ticket and the recette result) and run `backlog`'s Single-Ticket Mode on it: a new need goes to the backlog, it doesn't block this sprint.
 
 ## Step 5: Record the Recettes
 
@@ -78,7 +78,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ```
 ## QA du sprint <slug>
-- <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel/Non applicable
+- <ticket> — technique : X/Y passés — recette : Réussi/Échoué/Partiel/Non applicable/Conservée (correction technique <commit>)
 
 ## Échecs techniques
 - <ticket> — [détail] → suggéré : `develop <ticket> correction`

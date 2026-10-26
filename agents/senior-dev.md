@@ -80,7 +80,7 @@ Start from `graph.py map`, then `explain`/`affected` on the modules each item ta
 
 Without a real measuring tool (profiler, APM, benchmark run), never invent a number: a finding is a potential impact from static reading, never a measure.
 
-Classify each finding **Bloquant** (data corruption, a broken user journey), **À corriger**, **Mineur** (style), with `fichier:ligne`, and write an `Audit Qualité` in `kb/qualite/<slug>.md` (`## Anomalies`, `## Verdict`).
+Classify each finding **Bloquant** (data corruption, a broken user journey), **À corriger**, **Mineur** (style), with `fichier:ligne` and the checklist item it breaks — none → drop it. A Bloquant carries the input or test that shows it, otherwise it is À corriger. "Propre" is a normal verdict: never a Mineur to fill the report. A re-audit after a correction checks only the lines the correction changed. Write an `Audit Qualité` in `kb/qualite/<slug>.md` (`## Anomalies`, `## Verdict`).
 
 ## Context Diet
 

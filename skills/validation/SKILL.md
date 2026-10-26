@@ -19,10 +19,8 @@ Dispatch hosa-product-owner (Responsibility 5)
         ↓ Rejeté → reste doing/blocked, motif renvoyé à develop/
           debug/qa selon la nature du manque
 Log kb/tickets/log.md
-        ↓ tous les tickets du sprint acceptés
-Audit du sprint : qualite sur les fichiers modifiés par le sprint
-        ↓ Bloquant → develop <ticket> correction → qa → validation
-        ↓ À corriger → tickets au backlog
+        ↓ tous les tickets du sprint acceptés (l'audit du sprint a
+          déjà tourné, avant la QA : étape `audit`, skill qualite)
 Démo : hosa-qa-lead (Mode 3) écrit les tests T1… → l'utilisateur
 les fait → résultat écrit dans le sprint (## Démo)
         ↓ KO → develop <ticket> correction → qa → validation
@@ -44,22 +42,16 @@ Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le tic
 
 Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with the ticket, its acceptance criteria, its technical results, and its recette verdict(s). It returns Accept or Reject with a reason.
 
+**Reconfirmation** — the ticket was already accepted, then reopened by a **technique** correction (its last `## Corrections` line): dispatch it with `model: haiku`, the correction line and the new `## Résultats techniques` only. The criteria, the interface and the recettes didn't change: it checks the new results passed in full and that no `CAn` lost its proof, nothing else (pilot2: the second validation of `limitation-des-tentatives-de-connexion` re-read everything to conclude « recettes toujours valables »).
+
 ## Step 3: Apply the Verdict
 
 - **Accept:** `hosa-product-owner` writes `state: done` and `verified: { by: hosa-product-owner/1.0, at: <ISO8601> }` on the ticket directly (it already owns `kb/tickets/` writes) — confirm it did.
 - **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix).
 
-## Step 3a: Sprint Audit
-
-Once every ticket of the sprint is `done`, run `qualite` scoped to the sprint: the files `git diff --name-only <base>...<branch>` lists (from `kb/sprints/<slug>.md`). Found here, a flaw costs one correction; found at release, it costs a sprint. Write `## Audit` in `kb/sprints/<slug>.md`: the date, the audit files, the commit audited (`livraison` reuses the audit up to that commit), and the line `Bloquant : N — À corriger : N — Mineur : N`. A new audit appends a new line; the last one counts. The `gate.js` hook refuses the merge unless it reads `Bloquant : 0`. A re-audit after a correction covers only the files changed since the last audited commit.
-- **Prérequis de livraison** — a blocking finding on production setup the sprint's diff doesn't touch (database account rights, backups and their restore test, production configuration) doesn't block the merge: it gets one ticket tagged `prérequis-de-livraison` (none if one already exists) and is counted by `livraison` before deploying, not in this line. Write `Prérequis de livraison : N` next to it (pilot2: B1-B3 of the database audit stopped the merge twice and needed the user's acceptance each time).
-- **Bloquant** → `develop <ticket> correction` on the ticket that introduced it, then `qa` and `validation` for that ticket, then this audit again.
-- **À corriger** → `qualite` has `hosa-product-owner` create the tickets; they go to the backlog, not this sprint.
-- **Mineur** → stays in the audit.
-
 ## Step 3b: Sprint Demo
 
-Once the sprint audit has no Bloquant left, the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …").
+Once every ticket of the sprint is `done` (the sprint audit ran before `qa` — stage `audit`, `qualite`), the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …").
 - All OK → write `## Démo` in `kb/sprints/<slug>.md`: the date, then one line per T-test, `- T1 OK` or `- T1 KO : <constat>`. A replayed T-test gets a new line; the last one counts. Log to `kb/sprints/log.md`.
 - A KO → record it the same way, then `develop <ticket> correction` with the user's words as the defect report; after its `qa` and `validation`, redo only the failed T-tests.
 - The user says the demo isn't needed this time → write `## Démo` with "Non faite — choix de l'utilisateur" and the date. `hosa-git` refuses the merge with no `## Démo` at all.

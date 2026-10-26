@@ -56,6 +56,12 @@ class Check(unittest.TestCase):
         (k / "test" / "t1-karim.md").write_text("## Verdict\nAccepté\n", encoding="utf-8")
         self.assertEqual(av.check(k, "qa", "s1"), [])
 
+    def test_audit_needs_no_bloquant_left(self):
+        k = kb({"sprints/s1.md": SPRINT + "## Audit\n- d1 Bloquant : 1\n- d2 Bloquant : 0\n", "tickets/t1.md": TICKET})
+        self.assertEqual(av.check(k, "audit", "s1"), [])
+        (k / "sprints" / "s1.md").write_text(SPRINT + "## Audit\nBloquant : 2\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "audit", "s1"), ["`## Audit` : Bloquant : 2"])
+
     def test_non_sprint_stages_have_no_proof_to_check(self):
         self.assertEqual(av.check(kb({}), "stack", None), [])
 
@@ -117,7 +123,7 @@ class Coverage(unittest.TestCase):
             "t2 : pas de `## Résultats techniques` (`qa`)",
             "t2 : CA1, CA2, CA3 prouvé(s) par aucun cas [CAn] ni recette Oui (`qa-plan`)",
             "t3 : pas de `## Résultats techniques` (`qa`)",
-            "pas de `## Audit` avec sa ligne `Bloquant : N` (`validation` étape 3a)",
+            "pas de `## Audit` avec sa ligne `Bloquant : N` (`qualite`, étape `audit`)",
             "pas de `## Démo` (`validation` étape 3b)"])
 
     def test_longer_identifier_does_not_cover(self):  # cas 8a
@@ -151,6 +157,29 @@ class Block(unittest.TestCase):
         sections, resume = av.load(k / "project" / "avancement.md")
         self.assertIn("Q2. Casse des e-mails ? A. citext B. lower()", resume)
         self.assertEqual(next(r for r in sections["Structuration"] if r[0] == "schema-db")[3], "2 questions bloquantes")
+
+
+class AuditStage(unittest.TestCase):
+    def test_audit_sits_between_develop_and_qa(self):
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET})
+        for stage in av.PIPELINES[0][1] + av.PIPELINES[1][1]:
+            run(k, "done", stage)
+        for stage in ("sprint", "qa-plan", "git-demarrage", "develop"):
+            run(k, "done", stage, "--sprint", "s1", "--force")
+        code, out = run(k, "start", "qa", "--sprint", "s1")
+        self.assertEqual(code, 1)
+        self.assertIn("`audit`", out)
+        self.assertIn("`audit` (Sprint s1, à faire) → skill `qualite`", run(k, "next")[1])
+
+    def test_a_sprint_audited_in_validation_is_not_reopened(self):
+        head = "| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n"
+        rows = "".join(f"| `{s}` | fait | d | |\n" for s in ("sprint", "qa-plan", "git-demarrage", "develop", "qa", "validation"))
+        k = kb({"project/avancement.md": f"---\ntype: x\n---\n## Sprint s0\n{head}{rows}"
+                                         f"## Sprint s1\n{head}| `develop` | en cours | d | |\n"})
+        sections, _ = av.load(k / "project" / "avancement.md")
+        self.assertEqual([r[:2] for r in sections["Sprint s0"] if r[0] == "audit"], [["audit", av.SKIPPED]])
+        self.assertEqual([r[:2] for r in sections["Sprint s1"] if r[0] == "audit"], [["audit", av.TODO]])
+        self.assertEqual([r[0] for r in sections["Sprint s0"]][3:6], ["develop", "audit", "qa"])
 
 
 class Next(unittest.TestCase):

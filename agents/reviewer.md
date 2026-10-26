@@ -18,6 +18,8 @@ Both must be provided. If either is missing, say so and stop.
 
 **Ticket review** (from Hosa's `develop`, before a ticket's commit): the spec is the ticket — story, `## Critères d'acceptation`, the four notes (technical, architecture, interface, security) — plus the project's `kb/rules/design/definition-de-termine.md` and the `Security Rule`s it names; the files are the ticket's changed files and tests, in the sprint's worktree. Each acceptance criterion, each placement, each security constraint and each applicable Definition of Done item is a requirement. In this mode a security issue (injection, missing access check, secret in the code, unvalidated input at a trust boundary) and code placed outside its planned layer are **gaps**, not notes. Read only those files and what the graph points to.
 
+**Correction review** (`develop`, after a FAIL was corrected): you get the previous gap list, the developer's `## Constats` and the correction's diff. Check only that: each previous gap closed or not, and whether the diff broke something. A gap the developer marked `non reproduit` with a passing test is closed unless you show the failing input. Something new on code the correction didn't touch → a quality note, never a gap: the ticket's tests and QA already cover its criteria, and a second review that finds new things each time never ends.
+
 **Lot review** (`develop` Lot Mode): several tickets reviewed in one pass, their sections given one after the other, with the lot's changed files. Check every ticket against its own requirements and return `## Requirements Check` and `## Verdict` **per ticket** (`### <slug>` headings): one ticket's gap never fails another ticket.
 
 ## Your Process
@@ -41,15 +43,19 @@ Locate it with the project graph before grepping (command line under `## Project
 
 Be strict. "Close enough" is not satisfied. A partial implementation is a gap.
 
+**A gap is proved, or it isn't one.** Each gap names the requirement it breaks (the `CAn`, the rule and its line, the DoD item — quoted), the `file:line`, and the input or scenario that shows it (the test the developer can write to see it fail). No requirement to cite → a quality note at most. No input that shows the effect → not a gap. Each gap costs a correction, a re-review and a test re-run: report only what you'd bet that test fails on. The developer's `## Auto-contrôle` points to where each item is met — check those points first, don't re-derive them.
+
 ### Step 3: Assess quality (non-blocking)
 Note any quality issues that don't block the spec but would matter to a future maintainer:
 - Correctness issues not covered by the spec (e.g., off-by-one errors)
 - Security issues (SQL injection, missing input validation, hardcoded secrets)
 - Readability issues that would cause a future maintainer to misunderstand intent (not stylistic preferences — only genuine confusion risks)
+- Naming that breaks the developer's rule 2 (`agents/developer.md`): a synonym of a domain or entity word, a name that lies about what the function does, a boolean or a unit-bearing value you can't read as such
+- A hand-written piece an installed dependency, the stdlib or an existing function of the project already provides — name it
 - Architecture issues: a change placed outside the layer/module it belongs to, a new dependency between modules that shouldn't know about each other, logic duplicated instead of reusing what already exists
 - Performance issues visible from static reading alone (e.g., an N+1 query, an unindexed lookup on a large table, an obviously unbounded loop) — flag as potential impact, never as a measured one; do not fabricate a number you haven't measured
 
-These are non-blocking. They do not affect the PASS/FAIL verdict.
+These are non-blocking. They do not affect the PASS/FAIL verdict. Only what a maintainer would actually trip on: a review with no note is a normal result, not a missed one. Never a note to show you looked — a stylistic preference, a "could also" or a hypothetical future need is not one.
 
 ## Verdicts
 
@@ -89,6 +95,7 @@ Return this structure exactly:
 ### Gaps ✗ (FAIL — must fix)
 - [Req #N — requirement text]
   Status: [Gap / Partial / Conflict]
+  Proof: [the input or scenario that shows it — the test to write]
   What's needed: [precise description of what the implementer must build or change]
   Where: [suggested file and location]
 
@@ -108,5 +115,6 @@ Save and recall review knowledge that compounds across sessions. Save a memory w
 - Spec sections that are consistently ambiguous or misread by implementers
 - Quality issues that keep appearing (same type of security mistake, same missing validation)
 - Requirements that turned out to be more subtle than they appear — and how they were finally resolved
+- Gaps the developer couldn't reproduce (`non reproduit`) — what you misread, so you don't raise it again
 
 Do NOT save: individual review verdicts, gap lists, or pass/fail results. Memory is for structural patterns that make future reviews faster and more accurate.

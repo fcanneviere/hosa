@@ -40,7 +40,8 @@ git add (fichiers du ticket) + commit unique, identité utilisateur
         ↓
 Log kb/tickets/log.md
         ↓
-Suite : ticket suivant du sprint, ou `qa` quand tous sont faits
+Suite : ticket suivant du sprint, ou l'audit du sprint
+(`qualite`, étape `audit`) quand tous sont faits, puis `qa`
 ```
 
 ## Trigger
@@ -73,7 +74,7 @@ Dispatch `hosa-tester` in **Écrire d'abord** mode with the ticket slug: from th
 
 ## Step 4: Implement Sequentially
 
-Avant la première tâche : lit le `docker_project` du sprint (absent → `git` Mode 1 en rattachement, qui démarre l'environnement du sprint) et vérifie `docker_check.py <docker_project> <worktree>` — une commande lancée dans un environnement pointant sur un autre dossier teste un autre code. Regroupe les tâches consécutives du plan en lots : jusqu'à 3 tâches qui touchent le même module, 10 fichiers au plus. Chaque lot = un seul dispatch de `hosa-developer`, avec ses tâches dans l'ordre, leurs contraintes de placement et de sécurité, le chemin du worktree et le `docker_project` — l'agent ne recharge ses consignes et ne relit les fichiers qu'une fois. **Un seul lot à la fois — jamais de dispatch concurrent.** Une tâche qui touche un autre module ouvre un nouveau lot. Le lot qui termine le ticket est marqué `dernier lot` : `hosa-developer` lance alors la suite complète et les contrôles de `## Outillage qualité` (lint, format, types) et rapporte `## Checks`. Un échec hors des fichiers du ticket → montre-le à l'utilisateur avant la revue. Après chaque lot, pour chaque tâche faite, `avancement.py … progress develop --sprint <slug-sprint> --detail "<ticket> : tâche k/n faite" --reprise "develop <ticket>, tâche k+1 : <nom>"` — une session coupée reprend à la bonne tâche, sans en refaire ni en sauter. Les tests écrits à l'étape 3b sont la cible : `hosa-developer` implémente jusqu'à ce qu'ils passent, sans les affaiblir ni les supprimer — un test qui lui paraît faux est un `Blocked`, pas une modification silencieuse. Pour un comportement que ces tests ne couvrent pas, il écrit son propre test en échec d'abord (red-green). Si une tâche du lot revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage — stoppe. Le ticket reste `state: doing`, aucun commit.
+Avant la première tâche : lit le `docker_project` du sprint (absent → `git` Mode 1 en rattachement, qui démarre l'environnement du sprint) et vérifie `docker_check.py <docker_project> <worktree>` — une commande lancée dans un environnement pointant sur un autre dossier teste un autre code. Regroupe les tâches consécutives du plan en lots : jusqu'à 3 tâches qui touchent le même module, 10 fichiers au plus. Chaque lot = un seul dispatch de `hosa-developer`, avec ses tâches dans l'ordre, leurs contraintes de placement et de sécurité, le chemin du worktree et le `docker_project` — l'agent ne recharge ses consignes et ne relit les fichiers qu'une fois. **Un seul lot à la fois — jamais de dispatch concurrent.** Dispatch avec `model: sonnet` quand la note sécurité du ticket cite une `Security Rule`, et pour toute correction : sur Haiku, un appel coûte moins, mais une revue FAIL coûte une boucle entière (pilot2 : 2 FAIL sur 6, toutes deux sur une règle de sécurité). Une tâche qui touche un autre module ouvre un nouveau lot. Le lot qui termine le ticket est marqué `dernier lot` : `hosa-developer` lance alors la suite complète et les contrôles de `## Outillage qualité` (lint, format, types) et rapporte `## Checks`. Un échec hors des fichiers du ticket → montre-le à l'utilisateur avant la revue. Après chaque lot, pour chaque tâche faite, `avancement.py … progress develop --sprint <slug-sprint> --detail "<ticket> : tâche k/n faite" --reprise "develop <ticket>, tâche k+1 : <nom>"` — une session coupée reprend à la bonne tâche, sans en refaire ni en sauter. Les tests écrits à l'étape 3b sont la cible : `hosa-developer` implémente jusqu'à ce qu'ils passent, sans les affaiblir ni les supprimer — un test qui lui paraît faux est un `Blocked`, pas une modification silencieuse. Pour un comportement que ces tests ne couvrent pas, il écrit son propre test en échec d'abord (red-green). Si une tâche du lot revient avec `Structural Deviation` ou `Blocked` non vide (une valeur autre que `None`) : **arrête la boucle immédiatement (les tâches restantes ne sont pas tentées)**, rapporte à l'utilisateur — la même proposition qu'à l'étape 3 pour une déviation structurelle, ou la question posée telle quelle pour un blocage (un `Installation nécessaire` va à `hosa-infra`, Mode 2, puis redispatch du lot) — stoppe. Le ticket reste `state: doing`, aucun commit.
 
 ## Step 4b: Naming Check
 
@@ -81,7 +82,7 @@ Si le ticket touche l'interface et que `kb/interface/lexique.md` existe : lance 
 
 ## Step 4c: Code Review
 
-Dispatch `hosa-reviewer` en **revue de ticket** : les sections du ticket (étape 3a), `kb/rules/design/definition-de-termine.md`, les fichiers modifiés et les tests du ticket, le worktree. Après chaque revue, ajoute une ligne sous `## Revue` du ticket (KB de la racine) : `- <date> — PASS | PASS-WITH-NOTES | FAIL — <manques ou notes>`. Le hook `gate.js` refuse le commit du ticket tant que la dernière ligne n'est pas PASS ou PASS-WITH-NOTES. **FAIL** → redispatch `hosa-developer` en `correction` avec la liste exacte des manques, puis nouvelle revue. Deux FAIL de suite → arrête et montre les manques à l'utilisateur. **PASS-WITH-NOTES** → les notes vont dans la présentation de l'étape 5.
+Dispatch `hosa-reviewer` en **revue de ticket** : les sections du ticket (étape 3a), `kb/rules/design/definition-de-termine.md`, les fichiers modifiés et les tests du ticket, le worktree. Après chaque revue, ajoute une ligne sous `## Revue` du ticket (KB de la racine) : `- <date> — PASS | PASS-WITH-NOTES | FAIL — <manques ou notes>`. Le hook `gate.js` refuse le commit du ticket tant que la dernière ligne n'est pas PASS ou PASS-WITH-NOTES. **FAIL** → redispatch `hosa-developer` en `correction` avec la liste exacte des manques : il montre chacun par un test en échec avant de le corriger (`prouvé`), ou le rend `non reproduit`. Écrit la ligne `## Corrections` (Correction Mode, point 4). Puis **revue de correction** : `hosa-reviewer` reçoit les manques précédents, les `## Constats` du développeur et le diff de la correction — rien d'autre, il ne relit pas le ticket entier. Deux FAIL de suite → arrête et montre les manques à l'utilisateur. **PASS-WITH-NOTES** → les notes vont dans la présentation de l'étape 5.
 
 ## Step 5: Present and Confirm
 
@@ -127,11 +128,17 @@ La session qui orchestre ne fait qu'orchestrer, c'est elle qui coûte le plus : 
 ## Correction Mode
 
 `/develop <slug-ticket> correction`, or chained by `qa`, `validation` (démo) or the review: a defect on a ticket of the **active** sprint is fixed in that sprint, on its worktree — never left as a backlog ticket while the sprint waits.
-1. Écrit `state: doing` sur le ticket et retire `verified` (même s'il était `done` : la validation est à refaire). Log, avec la source du défaut.
-2. Le défaut a déjà un test en échec (QA) → passe-le. Sinon (démo, recette) → dispatch `hosa-tester` en Écrire d'abord avec le rapport du défaut : un test qui le reproduit, en échec.
-3. Pas de `hosa-tech-lead` : dispatch `hosa-developer` en `correction` avec le test, le rapport et les fichiers concernés. Cause floue ou défaut qui touche plusieurs modules → `debug` en mode auto, sur le worktree et le `docker_project` du sprint.
-4. Puis étapes 4b, 4c, 5, 6 (commit `fix:` avec `Hosa-Ticket:`) et 7.
-5. Suite : relance `qa` pour ce ticket seul, puis `validation`.
+1. **Montre d'abord.** Le défaut a déjà un test en échec (QA) → passe-le. Démo, recette → dispatch `hosa-tester` en Écrire d'abord avec le rapport du défaut : un test qui le reproduit, en échec. Revue, audit → `hosa-developer` écrit ce test lui-même (point 3, son étape 11). Aucun constat reproduit → aucun code, aucun commit, le ticket garde son état ; écrit quand même la ligne `## Corrections` (point 4 : `0 prouvé(s)`, commit `aucun`), qu'elle soit mesurée ; rapporte les `non reproduit` (test et sortie) à la source — l'utilisateur pour une démo, la revue de correction, ou le ré-audit (`qualite`, audit du sprint), qui les juge sur ce test.
+2. Au moins un constat prouvé → écrit `state: doing` sur le ticket et retire `verified` (même s'il était `done`). Log, avec la source du défaut.
+3. Pas de `hosa-tech-lead` : dispatch `hosa-developer` en `correction`, `model: sonnet`, avec le test, le rapport et les fichiers concernés. Cause floue ou défaut qui touche plusieurs modules → `debug` en mode auto, sur le worktree et le `docker_project` du sprint.
+4. **Type de la correction**, d'après son diff :
+   - **technique** — le diff ne touche ni un écran, un gabarit, un libellé ou un message visible du `## Placement interface` du ticket, ni un `CAn`. Cas courant d'une revue, d'un audit ou d'un test en échec.
+   - **fonctionnelle** — sinon, et toujours pour un défaut de recette ou de démo. Nomme les `CAn` touchés.
+   Ajoute une ligne sous `## Corrections` du ticket (KB de la racine) : `- <date> — <source : revue | audit | qa | recette <persona> | démo> — <technique | fonctionnelle : CAn…> — <P> prouvé(s), <N> non reproduit(s) — <commit>`. `usage_report` en tire la pertinence des retours du sprint.
+5. Puis étapes 4b, 4c (revue de correction), 5, 6 (commit `fix:` avec `Hosa-Ticket:`) et 7.
+6. Suite. Correction d'un Bloquant de l'audit du sprint, avant la QA → ré-audit seulement : aucun test du sprint, aucune recette, aucune validation n'a encore tourné. Sinon, selon le type — une correction technique ne change rien de ce qu'un persona voit, la rejouer chez lui ne prouve rien de plus :
+   - **technique** → `qa <sprint> <ticket> technique` : les tests seuls, les recettes restent valables ; puis `validation` en reconfirmation.
+   - **fonctionnelle** → `qa <sprint> <ticket>` : les tests, puis la recette des seuls `CAn` touchés, chez les seuls personas qui les recettent ; puis `validation`.
 
 ## Step 6b: Clean Worktree
 
@@ -159,7 +166,9 @@ Ce skill est le seul point qui committe pour ce flow — jamais `hosa-tech-lead`
 [Tickets restants :]
 Suite : `/clear`, puis « reprends » — prochain lot : <slugs> (une session neuve par lot).
 [Correction faite :]
-Suite : `qa` de ce ticket, lancé sans attendre.
+Suite : `qa <sprint> <ticket> technique` (correction technique : recettes conservées) ou `qa <sprint> <ticket>` (fonctionnelle : CAn…), lancé sans attendre.
+[Aucun constat reproduit :]
+Rien corrigé : <constats non reproduits, avec leur test> — renvoyés à <source>.
 [Tous les tickets faits :]
-Suite : `qa` du sprint, lancé sans attendre.
+Suite : audit du sprint (`qualite`, étape `audit`), lancé sans attendre — puis `qa`.
 ```
