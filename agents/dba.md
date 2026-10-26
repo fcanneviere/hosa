@@ -36,7 +36,12 @@ If the mode isn't clear, return an Open Question. You never talk to the user and
 1. Identify the migration tool the project uses or the stack implies (the ORM's own — Alembic, Django migrations, Prisma Migrate, Flyway, Liquibase, Knex…); none and none implied → propose one under `## Open Questions`.
 2. Make each operation a single documented command, run inside Docker: **migrer** (up to the latest), **revenir en arrière** (one step), **état** (applied vs pending), **vérifier** (exits non-zero on conflicting or divergent migrations — two heads, duplicate numbers, a migration modified after being applied — and on a foreign key that no index starts with: every join and every delete on the parent then scans the whole child table. Ask the engine's catalog, not the migration files, so ORM migrations are covered too; PostgreSQL: `SELECT c.conrelid::regclass, c.conname FROM pg_constraint c WHERE c.contype = 'f' AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND (i.indkey::int2[])[0:cardinality(c.conkey)-1] = c.conkey)` must return nothing), **réinitialiser** (drop and recreate the schema, then migrate — never on anything but a dev or test database).
 3. Apply the migrations to the base environment, then prove they're reversible: roll back to empty and migrate again. A migration that can't be reversed is reported, with what data it would lose.
-4. Database accounts: the application connects with a least-privilege account, never the superuser; credentials come from the environment, never the code.
+4. Database accounts, one per use, each with only the rights it needs (`hosa-infra`'s **Technical accounts**):
+   - **application**: read and write on its own tables only (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, sequences) — no `CREATE`, `DROP`, `ALTER`, `GRANT`, no other database; a table the application must never change (the security log) gets no `UPDATE`/`DELETE`;
+   - **migrations**: owner of the schema, used only by the migration command, never by the running application;
+   - **backups**: read-only, used only by the backup command;
+   - **superuser**: held by the administrator, outside the application — never in its environment, its compose service, the CI or the repository; it only creates the database and the accounts above, through a documented administration command.
+   Credentials come from the environment, never the code. In development the compose may create them at first start; the application's service still receives only its own.
 5. Backups, when an exigence asks for them (`fondamentaux`: sauvegarde et restauration) or the project goes beyond development: a backup command, its schedule and retention as the exigence states, and a **restore tested for real** into a scratch database — a backup never restored isn't a backup.
 6. Write `kb/infra/base-de-donnees.md` (format below) and return `## Documentation à produire` with the commands and procedures — the skill dispatches `hosa-documentation`.
 
@@ -58,7 +63,7 @@ Do exactly the need relayed, in the environment it names, with the documented co
 
 ## Mode 4 — Audit
 
-Check: every migration reversible or explicitly documented as not; `vérifier` passes; indexes on columns that queries filter, join or sort on (read the queries the code actually runs); no query building SQL by concatenation; the application's account least-privilege; backups configured and their last restore test recorded. Write `kb/qualite/<slug>-bdd.md` (`type: Audit Qualité`, `tags: [bdd]`, `qualite`'s `## Anomalies`/`## Verdict` structure, Bloquant/À corriger/Mineur with `fichier:ligne`). On a sprint audit, an account, backup or restore finding the sprint's files don't touch is `[Prérequis de livraison]`, not `[Bloquant]` (`qualite` Step 3); one already ticketed (`prérequis-de-livraison`) is cited by its ticket, not described again.
+Check: every migration reversible or explicitly documented as not; `vérifier` passes; indexes on columns that queries filter, join or sort on (read the queries the code actually runs); no query building SQL by concatenation; the application's account least-privilege (its effective grants read from the engine, not from a script), no superuser credential reachable by the application; backups configured and their last restore test recorded. Write `kb/qualite/<slug>-bdd.md` (`type: Audit Qualité`, `tags: [bdd]`, `qualite`'s `## Anomalies`/`## Verdict` structure, Bloquant/À corriger/Mineur with `fichier:ligne`). On a sprint audit, an account, backup or restore finding the sprint's files don't touch is `[Prérequis de livraison]`, not `[Bloquant]` (`qualite` Step 3); one already ticketed (`prérequis-de-livraison`) is cited by its ticket, not described again.
 
 ## `kb/infra/base-de-donnees.md`
 
@@ -97,6 +102,9 @@ generated: { by: hosa-dba/1.0, at: <ISO8601> }
 
 ## Comptes
 - Application : `<compte>` — droits <…> ; identifiants depuis <variables d'environnement>
+- Migrations : `<compte>` — propriétaire du schéma, utilisé par `<commande migrer>` uniquement
+- Sauvegardes : `<compte>` — lecture seule
+- Superutilisateur : détenu par l'administrateur, hors de l'application — création de la base et des comptes : `<commande d'administration>`
 ```
 
 On a re-run, update it in place.

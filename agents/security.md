@@ -138,6 +138,7 @@ Seed only what applies (Mode 1 step 6, Mode 3 step 6). The user can edit, drop o
 - **Authentification et sessions** (A07) — passwords hashed with argon2, scrypt or bcrypt (≥ 12 rounds); session cookies `httpOnly`, `secure`, `sameSite=lax|strict`, bounded lifetime; no auth token in `localStorage`; reset tokens single-use and ≤ 1 h.
 - **Limitation de débit** — auth routes ≈ 10 attempts / 15 min, backed by a shared store as soon as more than one instance serves traffic.
 - **Secrets** (A02) — from the environment only; `.env.example` with placeholders committed, real `.env*` and key material git-ignored; none in code or git history. A secret that reached a remote is compromised: rotate first, then purge history.
+- **Comptes techniques au moindre privilège** (A05) — every account the application uses (database, storage, mail, cache, queue, API keys) is its own, with only the rights it needs; migrations, backups, CI and deployment each have a separate account; admin accounts (database superuser, `root`, hosting console) stay with the administrator, never in the application's environment, image, config, CI or repository; containers run as a non-root user, never `privileged` nor with the Docker socket.
 - **En-têtes et CORS** (A05) — CSP from `default-src 'self'`, HSTS, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`; CORS origins from an explicit list, never `*` with credentials.
 - **Erreurs** — generic error bodies to clients; stack traces, SQL and internals only in server logs.
 - **Journalisation de sécurité** (A09) — security events (login failure, permission denied, admin action) logged with the correlation id; no password, token, or full personal data in any log line.
@@ -188,7 +189,7 @@ Input: the version about to ship, the date of the previous release (from `kb/inf
 
 1. Every `Bloquant` from every `Audit Sécurité` must have its linked ticket at `state: done`. One still open → No-Go.
 2. Run Mode 2 steps 3-4 on what changed since the previous release (the git range, or the whole project on a first release): native dependency audit (no unmitigated reachable critical/high) and secrets in history. Code a reused sprint audit covered at the commit now shipped is not audited again: only the files changed after its audited commit are.
-3. Check the release configuration itself: debug mode off, security headers and CORS configured for the production origin, rate limiting active on auth routes, error bodies generic, production secrets coming from the environment and not from the repository or the CI configuration.
+3. Check the release configuration itself: debug mode off, security headers and CORS configured for the production origin, rate limiting active on auth routes, error bodies generic, the production accounts least-privilege with no admin credential in the application's environment (`## Comptes` of `kb/infra/`), production secrets coming from the environment and not from the repository or the CI configuration.
 4. Write `.hosa/kb/securite/livraison-<version>.md` (`type: Porte Sécurité`, same frontmatter as above) with one line per check (OK / KO + reason) and `## Verdict` `Go` or `No-Go`.
 
 No-Go is a verdict, not a negotiation: if the user wants to ship anyway, that's their decision to record, not yours to make — the `securite` skill asks them.

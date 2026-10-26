@@ -28,6 +28,13 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 
 **Versions:** current, maintained, stable — never `latest`, always pinned. Confirm with web search when available; otherwise state your assumption and today's date so the user can correct a stale guess.
 
+**Technical accounts: least privilege, admin accounts stay with the admin.** Every account you provide — database (with `hosa-dba`), object storage, SMTP, cache, queue, third-party API keys, CI, deployment — gets only the rights its user needs, and no more:
+- **One account per use**, never shared: the application, the migrations, the backups, the CI, the deployment each have their own. The application's account reads and writes its own data (its bucket, its queue, its mail sender), never creates, drops or administers anything.
+- **Admin accounts** (database superuser, server `root`, cloud or hosting console, registry owner, domain and DNS) **belong to the administrator**: never in the application's environment variables, its compose service, its image, its config, the CI or the repository. A step that needs one (creating the database, a bucket, an account) is an administration command run by the admin once, documented in `## Comptes`; you never keep or reuse its credentials.
+- **Containers run as a non-root user**, without `privileged`, without the Docker socket mounted, without host ports a service doesn't need (the database is not exposed outside the compose network beyond development).
+- **Scoped keys:** a third-party API key or token is restricted to the operations, resources and environment it serves (a send-only mail key, a read-only token, a test key outside production), with an expiry when the provider offers one.
+- **Documented:** each account, its rights and where its secret lives (variable name, secret store — never the value) under `## Comptes` of the KB file that provisions it. An account whose needed rights you can't tell → Open Question, never a broad account "for now".
+
 ## Mode 1 — Initial Setup
 
 1. Root from `kb/infra/`. None → Open Question (never this plugin's checkout, never `.hosa/`); with the answer, write `.hosa/kb/infra/projet-gere.md` (`type: Infra`, `## Chemin racine`).
@@ -38,7 +45,8 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
    - no top-level `name:` and no `container_name:` — the project name (`-p`) keeps checkouts apart; a fixed name makes a sprint reuse the previous one's containers;
    - source mounts relative to the compose file (`./src:/app/src`), never absolute;
    - host ports from variables with defaults (`"${APP_PORT:-8000}:8000"`);
-   - an image that bakes the code in is always started with `--build`.
+   - an image that bakes the code in is always started with `--build`;
+   - each service gets only its own account's variables (the application's service never receives the database superuser's password), and the image runs as a non-root user.
    Fix an existing compose that breaks one of these, saying what changed and why.
 6. Start the base environment (`docker compose -p <projet> up -d --build` from the root), check each service responds, then `<hosa> docker_check <projet> <root>`. Docker unavailable → say so; never report a service in place without having started and checked it.
 7. Write `.hosa/kb/infra/environnement-docker.md`:
@@ -64,6 +72,10 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 - Sprint : `docker compose -f "<worktree>/docker-compose.yml" -p <projet>-sprint-<slug> up -d --build`, avec <APP_PORT=…, DB_PORT=…> pour ne pas entrer en conflit avec la base
 - Contrôle : `<hosa> docker_check <projet compose> <dossier du checkout>`
 - Tests : <commande de la suite complète, service où elle tourne>
+
+## Comptes
+- <service> : `<compte>` — utilisé par <application / migrations / CI…> — droits <…> — secret dans <variable ou coffre>
+- Comptes d'administration (<superutilisateur, root…>) : détenus par l'administrateur, hors de l'application — <commande d'administration documentée>
 ```
 
    Write `<hosa>` as is in the KB, never the command it stands for: that command carries machine paths and the plugin version.
@@ -100,7 +112,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
    - something already in place covers it (Redis up can serve as a simple queue) → counter-propose it, with the reason;
    - it conflicts with a `Stack Decision` or an infrastructure choice → Open Question: which one wins? Never pick silently;
    - new and consistent → go on.
-3. Once confirmed: pin a version, add it to the composition or the project's dependency manifest (its package manager's conventions), rebuild, check it works. A dependency needed on one platform only (`tzdata` on Windows) carries its marker in the manifest (`tzdata; sys_platform == "win32"`) before the lock is recompiled — never removed from the lock by hand: the next recompilation brings it back. Check the lock diff with `git --no-pager diff` (a filtered or folded diff hides the lines that matter).
+3. Once confirmed: pin a version, give it its own least-privilege account (see **Technical accounts**), add it to the composition or the project's dependency manifest (its package manager's conventions), rebuild, check it works. A dependency needed on one platform only (`tzdata` on Windows) carries its marker in the manifest (`tzdata; sys_platform == "win32"`) before the lock is recompiled — never removed from the lock by hand: the next recompilation brings it back. Check the lock diff with `git --no-pager diff` (a filtered or folded diff hides the lines that matter).
 4. Write `.hosa/kb/infra/<slug-service>.md`:
 
 ```markdown
@@ -124,7 +136,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Mode 3 — Deployment
 
 1. Read `kb/infra/deploiement.md`. Missing → Open Question (bloquante): target (server, platform, container registry), access, secrets location, how to roll back. A staging environment distinct from production is recommended; configuration as code, never set by hand. Never guess a target or store a secret in the repository or the KB — reference where it lives.
-2. With the answers, write the deployment the first time: script or CI job, matching the project's conventions, and `kb/infra/deploiement.md` (`## Cible`, `## Déployer`, `## Revenir en arrière`, `## Vérifier`).
+2. With the answers, write the deployment the first time: script or CI job, matching the project's conventions, and `kb/infra/deploiement.md` (`## Cible`, `## Déployer`, `## Revenir en arrière`, `## Vérifier`, `## Comptes`). The deployment runs with a deployment account limited to this target (push the image, restart the service), never the administrator's; production secrets are the target's own, never the development or CI ones.
 3. Deploy the tagged version given by `livraison`, after `hosa-dba` has saved and migrated the target database (`livraison` orders it). Then run `## Vérifier` (the application answers, the main page loads, no error in the logs).
 4. Verification fails → run `## Revenir en arrière` and report. Never leave a half-deployed version.
 
