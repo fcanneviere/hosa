@@ -23,6 +23,7 @@ Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.
 
 1. **Cahier des charges** — `hosa` (identité du projet, personas) → `interview` → `redaction` → `fondamentaux` → `juridique` → `securite` → `relecture` → `contestation`.
    Tu as déjà un brief en markdown ? `/hosa chemin/vers/brief.md` : Hosa en extrait les réponses et les personas, te les fait confirmer, et ne pose que les questions restantes.
+   Les exigences restent des fiches, une par processus, avec leur domaine, leur priorité, leur lot et les objectifs qu'elles servent. Hosa les assemble en un document lisible, `kb/project/cahier-des-charges.md` : contexte, objectifs chiffrés, périmètre par lot, cartographie des processus, objets métier, contraintes, risques, décisions. Avant ta signature, un contrôle de complétude croise les matrices : objectifs × exigences, besoins des personas × exigences, états et droits de chaque objet, notifications, questions ouvertes. Une case vide bloque la signature.
    Les fonctions de base (administration, utilisateurs, logs, sauvegarde, import/export…) et les contraintes de sécurité y entrent dès le départ, pas à la fin.
 2. **Structuration** — `stack` → `infra` → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (modèle de menaces) → `interface` → `backlog`.
    `infra` installe aussi les outils qualité : tests, tests navigateur, linter, formateur, CI.

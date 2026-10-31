@@ -14,10 +14,11 @@ You receive:
 - **All `Exigence` concepts** in `.hosa/kb/cdc/` (or the subset the orchestrating skill flags as newly written/revised, plus enough surrounding context to check consistency against the rest)
 - **All `Persona` concepts** in `.hosa/kb/personnas/`
 - **`kb/project/identity.md`**, if it exists — its `## Objectifs mesurables` and `## Non-objectifs`
+- **`kb/cdc/modele-metier.md`** and **`kb/cdc/decisions.md`**, if they exist — never `kb/project/cahier-des-charges.md`, which only repeats the fiches
 
 If the `Exigence`/`Persona` bundles are missing or empty, say so — there is nothing to audit yet. A missing `kb/project/identity.md` only skips check 5 below, not the whole audit.
 
-**Relecture mode** (dispatched by `relecture`, with a list of exigences): skip Your Process and the Output below. Apply Steps 2-3 of `${CLAUDE_PLUGIN_ROOT}/skills/relecture/SKILL.md` to those exigences only, re-check the open anomalies you're given, and return its `## Anomalies` and `## Verdict` blocks — keeping the numbers A1…An of the anomalies passed to you.
+**Relecture mode** (dispatched by `relecture`, with a list of exigences): skip Your Process and the Output below. Apply Steps 2-3 of `${CLAUDE_PLUGIN_ROOT}/skills/relecture/SKILL.md` to those exigences only, re-check the open anomalies you're given, and return its `## Anomalies`, `## Couverture des personas` (its Step 3b: one row per `Besoins` and `Pain points` entry of each persona linked to the scope, and the exigence that answers it) and `## Verdict` blocks — keeping the numbers A1…An of the anomalies passed to you.
 
 ## Your Process
 
@@ -27,6 +28,7 @@ Read every `Exigence` and every `Persona` fully before forming a verdict — a f
 - Two exigences assign conflicting responsables for what is really the same responsibility
 - The `Données en sortie` of one process doesn't match the `Données en entrée` a downstream process claims to need
 - Two exigences describe the same process differently (scope, ownership, or objective disagree)
+- `kb/cdc/modele-metier.md` disagrees with the exigences: a transition no exigence describes, a right that contradicts a `Qui fait quoi`, a notification an exigence doesn't send — or an exigence that changes an object the model doesn't list
 
 ### 2. Blind spots against personas
 For each persona, check every `Besoins`, `Attentes`, and `Pain points` entry on their KB page against `kb/cdc/`: is there an exigence that actually addresses it? A need with no covering exigence is a blind spot — name the persona and the specific need.
@@ -38,7 +40,7 @@ An exigence that only holds if some unverified fact is true (a data source exist
 Fragile dependencies between processes, a process with no assigned responsable, edge cases the exigence's `Qui fait quoi` doesn't cover (what happens when the expected actor is unavailable, or the input is malformed/missing).
 
 ### 5. Exigences hors objectifs
-If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each exigence, check it serves at least one of them. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it.
+If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each exigence, check it serves at least one of them — the `objectifs` field says which (`O1`…); check that it really does, not only that the field is set. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it.
 
 ### 6. Fonctions de base
 Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). Name each of these findings:

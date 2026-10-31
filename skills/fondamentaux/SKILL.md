@@ -85,7 +85,7 @@ Show the user every **Manquant** item at once, as one list: "Voici les fonctions
 
 With the same list, show the `espace` the PO proposes for any functional exigence that doesn't have one yet — confirmed together, corrected if wrong.
 
-Then ask, grouped, only what's needed to write the items kept: the actor or rule the PO couldn't derive, and the concrete target for each NFR (number, level, threshold — "pas encore de chiffre" is a valid answer, never invented).
+Then ask, grouped, only what's needed to write the items kept: the actor or rule the PO couldn't derive, the concrete target for each NFR (number, level, threshold — "pas encore de chiffre" is a valid answer, never invented) and how it is measured, and the priority and lot of each kept item as one proposed table (`redaction`, frontmatter: a basic function is usually `indispensable`, in the lot of the first process that needs it).
 
 For the socle comptes, in the same round: the 3 variants (`socle-comptes.md` § Variantes, the PO's recommendation as option a) and the whole parameter table with its defaults filled in — "je garde les valeurs par défaut" is one answer — then the matrice des rôles (roles × espace × what each sees and does), drafted by the PO from the personas for the user to correct. MFA, session lengths and the attempt limits are settled here: `securite` doesn't ask them again.
 
@@ -94,7 +94,7 @@ In the same round, ask the context `juridique` and `securite` will need, so the 
 ## Step 4: Write (PO)
 
 Redispatch `hosa-product-owner` with the kept items and the user's answers. It writes:
-- one `Exigence` per kept item, `status: draft`, in `redaction`'s structure — `espace` set (most basics are `back-office`; login, account recovery, notifications or user help are usually `front-office` too), `tags: [nfr]` for an NFR — linking a matching persona if one exists (e.g. an "Administrateur" for admin items), otherwise `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` — expected for most of this list, not a gap;
+- one `Exigence` per kept item, `status: draft`, in `redaction`'s structure — `espace`, `domaine`, `priorite` and `lot` set (most basics are `back-office`; login, account recovery, notifications or user help are usually `front-office` too), `tags: [nfr]` and the non-functional template (`## Exigence`, `## Mesure`…) for an NFR — linking a matching persona if one exists (e.g. an "Administrateur" for admin items), otherwise `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` — expected for most of this list, not a gap;
 - for the socle comptes, every exigence the variants keep, copied from `socle-comptes.md` as its Rules of use say: text unchanged, parameters replaced by the chosen values, roles renamed, matrice des rôles filled in, `tags: [socle-comptes]`; a project exigence on the same process is merged, not duplicated;
 - `kb/cdc/fondamentaux.md`, the record `contestation` checks for:
 

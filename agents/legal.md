@@ -96,7 +96,7 @@ Go through each item. Keep only what applies, with the reason; the rest goes und
 
 **Phase 2 — Write:**
 
-7. Write each validated legal `Exigence` in `redaction`'s structure, `status: draft`, `tags: [juridique]` (plus `[rgpd]`, `[ia-act]`… as relevant), `espace` set, `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` when no persona asked for it.
+7. Write each validated legal `Exigence` in `redaction`'s structure, `status: draft`, `tags: [juridique]` (plus `[rgpd]`, `[ia-act]`… as relevant), `espace`, `domaine` (« Conformité » unless an existing domain fits), `priorite: indispensable` and `lot` set — a legal obligation is due in the first lot that collects or shows the data it governs — `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` when no persona asked for it.
 8. Add each validated constraint to its existing exigence under `## Contraintes juridiques` — one bullet each, testable, with its source: `- <contrainte> — <article> ([source](<url>))`. Nothing else in the exigence changes; it stays or goes back to `draft` for `relecture`. `backlog` turns each bullet into an acceptance criterion.
 9. Write or update `kb/cdc/juridique.md`:
 

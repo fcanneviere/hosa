@@ -63,13 +63,18 @@ For each process, check `.hosa/kb/personnas/` and ask the user which persona(s) 
 
 For each persona involved, dispatch `hosa-key-user` as a process-interview request (see `agents/key-user.md`):
 - Which process, and this persona's role in it
-- Ask: objectif du persona dans ce processus, données en entrée (ce dont il a besoin pour commencer), données en sortie (ce qu'il produit/transmet), ce qu'il fait concrètement, les **règles de gestion** qu'il applique (calculs, conditions, seuils, statuts et qui fait passer de l'un à l'autre), et les **cas d'erreur** (donnée manquante ou fausse, doublon, retard, refus) avec ce qui doit se passer alors — avec des exemples chiffrés réels
+- Ask: comment ça se passe aujourd'hui (outil, contournement, ce qui rate), ce qui déclenche le processus pour lui (un événement, une situation, la fin d'un autre processus), objectif du persona dans ce processus, données en entrée (ce dont il a besoin pour commencer), données en sortie (ce qu'il produit/transmet), ce qu'il fait concrètement, les **règles de gestion** qu'il applique (calculs, conditions, seuils, statuts et qui fait passer de l'un à l'autre), et les **cas d'erreur** (donnée manquante ou fausse, doublon, retard, refus) avec ce qui doit se passer alors — avec des exemples chiffrés réels
 
 One persona at a time — don't batch multiple personas into a single dispatch.
 
 ## Step 4: Transverse Questions — Ask the User Directly
 
 Anything that doesn't belong to one persona's point of view — who's responsible at the process level, cross-cutting constraints, priority relative to other processes — ask the user directly. `hosa-key-user` speaks only for its persona, never for the project.
+
+Once every process is covered, ask the user, each as one numbered question with a proposed answer:
+- **Objectives.** `kb/project/identity.md` § Objectifs mesurables has no row `| O1 | … |` with an indicator, a target and a measure → propose them from the personas' `Objectifs` (ex. : « zéro article oublié sur une liste »), to confirm or correct through `hosa`. Then which objectives each process serves.
+- **Priority and lot.** One table for all processes: `indispensable` / `important` / `souhaitable`, and the lot (1 = the first release that reaches the objectives). Recommend: lot 1 = the shortest chain of processes from start to objective, everything else after.
+- **Business objects.** For each object the processes create or change (a list, an order, an account): its states and what makes it change state, who may create, read, change and delete it, and who is told of each change (channel, moment). A state with no way out (« et après, que devient-il ? ») or a right nobody owns is the question to ask — this is where the forgotten processes are found.
 
 ## Step 5: Live Challenge
 
@@ -94,6 +99,9 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 ### <Processus>
 - Personas impliqués : <liste>
+- Situation actuelle : <comment ça se passe aujourd'hui, ce qui rate>
+- Déclencheur : <ce qui lance le processus>
+- Priorité et lot : <indispensable | important | souhaitable>, lot <n> ; objectifs servis : <O1…>
 - Objectif : <par persona, si ça diffère>
 - Données en entrée : <liste>
 - Données en sortie : <liste>
@@ -101,9 +109,15 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - Règles de gestion : <calculs, conditions, statuts, avec exemples>
 - Cas d'erreur : <ce qui peut mal se passer, et la réaction attendue>
 - Responsable : <si obtenu>
+
+### Objets métier
+- <Objet> — états : <a → b : qui ou quoi> ; droits : <rôle : créer / consulter / modifier / supprimer> ; prévenus : <événement → qui, canal, moment>
+
+### Questions restées ouvertes
+- <question> — proposé : <réponse>
 ```
 
-One `### <Processus>` section per process covered this session. Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from the exchange. This is the raw record — write it as gathered, don't retroactively clean it up to match what `redaction` later produces. Append an entry to `kb/cdc/interviews/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date.
+One `### <Processus>` section per process covered this session. An open question goes to `redaction`, which records it in `kb/cdc/decisions.md`. Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from the exchange. This is the raw record — write it as gathered, don't retroactively clean it up to match what `redaction` later produces. Append an entry to `kb/cdc/interviews/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date.
 
 ## Step 7: Hand Off
 

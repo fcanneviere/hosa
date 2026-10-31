@@ -79,7 +79,7 @@ Demandé par : <human:user ou origine>
 Impact identifié : tickets [liste], data/architecture/interface/doc [résumé Step 3]
 ```
 
-Then edit the affected sections of the Exigence body itself with the new content — same six-section structure `redaction` uses.
+Then edit the affected sections of the Exigence body itself with the new content — same structure `redaction` uses, frontmatter (`priorite`, `lot`, `objectifs`) included when the change moves them. Add the decision to `kb/cdc/decisions.md` § Décisions (date, who, what, why), and update `kb/cdc/modele-metier.md` when the change adds or moves a state, a right or a notification. The mini relecture regenerates `kb/project/cahier-des-charges.md`.
 
 ## Step 6: Mini Relecture/Contestation Loop
 

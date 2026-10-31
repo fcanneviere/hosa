@@ -46,7 +46,7 @@ The PO always does its own quick pass over `kb/cdc/` first, looking for any need
 
 ## Step 2: `hosa-challenger` Independent Audit
 
-Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md`, `juridique.md` and `securite.md` included), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists. On a loop coming back from Step 3, give it only the exigences changed since its last report (files of `kb/cdc/` modified after its `generated.at`, plus `git log` on `hosa-kb`) and that report: it re-audits those and the exigences linked to them, and says what it did not re-read. Take its verdict and findings as-is — don't pre-filter them before showing the user.
+Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md`, `juridique.md`, `securite.md`, `modele-metier.md` and `decisions.md` included), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists — never `kb/project/cahier-des-charges.md`, which repeats the fiches. On a loop coming back from Step 3, give it only the exigences changed since its last report (files of `kb/cdc/` modified after its `generated.at`, plus `git log` on `hosa-kb`) and that report: it re-audits those and the exigences linked to them, and says what it did not re-read. Take its verdict and findings as-is — don't pre-filter them before showing the user.
 
 ## Step 3: Route Anomalies
 
@@ -56,7 +56,15 @@ If a second full loop still finds anomalies, stop looping silently and tell the 
 
 ## Step 4: Final Sign-Off
 
-Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie": list every `Exigence` still at `status: draft` that this audit actually covered (every one Step 2 read — the full bundle, since `hosa-challenger` always receives all of `kb/cdc/`), then ask "Le cahier des charges est propre — tu valides ? (ces N exigences passeront en `stable`)". On yes, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }` on each one listed. Log the change to `kb/cdc/log.md`. Then dispatch `hosa-documentation` (Mode 1) with the newly-stable Exigence(s) and their linked persona(s) — it writes or updates the functional documentation. Wait for its confirmation before continuing.
+Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie", prove completeness:
+
+```bash
+<hosa> cdc check "<root>/.hosa/kb"
+```
+
+Exit 1 → the cahier des charges is not signed: every hole (an objective no exigence serves, a priority or a lot not chosen, a state with no way out, a right nobody decided, an open question of `kb/cdc/decisions.md`) is an anomaly, routed as in `relecture` Step 3b. The open questions go to the user now, numbered Q1… with their proposed answer; `redaction` records the answers. Then back to `relecture`.
+
+Exit 0 → `<hosa> cdc assemble "<root>/.hosa/kb"`. List every `Exigence` still at `status: draft` that this audit actually covered (every one Step 2 read — the full bundle, since `hosa-challenger` always receives all of `kb/cdc/`), then ask "Le cahier des charges est propre et complet : `kb/project/cahier-des-charges.md`. Tu le valides ? (ces N exigences passeront en `stable`)". The user signs the document, not a list of files. On yes, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }` on each one listed. Log the change to `kb/cdc/log.md`, then run `cdc assemble` again: the document turns `stable` and names its signatory. Then dispatch `hosa-documentation` (Mode 1) with the newly-stable Exigence(s) and their linked persona(s) — it writes or updates the functional documentation. Wait for its confirmation before continuing.
 
 If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3. No dispatch to `hosa-documentation` happens in this case — only an actual `stable` transition triggers it.
 
@@ -80,6 +88,9 @@ This skill doesn't commit. Report what changed (including any `status`/`verified
 - [Exigence] → [redaction / interview / utilisateur (hors objectifs)] — [pourquoi]
 - [If none: "Aucune"]
 
+## Complétude
+`cdc check` : [complet / N trou(s) — par matrice]
+
 ## Verdict
-[Propre, en attente de validation / N anomalie(s) à corriger / Validé — N exigence(s) passée(s) en stable]
+[Propre, en attente de validation de `kb/project/cahier-des-charges.md` / N anomalie(s) ou trou(s) à corriger / Validé — N exigence(s) passée(s) en stable]
 ```

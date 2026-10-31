@@ -76,16 +76,18 @@ Ask one question at a time, in order, waiting for an answer before moving on:
 1. Nom du projet
 2. Objectif (une phrase)
 3. Descriptif (texte libre, plus long)
-4. Public cible
-5. Objectifs mesurables (KPI/OKR — au moins un ; "aucun encore" accepté si l'utilisateur n'en a pas)
-6. Non-objectifs (ce que ce projet ne cherche pas à faire — pour cadrer le périmètre)
-7. Contraintes (techniques, réglementaires, business — "aucune" accepté)
-8. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
-9. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
-10. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
-11. Ton niveau en développement : débutant / intermédiaire / expert
-12. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
-13. Taille du projet : petit (quelques écrans, un ou deux personas, un usage principal) / standard — propose "petit" when the description says so ("minuscule", "simple", "perso")
+4. Contexte et enjeux : comment ça se passe aujourd'hui, ce qui rate, ce que ça coûte, pourquoi maintenant
+5. Public cible
+6. Objectifs mesurables (KPI/OKR) : pour chacun, l'indicateur, la cible et comment on le mesure — "aucun encore" accepté ici, mais `contestation` ne signe pas un cahier des charges sans objectif ; propose-les depuis le descriptif et les personas
+7. Non-objectifs (ce que ce projet ne cherche pas à faire — pour cadrer le périmètre)
+8. Contraintes (techniques, réglementaires, business — "aucune" accepté)
+9. Hypothèses, dépendances et risques (ce qu'on tient pour vrai, ce dont le projet dépend, ce qui peut le faire échouer — "aucun" accepté)
+10. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
+11. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
+12. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
+13. Ton niveau en développement : débutant / intermédiaire / expert
+14. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
+15. Taille du projet : petit (quelques écrans, un ou deux personas, un usage principal) / standard — propose "petit" when the description says so ("minuscule", "simple", "perso")
 
 Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine for now — don't force one if the user has none ready yet; but the cahier des charges (`interview`) can't start without one, so say so.
 
@@ -109,11 +111,18 @@ generated: { by: human:<user>, at: <ISO8601> }
 ## Description
 <descriptif>
 
+## Contexte et enjeux
+- **Situation actuelle.** <comment ça se passe aujourd'hui>
+- **Problèmes constatés.** <ce qui rate, pour qui>
+- **Enjeu.** <ce que le projet change>
+
 ## Public cible
 <public cible>
 
 ## Objectifs mesurables
-- <KPI/OKR>
+| Id | Objectif | Indicateur | Cible | Mesure |
+|---|---|---|---|---|
+| O1 | <objectif> | <ce qu'on compte> | <valeur visée> | <comment, quand, sur qui> |
 [Ou "Aucun encore défini." si l'utilisateur n'en a pas]
 
 ## Non-objectifs
@@ -123,6 +132,12 @@ generated: { by: human:<user>, at: <ISO8601> }
 ## Contraintes
 - <contrainte technique, réglementaire ou business>
 [Ou "Aucune."]
+
+## Hypothèses, dépendances et risques
+- Hypothèse : <ce qu'on tient pour vrai>
+- Dépendance : <service, tiers, plateforme>
+- Risque : <ce qui peut échouer> → <parade, ou « accepté »>
+[Ou "Aucun."]
 
 ## Point de départ
 Neuf | Existant
@@ -145,7 +160,7 @@ Neuf | Existant
 petit | standard
 ```
 
-`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. Every skill reads `## Niveau de l'utilisateur` before asking a technical question (`using-hosa`, "Fit the user and the project").
+`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. Exigences cite objectives by their `Id` (`objectifs: [O1]`): keep the ids stable, a new objective takes the next number. `## Contexte et enjeux`, `## Objectifs mesurables` and `## Hypothèses, dépendances et risques` open the readable cahier des charges (`cdc assemble`, § 1, 2, 9, 10). `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. Every skill reads `## Niveau de l'utilisateur` before asking a technical question (`using-hosa`, "Fit the user and the project").
 
 ### Writing personas
 
