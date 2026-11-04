@@ -16,6 +16,16 @@ try {
 } catch (e) {
   process.exit(0); // best-effort — never block session start
 }
+let payload = {};
+try { payload = JSON.parse(fs.readFileSync(0, 'utf8')); } catch (e) {} // no payload: no previous session
+// The resume blocks lead: past 10 KB, Claude Code shows the model only the context's first 2 KB.
+let resume = '';
+try {
+  resume += require('./avancement').resumeContext(payload.cwd || process.cwd());
+} catch (e) {} // plan d'avancement optionnel — never block session start
+try {
+  resume += `\n\n${require('./reprise').previousSession(payload)}`;
+} catch (e) {} // session précédente optionnelle — never block session start
 try {
   // No KB: the project rules weigh on every session and serve none (the skill tells when to read them).
   const cut = context.indexOf('\n## Hosa project rules');
@@ -51,9 +61,7 @@ try {
     context += '\n\n## Sommaire de la KB\n\nRead `.hosa/kb/sommaire.md` first (one line per concept, kept current), then open only the files you need.';
   }
 } catch (e) {} // sommaire optionnel — never block session start
-try {
-  context += require('./avancement').resumeContext(process.cwd());
-} catch (e) {} // plan d'avancement optionnel — never block session start
+if (resume.trim()) context = `${resume.trim()}\n\n---\n\n${context}`;
 
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: {

@@ -47,6 +47,7 @@ Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle c
 
 - **Toutes les phases** : Sonnet. La session orchestre : elle lance les agents, relaie leurs questions et écrit ce que tu décides. Les jugements difficiles restent sur Opus, portés par leurs agents : `hosa-challenger`, `hosa-legal`, `hosa-security`, `hosa-senior-dev`, `hosa-architect`, `hosa-reviewer`, `hosa-debugger`. Sur le pilote 2, Opus dans la session principale faisait 81 % de son coût.
 - **Une session par étape.** La session relit tout son historique à chaque tour. Après chaque étape ou chaque ticket, lance `/clear`, puis « reprends » : le plan d'avancement garde tout. Une session laissée ouverte une semaine a dépassé 500 000 tokens de contexte.
+- **La reprise après `/clear`.** La nouvelle session commence par le point de reprise du plan, puis par la session effacée : tes deux dernières demandes, la dernière réponse, les fichiers modifiés et l'état git. « reprends » repart donc de la tâche en cours, pas seulement de l'étape, dans un projet Hosa comme dans n'importe quel dépôt. Pour couper le rappel de la session effacée : `HOSA_REPRISE=0`.
 
 Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Sonnet dans un projet Hosa. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
 
