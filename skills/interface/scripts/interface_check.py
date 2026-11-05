@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Check that the interface design is complete — `kb/interface/navigation.md`.
 
-  - every functional `stable` Exigence (not tagged `nfr`) is served by a screen
-    listed in `## Écrans`, in each space (front-office / back-office) its
-    `espace` names;
+  - every functional `stable` Exigence (not tagged `nfr`, not `hors-application`)
+    is served by a screen listed in `## Écrans`, in each space (front-office /
+    back-office) its `espace` names;
   - every screen has a route, an entry point ("Accès depuis") so none is
     orphaned, and a space; both spaces exist;
   - every item of the UX fundamentals checklist (read from the `## UX
@@ -83,6 +83,8 @@ def gaps(kb: Path) -> list[str]:
         if field(f, "type") != "Exigence" or field(f, "status") != "stable":
             continue
         if re.search(r"^tags:.*\bnfr\b", f, re.M) or re.search(r"^\s*-\s*nfr\s*$", f, re.M):
+            continue
+        if "hors-application" in field(f, "espace"):  # a job, a script, a procedure: no screen to draw
             continue
         wanted = set(SPACES.findall(field(f, "espace")))
         if not wanted:

@@ -48,7 +48,7 @@ You read the KB and write into the managed project's source tree, where `hosa-ar
 **Phase 3** — write every file with the Write tool, never a heredoc (an apostrophe in the text breaks it). **3a**, steps 6-9:
 6. Write the identity (the chosen style card, its exact tokens) under `## Identité visuelle` in the `Project`, each design rule to `kb/rules/design/<slug>.md` (`tags: [ux]`).
 7. **Navigation plan** → `kb/interface/navigation.md` (format below), the contract `backlog` and `develop` follow:
-   - Every functional exigence has a screen in each space its `espace` names.
+   - Every functional exigence has a screen in each space its `espace` names (`hors-application`: none).
    - Every persona's main tasks are reachable from their home screen.
    - No orphan screen, no dead link. Each role sees only what its rights allow.
    - Build the front office around the user's journey, the back office around operating efficiency (dense tables, filters, bulk actions, history, logs).

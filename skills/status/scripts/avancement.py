@@ -228,13 +228,6 @@ def infra_with(kb: Path, heading: str) -> str | None:
     return f"aucune entrée `Infra` de `kb/infra/` n'a de section `## {heading}`"
 
 
-def open_anomalies(kb: Path, route: str | None = None) -> list[str]:
-    """`kb/cdc/relecture.md` anomalies still `ouverte` (routed `→ <route>` when given)."""
-    body = section(read(kb / "cdc" / "relecture.md"), "Anomalies") or ""
-    return [m[1] for m in re.finditer(r"^-\s*(A\d+)\b(.*)—\s*ouverte\s*$", body, re.M)
-            if route is None or f"→ {route}" in m[2]]
-
-
 SCRIPTS = Path(__file__).resolve().parents[2]
 
 
@@ -272,9 +265,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         if not exigences:
             gaps.append("aucune `Exigence` dans `kb/cdc/`")
         gaps.append(concept(kb, "project/cahier-des-charges.md", "Cahier des charges"))
-        left = open_anomalies(kb, "redaction")
-        if left:
-            gaps.append(f"anomalies → redaction encore `ouverte` dans `kb/cdc/relecture.md` : {', '.join(left)}")
+        gaps += script("redaction/scripts/cdc.py", "revue", kb, "--route", "redaction")
     elif stage == "fondamentaux":
         gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux"))
     elif stage == "juridique":
@@ -283,9 +274,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps.append(concept(kb, "cdc/securite.md", "Analyse de sécurité", "Menaces et mesures"))
     elif stage == "relecture":
         gaps.append(concept(kb, "cdc/relecture.md", "Revue Relecture"))
-        left = open_anomalies(kb)
-        if left:
-            gaps.append(f"anomalies encore `ouverte` dans `kb/cdc/relecture.md` : {', '.join(left)}")
+        gaps += script("redaction/scripts/cdc.py", "revue", kb)
     elif stage == "contestation":
         draft = [p.stem for p, t in exigences if field(front(t), "status") != "stable"]
         unsigned = [p.stem for p, t in stable if not field(front(t), "verified")]

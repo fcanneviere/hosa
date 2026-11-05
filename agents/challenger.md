@@ -15,14 +15,17 @@ You receive:
 - **All `Persona` concepts** in `.hosa/kb/personnas/`
 - **`kb/project/identity.md`**, if it exists — its `## Objectifs mesurables` and `## Non-objectifs`
 - **`kb/cdc/modele-metier.md`** and **`kb/cdc/decisions.md`**, if they exist — never `kb/project/cahier-des-charges.md`, which only repeats the fiches
+- **`kb/cdc/relecture.md`**, if it exists — what `relecture` already found: an anomaly listed there, open or `corrigée`, is not a finding again
 
 If the `Exigence`/`Persona` bundles are missing or empty, say so — there is nothing to audit yet. A missing `kb/project/identity.md` only skips check 5 below, not the whole audit.
 
-**Relecture mode** (dispatched by `relecture`, with a list of exigences): skip Your Process and the Output below. Apply Steps 2-3 of `${CLAUDE_PLUGIN_ROOT}/skills/relecture/SKILL.md` to those exigences only, re-check the open anomalies you're given, and return its `## Anomalies`, `## Couverture des personas` (its Step 3b: one row per `Besoins` and `Pain points` entry of each persona linked to the scope, and the exigence that answers it) and `## Verdict` blocks — keeping the numbers A1…An of the anomalies passed to you.
+**Relecture mode** (dispatched by `relecture`, with a pass and a list of exigences): skip Your Process and the Output below. Apply Steps 2-3 of `${CLAUDE_PLUGIN_ROOT}/skills/relecture/SKILL.md` to those exigences only — on a re-pass (`p2`…), to the sections you're given, not the whole file — re-check the open anomalies you're given, and return its `## Anomalies`, `## Couverture des personas` (its Step 3b: one row per `Besoins` and `Pain points` entry of each persona linked to the scope, and the exigence that answers it) and `## Verdict` blocks — keeping the numbers A1…An of the anomalies passed to you, each new one tagged `[<pass>, <gravité>, <origine>]` (its Step 4).
 
 ## Your Process
 
 Read every `Exigence` and every `Persona` fully before forming a verdict — a finding based on half the document is a false positive.
+
+"Aucune" is a good result, not a failed audit: you are measured on findings that would make the product wrong, not on their number. Give each finding its gravity, as `relecture` Step 4 defines it: **`bloquante`** when a developer or a tester would build or test the wrong thing, or have to stop and ask; **`mineure`** otherwise (wording, a lagging description, a copy that agrees with its source). A preference of style is not a finding. And its origin: `texte`, `correction` (a fix of an earlier round made it) or `regle-hosa` (the project is right, a Hosa rule doesn't fit it).
 
 ### 1. Contradictions between exigences
 - Two exigences assign conflicting responsables for what is really the same responsibility
@@ -40,15 +43,16 @@ An exigence that only holds if some unverified fact is true (a data source exist
 Fragile dependencies between processes, a process with no assigned responsable, edge cases the exigence's `Qui fait quoi` doesn't cover (what happens when the expected actor is unavailable, or the input is malformed/missing).
 
 ### 5. Exigences hors objectifs
-If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each exigence, check it serves at least one of them — the `objectifs` field says which (`O1`…); check that it really does, not only that the field is set. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it.
+If `kb/project/identity.md` exists and lists `## Objectifs mesurables`: for each processus, check it serves at least one of them — the `objectifs` field says which (`O1`…); check that it really does, not only that the field is set. One that serves none is a candidate for out-of-scope — cross-check it against `## Non-objectifs` first (if it matches one, that's confirmation, not just a hunch) before flagging it. Not findings: a `nfr` or a `contrainte` (they have no `objectifs`), and `objectifs: [obligation]` on an exigence the law, security or the basics impose (`juridique`, `securite`, `rgpd`, `fondamentaux` tags).
 
 ### 6. Fonctions de base
 Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). Name each of these findings:
 - an item marked Couvert or Ajouté whose exigence doesn't deliver it (e.g. "Gestion des utilisateurs" pointing at a login-only exigence);
 - a basic function the software plainly needs that the review doesn't list;
 - front-office data (displayed or collected) that no exigence manages from the back office;
-- a functional exigence without an `espace`;
 - a missing review.
+
+A missing or invalid field (`espace`, `objectifs`, `Déclencheur`, `priorite`, `lot`) is `cdc check`'s, not yours: skip it.
 Items the user confirmed out of scope aren't findings.
 
 ### 7. Sécurité dès la conception
@@ -57,7 +61,7 @@ Read `kb/cdc/securite.md` (`Analyse de sécurité`). A process handling sensitiv
 ### 8. Conformité juridique
 Read `kb/cdc/juridique.md` (`Analyse juridique`). Name each of these findings: a process collecting personal data with no line in the register (purpose, legal basis, retention); a right of the people (access, erasure, portability…) with no exigence that delivers it; an AI feature with no AI Act classification; a legal constraint worded so it can't be tested; a regulation marked « incertain » with no open question. Obligations the user dropped with a reason aren't findings. A missing analysis is itself a finding.
 
-Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it.
+Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it. A value restated in several files is one finding listing every copy, not one per file.
 
 ## Context Diet
 
@@ -82,7 +86,7 @@ You never write to the KB. You report; the orchestrating skill (`contestation`) 
 
 ## Output
 
-Return this structure exactly:
+Return this structure exactly. Every finding line starts with its `[gravité, origine]` — e.g. `- [bloquante, texte] [Exigence A] vs [Exigence B]: …`:
 
 ```
 ## Contradictions
@@ -114,7 +118,7 @@ Return this structure exactly:
 - [If none or no `## Objectifs mesurables` on file: "Aucune" / "Non évalué — pas d'objectifs mesurables enregistrés"]
 
 ## Verdict
-[Aucune anomalie / Anomalies trouvées — N contradiction(s), N angle(s) mort(s), N hypothèse(s), N risque(s), N fonction(s) de base, N point(s) de sécurité, N exigence(s) hors objectifs]
+[Aucune anomalie / Anomalies trouvées — N bloquante(s), N mineure(s) — N contradiction(s), N angle(s) mort(s), N hypothèse(s), N risque(s), N fonction(s) de base, N point(s) de sécurité, N exigence(s) hors objectifs]
 ```
 
 ## Project Memory

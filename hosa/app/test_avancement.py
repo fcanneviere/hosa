@@ -86,13 +86,20 @@ class Check(unittest.TestCase):
         k = kb({"cdc/securite.md": "---\ntype: Analyse de sécurité\nstatus: draft\n---\n## Choix validés\n- x\n"})
         self.assertEqual(av.check(k, "securite", None), ["`kb/cdc/securite.md` n'a pas sa section `## Menaces et mesures`"])
 
-    def test_relecture_and_redaction_wait_for_open_anomalies(self):
+    def test_relecture_and_redaction_wait_for_open_bloquantes_only(self):
         rel = ("---\ntype: Revue Relecture\n---\n## Anomalies\n- A1 — [x](x.md) § Règles — flou — → redaction — corrigée\n"
-               "- A2 — [x](x.md) § Cas — manque — → redaction — ouverte\n- A3 — [y](y.md) — besoin — → interview — ouverte\n")
+               "- A2 [p1, bloquante, texte] — [x](x.md) § Cas — manque — → redaction — ouverte\n"
+               "- A3 [p1, bloquante, texte] — [y](y.md) — besoin — → interview — ouverte\n"
+               "- A4 [p1, mineure, texte] — [x](x.md) § Glossaire — synonyme — → redaction — ouverte\n")
         k = kb({"cdc/relecture.md": rel, "cdc/x.md": "---\ntype: Exigence\nstatus: draft\n---\n",
                 "project/cahier-des-charges.md": "---\ntype: Cahier des charges\n---\n"})
-        self.assertEqual(av.check(k, "relecture", None), ["anomalies encore `ouverte` dans `kb/cdc/relecture.md` : A2, A3"])
-        self.assertEqual(av.check(k, "redaction", None), ["anomalies → redaction encore `ouverte` dans `kb/cdc/relecture.md` : A2"])
+        self.assertEqual(av.check(k, "relecture", None), ["`cdc` : anomalies bloquantes encore `ouverte` : A2, A3"])
+        self.assertEqual(av.check(k, "redaction", None), ["`cdc` : anomalies bloquantes → redaction encore `ouverte` : A2"])
+        (k / "cdc" / "relecture.md").write_text(rel.replace("texte] — [x](x.md) § Cas — manque — → redaction — ouverte",
+                                                            "texte] — [x](x.md) § Cas — manque — → redaction — corrigée")
+                                                .replace("→ interview — ouverte", "→ interview — corrigée"), encoding="utf-8")
+        self.assertEqual(av.check(k, "relecture", None), [])  # A4, a mineure still open, holds nothing
+        self.assertEqual(av.check(k, "redaction", None), [])
 
     def test_donnees_needs_an_origin_per_data_item(self):
         ex = ("---\ntype: Exigence\nstatus: stable\n---\n## Données en entrée\n- L'adresse — origine : saisie (par un parent)\n"

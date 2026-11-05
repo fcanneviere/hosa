@@ -76,7 +76,7 @@ Les agents d'exécution (`hosa-developer`, `hosa-implementer`, `hosa-tester`, `h
 
 Hosa tient un **plan d'avancement** (`.hosa/kb/project/avancement.md`). Si une session s'arrête (limite atteinte, coupure), la suivante reprend à l'étape, au ticket et à la tâche exacts. Il refuse aussi de sauter une étape sans ton accord.
 
-Une étape n'est marquée faite qu'avec sa preuve dans la KB. Par exemple : pas de relecture faite avec une anomalie encore ouverte, pas de contestation faite sans exigences signées, pas de backlog fait sans tickets complets. Quand une étape renvoie du travail en arrière (la relecture vers la rédaction, la QA vers le développement…), le plan note la boucle et compte ses tours. Après deux tours sans sortie propre, c'est toi qui décides de la suite. Les étapes et leurs boucles sont décrites dans un seul fichier, `skills/status/scripts/pipeline.json`.
+Une étape n'est marquée faite qu'avec sa preuve dans la KB. Par exemple : pas de relecture faite avec une anomalie bloquante encore ouverte, pas de contestation faite sans exigences signées, pas de backlog fait sans tickets complets. Quand une étape renvoie du travail en arrière (la relecture vers la rédaction, la QA vers le développement…), le plan note la boucle et compte ses tours. Seule une anomalie bloquante fait une boucle : une anomalie mineure (un mot, une description en retard) se corrige en une fois. Chaque anomalie note aussi sa passe et son origine, et `cdc mesure` les compte : on voit si les corrections créent de nouveaux défauts. Après deux tours sans sortie propre, c'est toi qui décides de la suite. Les étapes et leurs boucles sont décrites dans un seul fichier, `skills/status/scripts/pipeline.json`.
 
 ### Le dépôt git
 
@@ -152,3 +152,4 @@ Ses dépendances Python s'installent toutes seules, en arrière-plan, à la prem
 
 - Les tests : `node --test hooks/*.test.js` et, dans `hosa/app`, `python -m unittest`. Ils tournent aussi sur GitHub à chaque push.
 - Les règles communes à tous les skills et agents sont dans `skills/using-hosa/SKILL.md` ; le standard des retours dans `skills/retours/SKILL.md`.
+- Les règles de conception de Hosa (graphe des étapes, boucles bornées et vérifiables) sont dans `CLAUDE.md`.

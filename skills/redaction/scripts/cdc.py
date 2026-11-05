@@ -3,6 +3,9 @@
 
   cdc.py check <kb-dir> [--json]   list the holes; exit 1 if there is any
   cdc.py assemble <kb-dir>         write kb/project/cahier-des-charges.md, holes included
+  cdc.py revue <kb-dir> [--route R] the anomalies of kb/cdc/relecture.md: exit 1 on a badly
+                                   tagged one or a `bloquante` still `ouverte` (routed → R when given)
+  cdc.py mesure <kb-dir>           the anomalies counted by pass, gravity and origin
 
 The fiches stay the source (kb/cdc/, kb/project/identity.md, kb/personnas/):
 the document is regenerated from them, never edited by hand. A hole is a cell of
@@ -10,7 +13,12 @@ a completeness matrix left empty — an objective no exigence serves, an exigenc
 with no priority or lot, a state with no way out, a right nobody decided, an open
 question. `contestation` signs nothing while `check` finds one.
 
-Exit: 0 complete (or document written), 1 holes (check), 2 bad invocation. Stdlib only.
+An anomaly line is `- A12 [p2, bloquante, correction] — … — → redaction — ouverte`:
+its pass (`p<n>` relecture, `c<n>` contestation), its gravity (only a `bloquante`
+holds a stage and sends work back) and its origin (`texte` was there at the first
+read, `correction` came with a fix, `regle-hosa` is Hosa's rule, not the project's).
+
+Exit: 0 complete (or document written), 1 holes (check, revue), 2 bad invocation. Stdlib only.
 """
 from __future__ import annotations
 
@@ -26,6 +34,13 @@ PRIORITES = ["indispensable", "important", "souhaitable"]
 NATURES = {"processus", "nfr", "contrainte"}
 TRANSVERSE = "aucun — exigence transverse"
 CONTRAINTE_TAGS = {"juridique", "securite", "rgpd"}
+# `objectifs: [obligation]`: imposed by the law, security or the basics of software, not by a business objective
+OBLIGATION = "obligation"
+OBLIGATION_TAGS = CONTRAINTE_TAGS | {"fondamentaux", "socle-comptes"}
+ESPACES = {"front-office", "back-office", "hors-application"}
+GRAVITES = ("bloquante", "mineure")
+ORIGINES = ("texte", "correction", "regle-hosa")
+ROUTES = ("redaction", "interview", "utilisateur")
 OUT = "project/cahier-des-charges.md"
 LINK = re.compile(r"\]\(([^)#\s:]+\.md)(#[^)]*)?\)")
 
@@ -204,11 +219,17 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
             for target in LINK.findall(get(e.secs, "Déclencheur")):
                 if not (e.path.parent / target[0]).is_file():
                     hole("chaîne des processus", where, f"déclencheur vers une fiche absente : {target[0]}")
+            espace = set(as_list(e.fm.get("espace", "")))
+            if not espace or not espace <= ESPACES or ("hors-application" in espace and len(espace) > 1):
+                hole("espaces", where, "`espace` absent ou invalide : front-office et/ou back-office, ou hors-application seul")
             cited = as_list(e.fm.get("objectifs", ""))
             if not e.transverse and not cited:
                 hole("traçabilité", where, "ne sert aucun objectif (`objectifs` vide)")
             for oid in cited:
-                if oid in served:
+                if oid == OBLIGATION:
+                    if not e.tags & OBLIGATION_TAGS:
+                        hole("traçabilité", where, "`obligation` sans tag juridique, securite, rgpd ou fondamentaux : citer l'objectif servi")
+                elif oid in served:
                     served[oid].append(e.slug)
                 elif objs:
                     hole("traçabilité", where, f"objectif inconnu : {oid}")
@@ -276,6 +297,64 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
             if m:
                 hole("questions ouvertes", m.group(1), m.group(2).lstrip("—: ")[:140])
     return found
+
+
+# --- review anomalies ----------------------------------------------------------
+
+def anomalies(d: dict) -> list[dict]:
+    """The `- A<n> [passe, gravité, origine] — …` lines of `kb/cdc/relecture.md` § Anomalies."""
+    rel = d["relecture"]
+    out = []
+    for line in (get(rel.secs, "Anomalies") if rel else "").splitlines():
+        m = re.match(r"^\s*-\s*(A\d+)\b\s*(?:\[([^\]]*)\])?(.*)$", line)
+        if not m:
+            continue
+        tag = [x.strip() for x in m.group(2).split(",")] if m.group(2) is not None else []
+        valid = (len(tag) == 3 and re.fullmatch(r"[pc]\d+", tag[0]) is not None
+                 and tag[1] in GRAVITES and tag[2] in ORIGINES)
+        rest = m.group(3)
+        out.append({"id": m.group(1), "passe": tag[0] if valid else "", "gravite": tag[1] if valid else "",
+                    "origine": tag[2] if valid else "", "tagged": bool(tag), "valid": valid,
+                    "ouverte": re.search(r"—\s*ouverte\s*$", rest) is not None,
+                    "route": next((r for r in ROUTES if f"→ {r}" in rest), "")})
+    return out
+
+
+def revue(found: list[dict], route: str | None = None) -> list[str]:
+    """What holds the stage: a tag missing or wrong, a rule of gravity broken, a `bloquante` still open.
+    An untagged open anomaly counts as `bloquante`; an untagged closed one is history, left alone."""
+    blocking = [a["id"] for a in found if a["ouverte"] and a["gravite"] != "mineure"
+                and (route is None or a["route"] == route)]
+    if route is not None:
+        return [f"anomalies bloquantes → {route} encore `ouverte` : {', '.join(blocking)}"] if blocking else []
+    gaps = []
+    for a in found:
+        if (a["ouverte"] or a["tagged"]) and not a["valid"]:
+            gaps.append(f"{a['id']} : sans `[passe, gravité, origine]` valide (ex. `[p1, bloquante, texte]`)")
+        elif a["gravite"] == "mineure" and a["route"] != "redaction":
+            gaps.append(f"{a['id']} : une `mineure` va → redaction ; s'il manque une information ou une décision, elle est `bloquante`")
+        elif a["gravite"] == "mineure" and a["origine"] == "texte" and int(a["passe"][1:]) > 1:
+            gaps.append(f"{a['id']} : passe de reprise {a['passe']} : un passage déjà relu (`texte`) ne donne qu'une `bloquante`")
+    if blocking:
+        gaps.append(f"anomalies bloquantes encore `ouverte` : {', '.join(blocking)}")
+    return gaps
+
+
+def mesure(found: list[dict]) -> str:
+    """One row per pass: how many anomalies, how grave, where they came from — the loop above the loop."""
+    rows: dict[str, dict[str, int]] = {}
+    for a in found:
+        r = rows.setdefault(a["passe"] or "non classées", {})
+        for k in ("total", a["gravite"], a["origine"], "ouverte" if a["ouverte"] else ""):
+            if k:
+                r[k] = r.get(k, 0) + 1
+    order = sorted(rows, key=lambda k: (k == "non classées", k[:1] != "p", int(k[1:]) if k[1:].isdigit() else 0))
+    cols = ["total", *GRAVITES, *ORIGINES, "ouverte"]
+    out = ["| Passe | Anomalies | Bloquantes | Mineures | Texte | Correction | Règle Hosa | Ouvertes |",
+           "|---|---|---|---|---|---|---|---|"]
+    out += [f"| {k} | " + " | ".join(str(rows[k].get(c, 0)) for c in cols) + " |" for k in order]
+    out.append("| **Total** | " + " | ".join(str(sum(r.get(c, 0) for r in rows.values())) for c in cols) + " |")
+    return "\n".join(out)
 
 
 # --- assembling --------------------------------------------------------------
@@ -475,15 +554,23 @@ generated: {{ by: process:hosa-cdc, at: {now} }}
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Assemble the cahier des charges and check its completeness.")
-    ap.add_argument("command", choices=["check", "assemble"])
+    ap.add_argument("command", choices=["check", "assemble", "revue", "mesure"])
     ap.add_argument("kb", type=Path)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--route", choices=ROUTES)
     a = ap.parse_args(argv)
     kb = a.kb.resolve()
     if not (kb / "cdc").is_dir():
         print(f"error: {a.kb} has no cdc/ bundle", file=sys.stderr)
         return 2
     d = load(kb)
+    if a.command == "revue":
+        gaps = revue(anomalies(d), a.route)
+        print("\n".join(gaps) if gaps else "Revue conforme : aucune anomalie bloquante ouverte.")
+        return 1 if gaps else 0
+    if a.command == "mesure":
+        print(mesure(anomalies(d)))
+        return 0
     found = holes(d, kb)
     if a.command == "assemble":
         (kb / OUT).write_text(assemble(d, kb, found), encoding="utf-8")

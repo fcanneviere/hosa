@@ -18,10 +18,14 @@ hosa-key-user) sur les points faibles connus
 Passe 2 — hosa-challenger audite l'ensemble de kb/cdc/ +
 kb/personnas/, indépendamment
         ↓
-Anomalies (l'une ou l'autre passe) → route vers redaction ou
-interview → reboucle relecture → contestation
+Anomalies (l'une ou l'autre passe) → kb/cdc/relecture.md,
+tour c<n>, avec gravité et origine
         ↓
-Propre sur les deux passes → demande validation finale
+Bloquantes → route vers redaction ou interview → reboucle
+relecture → contestation
+Mineures seules → redaction les corrige en une fois, sans boucle
+        ↓
+Aucune bloquante sur les deux passes → demande validation finale
 à l'utilisateur
         ↓ oui
 PO passe les exigences concernées en status: stable +
@@ -46,17 +50,21 @@ The PO always does its own quick pass over `kb/cdc/` first, looking for any need
 
 ## Step 2: `hosa-challenger` Independent Audit
 
-Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md`, `juridique.md`, `securite.md`, `modele-metier.md` and `decisions.md` included), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists — never `kb/project/cahier-des-charges.md`, which repeats the fiches. On a loop coming back from Step 3, give it only the exigences changed since its last report (files of `kb/cdc/` modified after its `generated.at`, plus `git log` on `hosa-kb`) and that report: it re-audits those and the exigences linked to them, and says what it did not re-read. Take its verdict and findings as-is — don't pre-filter them before showing the user.
+Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md`, `juridique.md`, `securite.md`, `modele-metier.md`, `decisions.md` and `relecture.md` included — what `relecture` found is not found again), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists — never `kb/project/cahier-des-charges.md`, which repeats the fiches. On a loop coming back from Step 3, give it only the exigences changed since its last report (files of `kb/cdc/` modified after its `generated.at`, plus `git log` on `hosa-kb`) and that report: it re-audits those and the exigences linked to them, and says what it did not re-read. Take its verdict and findings as-is — don't pre-filter them before showing the user.
 
 ## Step 3: Route Anomalies
 
-Combine anything from Step 1 (needs that didn't hold up) and Step 2 (challenger's findings). For each: route to `redaction` (needs rewriting with information already available) or `interview` (genuinely missing information) — except an "exigence hors objectifs" finding, which routes to the user directly: confirm whether it's genuinely out of scope (drop it, or move it to `## Non-objectifs`) or whether an objective is simply missing from `kb/project/identity.md` (add it via `hosa`, then re-check clean). After fixes, re-run `relecture` then `contestation` again — repeat until both passes are clean. Record each round in the plan before routing: `back contestation interview --detail "<findings> : <one line>"` when one needs information never gathered (it reopens `interview`, `redaction`, `relecture`), otherwise `back contestation redaction --detail "…"` (it reopens `redaction`, `relecture`).
+Combine anything from Step 1 (needs that didn't hold up) and Step 2 (challenger's findings). For each: route to `redaction` (needs rewriting with information already available) or `interview` (genuinely missing information) — except an "exigence hors objectifs" finding, which routes to the user directly: confirm whether it's genuinely out of scope (drop it, or move it to `## Non-objectifs`) or whether an objective is simply missing from `kb/project/identity.md` (add it via `hosa`, then re-check clean).
+
+Write each one into `kb/cdc/relecture.md` § Anomalies, after the last number, in its format: `- A<n> [c<k>, <gravité>, <origine>] — …` — `c1` for this skill's first round, `c2` for the next. The gravity and the origin are the challenger's (the PO's for Step 1, with `relecture` Step 4's definitions); on `c2` and later, a new finding in a passage no fix touched is recorded only if `bloquante`. A `regle-hosa` finding also gets its line in `kb/retours-hosa/journal.md`. Then run `<hosa> cdc revue "<root>/.hosa/kb"` and fix the lines it refuses. The findings now survive a cut session, and `redaction` works from that list.
+
+Route by gravity — only a `bloquante` makes a loop. `bloquante` findings open → record the round in the plan: `back contestation interview --detail "<A-numbers> : <one line>"` when one needs information never gathered (it reopens `interview`, `redaction`, `relecture`), otherwise `back contestation redaction --detail "…"` (it reopens `redaction`, `relecture`); `redaction` fixes the open `mineure` ones in the same pass. After fixes, re-run `relecture` then `contestation` again — repeat until neither pass finds a `bloquante`. Only `mineure` findings → no `back`, no new `relecture`: run `redaction` in its « Fixing a relecture » mode on them, without its `avancement.py` calls, then go to Step 4.
 
 `back` refused (exit 1: a second full loop already found anomalies) → stop looping and tell the user directly: report what's still failing and ask whether to keep iterating (`back … --force`) or scope the affected exigence(s) down.
 
 ## Step 4: Final Sign-Off
 
-Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie", prove completeness:
+Once Step 1 raised nothing new and `hosa-challenger` reports no `bloquante` (its `mineure` ones fixed, Step 3), prove completeness:
 
 ```bash
 <hosa> cdc check "<root>/.hosa/kb"
@@ -85,11 +93,14 @@ This skill doesn't commit. Report what changed (including any `status`/`verified
 [Its full report]
 
 ## Anomalies à router
-- [Exigence] → [redaction / interview / utilisateur (hors objectifs)] — [pourquoi]
+- [A-number] [c<k>, gravité, origine] [Exigence] → [redaction / interview / utilisateur (hors objectifs)] — [pourquoi]
 - [If none: "Aucune"]
 
 ## Complétude
 `cdc check` : [complet / N trou(s) — par matrice]
+
+## Mesure
+[the table of `<hosa> cdc mesure "<root>/.hosa/kb"`, relecture and contestation passes together]
 
 ## Verdict
 [Propre, en attente de validation de `kb/project/cahier-des-charges.md` / N anomalie(s) ou trou(s) à corriger / Validé — N exigence(s) passée(s) en stable]

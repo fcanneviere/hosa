@@ -34,7 +34,7 @@ Manual: `/redaction`. Auto: immediately after `interview` finishes, or "rédige 
 
 ## Step 1: Get the Notes
 
-**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut session restarts at the first one not marked. Over 15 anomalies, dispatch one pass per theme instead of one long pass: a pass is cut at 150 tool calls. Then chain on `relecture`, not `fondamentaux`.
+**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut session restarts at the first one not marked. Over 15 anomalies, dispatch one pass per theme instead of one long pass: a pass is cut at 150 tool calls. A fix that changes a value (threshold, list, message) changes it in its owner fiche, and replaces any copy with a link (« One source per fact », Step 2) — a copy left behind is the next pass's anomaly. Then chain on `relecture`, not `fondamentaux`. Called by `relecture` or `contestation` for `mineure` anomalies only → skip this skill's `avancement.py` calls (the stage is not reopened) and return to the caller, not to `relecture`.
 
 If `interview` just ran in this session, use its notes directly. Otherwise ask: "Quelles sont les notes à rédiger ?" — accept whatever structure the user provides; you don't require `interview`'s exact format.
 
@@ -52,11 +52,11 @@ type: Exigence
 title: <nom du processus>
 description: "<une ligne : ce que ce processus accomplit>"
 tags: []
-espace: [front-office]   # [back-office], ou [front-office, back-office]
+espace: [front-office]   # [back-office], [front-office, back-office], ou [hors-application]
 domaine: "<domaine métier>"   # ex. « Listes et courses », « Foyer et comptes », « Exploitation du service »
 priorite: indispensable   # important | souhaitable
 lot: 1
-objectifs: [O1]   # les objectifs de kb/project/identity.md que ce processus sert
+objectifs: [O1]   # les objectifs de kb/project/identity.md que ce processus sert, ou [obligation]
 status: draft
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
@@ -88,15 +88,17 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - [<persona>](../personnas/<slug>.md) : <besoin précis>
 ```
 
-`espace` says where the process lives: **front-office** (the application's end users — clients, citizens, members…), **back-office** (the people who run it — administrators, staff, operators, moderators), or both when a process has a user-facing side and a management side. Every front-office process implies back-office work (who creates, validates, moderates, corrects or deletes what end users see or submit): if the notes don't say who does it, ask — never leave the back-office side implicit.
+`espace` says where the process lives: **front-office** (the application's end users — clients, citizens, members…), **back-office** (the people who run it — administrators, staff, operators, moderators), or both when a process has a user-facing side and a management side — or **hors-application**, alone, for a process with no screen (a scheduled job, an operator's script, a procedure): `interface` draws no page for it. Every front-office process implies back-office work (who creates, validates, moderates, corrects or deletes what end users see or submit): if the notes don't say who does it, ask — never leave the back-office side implicit.
 
 **Frontmatter of the cahier des charges.** `cdc check` (`relecture`) counts a hole for each missing one:
 - `domaine` groups the processes of one business area in the map of the document; reuse an existing domain before creating one.
 - `priorite` and `lot` are the user's choices, gathered by `interview`: `indispensable` (without it the product fails its objectives), `important` (expected, can wait for a later lot), `souhaitable` (a plus). What the project will not do is a `## Non-objectifs` line, not a priority. Lot 1 is the first release that reaches the objectives. Missing in the notes → ask (one numbered question for all the exigences, a proposed table), never guess.
-- `objectifs` lists the `O1`… of `kb/project/identity.md` § Objectifs mesurables this process serves. A process that answers a persona need and serves none → ask: an objective is missing, or the process is out of scope. Transverse exigences leave it out.
+- `objectifs` lists the `O1`… of `kb/project/identity.md` § Objectifs mesurables this process serves. A process that answers a persona need and serves none → ask: an objective is missing, or the process is out of scope. A process the law, security or the basics impose (`juridique`, `securite`, `rgpd`, `fondamentaux` tags) writes `objectifs: [obligation]` when it serves no business objective — never a question to the user; `cdc check` refuses `obligation` without one of those tags. Transverse exigences leave it out.
 - `nature` (`processus` | `nfr` | `contrainte`) only when the default is wrong: `tags: [nfr]` → nfr; `Aucun — exigence transverse.` with a `juridique`/`securite` tag → contrainte; otherwise processus. Ex. : a confirmation e-mail written by `securite` is still a process → `nature: processus`.
 
 `## Déclencheur` makes the chain of processes readable: the document orders each domain by these links. A process with no trigger has no place in the chain — ask what starts it.
+
+**One source per fact.** A value — a threshold, a duration, a limit, a closed list, the text of a message — is written once, in the fiche that owns it (the exigence whose rule it is; a limit shared by several processes, in the constraint that sets it). Every other place links to it: `voir [<titre>](<slug>.md) § <section>`. That holds for the other exigences, and for `glossaire.md`, `modele-metier.md`, `securite.md`, `juridique.md` and `identity.md`: a glossary entry defines the word, not its values; a notification line names the event, not its limit. A copy is fixed in one place and forgotten in the others — each `relecture` pass then finds the next one.
 
 Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from interview notes.
 

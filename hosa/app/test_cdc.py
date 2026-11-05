@@ -159,11 +159,77 @@ class Completeness(unittest.TestCase):
             rel = RELECTURE + "| Les parents | Dupliquer une liste | Non couvert |\n"
             self.assertIn("non couvert : Dupliquer une liste", holes(kb(d, cdc__relecture=rel)))
 
+    def test_obligation_serves_only_a_legal_security_or_basic_exigence(self):
+        with tempfile.TemporaryDirectory() as d:
+            legal = EXIGENCE.replace("tags: []\n", "").replace("title: Envoyer la liste", "title: Purge\ntags: [juridique]")
+            found = holes(kb(d, cdc__purge=legal.replace("objectifs: [O1]", "objectifs: [obligation]")))
+            self.assertEqual(found, [])
+            found = holes(kb(d, cdc__purge=EXIGENCE.replace("objectifs: [O1]", "objectifs: [obligation]")))
+            self.assertIn("`obligation` sans tag juridique, securite, rgpd ou fondamentaux : citer l'objectif servi", found)
+
+    def test_process_needs_a_valid_espace(self):
+        with tempfile.TemporaryDirectory() as d:
+            bad = "`espace` absent ou invalide : front-office et/ou back-office, ou hors-application seul"
+            for espace in ("", "espace: [boutique]\n", "espace: [hors-application, back-office]\n"):
+                text = EXIGENCE.replace("espace: [front-office]\n", espace)
+                self.assertIn(bad, holes(kb(d, cdc__envoyer_la_liste=text)), espace)
+            text = EXIGENCE.replace("espace: [front-office]", "espace: [hors-application]")
+            self.assertEqual(holes(kb(d, cdc__envoyer_la_liste=text)), [])
+
     def test_nfr_needs_target_and_measure(self):
         with tempfile.TemporaryDirectory() as d:
             nfr = "---\ntype: Exigence\ntitle: Perf\ntags: [nfr]\ndomaine: Q\npriorite: important\nlot: 1\n---\n## Exigence\n- 1 s.\n"
             self.assertIn("`## Mesure` absent ou vide : cible chiffrée et façon de la vérifier",
                           holes(kb(d, cdc__perf=nfr)))
+
+
+def review(tmp: str, lines: str, route: str | None = None) -> list[str]:
+    root = kb(tmp, cdc__relecture=RELECTURE.replace("## Couverture", f"## Anomalies\n{lines}\n## Couverture"))
+    return cdc.revue(cdc.anomalies(cdc.load(root)), route)
+
+
+class Review(unittest.TestCase):
+    def test_only_an_open_bloquante_holds(self):
+        with tempfile.TemporaryDirectory() as d:
+            lines = ("- A1 [p1, bloquante, texte] — [x](x.md) § Règles — flou — → redaction — corrigée\n"
+                     "- A2 [p1, mineure, texte] — [x](x.md) § Glossaire — synonyme — → redaction — ouverte\n")
+            self.assertEqual(review(d, lines), [])
+            lines += "- A3 [p1, bloquante, texte] — [y](y.md) — besoin — → interview — ouverte\n"
+            self.assertEqual(review(d, lines), ["anomalies bloquantes encore `ouverte` : A3"])
+            self.assertEqual(review(d, lines, "redaction"), [])
+            self.assertEqual(review(d, lines, "interview"), ["anomalies bloquantes → interview encore `ouverte` : A3"])
+
+    def test_an_open_anomaly_needs_its_tag_a_closed_untagged_one_is_history(self):
+        with tempfile.TemporaryDirectory() as d:
+            lines = ("- A1 — [x](x.md) § Règles — flou — → redaction — corrigée\n"
+                     "- A2 — [x](x.md) § Cas — manque — → redaction — ouverte\n"
+                     "- A3 [p1, grave, texte] — [x](x.md) § Cas — manque — → redaction — corrigée\n")
+            found = review(d, lines)
+            self.assertEqual(found[0], "A2 : sans `[passe, gravité, origine]` valide (ex. `[p1, bloquante, texte]`)")
+            self.assertTrue(found[1].startswith("A3 : sans"))
+            self.assertEqual(found[2], "anomalies bloquantes encore `ouverte` : A2")  # untagged and open: held as bloquante
+
+    def test_a_mineure_goes_to_redaction_and_a_repass_reads_only_the_fixes(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIn("une `mineure` va → redaction",
+                          review(d, "- A1 [p1, mineure, texte] — [x](x.md) — choix — → utilisateur — ouverte\n")[0])
+            self.assertIn("passe de reprise p2",
+                          review(d, "- A1 [p2, mineure, texte] — [x](x.md) — virgule — → redaction — ouverte\n")[0])
+            self.assertEqual(review(d, "- A1 [p2, mineure, correction] — [x](x.md) — copie — → redaction — ouverte\n"
+                                       "- A2 [c1, mineure, texte] — [x](x.md) — mot — → redaction — ouverte\n"), [])
+
+    def test_mesure_counts_by_pass_gravity_and_origin(self):
+        with tempfile.TemporaryDirectory() as d:
+            lines = ("- A1 — [x](x.md) — vieux — → redaction — corrigée\n"
+                     "- A2 [p1, bloquante, texte] — [x](x.md) — a — → redaction — corrigée\n"
+                     "- A3 [p2, mineure, correction] — [x](x.md) — b — → redaction — ouverte\n"
+                     "- A4 [p2, bloquante, regle-hosa] — [x](x.md) — c — → utilisateur — ouverte\n")
+            root = kb(d, cdc__relecture=RELECTURE.replace("## Couverture", f"## Anomalies\n{lines}\n## Couverture"))
+            table = cdc.mesure(cdc.anomalies(cdc.load(root))).splitlines()
+            self.assertEqual(table[2], "| p1 | 1 | 1 | 0 | 1 | 0 | 0 | 0 |")
+            self.assertEqual(table[3], "| p2 | 2 | 1 | 1 | 0 | 1 | 1 | 2 |")
+            self.assertEqual(table[4], "| non classées | 1 | 0 | 0 | 0 | 0 | 0 | 0 |")
+            self.assertEqual(table[5], "| **Total** | 4 | 2 | 1 | 1 | 1 | 1 | 2 |")
 
 
 class Assemble(unittest.TestCase):
