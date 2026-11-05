@@ -65,7 +65,7 @@ Every question that needs an answer, and every `## Open Questions` item an agent
 - **Mark blocking questions** "(bloquante)": the work stops until it's answered. Non-blocking questions say what you do by default if there's no answer.
 - **One question = one decision.** Never two questions in one item.
 - The user can answer in one line: **"Q1 a, Q2 b, Q3 : 5"**. Accept that form, and partial answers: re-ask only what's missing, with its original number.
-- **Relaying an agent's questions:** the skill renumbers them into its own Q1…Qn for the user, keeps the mapping, and passes each answer back to the right agent with the agent's original number. Every one is relayed: never drop or merge one. A report that looks cut → read the file the agent wrote before saying so.
+- **Relaying an agent's questions:** the skill renumbers them into its own Q1…Qn for the user, keeps the mapping, and passes each answer back to the right agent with the agent's original number. Every one is relayed: never drop or merge one. A report that looks cut → read the file the agent wrote before saying so: its `## Open Questions` holds the full text (section 4). Resume the agent to have it resent only when no file holds them.
 
 ## 3b. Tests a person must run — numbered T1, T2…
 
@@ -98,6 +98,7 @@ Réponds en une ligne : « T1 OK, T2 KO : <ce que tu vois> ».
 An agent's report keeps its own `## Output Format` sections, and applies everything above to their content. In addition:
 - It opens with **`## En bref`**: one sentence, the result (done / blocked on what / failed on what).
 - `## Open Questions` uses the Q-numbered format of section 3, or "None".
+- **An agent that writes a KB file in this run copies its open questions into it**, under `## Open Questions`, word for word with the same numbers: the report is read once and can arrive cut (a compressing proxy, a lost hand-back), the file stays. Once an answer comes back, the agent applies it and removes the item; an empty section goes. A file never keeps an answered question.
 - Sections with nothing to say read "None" — never omitted, never padded.
 - Tests a person must run go under `## Tests à faire par toi`, in the T-numbered format of section 3b.
 
