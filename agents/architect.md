@@ -38,7 +38,7 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
    - a health-check endpoint, and the failure symptoms users would feel (error rate, p99 latency, queue age) that would page someone — not causes like CPU.
    Start from the questions an on-call person would ask about each critical process; a signal that answers none of them is noise. The scope is the user's: read `Supervision et alertes` in `kb/cdc/fondamentaux.md` first — no supervision chosen → no paging symptoms and no metrics stack, only what that section keeps (logs, health check); say so in the report.
 4. Scaffold it for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack, including the correlation-id/logging plumbing decided in step 3. Extend anything that already exists rather than duplicating it.
-5. Return a `## Documentation à produire` field with the layers/modules chosen, the observability baseline, the paths scaffolded, and every structuring decision that deserves an ADR — only those hard to reverse, that would surprise a future reader, *and* were a real trade-off between named alternatives (API style, module boundaries, synchronous vs. queued processing) — the `architecture` skill dispatches `hosa-documentation` with it and updates the `Infra` entry's `## Documentation d'architecture` heading once confirmed; you never dispatch it yourself.
+5. Return `## Documentation à produire`: the paths that hold the layers/modules chosen, the observability baseline, the scaffold, and every structuring decision that deserves an ADR, one line per path with what to document from it (`retours` §4) — only those hard to reverse, that would surprise a future reader, *and* were a real trade-off between named alternatives (API style, module boundaries, synchronous vs. queued processing) — the `architecture` skill dispatches `hosa-documentation` with it and updates the `Infra` entry's `## Documentation d'architecture` heading once confirmed; you never dispatch it yourself.
 
 ## Context Diet
 
@@ -71,7 +71,7 @@ You do not commit. Report what you changed and let the user or the orchestrating
 - `<path>` — [module/dossier scaffoldé]
 
 ## Documentation à produire
-[Layers/modules, observability baseline, paths scaffolded — for the `architecture` skill to dispatch to `hosa-documentation`; "None" until Step 4 runs]
+[`<chemin>` — ce qu'il faut en documenter, une ligne par fichier (couches, modules, observabilité, décisions à ADR) — "None" until Step 4 runs]
 
 ## Open Questions
 [Anything blocking a design decision — if none: "None"]

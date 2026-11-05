@@ -24,8 +24,8 @@ Présente les options à l'utilisateur → il choisit
 Redispatch hosa-senior-dev avec le choix → il écrit la
 Stack Decision, retourne "Documentation à produire"
         ↓
-Dispatch hosa-documentation (Mode 1) avec ce que hosa-senior-dev
-rapporte
+Dispatch hosa-documentation (Mode 1) avec les chemins que
+hosa-senior-dev rapporte
         ↓
 Propose d'enchaîner sur `infra`
 ```
@@ -59,11 +59,11 @@ Present the options and trade-offs `hosa-senior-dev` returned. Wait for the user
 
 ## Step 4: Record the Decision
 
-Redispatch `hosa-senior-dev` with the user's choice for each category. It writes the `Stack Decision`(s) to `kb/stack/` and returns a `## Documentation à produire` field (category, choice, justification, options presented and rejected).
+Redispatch `hosa-senior-dev` with the user's choice for each category. It writes the `Stack Decision`(s) to `kb/stack/` and returns `## Documentation à produire`: the path of each `Stack Decision` written (it holds the choice, the justification and the options presented and rejected).
 
 ## Step 5: Dispatch Documentation
 
-Dispatch `hosa-documentation` (Mode 1) with what `hosa-senior-dev` returned under `## Documentation à produire` — it writes the matching ADR into the managed project. Wait for its confirmation before reporting the decision as fully recorded.
+Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-senior-dev` returned under `## Documentation à produire`, as they are (paths, `retours` §4) — it writes the matching ADR into the managed project. Wait for its confirmation before reporting the decision as fully recorded.
 
 ## No Commits
 

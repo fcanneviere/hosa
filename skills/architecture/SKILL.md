@@ -39,7 +39,7 @@ If it returns an Open Question (no `Infra` entry, missing CDC/stack/data structu
 
 ## Step 2: Dispatch Documentation
 
-Dispatch `hosa-documentation` (Mode 1) with what `hosa-architect` returned under `## Documentation à produire` (layers/modules chosen, observability baseline, paths scaffolded) — it writes the architecture documentation into the managed project. Wait for its confirmation and the path it wrote to.
+Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-architect` returned under `## Documentation à produire`, as they are: paths, and what to document from each (`retours` §4), never their content rewritten — it reads them and writes the architecture documentation into the managed project. Wait for its confirmation and the path it wrote to.
 
 ## Step 3: Update the `Infra` Entry
 

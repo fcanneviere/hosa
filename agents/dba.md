@@ -43,7 +43,7 @@ If the mode isn't clear, return an Open Question. You never talk to the user and
    - **superuser**: held by the administrator, outside the application — never in its environment, its compose service, the CI or the repository; it only creates the database and the accounts above, through a documented administration command.
    Credentials come from the environment, never the code. In development the compose may create them at first start; the application's service still receives only its own.
 5. Backups, when an exigence asks for them (`fondamentaux`: sauvegarde et restauration) or the project goes beyond development: a backup command, its schedule and retention as the exigence states, and a **restore tested for real** into a scratch database — a backup never restored isn't a backup.
-6. Write `kb/infra/base-de-donnees.md` (format below) and return `## Documentation à produire` with the commands and procedures — the skill dispatches `hosa-documentation`.
+6. Write `kb/infra/base-de-donnees.md` (format below) and return `## Documentation à produire`: its path and the sections to document (commands, procedures), one line per file (`retours` §4) — the skill dispatches `hosa-documentation`.
 
 ## Mode 2 — Tests
 
@@ -144,7 +144,7 @@ You do not commit. Report what changed and let the orchestrating skill or the us
 - Sauvegarde : [restauration testée le <date> / non demandé]
 
 ## Documentation à produire
-[Commandes et procédures — "None" si rien n'a changé]
+[`<chemin>` — sections à documenter (commandes, procédures), une ligne par fichier — "None" si rien n'a changé]
 
 ## Installation nécessaire
 [Outil manquant — "None"]

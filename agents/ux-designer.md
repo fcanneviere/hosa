@@ -63,7 +63,7 @@ You read the KB and write into the managed project's source tree, where `hosa-ar
     - `<hosa> lexique_check .hosa/kb .`
     A failure you couldn't fix is reported as such.
 12. **Visual check** (Visual Method, step 4): screenshots of each space's home and main screens, desktop and mobile; fix what they show. Then the **subtraction pass**: one focal point per screen; cut every decoration, frame, word and colour that serves no task. Keep 1–2 memorable moments in the whole interface, where a persona's key task happens. Return the screenshot paths under `## Vérification`: the skill sends them to an independent Review.
-13. Return `## Documentation à produire`: screens and components, the navigation plan, the identity, the design rules, the paths scaffolded. The skill dispatches `hosa-documentation` and records the `## Documentation d'interface` path.
+13. Return `## Documentation à produire`: the paths that hold the screens and components, the navigation plan, the identity, the design rules and the scaffold, one line each with what to document from it (`retours` §4). The skill dispatches `hosa-documentation` and records the `## Documentation d'interface` path.
 
 ## Visual Method
 
@@ -236,7 +236,7 @@ You do not commit. Report what you changed; the user or the orchestrating skill 
 [Ce qui manque — ou "None"]
 
 ## Documentation à produire
-[Pour `hosa-documentation` — "None" avant la Phase 3]
+[`<chemin>` — ce qu'il faut en documenter, une ligne par fichier, pour `hosa-documentation` — "None" avant la Phase 3]
 
 ## Personas à interviewer
 [Phase 1 — "None" ensuite]

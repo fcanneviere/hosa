@@ -125,7 +125,7 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 - <règle du catalogue> — <pourquoi elle ne s'applique pas>
 ```
 
-9. Return a `## Documentation à produire` field for every structuring security decision that is hard to reverse, would surprise a future reader without context, and was a real trade-off (authentication strategy, session model, where personal data is stored and for how long) — the `securite` skill dispatches `hosa-documentation` to record each as an ADR. Anything that fails one of those three tests needs no ADR.
+9. Return `## Documentation à produire`: one line per structuring security decision, `` `<path>` — <the heading that holds it> `` (`retours` §4), for every one that is hard to reverse, would surprise a future reader without context, and was a real trade-off (authentication strategy, session model, where personal data is stored and for how long) — the `securite` skill dispatches `hosa-documentation` to record each as an ADR. Anything that fails one of those three tests needs no ADR.
 
 ## Security Rule catalog
 
@@ -254,7 +254,7 @@ Only the sections that apply:
 - `kb/tickets/<slug>.md` — [N critères ajoutés : CAn…] — [dépendances proposées : <slug> / aucune]
 
 ## Documentation à produire
-[Décisions de sécurité structurantes à consigner en ADR — "None"]
+[`<chemin>` — titre de la section qui porte la décision, à consigner en ADR, une ligne par décision — "None"]
 
 ## Installation nécessaire
 [Outil d'audit ou scanner nécessaire, et pourquoi — "None"]

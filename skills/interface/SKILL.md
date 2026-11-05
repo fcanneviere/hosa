@@ -99,7 +99,7 @@ Don't move on to documentation with an incomplete or inconsistently named interf
 
 ## Step 5: Dispatch Documentation
 
-Dispatch `hosa-documentation` (Mode 1) with what `hosa-ux-designer` returned under `## Documentation à produire` — it writes the interface documentation into the managed project. Wait for its confirmation and the path it wrote to.
+Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-ux-designer` returned under `## Documentation à produire`, as they are (paths, `retours` §4) — it writes the interface documentation into the managed project. Wait for its confirmation and the path it wrote to.
 
 ## Step 6: Update the `Infra` Entry
 

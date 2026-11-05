@@ -39,7 +39,7 @@ You never talk to the user and never dispatch an agent; the skill relays your qu
 4. For each open category (language/framework, database, hosting), 2-3 options with their trade-offs and a recommendation. Every option respects the orientation the skill relays (open source / SaaS payant / mixte): open source means self-hostable in Docker with no subscription; a SaaS option states its monthly cost. Each option names its test framework, browser test tool and database migration tool — installed from day one by `hosa-infra`. When the cahier des charges has exigences tagged `socle-comptes`, each option also names its authentication library: the stack's mature, maintained one (the framework's own, or the reference library of its ecosystem), covering most of `socle-comptes.md` — sessions, password hashing, reset tokens, rate limiting, TOTP — and saying which socle rules it leaves to write. Account code written by hand instead is proposed only with a reason, and the choice then goes into `## Documentation à produire` as its own ADR. Stop; never decide for the user.
 
 **Record** (the user's choice relayed):
-5. The orientation in `kb/stack/orientation.md` (`type: Stack Decision`, `generated.by: human:<user>`) if not already there. One `Stack Decision` per newly decided category in `kb/stack/`. Never overwrite a fixed category — code or migrations may depend on it. Return `## Documentation à produire` per category: the choice, the reason, and every option presented, rejected ones included (it becomes an ADR).
+5. The orientation in `kb/stack/orientation.md` (`type: Stack Decision`, `generated.by: human:<user>`) if not already there. One `Stack Decision` per newly decided category in `kb/stack/`. Never overwrite a fixed category — code or migrations may depend on it. Return `## Documentation à produire`: the path of each `Stack Decision` written, one line each (`retours` §4). It holds the choice, the reason and every option presented, rejected ones included, under `## Options présentées` (it becomes an ADR).
 
 ## Verification
 
@@ -118,7 +118,7 @@ You do not commit. Report what you changed; the user or the orchestrating skill 
 - `kb/stack/verification-<slug>.md` — [verdict par plateforme]
 
 ## Documentation à produire
-[Catégorie, choix, raison, options présentées et écartées — ou "None"]
+[`<chemin du Stack Decision>` — catégorie, à consigner en ADR, une ligne par fichier — ou "None"]
 
 ## Open Questions
 [Q-numérotées — ou "None"]

@@ -37,7 +37,7 @@ Name the need and the environment: an `active` sprint → its `worktree` and `do
 Dispatch `hosa-dba` (`agents/dba.md`) with the need, the mode and the environment. Relay its returns:
 - **`## Installation nécessaire`** → dispatch `hosa-infra` (Mode 2), then redispatch `hosa-dba`.
 - **`## Open Questions` asking for a schema design change** → that's `hosa-data-engineer`'s: run `schema-db` for it, then redispatch `hosa-dba` to apply it.
-- **`## Documentation à produire`** → dispatch `hosa-documentation` (Mode 1) with it.
+- **`## Documentation à produire`** → dispatch `hosa-documentation` (Mode 1) with its lines, as they are (paths, `retours` §4).
 
 ## No Commits
 

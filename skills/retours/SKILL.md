@@ -99,6 +99,7 @@ An agent's report keeps its own `## Output Format` sections, and applies everyth
 - It opens with **`## En bref`**: one sentence, the result (done / blocked on what / failed on what).
 - `## Open Questions` uses the Q-numbered format of section 3, or "None".
 - **An agent that writes a KB file in this run copies its open questions into it**, under `## Open Questions`, word for word with the same numbers: the report is read once and can arrive cut (a compressing proxy, a lost hand-back), the file stays. Once an answer comes back, the agent applies it and removes the item; an empty section goes. A file never keeps an answered question.
+- **Between agents, paths, not content.** `## Documentation à produire` lists the files written, one line each: `` `<path>` — <what to document from it> ``, or "None". A fact the next agent needs that lives in no file (a choice, a rejected option, a reason) goes into the agent's KB file first. The skill passes these lines as they are, never the content rewritten: the next agent reads the sources. The report keeps only what the session acts on: the result, the questions, the needs, the paths written.
 - Sections with nothing to say read "None" — never omitted, never padded.
 - Tests a person must run go under `## Tests à faire par toi`, in the T-numbered format of section 3b.
 

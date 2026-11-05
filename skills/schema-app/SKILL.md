@@ -39,7 +39,7 @@ If it returns an Open Question:
 
 ## Step 2: Dispatch Documentation
 
-Dispatch `hosa-documentation` (Mode 1) with what `hosa-data-engineer` returned under `## Documentation à produire` (each entity's fields, types, origins, and the `Exigence` it traces back to) — it writes the data dictionary into the managed project. Wait for its confirmation and the path it wrote to.
+Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-data-engineer` returned under `## Documentation à produire`, as they are: the structures' paths (`retours` §4), never the fields rewritten — it reads each entity's fields, types, origins and source `Exigence` there and writes the data dictionary into the managed project. Wait for its confirmation and the path it wrote to.
 
 ## Step 3: Update the `Infra` Entry
 

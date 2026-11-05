@@ -41,7 +41,7 @@ If it returns an Open Question (no project path, no `Stack Decision` yet, Docker
 
 ### Step 2: Dispatch Documentation
 
-Dispatch `hosa-documentation` (Mode 1) with what `hosa-infra` returned under `## Documentation à produire` — it writes the installation documentation into the managed project. Wait for its confirmation before reporting the environment as fully in place.
+Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-infra` returned under `## Documentation à produire`, as they are (paths, `retours` §4) — it writes the installation documentation into the managed project. Wait for its confirmation before reporting the environment as fully in place.
 
 ## Mode 3 — Deployment
 
@@ -53,7 +53,7 @@ Any other agent, when it needs a server/framework/dependency it can't provision 
 
 1. Dispatch `hosa-infra` (Mode 2, `agents/infra.md`) with the requesting agent's name, what it needs, and why.
 2. If it returns an Open Question (conflicting `Stack Decision`, ambiguous mode) — relay it to the user, get the answer, redispatch.
-3. Once it confirms the piece is in place, dispatch `hosa-documentation` (Mode 1) with its `## Documentation à produire`.
+3. Once it confirms the piece is in place, dispatch `hosa-documentation` (Mode 1) with its `## Documentation à produire` lines, as they are.
 4. Redispatch the original requesting agent with the confirmation — it resumes the task that needed the installation.
 
 ## No Commits

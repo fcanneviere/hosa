@@ -41,7 +41,7 @@ If it returns an Open Question:
 
 ## Step 1b: Database Tooling
 
-Dispatch `hosa-dba` (Mode 1 Outillage, `agents/dba.md`): it applies the new migrations to the base environment, proves they roll back and re-apply, sets up or updates the documented commands (migrer, revenir en arrière, état, vérifier, réinitialiser), the application's least-privilege account and, when an exigence asks, backups with a tested restore — recorded in `kb/infra/base-de-donnees.md`. Relay its `## Installation nécessaire` to `hosa-infra`, its schema-design questions back to `hosa-data-engineer` (Step 1), and its `## Documentation à produire` to `hosa-documentation`. A migration it can't apply or reverse sends the work back to Step 1 — the stage isn't done until both agree.
+Dispatch `hosa-dba` (Mode 1 Outillage, `agents/dba.md`): it applies the new migrations to the base environment, proves they roll back and re-apply, sets up or updates the documented commands (migrer, revenir en arrière, état, vérifier, réinitialiser), the application's least-privilege account and, when an exigence asks, backups with a tested restore — recorded in `kb/infra/base-de-donnees.md`. Relay its `## Installation nécessaire` to `hosa-infra`, its schema-design questions back to `hosa-data-engineer` (Step 1), and its `## Documentation à produire` lines, as they are (paths), to `hosa-documentation`. A migration it can't apply or reverse sends the work back to Step 1 — the stage isn't done until both agree.
 
 ## Step 2: Update the `Infra` Entry
 

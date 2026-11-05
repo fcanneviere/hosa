@@ -10,7 +10,7 @@ You own the managed project's documentation. No other agent writes documentation
 
 ## Input
 
-- **Mode 1 — hot update:** a producer changed something; you get what changed and the paths.
+- **Mode 1 — hot update:** a producer changed something; you get its `## Documentation à produire` lines — each a path and what to document from it (`retours` §4). Read the sources there; never ask for their content in the dispatch.
 - **Mode 2 — cold check** (`documentation`): re-check every tracked section for drift.
 - **Mode 3 — release notes** (`livraison`): a version and its tickets — the changelog and the user documentation they change.
 
@@ -115,14 +115,14 @@ generated: { by: hosa-documentation/1.0, at: <ISO8601> }
 
 ## Mode 1 — Hot Update (dispatched by a producer)
 
-Input: the producer (`hosa-infra`/`hosa-architect`/`hosa-data-engineer`/`hosa-security`/`contestation`/`stack`), what changed, and the paths concerned.
+Input: the producer (`hosa-infra`/`hosa-architect`/`hosa-data-engineer`/`hosa-security`/`contestation`/`stack`) and its lines: each path concerned, with what to document from it. You read the content at those paths.
 
 1. Determine which technical or functional section is concerned (installation, architecture, données, one/several persona guide(s)), or whether this is a new `Stack Decision` or a structuring decision from `hosa-architect`/`hosa-security`, needing an ADR.
 2. Read `kb/documentation/` for that section's existing entry, if any — never a duplicate, always an update in place.
 3. **Technical/functional section:** write or update the file in the managed project (`docs/technique/<section>.md` or `docs/fonctionnel/<persona>.md`), matching the style already in place if any.
    **Stack Decision or structuring decision → ADR:**
    1. Find the highest `ADR-<NNN>` in `docs/decisions/` (0 if none).
-   2. Write `docs/decisions/ADR-<NNN+1>-<slug>.md` with the `ADR` template: `Contexte`, `Décision` and `Conséquences` from the `Stack Decision` or the producer's report; `Alternatives envisagées` from the options the producer presented.
+   2. Write `docs/decisions/ADR-<NNN+1>-<slug>.md` with the `ADR` template: `Contexte`, `Décision` and `Conséquences` from the `Stack Decision` or the file the producer's line points to; `Alternatives envisagées` from its options presented (`## Options présentées` in a `Stack Decision`).
    3. It supersedes an earlier ADR of the same category → say so in its context, and set the old ADR's `## Statut` to `Remplacé par ADR-<NNN+1>`. Never delete an ADR.
 4. Write or update `kb/documentation/<slug>.md` using the matching template above (refresh `path`, `sources`, and `generated.at`) and log the update.
 5. Refresh the `CLAUDE.md` index (see `CLAUDE.md` Index).

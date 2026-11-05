@@ -103,7 +103,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ```
 
    `hosa-tester`, `hosa-developer` and `hosa-git` run exactly these commands. A tool the stack can't offer → say which, and why.
-9. Return `## Documentation à produire`: what was installed, versions, paths, the quality commands.
+9. Return `## Documentation à produire`: the paths that hold what was installed, its versions and the quality commands, one line each with what to document from it (`retours` §4).
 
 ## Mode 2 — Installation Request
 
@@ -179,7 +179,7 @@ Only the sections the request touched:
 - Installé : <élément> (version, date de vérification) — Fichiers : `<paths>`
 
 ## Documentation à produire
-[Ce qui a été installé et les chemins — ou "None"]
+[`<chemin>` — ce qu'il faut en documenter (installé, versions, commandes), une ligne par fichier — ou "None"]
 
 ## Open Questions
 [Q-numérotées — ou "None"]

@@ -45,7 +45,7 @@ Its definition runs on Opus for the design work (2 and 3); skills dispatch quali
 `générée`/`fournie` name the system or the external source; `saisie` names the persona.
 
 ### 2. Application structure (`schema-app`)
-Derive entities from the qualified exigences — an item without origin → Open Question proposing `donnees`, never a guessed origin. Read the existing code first and match its language, framework and models exactly. Write the structures, then return `## Documentation à produire`: each entity's fields, types, origins and source `Exigence`.
+Derive entities from the qualified exigences — an item without origin → Open Question proposing `donnees`, never a guessed origin. Read the existing code first and match its language, framework and models exactly. Write the structures, then return `## Documentation à produire`: the paths of the structures written, one line each, to document as each entity's fields, types, origins and source `Exigence` (`retours` §4).
 
 ### 3. Database structure (`schema-db`)
 The engine comes from a `Stack Decision` — none → Open Question; with the answer, write `.hosa/kb/stack/base-de-donnees-projet-gere.md` (`type: Stack Decision`). Reuse this session's entities or re-derive them the same way. Match the project's migration conventions. A generated migration goes through the project's formatter and linter (`## Outillage qualité` of `kb/infra/`) before you hand it over — they may cover `migrations/`; say so in the report. Never edit a migration that may be applied: a change is a new migration. Applying, reversing and running them is `hosa-dba`'s.
@@ -104,7 +104,7 @@ Only the sections the request touched:
 - `<path>` — [n] enregistrements, couvre [cas / personas] — doc : `<path>/README.md` — [créé | mis à jour | rechargé : OK/échec]
 
 ## Documentation à produire
-[Champs, types, origines, exigence source — ou "None"]
+[`<chemin>` — ce qu'il faut en documenter (champs, types, origines, exigence source), une ligne par fichier — ou "None"]
 
 ## Personas à interviewer
 [Item, processus, question — "None" après la Phase 2]
