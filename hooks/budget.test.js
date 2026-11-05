@@ -29,6 +29,13 @@ test('a heavy session that closed a stage is stopped once before the next stage'
   assert.equal(skill('hosa:qa'), null);                 // the user chose to stay
 });
 
+test('the stages come from pipeline.json: `audit` runs `qualite`, a stage too', () => {
+  setPlan(3); setContext(100000);
+  assert.equal(skill('hosa:develop', 's6'), null);
+  setPlan(4);
+  assert.ok(denied(skill('hosa:qualite', 's6')));      // missing from the old hand-kept list
+});
+
 test('a light session chains freely', () => {
   setPlan(3); setContext(100000);
   assert.equal(skill('develop', 's2'), null);

@@ -207,5 +207,17 @@ class Next(unittest.TestCase):
         self.assertIn("→ skill `git`", run(k, "next")[1])
 
 
+class Graph(unittest.TestCase):
+    """pipeline.json is the one stage graph: each stage once, each stage's skill exists."""
+
+    def test_each_stage_once_and_its_skill_exists(self):
+        stages = [s for _, ss in av.PIPELINES for s in ss] + av.SPRINT
+        self.assertEqual(len(stages), len(set(stages)))
+        self.assertLessEqual(set(av.SKILL), set(stages))
+        skills = SCRIPT.parents[2]
+        for s in stages:
+            self.assertTrue((skills / av.SKILL.get(s, s) / "SKILL.md").is_file(), s)
+
+
 if __name__ == "__main__":
     unittest.main()

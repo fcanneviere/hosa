@@ -143,3 +143,17 @@ test('a cd into the KB is refused, a subshell or another folder passes', () => {
   assert.equal(bash(r, '(cd .hosa/kb && git status)'), null);
   assert.equal(bash(r, 'cd .worktrees/sprint/s1 && ls'), null);
 });
+
+test('two FAIL reviews in a row stop the correction loop until the user decides', () => {
+  const dev = (r, prompt, type = 'hosa:hosa-developer') =>
+    processPayload({ tool_name: 'Agent', cwd: r, tool_input: { subagent_type: type, prompt } });
+  const two = '- 2026-10-09 — FAIL — CA2 manque\n- 2026-10-10 — FAIL — CA2 manque encore';
+  let r = project({ '.hosa/kb/tickets/t1.md': ticket(two), '.hosa/kb/tickets/t10.md': ticket('') });
+  assert.match(denied(dev(r, 'correction du ticket t1, manques : CA2')), /2 FAIL reviews in a row/);
+  assert.equal(dev(r, 'ticket t10'), null);                                  // t1 inside t10 is not t1
+  assert.equal(dev(r, 'ticket t1', 'hosa:hosa-reviewer'), null);            // only the developer is held
+  r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-09 — PASS — ok\n- 2026-10-10 — FAIL — CA2') });
+  assert.equal(dev(r, 'correction t1'), null);                               // one FAIL: the loop goes on
+  r = project({ '.hosa/kb/tickets/t1.md': ticket(`${two}\n- 2026-10-11 — DÉCISION — continuer, une correction de plus`) });
+  assert.equal(dev(r, 'correction t1'), null);                               // the user chose: count restarts
+});

@@ -169,20 +169,17 @@ class AppTest(unittest.TestCase):
         self.assertEqual(self.call("POST", "/api/concepts", {"bundle": "tickets", "slug": "export", "type": "Ticket", "title": "X"})[0], 409)
         self.assertEqual(self.call("POST", "/api/concepts", {"bundle": "../x", "slug": "a", "type": "T", "title": "X"})[0], 400)
 
-    def test_overview_pipelines_sprints_activity(self):
+    def test_overview_sprints_activity(self):
         status, ov = self.call("GET", "/api/overview")
         self.assertEqual(status, 200)
-        stages = {s["skill"]: s["done"] for p in ov["pipelines"] for s in p["stages"]}
-        self.assertTrue(stages["hosa"] and stages["contestation"] and stages["donnees"] and stages["backlog"] and stages["git"])
-        self.assertFalse(stages["interview"] or stages["fondamentaux"] or stages["juridique"] or stages["securite"])
-        self.assertEqual(ov["next"], "interview")
+        self.assertNotIn("pipelines", ov)  # les étapes viennent du plan (`pipeline.json` via avancement.py), pas d'une 2e liste
         self.assertEqual(ov["project"]["objectives"], "- 100 users")
         self.assertEqual((ov["sprints"][0]["total"], ov["sprints"][0]["done"]), (1, 0))
         self.assertEqual(ov["tickets"]["todo"], 1)
         self.assertEqual(ov["activity"][0]["text"], "human:fab a créé `login`")
 
     def test_overview_plan_follows_avancement(self):
-        self.assertIsNone(self.call("GET", "/api/overview")[1]["plan"])  # pas de plan : l'app retombe sur l'heuristique
+        self.assertIsNone(self.call("GET", "/api/overview")[1]["plan"])  # pas de plan : l'app propose /status
         with contextlib.redirect_stdout(io.StringIO()):
             for stage in kb.av.PIPELINES[0][1] + kb.av.PIPELINES[1][1]:
                 kb.av.main([str(self.root), "done", stage])

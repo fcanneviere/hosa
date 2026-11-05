@@ -21,9 +21,14 @@ const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 60000; // tokens: /clear 
 // Past it, any Hosa skill is refused once, then again every HEAVY more: `changement` closes no stage,
 // and a pilot2 session chained four skills up to 244 k without a single refusal.
 const CEILING = 2 * HEAVY;
-const STAGES = new Set(['hosa', 'interview', 'redaction', 'fondamentaux', 'juridique', 'securite', 'relecture', 'contestation',
-  'stack', 'infra', 'donnees', 'schema-app', 'schema-db', 'architecture', 'interface', 'backlog',
-  'sprint', 'qa-plan', 'git', 'develop', 'qa', 'validation', 'bilan-sprint', 'livraison']);
+// The skills of the pipeline stages, from the one stage graph (avancement.py reads it too).
+function stageSkills() {
+  try {
+    const g = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'skills', 'status', 'scripts', 'pipeline.json'), 'utf8'));
+    return new Set([...g.pipelines.flatMap((p) => p.stages), ...g.sprint].map((s) => g.skill[s] || s));
+  } catch (e) { return new Set(); } // fail-open: no stage refusal, the ceiling still applies to hosa: skills
+}
+const STAGES = stageSkills();
 
 const stateDir = () => process.env.HOSA_STATE_DIR || path.join(os.tmpdir(), 'hosa-compress');
 const hash = (s, n) => crypto.createHash('sha256').update(String(s)).digest('hex').slice(0, n);

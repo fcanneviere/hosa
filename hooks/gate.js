@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hosa — gates. PreToolUse on Bash: a sprint's git commands pass only with
+// Hosa — gates. PreToolUse on Bash and Agent: a sprint's git commands pass only with
 // their proof in the KB, so a skipped step is refused instead of trusted.
 // - commit in a Hosa project: no `Co-Authored-By` line;
 // - commit in a sprint worktree: carries `Hosa-Ticket: <slug>` and the ticket's
@@ -10,6 +10,7 @@
 // - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root;
 // - `docker compose -p <projet>-sprint-<slug> up|create|run` from anywhere but that worktree;
 // - a Hosa script run by its versioned path under the plugin cache, not through `<hosa>`.
+// PreToolUse on Agent: `hosa-developer` dispatched on a ticket whose `## Revue` ends on two FAIL.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
 
 const fs = require('fs');
@@ -175,13 +176,54 @@ function scriptGate(cmd) {
     `Run: \`${hosa} ${script[1]} <args>\` — from any folder; \`${hosa} --list\` gives the names.`;
 }
 
+// The review loop's bound (`develop` Step 4c): two FAIL in a row on a ticket → the user decides, not a third
+// correction. Counted on the ticket's `## Revue` lines; a `- <date> — DÉCISION — …` line restarts the count.
+const LOOP_MAX = 2;
+function failRun(text) {
+  let run = 0;
+  for (const line of (section(text, 'Revue') || '').split(/\r?\n/).filter((l) => /^\s*-\s/.test(l))) {
+    if (/—\s*DÉCISION\b/.test(line)) { run = 0; continue; }
+    const v = /\b(PASS-WITH-NOTES|PASS|FAIL)\b/.exec(line);
+    if (v) run = v[1] === 'FAIL' ? run + 1 : 0;
+  }
+  return run;
+}
+
+function reviewLoopGate(p, cwd) {
+  const input = p.tool_input || {};
+  if (!/(^|:)hosa-developer$/.test(String(input.subagent_type || ''))) return null;
+  const root = findKbRoot(cwd);
+  if (!root) return null;
+  const dir = path.join(root, '.hosa', 'kb', 'tickets');
+  let names;
+  try { names = fs.readdirSync(dir).filter((f) => f.endsWith('.md')); } catch (e) { return null; }
+  const prompt = String(input.prompt || '');
+  for (const f of names) {
+    const slug = f.slice(0, -3);
+    if (!new RegExp(`(^|[^\\w-])${slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^\\w-]|$)`).test(prompt)) continue;
+    const run = failRun(read(path.join(dir, f)));
+    if (run >= LOOP_MAX) {
+      return `ticket \`${slug}\` has ${run} FAIL reviews in a row: the correction loop stops here (\`develop\` Step 4c). ` +
+        'Show the user the gaps of the last reviews and ask: go on correcting, change the ticket (`hosa-product-owner`), ' +
+        'or fix the structure (`architecture`/`schema-app`/`schema-db`). Write their answer under the ticket\'s `## Revue` as ' +
+        '`- <date> — DÉCISION — <their choice>` (without the words PASS or FAIL), then dispatch again.';
+    }
+  }
+  return null;
+}
+
 function processPayload(p) {
-  if (process.env.HOSA_GATE === '0' || !p || p.tool_name !== 'Bash') return null;
+  if (process.env.HOSA_GATE === '0' || !p) return null;
+  const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
+    permissionDecisionReason: `[hosa gate] ${reason}` } });
+  if (p.tool_name === 'Agent' || p.tool_name === 'Task') {
+    const loop = reviewLoopGate(p, native(p.cwd || process.cwd()));
+    return loop ? deny(loop) : null;
+  }
+  if (p.tool_name !== 'Bash') return null;
   const cmd = (p.tool_input || {}).command;
   if (!cmd) return null;
   const cwd = native(p.cwd || process.cwd());
-  const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
-    permissionDecisionReason: `[hosa gate] ${reason}` } });
   const cd = cdGate(cmd, cwd) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd) : null) || scriptGate(cmd);
   if (cd) return deny(cd);
   if (!/\bgit\b/.test(cmd)) return null;

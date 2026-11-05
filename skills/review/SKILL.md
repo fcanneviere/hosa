@@ -85,8 +85,8 @@ Result: [PASS / PASS-WITH-NOTES / FAIL — X gap(s) remaining]
 
 This keeps the user informed of progress without requiring them to ask.
 
-**Loop limit:** if the same gap appears in the reviewer output for **3 consecutive cycles** without being resolved, stop the loop and escalate:
-> "After 3 build attempts, `[gap description]` is still not resolved. This may indicate a conflict between the spec and the implementation approach, or the spec requirement may be unclear. Here's what was attempted: [summary]. How would you like to proceed?"
+**Loop limit:** if the same gap appears in the reviewer output for **2 consecutive cycles** without being resolved, stop the loop and escalate — the same bound as every Hosa loop (`develop`, `qa`, `interface`, `contestation`):
+> "After 2 build attempts, `[gap description]` is still not resolved. This may indicate a conflict between the spec and the implementation approach, or the spec requirement may be unclear. Here's what was attempted: [summary]. How would you like to proceed?"
 
 Wait for user direction before continuing.
 

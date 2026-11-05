@@ -1,0 +1,11 @@
+{
+  "description": "Hosa's stage graph, the one definition: avancement.py reads it (the dashboard through avancement.py), hooks/budget.js too. Stages run in the listed order; `skill` names the skill of a stage whose name differs.",
+  "pipelines": [
+    {"title": "Cahier des charges",
+     "stages": ["hosa", "interview", "redaction", "fondamentaux", "juridique", "securite", "relecture", "contestation"]},
+    {"title": "Structuration",
+     "stages": ["stack", "infra", "donnees", "schema-app", "schema-db", "architecture", "menaces", "interface", "backlog"]}
+  ],
+  "sprint": ["sprint", "qa-plan", "git-demarrage", "develop", "audit", "qa", "validation", "git-fusion", "bilan-sprint", "livraison"],
+  "skill": {"git-demarrage": "git", "git-fusion": "git", "menaces": "securite", "audit": "qualite"}
+}

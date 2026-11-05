@@ -304,47 +304,6 @@ def _of(cs, t):
     return [c for c in cs if c["frontmatter"].get("type") == t]
 
 
-def _any_body(cs, t, pattern):
-    return any(re.search(pattern, c["body"], re.I | re.M) for c in _of(cs, t))
-
-
-# ponytail: chaque étape est "faite" si l'artefact qu'elle laisse dans la KB existe — heuristique
-# alignée sur le skill `status` ; relecture/contestation n'écrivent pas de concept dédié, on lit `stable`.
-PIPELINES = [
-    ("cdc", "Cahier des charges", [
-        ("hosa", "Identité du projet", lambda cs: bool(_of(cs, "Project"))),
-        ("interview", "Interviews", lambda cs: bool(_of(cs, "Compte Rendu"))),
-        ("redaction", "Rédaction", lambda cs: bool(_of(cs, "Exigence"))),
-        ("fondamentaux", "Fondamentaux", lambda cs: bool(_of(cs, "Revue Fondamentaux"))),
-        ("juridique", "Juridique", lambda cs: bool(_of(cs, "Analyse juridique"))),
-        ("securite", "Sécurité", lambda cs: bool(_of(cs, "Analyse de sécurité"))),
-        ("relecture", "Relecture", lambda cs: any(c["frontmatter"].get("status") == "stable" for c in _of(cs, "Exigence"))),
-        ("contestation", "Contestation", lambda cs: any((c["frontmatter"].get("status") == "stable" and c["frontmatter"].get("verified")) for c in _of(cs, "Exigence"))),
-    ]),
-    ("data", "Structuration", [
-        ("stack", "Stack", lambda cs: bool(_of(cs, "Stack Decision"))),
-        ("infra", "Infra", lambda cs: bool(_of(cs, "Infra"))),
-        ("donnees", "Données", lambda cs: _any_body(cs, "Exigence", r"^## Données")),
-        ("schema-app", "Schéma app", lambda cs: _any_body(cs, "Infra", r"dictionnaire")),
-        ("schema-db", "Schéma BDD", lambda cs: _any_body(cs, "Infra", r"migration")),
-        ("architecture", "Architecture", lambda cs: _any_body(cs, "Infra", r"^## Documentation d'architecture")),
-        ("menaces", "Menaces", lambda cs: bool(_of(cs, "Modèle de Menaces"))),
-        ("interface", "Interface", lambda cs: _any_body(cs, "Infra", r"^## Documentation d'interface")),
-        ("backlog", "Backlog", lambda cs: bool(_of(cs, "Ticket"))),
-    ]),
-    ("delivery", "Livraison", [
-        ("sprint", "Sprint", lambda cs: bool(_of(cs, "Sprint"))),
-        ("qa-plan", "Plan de test", lambda cs: bool(_of(cs, "Test Plan"))),
-        ("git", "Branche", lambda cs: any(c["frontmatter"].get("branch") or c["frontmatter"].get("state") in ("active", "done") for c in _of(cs, "Sprint"))),
-        ("develop", "Développement", lambda cs: any(c["frontmatter"].get("state") in ("doing", "done") for c in _of(cs, "Ticket"))),
-        ("audit", "Audit", lambda cs: _any_body(cs, "Sprint", r"^## Audit")),
-        ("qa", "QA", lambda cs: _any_body(cs, "Test Plan", r"^## Résultats techniques")),
-        ("validation", "Validation", lambda cs: any(c["frontmatter"].get("state") == "done" for c in _of(cs, "Ticket"))),
-        ("bilan-sprint", "Bilan", lambda cs: bool(_of(cs, "Sprint Review"))),
-    ]),
-]
-
-
 def _section(body, heading):
     m = re.search(rf"^## {heading}\s*\n+(.+)", body, re.M)
     return m.group(1).strip() if m else None
@@ -537,17 +496,6 @@ def _audit(c):
 def overview(root):
     illisibles = []
     cs = walk(root, illisibles)
-    first_gap = None
-    pipelines = []
-    for key, label, stages in PIPELINES:
-        rows = []
-        for skill, name, done in stages:
-            ok = done(cs)
-            if not ok and first_gap is None:
-                first_gap = skill
-            rows.append({"skill": skill, "label": name, "done": ok})
-        pipelines.append({"key": key, "label": label, "stages": rows})
-
     tickets = _of(cs, "Ticket")
     counts = {s: 0 for s in TICKET_STATES}
     for t in tickets:
@@ -592,8 +540,6 @@ def overview(root):
         "project": project and {"path": project["path"], "frontmatter": project["frontmatter"],
                                 "objectives": _section(project["body"], "Objectifs mesurables")},
         "plan": plan(root),
-        "pipelines": pipelines,
-        "next": first_gap,
         "tickets": counts,
         "board": board(cs),
         "exigences": {"stable": sum(c["frontmatter"].get("status") == "stable" for c in exigences),

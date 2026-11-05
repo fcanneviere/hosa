@@ -9,8 +9,6 @@
 //    Sonnet again, without a release. Measure with `usage_report.py --since/--until`.
 
 const PLAN = '.hosa/kb/project/avancement.md'
-const UPSTREAM = ['hosa', 'interview', 'redaction', 'fondamentaux', 'juridique', 'securite', 'relecture', 'contestation',
-  'stack', 'infra', 'donnees', 'schema-app', 'schema-db', 'architecture', 'menaces', 'interface', 'backlog']
 const CLOSED = ['fait', 'non applicable']
 // ponytail: fixed id, bump it with each model generation
 const MODEL = 'claude-sonnet-5-5'
@@ -18,15 +16,21 @@ const KEEP = /sonnet|haiku/ // families accepted as they are
 const HEAVY = 20 // context %, from which a closed stage suggests /clear
 const ON_HAIKU = /(^|:)hosa-(developer|implementer|tester|qa-lead|key-user|git|documentation|infra|dba)$/
 
-// Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows.
+// Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows. avancement.py
+// writes every stage of skills/status/scripts/pipeline.json, the upstream pipelines before the sprints:
+// the rows above the first `## Sprint` heading are the upstream stages, no list to keep in step here.
 export function readPlan(text) {
-  const status = {}
+  const upstream = []
   let closed = 0
-  for (const m of text.matchAll(/^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|/gm)) {
-    if (CLOSED.includes(m[2])) closed++
-    if (UPSTREAM.includes(m[1])) status[m[1]] = m[2]
+  for (const block of text.split(/^(?=## )/m)) {
+    const sprint = block.startsWith('## Sprint ')
+    for (const m of block.matchAll(/^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|/gm)) {
+      if (/^-+$/.test(m[1])) continue // the |---| separator
+      if (CLOSED.includes(m[2])) closed++
+      if (!sprint) upstream.push(m[2])
+    }
   }
-  const phase = UPSTREAM.every((s) => CLOSED.includes(status[s])) ? 'sprints' : 'conception'
+  const phase = upstream.length && upstream.every((s) => CLOSED.includes(s)) ? 'sprints' : 'conception'
   return { phase, closed }
 }
 

@@ -24,19 +24,17 @@ Stdlib only.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-PIPELINES = [
-    ("Cahier des charges", ["hosa", "interview", "redaction", "fondamentaux", "juridique",
-                            "securite", "relecture", "contestation"]),
-    ("Structuration", ["stack", "infra", "donnees", "schema-app", "schema-db",
-                       "architecture", "menaces", "interface", "backlog"]),
-]
-SPRINT = ["sprint", "qa-plan", "git-demarrage", "develop", "audit", "qa", "validation",
-          "git-fusion", "bilan-sprint", "livraison"]
+# the stage graph lives in pipeline.json, shared with hooks/budget.js
+GRAPH = json.loads(Path(__file__).with_name("pipeline.json").read_text(encoding="utf-8"))
+PIPELINES = [(p["title"], p["stages"]) for p in GRAPH["pipelines"]]
+SPRINT = GRAPH["sprint"]
+SKILL = GRAPH["skill"]
 TODO, DOING, DONE, BLOCKED, SKIPPED = "à faire", "en cours", "fait", "bloqué", "non applicable"
 CLOSED = {DONE, SKIPPED}
 # a sprint begun before the `audit` stage existed had its audit inside `validation`
@@ -109,9 +107,6 @@ def locate(sections: dict, stage: str, sprint: str | None) -> tuple[str, list[li
         if stage in stages:
             return title, sections[title]
     raise SystemExit(f"error: unknown stage `{stage}` — use `reprise` for work outside the pipeline")
-
-
-SKILL = {"git-demarrage": "git", "git-fusion": "git", "menaces": "securite", "audit": "qualite"}
 
 
 def read(path: Path) -> str | None:
