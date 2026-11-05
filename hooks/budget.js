@@ -4,8 +4,9 @@
 //   context is heavy → the next pipeline stage is refused once: /clear then « reprends »
 //   (README « Une session par étape »). The retry passes: the user chose to stay.
 // - Same refusal for any Hosa skill once the context passes CEILING, stage closed or not.
-// - PreToolUse, in a hosa- subagent: past its cap of tool calls, every further call is refused
-//   but the final report (SubagentHandback), so the agent ends with it and `## Reprise`.
+// - PreToolUse, in a hosa- subagent: at WARN of its cap of tool calls, a reminder of the calls left
+//   (the call itself runs); past the cap, every further call is refused but the final report
+//   (SubagentHandback), so the agent ends with it and `## Reprise`.
 // SubagentStart records each agent's type. Fail-open. Kill switch: HOSA_BUDGET=0.
 
 const fs = require('fs');
@@ -17,6 +18,9 @@ const { findKbRoot } = require('./graph');
 // ponytail: calibrated on hosa-ui and the pilot, same caps as usage_report.py's CAPS/CAP
 const CAPS = { 'hosa-ux-designer': 50 };
 const CAP = 150;
+// An agent stopped dead at its cap loses the step under way: it is told early, once (« wrap up at 25 of 30 »,
+// github.com/drona23/claude-token-efficient).
+const WARN = 0.8;
 const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 60000; // tokens: /clear restarts at 20-30 k
 // Past it, any Hosa skill is refused once, then again every HEAVY more: `changement` closes no stage,
 // and a pilot2 session chained four skills up to 244 k without a single refusal.
@@ -106,6 +110,9 @@ function agentGate(p) {
   const calls = (s.calls || 0) + 1;
   save(file, { type, calls });
   const cap = CAPS[type] || CAP;
+  if (calls === Math.floor(cap * WARN)) return { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext:
+    `[hosa budget] this ${type} pass has ${cap - calls} tool calls left (cap ${cap}). Finish the step under way, ` +
+    'start no new one, then write your final report with what is done, and under `## Reprise` what is left and the files to read.' } };
   if (calls <= cap) return null;
   return deny(`this ${type} pass reached its cap of ${cap} tool calls. Stop now: no more tools. Write your final report ` +
     'with what is done, and under `## Reprise` what is left and the files to read, so a fresh dispatch continues.');

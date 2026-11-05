@@ -23,6 +23,29 @@ test('partial reads and subagents are never refused', () => {
   assert.equal(read({ agent_id: 'sub' }), null);
 });
 
+test('a big file is refused once for a part, then its re-read guard works as usual', () => {
+  const big = path.join(process.env.HOSA_STATE_DIR, '.hosa', 'kb', 'cdc', 'gros.md');
+  fs.mkdirSync(path.dirname(big), { recursive: true });
+  fs.writeFileSync(big, 'x'.repeat(50000));
+  const readBig = (extra = {}) => read({ session_id: 's2', tool_input: { file_path: big }, ...extra });
+  const out = readBig();
+  assert.ok(denied(out));
+  assert.match(out.hookSpecificOutput.permissionDecisionReason, /kb_query/);
+  assert.equal(readBig(), null);                         // the agent needs it whole
+  assert.ok(denied(readBig()));                          // unchanged re-read
+  fs.appendFileSync(big, 'y');
+  assert.equal(readBig(), null);                         // changed: no second size refusal
+  assert.equal(readBig({ tool_input: { file_path: big, offset: 1, limit: 50 } }), null);
+});
+
+test('the summary and images are read whole whatever their size', () => {
+  for (const name of ['sommaire.md', 'page.png']) {
+    const f = path.join(process.env.HOSA_STATE_DIR, name);
+    fs.writeFileSync(f, 'x'.repeat(50000));
+    assert.equal(read({ session_id: 's3', tool_input: { file_path: f } }), null);
+  }
+});
+
 test('a modified file passes, PreCompact resets the session', () => {
   read();
   fs.writeFileSync(file, 'hello world');

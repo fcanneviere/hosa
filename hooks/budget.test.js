@@ -57,7 +57,11 @@ test('past the ceiling any Hosa skill is refused once, then every 60 k more', ()
 test('a hosa- subagent past its cap is refused every further call', () => {
   processPayload({ hook_event_name: 'SubagentStart', session_id: 's3', agent_id: 'a1', agent_type: 'hosa:hosa-ux-designer' });
   const call = () => processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Bash', session_id: 's3', agent_id: 'a1' });
-  for (let i = 0; i < 50; i++) assert.equal(call(), null);
+  for (let i = 1; i <= 50; i++) {
+    const out = call();
+    if (i === 40) assert.match(out.hookSpecificOutput.additionalContext, /10 tool calls left/); // warned once, not refused
+    else assert.equal(out, null);
+  }
   assert.ok(denied(call()));
   assert.ok(denied(call()));
   assert.equal(processPayload({ hook_event_name: 'PreToolUse', tool_name: 'SubagentHandback', session_id: 's3', agent_id: 'a1' }), null);
