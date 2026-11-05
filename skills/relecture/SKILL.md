@@ -113,7 +113,12 @@ generated: { by: relecture, at: <ISO8601> }
 <Propre / N anomalie(s) ouverte(s)>
 ```
 
-Number anomalies A1…An, stable across passes. A re-run updates the file in place: a fixed anomaly becomes `corrigée`, a new one takes the next number. Then regenerate the readable document — `<hosa> cdc assemble "<root>/.hosa/kb"` writes `kb/project/cahier-des-charges.md`, holes included in its § 12 — then the git checkpoint (`using-hosa`), and `block relecture --detail "N anomalies ouvertes, voir kb/cdc/relecture.md"` while any stays `ouverte`.
+Number anomalies A1…An, stable across passes. A re-run updates the file in place: a fixed anomaly becomes `corrigée`, a new one takes the next number. Then regenerate the readable document — `<hosa> cdc assemble "<root>/.hosa/kb"` writes `kb/project/cahier-des-charges.md`, holes included in its § 12 — then the git checkpoint (`using-hosa`). Then record the loop in the plan:
+- anomalies `→ interview` open → `back relecture interview --detail "<A-numbers> : <one line>"` (it reopens `interview`, then `redaction`, then `relecture`);
+- otherwise, anomalies `→ redaction` open → `back relecture redaction --detail "<A-numbers> : <one line>"`;
+- only `→ utilisateur` anomalies left → `block relecture --detail "<the questions in full>"`.
+
+`back` refused (exit 1: two rounds already) → stop the loop: show the user the anomalies still open and what each round changed, and ask whether to run one more round (`back … --force`) or to scope the exigences down. `done relecture` refuses while an anomaly stays `ouverte`.
 
 This skill never edits an exigence: fixes happen in `redaction` (or `interview`), which marks each anomaly it closes `corrigée` in `kb/cdc/relecture.md`.
 

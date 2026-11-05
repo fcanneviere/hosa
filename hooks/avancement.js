@@ -30,7 +30,8 @@ function resumeContext(cwd) {
   const note = kbLayoutNote(root);
   const kb = path.join(root, '.hosa', 'kb');
   const file = path.join(kb, 'project', 'avancement.md');
-  const how = `Keep it current: \`${hosaCommand()} avancement "${kb.replace(/\\/g, '/')}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; \`next\` gives the stage to run, its skill and what it still lacks.`;
+  const how = `Keep it current: \`${hosaCommand()} avancement "${kb.replace(/\\/g, '/')}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; ` +
+    '`back <de> <vers> --detail …` when a stage sends work back (a loop, counted); `next` gives the stage to run, its skill and what it still lacks.';
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
     return `${note}\n\n## Plan d'avancement\n\nNo progress plan yet for this project — the \`status\` skill creates it from the KB. ${how}`;
@@ -42,6 +43,11 @@ function resumeContext(cwd) {
   for (const line of lines) {
     if (line.startsWith('## ')) { section = line.slice(3).trim(); continue; }
     if (section === 'Point de reprise' && line.trim()) { out.push(line); continue; }
+    if (section === 'Boucles') { // a loop still open survives a later resume point
+      const l = /^\|\s*(`[\w-]+`\s*→\s*`[\w-]+`[^|]*?)\s*\|\s*(\d+\/\d+)\s*\|\s*ouverte\s*\|[^|]*\|[^|]*\|\s*([^|]*?)\s*\|$/.exec(line);
+      if (l) out.push(`- Boucle ouverte : ${l[1]} — tour ${l[2]}${l[3] ? ` — ${l[3]}` : ''}`);
+      continue;
+    }
     const m = /^\|\s*`([\w-]+)`\s*\|\s*([^|]*?)\s*\|\s*[^|]*\|\s*([^|]*?)\s*\|$/.exec(line);
     if (!m) continue;
     const [, stage, status, detail] = m;

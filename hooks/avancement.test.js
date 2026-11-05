@@ -26,6 +26,23 @@ test('returns the resume point and the stage in progress', () => {
   assert.match(ctx, /Prochaine étape du plan : `develop` \(Sprint s1\)/);
 });
 
+test('an open loop survives a later resume point, a closed one is not shown', () => {
+  const root = kb([
+    '---', 'type: Plan d\'avancement', '---',
+    '## Point de reprise', '- En cours : `redaction` — A2', '',
+    '## Boucles', '| Boucle | Tours | État | Mis à jour | Cause | Détail |', '|---|---|---|---|---|---|',
+    '| `relecture` → `redaction` | 2/2 | ouverte | 2026-11-05 |  | A2 : cas d\'erreur manquant |',
+    '| `qa` → `develop` (s1, t1) | 1/2 | fermée | 2026-11-04 | test_a | KO |', '',
+    '## Cahier des charges', '| Étape | Statut | Mis à jour | Détail |', '|---|---|---|---|',
+    '| `redaction` | en cours | 2026-11-05 | A2 |', '| `relecture` | à faire |  |  |',
+  ].join('\n'));
+  const ctx = resumeContext(root);
+  assert.match(ctx, /Boucle ouverte : `relecture` → `redaction` — tour 2\/2 — A2 : cas d'erreur manquant/);
+  assert.doesNotMatch(ctx, /`qa` → `develop`/);
+  assert.match(ctx, /Prochaine étape du plan : `redaction` \(Cahier des charges\)/);
+  assert.match(ctx, /`back <de> <vers>/);
+});
+
 test('points to the status skill when there is no plan yet', () => {
   assert.match(resumeContext(kb()), /No progress plan yet/);
 });

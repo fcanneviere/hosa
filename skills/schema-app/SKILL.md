@@ -35,7 +35,7 @@ Dispatch `hosa-data-engineer` (Responsibility 2, `agents/data-engineer.md`) to d
 
 If it returns an Open Question:
 - **No `Infra` entry** — ask the user for the managed project's root path, redispatch with the answer (the agent writes the `Infra` entry itself once it has it).
-- **An item still missing an origin annotation** — relay it and propose running `donnees` first; don't guess an origin yourself.
+- **An item still missing an origin annotation** — relay it, `back schema-app donnees --detail "<exigences>"`, and propose running `donnees` first; don't guess an origin yourself.
 
 ## Step 2: Dispatch Documentation
 
@@ -43,7 +43,7 @@ Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-data-engineer` retur
 
 ## Step 3: Update the `Infra` Entry
 
-Add the confirmed documentation path to the `Infra` entry, and log the update to `kb/infra/log.md`.
+Add the structures' path and the confirmed documentation path to the `Infra` entry, under its own `## Structures de données` heading (update it in place on a later run), and log the update to `kb/infra/log.md`. `done schema-app` looks for that heading.
 
 ## No Commits
 

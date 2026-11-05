@@ -47,13 +47,13 @@ Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with
 ## Step 3: Apply the Verdict
 
 - **Accept:** `hosa-product-owner` writes `state: done` and `verified: { by: hosa-product-owner/1.0, at: <ISO8601> }` on the ticket directly (it already owns `kb/tickets/` writes) — confirm it did.
-- **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix).
+- **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix). Record the round first: `avancement.py … back validation develop --sprint <slug> --ticket <ticket> --detail "<manque>"` (it reopens `develop`, then `qa`), or `back validation qa …` for a re-run only. Refused (exit 1: two rounds already on this ticket) → show the user what each round tried and let them decide (`--force`, or the ticket goes back to `hosa-product-owner`).
 
 ## Step 3b: Sprint Demo
 
 Once every ticket of the sprint is `done` (the sprint audit ran before `qa` — stage `audit`, `qualite`), the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …"). A ticket `hosa-qa-lead` lists under `Déjà joué en QA` gets no T-test: the user already played its main scenario by hand on this code. Write it in `## Démo` as `- <ticket> — joué en QA le <date> (<cas>)`, with no T-number (the merge gate reads only `Tn OK/KO`). Every ticket already played → no T-test to run: write those lines, and the demo is done.
 - All OK → write `## Démo` in `kb/sprints/<slug>.md`: the date, then one line per T-test, `- T1 OK` or `- T1 KO : <constat>`. A replayed T-test gets a new line; the last one counts. Log to `kb/sprints/log.md`.
-- A KO → record it the same way, then `develop <ticket> correction` with the user's words as the defect report; after its `qa` and `validation`, redo only the failed T-tests.
+- A KO → record it the same way, then `back validation develop --sprint <slug> --ticket <ticket> --cause <Tn> --detail "<constat>"` and `develop <ticket> correction` with the user's words as the defect report; after its `qa` and `validation`, redo only the failed T-tests.
 - The user says the demo isn't needed this time → write `## Démo` with "Non faite — choix de l'utilisateur" and the date. `hosa-git` refuses the merge with no `## Démo` at all.
 
 ## Step 4: Log

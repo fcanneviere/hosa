@@ -38,7 +38,7 @@ Manual: `/contestation`. Auto: immediately after a clean `relecture`, or "challe
 
 Run this gate once per session, at the first entry: coming back from Step 3 after `relecture`, skip it — a fix to an exigence is already re-checked by `relecture`, and re-running `fondamentaux` for it restarts the whole chain.
 
-`kb/cdc/fondamentaux.md` must exist, and be at least as recent (`generated.at`) as the newest `Exigence` in `kb/cdc/` that is not tagged `fondamentaux`, `juridique` or `securite` (those stages write their own exigences after it, so counting them makes the gate fail on every normal pass) — otherwise the basics haven't been checked against what the cahier des charges now says. Missing or older → say so and run `fondamentaux` first, then `relecture`, then come back. Same for `kb/cdc/juridique.md` (`Analyse juridique`) → run `juridique`, and for `kb/cdc/securite.md` (`Analyse de sécurité`) → run `securite`, each followed by `relecture`. A cahier des charges is never signed off without its basic functions, its legal constraints and its security constraints in it.
+`kb/cdc/fondamentaux.md` must exist, and be at least as recent (`generated.at`) as the newest `Exigence` in `kb/cdc/` that is not tagged `fondamentaux`, `juridique` or `securite` (those stages write their own exigences after it, so counting them makes the gate fail on every normal pass) — otherwise the basics haven't been checked against what the cahier des charges now says. Missing or older → say so, `back contestation fondamentaux --detail "<why>"` (it reopens `fondamentaux`, then `relecture`, then `contestation`), and run `fondamentaux`. Same for `kb/cdc/juridique.md` (`Analyse juridique`) → `back contestation juridique`, and for `kb/cdc/securite.md` (`Analyse de sécurité`) → `back contestation securite`, each followed by `relecture`. A cahier des charges is never signed off without its basic functions, its legal constraints and its security constraints in it.
 
 ## Step 1: PO → Personas Challenge
 
@@ -50,9 +50,9 @@ Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamenta
 
 ## Step 3: Route Anomalies
 
-Combine anything from Step 1 (needs that didn't hold up) and Step 2 (challenger's findings). For each: route to `redaction` (needs rewriting with information already available) or `interview` (genuinely missing information) — except an "exigence hors objectifs" finding, which routes to the user directly: confirm whether it's genuinely out of scope (drop it, or move it to `## Non-objectifs`) or whether an objective is simply missing from `kb/project/identity.md` (add it via `hosa`, then re-check clean). After fixes, re-run `relecture` then `contestation` again — repeat until both passes are clean.
+Combine anything from Step 1 (needs that didn't hold up) and Step 2 (challenger's findings). For each: route to `redaction` (needs rewriting with information already available) or `interview` (genuinely missing information) — except an "exigence hors objectifs" finding, which routes to the user directly: confirm whether it's genuinely out of scope (drop it, or move it to `## Non-objectifs`) or whether an objective is simply missing from `kb/project/identity.md` (add it via `hosa`, then re-check clean). After fixes, re-run `relecture` then `contestation` again — repeat until both passes are clean. Record each round in the plan before routing: `back contestation interview --detail "<findings> : <one line>"` when one needs information never gathered (it reopens `interview`, `redaction`, `relecture`), otherwise `back contestation redaction --detail "…"` (it reopens `redaction`, `relecture`).
 
-If a second full loop still finds anomalies, stop looping silently and tell the user directly: report what's still failing and ask whether to keep iterating or scope the affected exigence(s) down.
+`back` refused (exit 1: a second full loop already found anomalies) → stop looping and tell the user directly: report what's still failing and ask whether to keep iterating (`back … --force`) or scope the affected exigence(s) down.
 
 ## Step 4: Final Sign-Off
 
@@ -62,11 +62,11 @@ Once Step 1 raised nothing new and `hosa-challenger` reports "Aucune anomalie", 
 <hosa> cdc check "<root>/.hosa/kb"
 ```
 
-Exit 1 → the cahier des charges is not signed: every hole (an objective no exigence serves, a priority or a lot not chosen, a state with no way out, a right nobody decided, an open question of `kb/cdc/decisions.md`) is an anomaly, routed as in `relecture` Step 3b. The open questions go to the user now, numbered Q1… with their proposed answer; `redaction` records the answers. Then back to `relecture`.
+Exit 1 → the cahier des charges is not signed: every hole (an objective no exigence serves, a priority or a lot not chosen, a state with no way out, a right nobody decided, an open question of `kb/cdc/decisions.md`) is an anomaly, routed as in `relecture` Step 3b. The open questions go to the user now, numbered Q1… with their proposed answer; `redaction` records the answers. Then back to `relecture`: `back contestation relecture --detail "cdc check : <N> trous"` (or `back contestation redaction` when `redaction` must record answers first).
 
 Exit 0 → `<hosa> cdc assemble "<root>/.hosa/kb"`. List every `Exigence` still at `status: draft` that this audit actually covered (every one Step 2 read — the full bundle, since `hosa-challenger` always receives all of `kb/cdc/`), then ask "Le cahier des charges est propre et complet : `kb/project/cahier-des-charges.md`. Tu le valides ? (ces N exigences passeront en `stable`)". The user signs the document, not a list of files. On yes, set `status: stable` and add `verified: { by: human:<user>, at: <ISO8601> }` on each one listed. Log the change to `kb/cdc/log.md`, then run `cdc assemble` again: the document turns `stable` and names its signatory. Then dispatch `hosa-documentation` (Mode 1) with the newly-stable Exigence(s) and their linked persona(s) — it writes or updates the functional documentation. Wait for its confirmation before continuing.
 
-If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3. No dispatch to `hosa-documentation` happens in this case — only an actual `stable` transition triggers it.
+If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3, with its `back`. `done contestation` refuses while an `Exigence` is not `stable` with its `verified`, or `cdc check` finds a hole. No dispatch to `hosa-documentation` happens in this case — only an actual `stable` transition triggers it.
 
 Once at least one `Exigence` has been validated to `stable` in this session, chain to `stack` without asking (the user just signed the cahier des charges off): say "Le cahier des charges est stable. Je lance le choix de la stack." and invoke it.
 

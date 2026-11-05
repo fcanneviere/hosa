@@ -23,6 +23,7 @@ export function readPlan(text) {
   const upstream = []
   let closed = 0
   for (const block of text.split(/^(?=## )/m)) {
+    if (block.startsWith('## Boucles')) continue // loop rounds, not stages
     const sprint = block.startsWith('## Sprint ')
     for (const m of block.matchAll(/^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|/gm)) {
       if (/^-+$/.test(m[1])) continue // the |---| separator

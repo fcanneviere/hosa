@@ -6,7 +6,8 @@ interrupted session (limit reached, crash, new day) picks up exactly where
 the work stopped, in the right order.
 
   avancement.py <kb> show
-  avancement.py <kb> next                                         (stage to run, its skill, what it still lacks)
+  avancement.py <kb> init                                         (no plan yet: built from the KB's proofs)
+  avancement.py <kb> next                                        (stage to run, its skill, what it still lacks)
   avancement.py <kb> check    <stage> [--sprint S]                (exit 1 + gaps when its proof is missing)
   avancement.py <kb> start    <stage> [--sprint S] [--detail D] [--reprise R] [--force]
   avancement.py <kb> progress <stage> [--sprint S]  --detail D  [--reprise R]
@@ -14,12 +15,18 @@ the work stopped, in the right order.
   avancement.py <kb> block    <stage> [--sprint S]  --detail D   (D: the questions in full, one line each)
   avancement.py <kb> skip     <stage> [--sprint S]  --detail D   (non applicable)
   avancement.py <kb> reprise  "<next action>"                     (outside the pipeline)
+  avancement.py <kb> back     <from> <to> [--sprint S] [--ticket T] [--cause C] --detail D [--reprise R] [--force]
+                                                                  (a loop: <from> sends work back to <to>)
 
 `start` refuses (exit 1) while an earlier stage of the same pipeline isn't
 done or skipped — `--force` only once the user has confirmed going out of
-order. `done` on a sprint stage refuses (exit 1) while `check` finds a gap —
-same `--force` rule. Sprint stages need `--sprint`. Exit 2 = bad invocation.
-Stdlib only.
+order. `done` refuses (exit 1) while `check` finds a gap — same `--force`
+rule. `back` follows a loop of pipeline.json: it reopens <to> (and the
+stages the loop re-runs after it) and <from>, and counts the round under
+`## Boucles`; past the loop's `max` rounds it refuses (exit 1) — `--force`
+once the user chose to go on. A different `--cause` restarts the count;
+`done <from>` closes its loops. Sprint stages need `--sprint`. Exit 2 = bad
+invocation. Stdlib only.
 """
 from __future__ import annotations
 
@@ -35,6 +42,10 @@ GRAPH = json.loads(Path(__file__).with_name("pipeline.json").read_text(encoding=
 PIPELINES = [(p["title"], p["stages"]) for p in GRAPH["pipelines"]]
 SPRINT = GRAPH["sprint"]
 SKILL = GRAPH["skill"]
+LOOPS = GRAPH["loops"]
+OPEN, SHUT = "ouverte", "fermée"
+LOOP_ROW = re.compile(r"^\|\s*`([\w-]+)`\s*→\s*`([\w-]+)`(?:\s*\(([^)]*)\))?\s*\|\s*(\d+)/\d+\s*\|"
+                      r"\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
 TODO, DOING, DONE, BLOCKED, SKIPPED = "à faire", "en cours", "fait", "bloqué", "non applicable"
 CLOSED = {DONE, SKIPPED}
 # a sprint begun before the `audit` stage existed had its audit inside `validation`
@@ -83,11 +94,42 @@ def load(path: Path) -> tuple[dict[str, list[list[str]]], str]:
     return sections, resume.strip()
 
 
-def save(path: Path, sections: dict, resume: str) -> None:
+def edge(frm: str, to: str) -> dict | None:
+    """The loop of pipeline.json by which <frm> sends work back to <to>."""
+    return next((e for e in LOOPS if e["from"] == frm and to in e["to"]), None)
+
+
+def load_loops(path: Path) -> list[dict]:
+    """The rounds of each loop, from `## Boucles`."""
+    out = []
+    for line in (section(read(path), "Boucles") or "").splitlines():
+        m = LOOP_ROW.match(line)
+        if m:
+            out.append({"from": m[1], "to": m[2], "scope": m[3] or "", "tours": int(m[4]), "etat": m[5],
+                        "at": m[6], "cause": m[7], "detail": m[8]})
+    return out
+
+
+def loop_name(lp: dict) -> str:
+    return f"`{lp['from']}` → `{lp['to']}`" + (f" ({lp['scope']})" if lp["scope"] else "")
+
+
+def loop_max(lp: dict) -> int:
+    e = edge(lp["from"], lp["to"])
+    return e["max"] if e else 2
+
+
+def save(path: Path, sections: dict, resume: str, loops: list[dict] | None = None) -> None:
+    loops = load_loops(path) if loops is None else loops
     out = ["---", "type: Plan d'avancement", "title: Plan d'avancement",
            "description: Étapes du projet, leur statut et le point de reprise",
            "tags: [pilotage]", f"generated: {{ by: process:hosa-avancement, at: {now()} }}", "---",
            "## Point de reprise", resume or "- Rien en cours.", ""]
+    if loops:
+        out += ["## Boucles", "| Boucle | Tours | État | Mis à jour | Cause | Détail |", "|---|---|---|---|---|---|"]
+        out += [f"| {loop_name(lp)} | {lp['tours']}/{loop_max(lp)} | {lp['etat']} | {lp['at']} | "
+                f"{lp['cause'].replace('|', '/')} | {lp['detail'].replace('|', '/')} |" for lp in loops]
+        out.append("")
     for title, rows in sections.items():
         out += [f"## {title}", "| Étape | Statut | Mis à jour | Détail |", "|---|---|---|---|"]
         out += [f"| `{r[0]}` | {r[1]} | {r[2]} | {r[3].replace('|', '/')} |" for r in rows]
@@ -155,17 +197,152 @@ def coverage(kb: Path, ticket: str) -> dict:
     return {"criteres": crit, "couverts": done, "total": len(crit), "plan": plan is not None}
 
 
+def front(text: str | None) -> str:
+    m = re.match(r"---\s*\n(.*?)\n---", text or "", re.S)
+    return m.group(1) if m else ""
+
+
+def concepts(kb: Path, folder: str, ctype: str) -> list[tuple[Path, str]]:
+    """The `.md` files of `kb/<folder>/` whose `type:` is <ctype>, with their text."""
+    out = []
+    for p in sorted((kb / folder).glob("*.md")) if (kb / folder).is_dir() else []:
+        text = read(p)
+        if text and (field(front(text), "type") or "").strip("\"'") == ctype:
+            out.append((p, text))
+    return out
+
+
+def concept(kb: Path, rel: str, ctype: str, heading: str | None = None) -> str | None:
+    """Gap of one expected file: missing, wrong type, or without its `## <heading>`."""
+    text = read(kb / rel)
+    if text is None or (field(front(text), "type") or "").strip("\"'") != ctype:
+        return f"pas de `kb/{rel}` (`type: {ctype}`)"
+    if heading and not re.search(rf"^## {re.escape(heading)}", text, re.M):
+        return f"`kb/{rel}` n'a pas sa section `## {heading}`"
+    return None
+
+
+def infra_with(kb: Path, heading: str) -> str | None:
+    if any(re.search(rf"^## {re.escape(heading)}", t, re.M) for _, t in concepts(kb, "infra", "Infra")):
+        return None
+    return f"aucune entrée `Infra` de `kb/infra/` n'a de section `## {heading}`"
+
+
+def open_anomalies(kb: Path, route: str | None = None) -> list[str]:
+    """`kb/cdc/relecture.md` anomalies still `ouverte` (routed `→ <route>` when given)."""
+    body = section(read(kb / "cdc" / "relecture.md"), "Anomalies") or ""
+    return [m[1] for m in re.finditer(r"^-\s*(A\d+)\b(.*)—\s*ouverte\s*$", body, re.M)
+            if route is None or f"→ {route}" in m[2]]
+
+
+SCRIPTS = Path(__file__).resolve().parents[2]
+
+
+def script(rel: str, *args) -> list[str]:
+    """Gaps a Hosa checker reports (exit 1). Any other failure is not the stage's: fail-open."""
+    import os
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, str(SCRIPTS / rel), *map(str, args)], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60, env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if r.returncode != 1:
+        return []
+    lines = [x.strip() for x in r.stdout.splitlines() if x.strip()]
+    more = f" (+{len(lines) - 5})" if len(lines) > 5 else ""
+    return [f"`{Path(rel).stem}` : " + " ; ".join(lines[:5]) + more]
+
+
+def upstream_check(kb: Path, stage: str) -> list[str]:
+    """What the KB lacks to prove a stage of the cahier des charges or the structuration done:
+    the files each stage's skill writes, and the checkers its skill must pass."""
+    gaps: list[str | None] = []
+    exigences = concepts(kb, "cdc", "Exigence")
+    stable = [(p, t) for p, t in exigences if field(front(t), "status") == "stable"]
+    if stage == "hosa":
+        gaps.append(concept(kb, "project/identity.md", "Project"))
+        if not [p for p, _ in concepts(kb, "personnas", "Persona") if p.name != "exemple-persona.md"]:
+            gaps.append("aucun persona dans `kb/personnas/` (hors exemple)")
+    elif stage == "interview":
+        if not concepts(kb, "cdc/interviews", "Compte Rendu"):
+            gaps.append("aucun compte rendu dans `kb/cdc/interviews/`")
+    elif stage == "redaction":
+        if not exigences:
+            gaps.append("aucune `Exigence` dans `kb/cdc/`")
+        gaps.append(concept(kb, "project/cahier-des-charges.md", "Cahier des charges"))
+        left = open_anomalies(kb, "redaction")
+        if left:
+            gaps.append(f"anomalies → redaction encore `ouverte` dans `kb/cdc/relecture.md` : {', '.join(left)}")
+    elif stage == "fondamentaux":
+        gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux"))
+    elif stage == "juridique":
+        gaps.append(concept(kb, "cdc/juridique.md", "Analyse juridique", "Contraintes retenues"))
+    elif stage == "securite":
+        gaps.append(concept(kb, "cdc/securite.md", "Analyse de sécurité", "Menaces et mesures"))
+    elif stage == "relecture":
+        gaps.append(concept(kb, "cdc/relecture.md", "Revue Relecture"))
+        left = open_anomalies(kb)
+        if left:
+            gaps.append(f"anomalies encore `ouverte` dans `kb/cdc/relecture.md` : {', '.join(left)}")
+    elif stage == "contestation":
+        draft = [p.stem for p, t in exigences if field(front(t), "status") != "stable"]
+        unsigned = [p.stem for p, t in stable if not field(front(t), "verified")]
+        if draft:
+            gaps.append(f"exigences pas `stable` : {', '.join(draft)}")
+        if unsigned:
+            gaps.append(f"exigences sans `verified` (signature de l'utilisateur) : {', '.join(unsigned)}")
+        gaps += script("redaction/scripts/cdc.py", "check", kb)
+    elif stage == "stack":
+        if not concepts(kb, "stack", "Stack Decision"):
+            gaps.append("aucune `Stack Decision` dans `kb/stack/`")
+    elif stage == "infra":
+        gaps.append(infra_with(kb, "Outillage qualité"))
+    elif stage == "donnees":
+        for p, t in stable:
+            lines = [x for h in ("Données en entrée", "Données en sortie")
+                     for x in (section(t, h) or "").splitlines() if re.match(r"-\s", x)]
+            bare = [x for x in lines if "origine" not in x]
+            if bare:
+                gaps.append(f"`{p.stem}` : {len(bare)} donnée(s) sans `origine :`")
+    elif stage == "schema-app":
+        gaps.append(infra_with(kb, "Structures de données"))
+    elif stage == "schema-db":
+        gaps.append(concept(kb, "infra/base-de-donnees.md", "Infra", "Commandes"))
+    elif stage == "architecture":
+        gaps.append(infra_with(kb, "Documentation d'architecture"))
+    elif stage == "menaces":
+        gaps.append(concept(kb, "securite/modele-menaces.md", "Modèle de Menaces"))
+    elif stage == "interface":
+        gaps.append(infra_with(kb, "Documentation d'interface"))
+        gaps.append(concept(kb, "interface/navigation.md", "Plan de navigation"))
+        gaps.append(concept(kb, "interface/lexique.md", "Lexique interface"))
+        gaps += script("interface/scripts/interface_check.py", kb)
+        if kb.parent.name == ".hosa":  # it scans the project's files: only from a real `<root>/.hosa/kb`
+            gaps += script("interface/scripts/lexique_check.py", kb, kb.parent.parent)
+    elif stage == "backlog":
+        if not concepts(kb, "tickets", "Ticket"):
+            gaps.append("aucun `Ticket` dans `kb/tickets/`")
+        gaps.append(concept(kb, "rules/design/definition-de-termine.md", "Design Rule"))
+        gaps += script("backlog/scripts/ticket_check.py", kb)
+    return [g for g in gaps if g]
+
+
 def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
-    """What the KB lacks to prove a sprint stage done. `hooks/gate.js` runs
+    """What the KB lacks to prove a stage done. `hooks/gate.js` runs
     `check validation` before a sprint lands."""
-    if stage not in SPRINT or not sprint:
+    if stage not in SPRINT:
+        return upstream_check(kb, stage)
+    if not sprint:
         return []
     s = read(kb / "sprints" / f"{sprint}.md")
     if s is None:
         return [f"sprint `{sprint}` absent de kb/sprints/"]
     tickets = re.findall(r"\(\.\./tickets/([^)]+)\.md\)", section(s, "Tickets") or "")
     gaps = [] if tickets else ["`## Tickets` ne liste aucun ticket"]
-    if stage == "git-demarrage" and not field(s, "worktree"):
+    # the merge (`git` Mode 2) removes `worktree`: a `merge_commit` proves the start too
+    if stage == "git-demarrage" and not field(s, "worktree") and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `worktree` (`git` Mode 1)")
     if stage == "git-fusion" and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `merge_commit` (`git` Mode 2)")
@@ -241,22 +418,91 @@ def next_open(sections: dict) -> str:
     return f"`{r[0]}` ({title}) — {r[1]}"
 
 
-def show(sections: dict, resume: str) -> str:
+def open_loops(loops: list[dict]) -> list[str]:
+    return [f"- Boucle ouverte : {loop_name(lp)} — tour {lp['tours']}/{loop_max(lp)} — {lp['detail']}"
+            for lp in loops if lp["etat"] == OPEN]
+
+
+def show(sections: dict, resume: str, loops: list[dict] = ()) -> str:
     lines = ["## Point de reprise", resume or "- Rien en cours.",
              f"- Prochaine étape du plan : {next_open(sections)}"]
     for title, rows in sections.items():
         doing = [f"`{r[0]}` {r[1]}" + (f" — {r[3]}" if r[3] else "") for r in rows if r[1] in (DOING, BLOCKED)]
         if doing:
             lines.append(f"- {title} : " + " ; ".join(doing))
-    return "\n".join(lines)
+    return "\n".join(lines + [x for x in open_loops(loops) if x not in (resume or "")])
+
+
+def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
+    """`back <from> <to>`: one more round of a loop. (exit code, message or new resume point)"""
+    e = edge(a.stage, a.to or "")
+    if not e:
+        known = " ; ".join(f"`{x['from']}` → " + "/".join(f"`{t}`" for t in x["to"]) for x in LOOPS)
+        return 2, f"error: pipeline.json has no loop `{a.stage}` → `{a.to}` — known: {known}"
+    if not a.detail:
+        return 2, "error: back needs --detail (what goes back, and why)"
+    scope = ", ".join(x for x in (a.sprint, a.ticket) if x)
+    lp = next((x for x in loops if (x["from"], x["to"], x["scope"]) == (a.stage, a.to, scope)), None)
+    same = lp is not None and lp["etat"] == OPEN and (not a.cause or a.cause == lp["cause"])
+    n = lp["tours"] + 1 if same else 1
+    name = loop_name({"from": a.stage, "to": a.to, "scope": scope})
+    if n > e["max"] and not a.force:
+        return 1, (f"✗ boucle {name} : déjà {e['max']} tour(s) sans sortie propre — {lp['detail']}\n"
+                   "Arrête la boucle : montre à l'utilisateur ce qui reste et ce que chaque tour a essayé, "
+                   "et demande s'il faut un tour de plus (relance avec --force) ou changer d'approche.")
+    if lp is None:
+        lp = {"from": a.stage, "to": a.to, "scope": scope}
+        loops.append(lp)
+    first = a.detail.strip().splitlines()[0]
+    lp.update(tours=n, etat=OPEN, at=now(), cause=a.cause or (lp.get("cause", "") if same else ""), detail=first)
+    tour = f"tour {n}/{e['max']}"
+    reruns = [a.to] + e.get("then", [])
+    for s in reruns:
+        r = next(x for x in locate(sections, s, a.sprint)[1] if x[0] == s)
+        r[1:] = [TODO, now(), f"rouvert par `{a.stage}` ({tour}) : {first}"]
+    r = next(x for x in locate(sections, a.stage, a.sprint)[1] if x[0] == a.stage)
+    r[1:] = [TODO, now(), f"retour vers `{a.to}` ({tour})"]
+    order = ", puis ".join(f"`{SKILL.get(s, s)}`" for s in reruns + [a.stage])
+    rest = "".join(f"\n  {x}" for x in a.detail.strip().splitlines()[1:])
+    return 0, (f"- Boucle ouverte : {name} — {tour} — {first}{rest}\n"
+               f"- Prochaine action : {a.reprise or order}")
+
+
+def init(kb: Path) -> tuple[dict, list[str]]:
+    """A plan for a project begun before it: each stage done while its proof holds, in order,
+    up to the first gap of each section. `livraison` is never inferred: a tag isn't in the KB."""
+    sections, _ = load(kb / "project" / "avancement.md")
+    report = []
+
+    def walk(title, rows, sprint=None) -> bool:
+        for r in rows:
+            gaps = check(kb, r[0], sprint)
+            if gaps or r[0] == "livraison":
+                report.append(f"- {title} : arrêt à `{r[0]}` — " + ("; ".join(gaps) if gaps else "à confirmer"))
+                return False
+            r[1:] = [DONE, now(), "repris de la KB (`init`)"]
+        return True
+
+    ok = True
+    for title, _ in PIPELINES:  # a later pipeline starts only once the earlier one is proved
+        ok = ok and walk(title, sections[title])
+    for p, _ in concepts(kb, "sprints", "Sprint"):
+        title = f"Sprint {p.stem}"
+        sections[title] = [[s, TODO, "", ""] for s in SPRINT]
+        walk(title, sections[title], p.stem)
+    return sections, report
 
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
-    ap.add_argument("action", choices=["show", "next", "check", "start", "progress", "done", "block", "skip", "reprise"])
+    ap.add_argument("action", choices=["show", "next", "check", "start", "progress", "done", "block", "skip", "reprise",
+                                       "back", "init"])
     ap.add_argument("stage", nargs="?")
+    ap.add_argument("to", nargs="?")
     ap.add_argument("--sprint")
+    ap.add_argument("--ticket", default="")
+    ap.add_argument("--cause", default="")
     ap.add_argument("--detail", default="")
     ap.add_argument("--reprise", default="")
     ap.add_argument("--force", action="store_true")
@@ -266,9 +512,19 @@ def main(argv: list[str]) -> int:
         return 2
     path = a.kb / "project" / "avancement.md"
     sections, resume = load(path)
+    loops = load_loops(path)
 
     if a.action == "show":
-        print(show(sections, resume))
+        print(show(sections, resume, loops))
+        return 0
+    if a.action == "init":
+        if path.exists():
+            print(f"✗ le plan existe déjà : {path} — `show` le lit", file=sys.stderr)
+            return 1
+        sections, report = init(a.kb)
+        save(path, sections, "- Plan créé depuis la KB (`init`) : confirmer les arrêts ci-dessous avec l'utilisateur.", [])
+        print("\n".join(report) or "- Toutes les étapes prouvées.")
+        print(show(*load(path)))
         return 0
     if a.action == "next":
         if not path.exists():
@@ -288,6 +544,7 @@ def main(argv: list[str]) -> int:
             print("\n".join(f"- {g}" for g in gaps))
         if resume:
             print(resume)
+        print("\n".join(x for x in open_loops(loops) if x not in resume))
         return 0
     if a.action == "check":
         if not a.stage:
@@ -301,7 +558,15 @@ def main(argv: list[str]) -> int:
             print("error: reprise needs the next action as text", file=sys.stderr)
             return 2
         save(path, sections, f"- Prochaine action : {a.stage} ({now()})")
-        print(show(*load(path)))
+        print(show(*load(path), loops))
+        return 0
+    if a.action == "back":
+        code, out = back(sections, loops, a)
+        if code:
+            print(out, file=sys.stderr if code == 2 else sys.stdout)
+            return code
+        save(path, sections, out, loops)
+        print(show(*load(path), loops))
         return 0
     if not a.stage:
         print(f"error: {a.action} needs a stage", file=sys.stderr)
@@ -341,14 +606,17 @@ def main(argv: list[str]) -> int:
             return 1
         row[1:] = [DONE, now(), a.detail]
         resume = ""
+        for lp in loops:  # the stage came out clean: its loops are over
+            if lp["from"] == a.stage and lp["etat"] == OPEN and (lp["scope"].split(", ")[0] or None) == a.sprint:
+                lp.update(etat=SHUT, at=now())
     elif a.action == "block":
         # the questions in full survive a /clear in the resume point; the table keeps their first line
         row[1:] = [BLOCKED, now(), a.detail.strip().splitlines()[0]]
         resume = f"- Bloqué : {where} — {a.detail.strip()}"
     elif a.action == "skip":
         row[1:] = [SKIPPED, now(), a.detail]
-    save(path, sections, resume)
-    print(show(*load(path)))
+    save(path, sections, resume, loops)
+    print(show(*load(path), loops))
     return 0
 
 

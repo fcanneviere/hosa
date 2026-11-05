@@ -52,7 +52,7 @@ Progress-plan stages: `securite` (Analyse, CDC pipeline) and `menaces` (Structur
 
 ## Menaces (Mode 3)
 
-`kb/infra/` has no `## Documentation d'architecture` → run `architecture` first. Dispatch `hosa-security` (Mode 3). It refines `kb/cdc/securite.md` on the real architecture: trust boundaries, STRIDE, abuse cases (`qa-plan` turns them into tests), new `Security Rule`s. Relay its Open Questions: decisions already taken in Analyse aren't asked again. Its `## Documentation à produire` lines, as they are (paths, `retours` §4) → `hosa-documentation` (Mode 1): each structuring security decision becomes an ADR.
+`kb/infra/` has no `## Documentation d'architecture` → `back menaces architecture --detail "pas de documentation d'architecture"`, then run `architecture` first. Dispatch `hosa-security` (Mode 3). It refines `kb/cdc/securite.md` on the real architecture: trust boundaries, STRIDE, abuse cases (`qa-plan` turns them into tests), new `Security Rule`s. Relay its Open Questions: decisions already taken in Analyse aren't asked again. Its `## Documentation à produire` lines, as they are (paths, `retours` §4) → `hosa-documentation` (Mode 1): each structuring security decision becomes an ADR.
 
 ## Audit (Mode 2)
 

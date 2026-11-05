@@ -182,7 +182,7 @@ class AppTest(unittest.TestCase):
         self.assertIsNone(self.call("GET", "/api/overview")[1]["plan"])  # pas de plan : l'app propose /status
         with contextlib.redirect_stdout(io.StringIO()):
             for stage in kb.av.PIPELINES[0][1] + kb.av.PIPELINES[1][1]:
-                kb.av.main([str(self.root), "done", stage])
+                kb.av.main([str(self.root), "done", stage, "--force"])
             kb.av.main([str(self.root), "skip", "menaces", "--detail", "pas d'API"])
             kb.av.main([str(self.root), "start", "sprint", "--sprint", "s1", "--detail", "composition"])
         plan = self.call("GET", "/api/overview")[1]["plan"]

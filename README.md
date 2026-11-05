@@ -75,6 +75,8 @@ Les agents d'exécution (`hosa-developer`, `hosa-implementer`, `hosa-tester`, `h
 
 Hosa tient un **plan d'avancement** (`.hosa/kb/project/avancement.md`). Si une session s'arrête (limite atteinte, coupure), la suivante reprend à l'étape, au ticket et à la tâche exacts. Il refuse aussi de sauter une étape sans ton accord.
 
+Une étape n'est marquée faite qu'avec sa preuve dans la KB. Par exemple : pas de relecture faite avec une anomalie encore ouverte, pas de contestation faite sans exigences signées, pas de backlog fait sans tickets complets. Quand une étape renvoie du travail en arrière (la relecture vers la rédaction, la QA vers le développement…), le plan note la boucle et compte ses tours. Après deux tours sans sortie propre, c'est toi qui décides de la suite. Les étapes et leurs boucles sont décrites dans un seul fichier, `skills/status/scripts/pipeline.json`.
+
 ### Le dépôt git
 
 Hosa gère le dépôt dès le premier fichier : il l'initialise et commite à chaque étape (le code sur la branche principale, la KB sur `hosa-kb`). Tu n'as pas à le lui demander.
