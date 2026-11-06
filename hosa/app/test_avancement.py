@@ -206,6 +206,87 @@ class Block(unittest.TestCase):
         self.assertEqual(next(r for r in sections["Structuration"] if r[0] == "schema-db")[3], "2 questions bloquantes")
 
 
+STACK = {"stack/s.md": "---\ntype: Stack Decision\n---\n"}
+
+
+class Tasks(unittest.TestCase):
+    """`task`: the agents' dispatches of an open stage — a proof of exit like the files its skill writes."""
+
+    def setUp(self):
+        self.k = kb(STACK)
+        closed_until(self.k, "contestation")
+        run(self.k, "start", "stack")
+
+    def test_add_needs_an_open_stage_and_an_agent(self):
+        self.assertEqual(run(self.k, "task", "add", "infra", "i1", "--agent", "hosa-infra")[0], 1)
+        self.assertEqual(run(self.k, "task", "add", "stack", "s1")[0], 2)
+        self.assertEqual(run(self.k, "task", "add", "stack", "a b", "--agent", "x")[0], 2)
+        self.assertEqual(run(self.k, "task", "done", "stack", "inconnue", "--sortie", "stack/s.md")[0], 2)
+
+    def test_done_needs_outputs_that_exist(self):
+        run(self.k, "task", "add", "stack", "options", "--agent", "hosa-senior-dev", "--objet", "2-3 options")
+        code, out = run(self.k, "task", "done", "stack", "options")
+        self.assertEqual((code, "aucune sortie" in out), (1, True))
+        code, out = run(self.k, "task", "done", "stack", "options", "--sortie", "kb/stack/absent.md")
+        self.assertEqual((code, "kb/stack/absent.md" in out), (1, True))
+        self.assertEqual(run(self.k, "task", "done", "stack", "options", "--sortie", "kb/stack/s.md")[0], 0)
+        t = av.load_tasks(self.k / "project" / "avancement.md")
+        self.assertEqual([(x["id"], x["statut"], x["sortie"]) for x in t], [("options", av.DONE, "kb/stack/s.md")])
+
+    def test_stage_done_waits_for_its_tasks_then_clears_them(self):
+        run(self.k, "task", "add", "stack", "options", "--agent", "hosa-senior-dev")
+        run(self.k, "task", "add", "stack", "adr", "--agent", "hosa-documentation")
+        run(self.k, "task", "done", "stack", "options", "--sortie", "stack/s.md")
+        code, out = run(self.k, "done", "stack")
+        self.assertEqual(code, 1)
+        self.assertIn("tâche `adr` hosa-documentation : à faire", out)
+        self.assertNotIn("`options`", out)
+        run(self.k, "task", "skip", "stack", "adr", "--detail", "pas de nouvelle décision")
+        self.assertEqual(run(self.k, "done", "stack")[0], 0)
+        self.assertEqual(av.load_tasks(self.k / "project" / "avancement.md"), [])
+
+    def test_show_gives_the_next_task_and_each_blocked_one(self):
+        run(self.k, "task", "add", "stack", "a", "--agent", "hosa-senior-dev")
+        run(self.k, "task", "add", "stack", "b", "--agent", "hosa-infra", "--objet", "docker")
+        run(self.k, "task", "block", "stack", "a", "--detail", "Q1. Postgres ou SQLite ?")
+        out = run(self.k, "show")[1]
+        self.assertIn("- Tâches `stack` : 0/2 faites — prochaine : `b` hosa-infra → docker", out)
+        self.assertIn("- Tâche bloquée : `a` hosa-senior-dev (`stack`) — Q1. Postgres ou SQLite ?", out)
+        self.assertIn("tâche `a` hosa-senior-dev : bloqué", run(self.k, "next")[1])
+
+    def test_sprint_tasks_are_per_sprint(self):
+        k = kb({"sprints/s1.md": SPRINT, "sprints/s2.md": SPRINT, "tickets/t1.md": TICKET})
+        for s in ("s1", "s2"):
+            run(k, "start", "sprint", "--sprint", s, "--force")
+        with self.assertRaises(SystemExit):  # a sprint stage needs --sprint
+            run(k, "task", "add", "sprint", "x", "--agent", "hosa-sprint-planner")
+        run(k, "task", "add", "sprint", "compo", "--sprint", "s1", "--agent", "hosa-sprint-planner")
+        self.assertEqual(av.check(k, "sprint", "s2"), [])
+        self.assertEqual(av.check(k, "sprint", "s1"), ["tâche `compo` hosa-sprint-planner : à faire"])
+
+    def test_a_lot_output_is_found_in_the_sprint_worktree(self):
+        wt = Path(tempfile.mkdtemp())
+        (wt / "src").mkdir()
+        (wt / "src" / "a.py").write_text("", encoding="utf-8")
+        k = kb({"sprints/s1.md": SPRINT.replace("type: Sprint", f"type: Sprint\nworktree: {wt.as_posix()}"),
+                "tickets/t1.md": TICKET})
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+        run(k, "task", "add", "develop", "t1.lot-1", "--sprint", "s1", "--agent", "hosa-developer")
+        self.assertEqual(run(k, "task", "done", "develop", "t1.lot-1", "--sprint", "s1", "--sortie", "src/b.py")[0], 1)
+        self.assertEqual(run(k, "task", "done", "develop", "t1.lot-1", "--sprint", "s1", "--sortie", "src/a.py")[0], 0)
+
+    def test_task_rows_are_never_read_as_stages(self):
+        run(self.k, "task", "add", "stack", "a", "--agent", "hosa-senior-dev")
+        run(self.k, "task", "skip", "stack", "a", "--detail", "fait | non applicable")
+        text = (self.k / "project" / "avancement.md").read_text(encoding="utf-8")
+        rows = [x for x in av.section(text, "Tâches").splitlines() if x.startswith("| a |")]
+        self.assertEqual(len(rows), 1)
+        self.assertIsNone(av.ROW.match(rows[0]))
+        budget = re.compile(r"^\|\s*`?[\w-]+`?\s*\|\s*(fait|non applicable)\s*\|")  # hooks/budget.js closedStages
+        self.assertIsNone(budget.match(rows[0]))
+        self.assertEqual(av.load(self.k / "project" / "avancement.md")[0]["Structuration"][0][:2], ["stack", av.DOING])
+
+
 class AuditStage(unittest.TestCase):
     def test_audit_sits_between_develop_and_qa(self):
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET})

@@ -280,7 +280,9 @@ function vAvancement() {
   return h('div', { class: 'grid' }, h('h1', {}, "Plan d'avancement"), !p ? none("Pas encore de plan d'avancement, lancer /status") : h('div', { class: 'cols' }, h('div', { class: 'grid' }, nextCard(), gapsCard(),
     card('Point de reprise', (p.resume.length ? p.resume : ['Aucun point de reprise.']).map((l) => h('p', {}, l))),
     (p.boucles || []).length ? card('Boucles', table(['Boucle', 'Tours', 'État', 'Détail'], p.boucles.map((b) => h('tr', { class: b.etat === 'ouverte' && b.tours >= b.max ? 'fail' : '' },
-      h('td', {}, `${b.from} → ${b.to}${b.scope ? ` (${b.scope})` : ''}`), h('td', { class: 'num' }, `${b.tours} / ${b.max}`), h('td', {}, st(b.etat)), h('td', { class: 'muted' }, b.detail || ''))))) : null),
+      h('td', {}, `${b.from} → ${b.to}${b.scope ? ` (${b.scope})` : ''}`), h('td', { class: 'num' }, `${b.tours} / ${b.max}`), h('td', {}, st(b.etat)), h('td', { class: 'muted' }, b.detail || ''))))) : null,
+    (p.taches || []).length ? card('Tâches des agents', table(['Étape', 'Agent', 'Objet', 'Statut', 'Sortie ou détail'], p.taches.map((t) => h('tr', { class: t.statut === 'bloqué' ? 'fail' : '' },
+      h('td', {}, `${t.stage}${t.scope ? ` (${t.scope})` : ''}`), h('td', {}, t.agent), h('td', {}, t.objet || ''), h('td', {}, st(t.statut)), h('td', { class: 'muted' }, t.sortie || t.detail || ''))))) : null),
     h('div', { class: 'grid' }, p.sections.map((s) => card(s.title, table(['Étape', 'Statut', 'Date', 'Détail'], s.stages.map((x) => h('tr', { class: x.status === 'bloqué' ? 'fail' : '' }, h('td', {}, x.stage), h('td', {}, st(x.status)), h('td', { class: 'num' }, fmtDate(x.at)), h('td', { class: 'muted' }, x.detail || '')))))))));
 }
 const stateName = (s) => TICKET[s].replace(/^./, (m) => m.toUpperCase());

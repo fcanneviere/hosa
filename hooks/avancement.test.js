@@ -43,6 +43,24 @@ test('an open loop survives a later resume point, a closed one is not shown', ()
   assert.match(ctx, /`back <de> <vers>/);
 });
 
+test('resumes at the next agent task of each stage and shows the blocked ones', () => {
+  const root = kb([
+    '---', 'type: Plan d\'avancement', '---',
+    '## Point de reprise', '- En cours : `qa` (sprint s1) — t1 testé', '',
+    '## Tâches', '| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |', '|---|---|---|---|---|---|---|---|',
+    '| t1 | `qa` (s1) | hosa-tester | t1 | fait | 2026-11-06 | kb/test/t1-technique.md |  |',
+    '| t2 | `qa` (s1) | hosa-tester | t2 | à faire | 2026-11-06 |  |  |',
+    '| t3 | `qa` (s1) | hosa-tester | t3 | à faire | 2026-11-06 |  |  |',
+    '| r1 | `qa` (s1) | hosa-key-user | t1, parent | bloqué | 2026-11-06 |  | Q1. Compte de test ? |', '',
+    '## Sprint s1', '| Étape | Statut | Mis à jour | Détail |', '|---|---|---|---|', '| `qa` | en cours | 2026-11-06 | t1 testé |',
+  ].join('\n'));
+  const ctx = resumeContext(root);
+  assert.match(ctx, /Prochaine tâche : `t2` hosa-tester → t2 \(`qa` \(s1\)\)/);
+  assert.doesNotMatch(ctx, /`t3`|`t1` hosa-tester/);
+  assert.match(ctx, /Tâche bloquée : `r1` hosa-key-user → t1, parent \(`qa` \(s1\)\) — Q1\. Compte de test \?/);
+  assert.match(ctx, /Prochaine étape du plan : `qa` \(Sprint s1\)/);
+});
+
 test('points to the status skill when there is no plan yet', () => {
   assert.match(resumeContext(kb()), /No progress plan yet/);
 });

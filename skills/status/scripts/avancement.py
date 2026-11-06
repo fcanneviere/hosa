@@ -17,6 +17,11 @@ the work stopped, in the right order.
   avancement.py <kb> reprise  "<next action>"                     (outside the pipeline)
   avancement.py <kb> back     <from> <to> [--sprint S] [--ticket T] [--cause C] --detail D [--reprise R] [--force]
                                                                   (a loop: <from> sends work back to <to>)
+  avancement.py <kb> task add   <stage> <id> [--sprint S] --agent A [--objet O] [--detail D]
+  avancement.py <kb> task done  <stage> <id> [--sprint S] --sortie P[,P…] [--detail D] [--force]
+  avancement.py <kb> task block <stage> <id> [--sprint S] --detail D
+  avancement.py <kb> task skip  <stage> <id> [--sprint S] --detail D
+                                                                  (the agents' tasks of a stage, under `## Tâches`)
 
 `start` refuses (exit 1) while an earlier stage of the same pipeline isn't
 done or skipped — `--force` only once the user has confirmed going out of
@@ -25,8 +30,11 @@ rule. `back` follows a loop of pipeline.json: it reopens <to> (and the
 stages the loop re-runs after it) and <from>, and counts the round under
 `## Boucles`; past the loop's `max` rounds it refuses (exit 1) — `--force`
 once the user chose to go on. A different `--cause` restarts the count;
-`done <from>` closes its loops. Sprint stages need `--sprint`. Exit 2 = bad
-invocation. Stdlib only.
+`done <from>` closes its loops. `task add` lists one agent dispatch of an
+open stage; `task done` refuses (exit 1) without `--sortie`, the paths the
+agent wrote, each one existing; `done <stage>` refuses while one of its tasks
+is `à faire` or `bloqué`, and clears them once done. Sprint stages need
+`--sprint`. Exit 2 = bad invocation. Stdlib only.
 """
 from __future__ import annotations
 
@@ -46,6 +54,9 @@ LOOPS = GRAPH["loops"]
 OPEN, SHUT = "ouverte", "fermée"
 LOOP_ROW = re.compile(r"^\|\s*`([\w-]+)`\s*→\s*`([\w-]+)`(?:\s*\(([^)]*)\))?\s*\|\s*(\d+)/\d+\s*\|"
                       r"\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
+# `| id | `stage` (sprint) | agent | objet | statut | mis à jour | sortie | détail |` — never a stage row
+TASK_ROW = re.compile(r"^\|\s*([\w.-]+)\s*\|\s*`([\w-]+)`(?:\s*\(([^)]*)\))?\s*\|" + r"\s*([^|]*?)\s*\|" * 6 + r"\s*$")
+TASK_ID = re.compile(r"^[\w.-]+$")
 TODO, DOING, DONE, BLOCKED, SKIPPED = "à faire", "en cours", "fait", "bloqué", "non applicable"
 CLOSED = {DONE, SKIPPED}
 # a sprint begun before the `audit` stage existed had its audit inside `validation`
@@ -119,8 +130,33 @@ def loop_max(lp: dict) -> int:
     return e["max"] if e else 2
 
 
-def save(path: Path, sections: dict, resume: str, loops: list[dict] | None = None) -> None:
+def load_tasks(path: Path) -> list[dict]:
+    """The agents' tasks of the open stages, from `## Tâches`."""
+    out = []
+    for line in (section(read(path), "Tâches") or "").splitlines():
+        m = TASK_ROW.match(line)
+        if m:
+            out.append({"id": m[1], "stage": m[2], "scope": m[3] or "", "agent": m[4], "objet": m[5],
+                        "statut": m[6], "at": m[7], "sortie": m[8], "detail": m[9]})
+    return out
+
+
+def cell(s: str) -> str:
+    return s.replace("|", "/").replace("\n", " ").strip()
+
+
+def task_where(t: dict) -> str:
+    return f"`{t['stage']}`" + (f" (sprint {t['scope']})" if t["scope"] else "")
+
+
+def task_name(t: dict) -> str:
+    return f"`{t['id']}` {t['agent']}" + (f" → {t['objet']}" if t["objet"] else "")
+
+
+def save(path: Path, sections: dict, resume: str, loops: list[dict] | None = None,
+         tasks: list[dict] | None = None) -> None:
     loops = load_loops(path) if loops is None else loops
+    tasks = load_tasks(path) if tasks is None else tasks
     out = ["---", "type: Plan d'avancement", "title: Plan d'avancement",
            "description: Étapes du projet, leur statut et le point de reprise",
            "tags: [pilotage]", f"generated: {{ by: process:hosa-avancement, at: {now()} }}", "---",
@@ -129,6 +165,13 @@ def save(path: Path, sections: dict, resume: str, loops: list[dict] | None = Non
         out += ["## Boucles", "| Boucle | Tours | État | Mis à jour | Cause | Détail |", "|---|---|---|---|---|---|"]
         out += [f"| {loop_name(lp)} | {lp['tours']}/{loop_max(lp)} | {lp['etat']} | {lp['at']} | "
                 f"{lp['cause'].replace('|', '/')} | {lp['detail'].replace('|', '/')} |" for lp in loops]
+        out.append("")
+    if tasks:
+        out += ["## Tâches", "| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |",
+                "|---|---|---|---|---|---|---|---|"]
+        out += [f"| {t['id']} | `{t['stage']}`" + (f" ({t['scope']})" if t["scope"] else "")
+                + f" | {cell(t['agent'])} | {cell(t['objet'])} | {t['statut']} | {t['at']} | {cell(t['sortie'])} | "
+                f"{cell(t['detail'])} |" for t in tasks]
         out.append("")
     for title, rows in sections.items():
         out += [f"## {title}", "| Étape | Statut | Mis à jour | Détail |", "|---|---|---|---|"]
@@ -318,9 +361,20 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
     return [g for g in gaps if g]
 
 
+def open_tasks(tasks: list[dict], stage: str, sprint: str | None) -> list[dict]:
+    return [t for t in tasks if t["stage"] == stage and t["scope"] == (sprint or "") and t["statut"] not in CLOSED]
+
+
 def check(kb: Path, stage: str, sprint: str | None) -> list[str]:
-    """What the KB lacks to prove a stage done. `hooks/gate.js` runs
-    `check validation` before a sprint lands."""
+    """What the KB lacks to prove a stage done: its proofs, then its agents' tasks still open.
+    `hooks/gate.js` runs `check validation` before a sprint lands."""
+    tasks = open_tasks(load_tasks(kb / "project" / "avancement.md"), stage, sprint)
+    return proofs(kb, stage, sprint) + [f"tâche {task_name(t)} : {t['statut']}"
+                                        + (f" — {t['detail']}" if t["detail"] else "") for t in tasks]
+
+
+def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
+    """The files and checkers that prove a stage done."""
     if stage not in SPRINT:
         return upstream_check(kb, stage)
     if not sprint:
@@ -412,14 +466,82 @@ def open_loops(loops: list[dict]) -> list[str]:
             for lp in loops if lp["etat"] == OPEN]
 
 
-def show(sections: dict, resume: str, loops: list[dict] = ()) -> str:
+def task_lines(tasks: list[dict]) -> list[str]:
+    """Per stage: tasks done out of all, the next one to dispatch; each blocked task in full."""
+    out = []
+    for where in dict.fromkeys(task_where(t) for t in tasks):
+        mine = [t for t in tasks if task_where(t) == where]
+        done = sum(t["statut"] in CLOSED for t in mine)
+        todo = next((t for t in mine if t["statut"] == TODO), None)
+        out.append(f"- Tâches {where} : {done}/{len(mine)} faites"
+                   + (f" — prochaine : {task_name(todo)}" + (f" ({todo['detail']})" if todo["detail"] else "")
+                      if todo else ""))
+        out += [f"- Tâche bloquée : {task_name(t)} ({where}) — {t['detail']}" for t in mine if t["statut"] == BLOCKED]
+    return out
+
+
+def show(sections: dict, resume: str, loops: list[dict] = (), tasks: list[dict] = ()) -> str:
     lines = ["## Point de reprise", resume or "- Rien en cours.",
              f"- Prochaine étape du plan : {next_open(sections)}"]
     for title, rows in sections.items():
         doing = [f"`{r[0]}` {r[1]}" + (f" — {r[3]}" if r[3] else "") for r in rows if r[1] in (DOING, BLOCKED)]
         if doing:
             lines.append(f"- {title} : " + " ; ".join(doing))
-    return "\n".join(lines + [x for x in open_loops(loops) if x not in (resume or "")])
+    return "\n".join(lines + [x for x in open_loops(loops) if x not in (resume or "")] + task_lines(tasks))
+
+
+def exists(kb: Path, p: str, sprint: str = "") -> bool:
+    """An output path as an agent gives it: absolute, `kb/…`, `.hosa/kb/…`, from the project root
+    or from the sprint's worktree."""
+    p = p.strip().strip("`")
+    if not p:
+        return False
+    worktree = field(read(kb / "sprints" / f"{sprint}.md"), "worktree") if sprint else None
+    roots = [Path.cwd(), kb] + ([kb.parent.parent] if kb.parent.name == ".hosa" else []) + \
+        ([Path(worktree.strip("\"'"))] if worktree else [])
+    candidates = [Path(p)] + [r / p for r in roots] + ([kb / p[3:]] if p.startswith("kb/") else [])
+    return any(c.exists() for c in candidates)
+
+
+def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
+    """`task add|done|block|skip <stage> <id>`. (exit code, message)"""
+    op, stage, tid = a.stage, a.to, a.item
+    if op not in ("add", "done", "block", "skip") or not stage or not tid:
+        return 2, "error: task add|done|block|skip <stage> <id>"
+    if not TASK_ID.match(tid):
+        return 2, f"error: task id `{tid}` — letters, digits, `.`, `_`, `-` only"
+    title, rows = locate(sections, stage, a.sprint)
+    row = next(r for r in rows if r[0] == stage)
+    scope = a.sprint if stage in SPRINT else ""
+    t = next((x for x in tasks if (x["id"], x["stage"], x["scope"]) == (tid, stage, scope)), None)
+    where = f"`{stage}`" + (f" (sprint {scope})" if scope else "")
+    if op == "add":
+        if not a.agent:
+            return 2, "error: task add needs --agent"
+        if row[1] not in (DOING, BLOCKED):
+            return 1, f"✗ {where} est {row[1]} : `start` l'étape d'abord, puis liste ses tâches."
+        if t is None:
+            t = {"id": tid, "stage": stage, "scope": scope}
+            tasks.append(t)
+        t.update(agent=a.agent, objet=a.objet, statut=TODO, at=now(), sortie="", detail=a.detail)
+        return 0, ""
+    if t is None:
+        known = ", ".join(f"`{x['id']}`" for x in tasks if (x["stage"], x["scope"]) == (stage, scope)) or "aucune"
+        return 2, f"error: {where} n'a pas de tâche `{tid}` — tâches : {known}"
+    if op in ("block", "skip") and not a.detail:
+        return 2, f"error: task {op} needs --detail"
+    if op == "done":
+        paths = [p.strip() for p in a.sortie.split(",") if p.strip()]
+        missing = [p for p in paths if not exists(kb, p, scope)]
+        if (not paths or missing) and not a.force:
+            return 1, (f"✗ tâche `{tid}` ({where}) pas faite : "
+                       + ("aucune sortie (--sortie : les chemins que l'agent a écrits)" if not paths
+                          else "sortie(s) absente(s) — " + ", ".join(missing))
+                       + ". Relance l'agent, ou --force si l'utilisateur accepte.")
+        t.update(statut=DONE, at=now(), sortie=", ".join(paths), detail=a.detail or t["detail"])
+    else:
+        t.update(statut=BLOCKED if op == "block" else SKIPPED, at=now(), detail=a.detail.strip().splitlines()[0])
+    return 0, ""
 
 
 def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
@@ -486,14 +608,18 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
     ap.add_argument("action", choices=["show", "next", "check", "start", "progress", "done", "block", "skip", "reprise",
-                                       "back", "init"])
+                                       "back", "init", "task"])
     ap.add_argument("stage", nargs="?")
     ap.add_argument("to", nargs="?")
+    ap.add_argument("item", nargs="?")
     ap.add_argument("--sprint")
     ap.add_argument("--ticket", default="")
     ap.add_argument("--cause", default="")
     ap.add_argument("--detail", default="")
     ap.add_argument("--reprise", default="")
+    ap.add_argument("--agent", default="")
+    ap.add_argument("--objet", default="")
+    ap.add_argument("--sortie", default="")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -502,9 +628,18 @@ def main(argv: list[str]) -> int:
     path = a.kb / "project" / "avancement.md"
     sections, resume = load(path)
     loops = load_loops(path)
+    tasks = load_tasks(path)
 
     if a.action == "show":
-        print(show(sections, resume, loops))
+        print(show(sections, resume, loops, tasks))
+        return 0
+    if a.action == "task":
+        code, out = task(a.kb, sections, tasks, a)
+        if code:
+            print(out, file=sys.stderr if code == 2 else sys.stdout)
+            return code
+        save(path, sections, resume, loops, tasks)
+        print(show(*load(path), loops, tasks))
         return 0
     if a.action == "init":
         if path.exists():
@@ -547,7 +682,7 @@ def main(argv: list[str]) -> int:
             print("error: reprise needs the next action as text", file=sys.stderr)
             return 2
         save(path, sections, f"- Prochaine action : {a.stage} ({now()})")
-        print(show(*load(path), loops))
+        print(show(*load(path), loops, tasks))
         return 0
     if a.action == "back":
         code, out = back(sections, loops, a)
@@ -555,7 +690,7 @@ def main(argv: list[str]) -> int:
             print(out, file=sys.stderr if code == 2 else sys.stdout)
             return code
         save(path, sections, out, loops)
-        print(show(*load(path), loops))
+        print(show(*load(path), loops, tasks))
         return 0
     if not a.stage:
         print(f"error: {a.action} needs a stage", file=sys.stderr)
@@ -595,6 +730,8 @@ def main(argv: list[str]) -> int:
             return 1
         row[1:] = [DONE, now(), a.detail]
         resume = ""
+        scope = a.sprint if a.stage in SPRINT else ""
+        tasks = [t for t in tasks if (t["stage"], t["scope"]) != (a.stage, scope)]  # their outputs are in the KB
         for lp in loops:  # the stage came out clean: its loops are over
             if lp["from"] == a.stage and lp["etat"] == OPEN and (lp["scope"].split(", ")[0] or None) == a.sprint:
                 lp.update(etat=SHUT, at=now())
@@ -604,8 +741,8 @@ def main(argv: list[str]) -> int:
         resume = f"- Bloqué : {where} — {a.detail.strip()}"
     elif a.action == "skip":
         row[1:] = [SKIPPED, now(), a.detail]
-    save(path, sections, resume, loops)
-    print(show(*load(path), loops))
+    save(path, sections, resume, loops, tasks)
+    print(show(*load(path), loops, tasks))
     return 0
 
 

@@ -427,6 +427,7 @@ def plan(root):
         "sections": [{"title": t, "stages": [{"stage": s, "status": st, "at": at, "detail": d} for s, st, at, d in rows]}
                      for t, rows in sections.items()],
         "boucles": [{**lp, "max": av.loop_max(lp)} for lp in av.load_loops(path)],
+        "taches": av.load_tasks(path),
         "next": nxt,
     }
 

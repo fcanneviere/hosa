@@ -7,6 +7,8 @@ description: "Use to turn every stable Exigence into Product Backlog tickets —
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start backlog`; refused → name the missing stage to the user and stop. Stopped on a user question: `block backlog --detail "<question>"`. Once the stage's output is written and committed: `done backlog`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** Once Step 1 has cut the exigences into batches of 8, list each batch's dispatches: `avancement.py task add backlog stories-<k> --agent hosa-product-owner --objet "<exigences du lot>"`, then `securite-<k>` (`hosa-security`) and `juridique-<k>` (`hosa-legal`) with `--objet "lot <k>"`. Each return → `task done backlog <id> --sortie <the ticket paths it wrote or completed>`. A `## Reprise` report → `task add` a new id (`stories-<k>b`) for what it lists, then `task done` the cut one with what it did write. A security or legal analysis still missing (fallback line) → `task skip backlog securite-<k> --detail "pas encore d'analyse"`.
+
 Turns "what the application must do" (the stable cahier des charges) into Product Backlog tickets — each one carrying the business story, its technical feasibility, where it lands in the architecture, and where it lands in the interface, so nothing enters `kb/tickets/` disconnected from the technical reality already decided by `stack`, `architecture`, and `interface`.
 
 ## Flow

@@ -7,6 +7,8 @@ description: "Use for the managed project's security, in three moments: constrai
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. The cahier des charges moment is stage `securite`, the threat model is stage `menaces`; the Go/No-Go and an audit on request are not stages. Before anything: `avancement.py start <stage>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block <stage> --detail "<question>"`. Once the stage's output is written and committed: `done <stage>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** After `start`, list the dispatches (`avancement.py task add <stage> <id> --agent <agent>`) — `securite`: `phase-1`, `phase-2` (`hosa-security`); `menaces`: `modele` (`hosa-security`), `adr` (`hosa-documentation`). Each return → `task done <stage> <id> --sortie <paths>`: `phase-1` once `## Choix validés` is written → `kb/cdc/securite.md`; `phase-2` → the exigences and rules it wrote; `modele` → `kb/securite/modele-menaces.md`; `adr` → the ADRs. No `## Documentation à produire` → `task skip menaces adr --detail "aucune décision structurante"`. Stopped on an Open Question → `task block <stage> <id> --detail "<la question>"`, and `task add` the same id again once answered.
+
 Security by design, then by check. `hosa-security` gives its constraints while the cahier des charges is written, so they reach the stack, the architecture, every ticket and every task. Once the architecture exists, it models how the real application can be attacked: the abuse cases become tests. Before each release, it audits what changed and refuses to ship a known exploitable flaw.
 
 ## Modes

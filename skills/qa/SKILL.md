@@ -43,7 +43,7 @@ Manual: `/qa <slug-sprint> [<slug-ticket> [technique]]` — a ticket given re-ru
 
 ## Step 1: Read the Sprint and Check Preconditions
 
-`avancement.py … start qa --sprint <slug>`: refused → it names the stage not done (`qa-plan`, `develop`…) — propose it and stop, don't partially execute. Then read `kb/sprints/<slug>.md` for its `## Tickets` list.
+`avancement.py … start qa --sprint <slug>`: refused → it names the stage not done (`qa-plan`, `develop`…) — propose it and stop, don't partially execute. Then read `kb/sprints/<slug>.md` for its `## Tickets` list. Once the lots (Step 3) and the personas (Step 4) are known, list every dispatch: `avancement.py … task add qa lot-<k> --sprint <slug> --agent hosa-tester --objet "<tickets du lot>"`, `task add qa recette-<persona> --sprint <slug> --agent hosa-key-user --objet "<tickets>"`, `task add qa outillage --sprint <slug> --agent hosa-qa-lead`. Tasks already listed (a resumed session): keep them, dispatch the first `à faire` one. A ticket re-run alone after a correction re-adds its lot and the recettes it needs (`task add` on a known id resets it to `à faire`).
 
 Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. 
 
@@ -61,7 +61,7 @@ Collect, from every ticket's `## Recette requise` (in `kb/test/<slug-ticket>-tec
 
 Split each `hosa-key-user` report by ticket and write each section to `.hosa/kb/test/<slug-ticket>-<slug-persona>.md` in the exact format `recette` uses — always this file, never a section of the technical plan: `validation` and `hosa-git` look for it. A recette the user plays on a real device goes to the same file, with one `Oui`/`Non`/`Non observé` per `CAn`: ask for each one, never record a bare "OK". A `Différé` verdict → `hosa-product-owner` creates the ticket `rejeu-recettes-persona-<slug-sprint>` (one per sprint) with the scenarios to replay, so deferred recettes don't pile up unseen. Log each result to `kb/test/log.md` (and `kb/personnas/log.md` if a persona was enriched). The technical results are already recorded by `hosa-tester` — check its `## Résultats enregistrés` points at the plan; missing → redispatch it rather than writing them yourself.
 
-After each lot's tests and after each persona's recette: `avancement.py … progress qa --sprint <slug> --detail "<lot ou persona> : fait (k/n)" --reprise "qa <lot ou persona suivant>"`. One QA pass per session is enough: a long sprint → `/clear` then « reprends » between the tests and the recettes.
+After each lot's tests and after each persona's recette: `avancement.py … task done qa <id> --sprint <slug> --sortie <the files it wrote: kb/test/<ticket>-technique.md…, kb/test/<ticket>-<persona>.md…>`, then `progress qa --sprint <slug> --detail "<lot ou persona> : fait (k/n)" --reprise "qa <lot ou persona suivant>"`. An agent stopped on a question → `task block qa <id> --sprint <slug> --detail "<la question>"`; a recette `Aucune` → `task skip … --detail "Aucune recette requise"`. `hosa-qa-lead` (Step 6) with nothing to report → `task done qa outillage --sortie kb/test/log.md`. One QA pass per session is enough: a long sprint → `/clear` then « reprends » between the tests and the recettes.
 
 ## Step 5b: Environment Left Clean
 

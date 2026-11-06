@@ -54,7 +54,7 @@ Then read directly — no agent dispatch:
 
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
 
-**Prochaine étape du pipeline:** `avancement.py .hosa/kb next` gives it, with its skill, what the stage in progress still lacks, and the open loops (`## Boucles`: which stage sent work back, round k/max). Never guess it from the KB: `next` and `check` read the same proofs `done` enforces. If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stable CDC yet, so data-structuring can't start), say so explicitly rather than reporting a false gap further down.
+**Prochaine étape du pipeline:** `avancement.py .hosa/kb next` gives it, with its skill, what the stage in progress still lacks, and the open loops (`## Boucles`: which stage sent work back, round k/max). `show` adds the agents' tasks of each open stage (`## Tâches`: k/n done, the next one to dispatch, each blocked one with its question). Never guess it from the KB: `next` and `check` read the same proofs `done` enforces. If a pipeline hasn't started yet because an earlier one isn't done (e.g. no stable CDC yet, so data-structuring can't start), say so explicitly rather than reporting a false gap further down.
 
 ### Output Format (Mode Hosa)
 

@@ -18,7 +18,7 @@ function stagesInProgress(text) {
   let section = '';
   for (const line of text.split(/\r?\n/)) {
     if (line.startsWith('## ')) { section = line.slice(3).trim(); continue; }
-    if (section === 'Boucles' || section === 'Point de reprise') continue;
+    if (section === 'Boucles' || section === 'Tâches' || section === 'Point de reprise') continue;
     const m = /^\|\s*`([\w-]+)`\s*\|\s*en cours\s*\|/.exec(line);
     if (m) out.push({ stage: m[1], section });
   }

@@ -80,6 +80,8 @@ Hosa tient un **plan d'avancement** (`.hosa/kb/project/avancement.md`). Si une s
 
 Une étape n'est marquée faite qu'avec sa preuve dans la KB. Par exemple : pas de relecture faite avec une anomalie bloquante encore ouverte, pas de contestation faite sans exigences signées, pas de backlog fait sans tickets complets. Quand une étape renvoie du travail en arrière (la relecture vers la rédaction, la QA vers le développement…), le plan note la boucle et compte ses tours. Seule une anomalie bloquante fait une boucle : une anomalie mineure (un mot, une description en retard) se corrige en une fois. Chaque anomalie note aussi sa passe et son origine, et `cdc mesure` les compte : on voit si les corrections créent de nouveaux défauts. Après deux tours sans sortie propre, c'est toi qui décides de la suite. Les étapes et leurs boucles sont décrites dans un seul fichier, `skills/status/scripts/pipeline.json`.
 
+Dans une étape, chaque travail confié à un agent est une tâche du plan : la QA d'un lot de tickets, la recette d'un persona, une manche de l'interface, un lot de développement. Une tâche n'est faite qu'avec les chemins des fichiers que l'agent a écrits, et ces fichiers doivent exister. L'étape n'est faite que quand toutes ses tâches sont faites ou écartées. Après un `/clear`, la session reprend à la première tâche ouverte, sans refaire une tâche déjà faite. `status` et le tableau de bord montrent les tâches de chaque étape en cours, avec les tâches bloquées et leur question.
+
 ### Le dépôt git
 
 Hosa gère le dépôt dès le premier fichier : il l'initialise et commite à chaque étape (le code sur la branche principale, la KB sur `hosa-kb`). Tu n'as pas à le lui demander.

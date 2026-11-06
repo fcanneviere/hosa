@@ -185,7 +185,10 @@ class AppTest(unittest.TestCase):
                 kb.av.main([str(self.root), "done", stage, "--force"])
             kb.av.main([str(self.root), "skip", "menaces", "--detail", "pas d'API"])
             kb.av.main([str(self.root), "start", "sprint", "--sprint", "s1", "--detail", "composition"])
+            kb.av.main([str(self.root), "task", "add", "sprint", "compo", "--sprint", "s1", "--agent", "hosa-sprint-planner"])
         plan = self.call("GET", "/api/overview")[1]["plan"]
+        self.assertEqual([(t["id"], t["agent"], t["statut"]) for t in plan["taches"]], [("compo", "hosa-sprint-planner", "à faire")])
+        self.assertIn("tâche `compo` hosa-sprint-planner : à faire", plan["next"]["gaps"])
         self.assertEqual((plan["next"]["stage"], plan["next"]["skill"], plan["next"]["section"]), ("sprint", "sprint", "Sprint s1"))
         self.assertIn("`## Tickets` ne liste aucun ticket", plan["next"]["gaps"])
         self.assertEqual([s["title"] for s in plan["sections"]], ["Cahier des charges", "Structuration", "Sprint s1"])

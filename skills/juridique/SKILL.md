@@ -7,6 +7,8 @@ description: "Use to put every legal constraint (RGPD, AI Act, cookies, LCEN, co
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start juridique`; refused → name the missing stage to the user and stop. Stopped on a user question: `block juridique --detail "<question>"`. Once the stage's output is written and committed: `done juridique`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** After `start`: `avancement.py task add juridique phase-1 --agent hosa-legal` and `task add juridique phase-2 --agent hosa-legal`. `phase-1` is done once `## Choix validés` is written (Step 2): `task done juridique phase-1 --sortie kb/cdc/juridique.md`; `phase-2` → `--sortie` the legal exigences and `kb/cdc/juridique.md`. Stopped on an Open Question → `task block juridique <id> --detail "<la question>"`, and `task add` the same id again once answered.
+
 Compliance by design. `hosa-legal` reads the cahier des charges right after the basics are in, says which regulations apply, and turns each obligation into a testable exigence. A consent screen, a retention period or a human review of an AI decision is then in the backlog from day one — not a surprise at the recette. It runs before `securite`: `hosa-security` reads the legal decisions (retention, data location, vendors) and designs the technical measures on top of them. Before each release, a gate checks that every legal constraint was delivered and that nothing new — a tracker, a vendor, an AI feature — slipped in behind the register's back.
 
 ## Modes
