@@ -61,6 +61,8 @@ Trois barrières de budget (hook `budget.js`) :
 
 Pour les couper : `HOSA_BUDGET=0`.
 
+Un tour peut finir sur une simple note d'avancement. Le hook `stop.js` le signale : si une étape du plan reste « en cours » à la fin d'un tour, sans `block` ni `done`, une ligne te prévient. Il ne bloque jamais, et ne prévient qu'une fois par étape et par session. Dis « continue » pour reprendre le travail. Pour le couper : `HOSA_STOP=0`.
+
 À chaque bilan de sprint, `bilan-sprint` écrit `## Mesures` dans le fichier du sprint : coût par ticket, revues, passages du débogueur, contexte maximal, passages d'agent les plus longs, comparaison avec les sprints précédents. Il ajoute des propositions quand un seuil est dépassé, et c'est toi qui décides de les appliquer. Elles sont visibles aussi dans le tableau de bord, sur la page du sprint.
 
 Les agents d'exécution (`hosa-developer`, `hosa-implementer`, `hosa-tester`, `hosa-qa-lead`, `hosa-key-user`, `hosa-git`, `hosa-documentation`, `hosa-infra`, `hosa-dba`) tournent sur Haiku depuis le 17/10/2026, environ 20 fois moins cher que Sonnet. Pour mesurer si la qualité tient : demande « consommation par agent » avant et après cette date (coût par ticket livré, verdicts de `hosa-reviewer`). Pour revenir sur Sonnet sans attendre une version : `HOSA_HAIKU=0`.

@@ -2,6 +2,7 @@
 name: hosa-reviewer
 description: "Checks whether an implementation satisfies every requirement of its spec (or of a Hosa ticket, before its commit) and returns PASS, PASS-WITH-NOTES or FAIL with a precise gap list. Invoke from `review` or `develop`."
 model: opus
+effort: medium
 tools: Read, Grep, Glob, Bash
 memory: local
 ---

@@ -2,6 +2,7 @@
 name: hosa-challenger
 description: "Independent auditor of the assembled cahier des charges: contradictions, blind spots against personas, unstated assumptions, risks, missing basic functions, security gaps, exigences outside the objectives. Never writes what it reviews. Invoke from `contestation`, or from `relecture` (Relecture mode)."
 model: opus
+effort: medium
 tools: Read, Grep, Glob
 memory: local
 ---
