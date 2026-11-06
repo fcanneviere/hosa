@@ -1,5 +1,5 @@
 {
-  "description": "Hosa's stage graph, the one definition: avancement.py reads it (the dashboard through avancement.py), hooks/budget.js too. Stages run in the listed order; `skill` names the skill of a stage whose name differs; `loops` are the back edges: `from` sends work back to one of `to`, the stages of `then` run again after it, then `from`; past `max` rounds the user decides.",
+  "description": "Hosa's stage graph, the one definition: avancement.py reads it (the dashboard through avancement.py), hooks/budget.js too. Stages run in the listed order; `skill` names the skill of a stage whose name differs; `loops` are the back edges: `from` sends work back to one of `to`, the stages of `then` run again after it, then `from`; past `max` rounds the user decides. `tasks`: the controls an agent's task passes at `task done` besides `sortie` and `okf` (each `id` a glob of task ids), `juge` the closed questions `hosa-juge` answers Oui/Non per ticket, and the refusals of one cause before the user decides.",
   "pipelines": [
     {"title": "Cahier des charges",
      "stages": ["hosa", "interview", "redaction", "fondamentaux", "juridique", "securite", "relecture", "contestation"]},
@@ -20,5 +20,17 @@
     {"from": "qa", "to": ["develop"], "max": 2},
     {"from": "validation", "to": ["develop"], "then": ["qa"], "max": 2},
     {"from": "validation", "to": ["qa"], "max": 2}
-  ]
+  ],
+  "tasks": {
+    "max": 2,
+    "controls": [
+      {"stage": "develop", "id": "*.revue", "check": ["verdict"]},
+      {"stage": "backlog", "id": "stories-*", "check": ["juge"], "juge": [
+        "La story « En tant que … » nomme un persona de sa ligne `Lié à :`, et son besoin est un besoin que l'exigence liée exprime.",
+        "Chaque règle de gestion, cas d'erreur et contrainte juridique de l'exigence liée que ce ticket couvre a au moins un critère `CAn`.",
+        "Chaque critère `CAn` décrit un résultat qu'un test ou une personne nommée peut constater (pas une procédure, pas « correctement », pas « rapidement » sans chiffre).",
+        "Aucun critère n'exige un comportement que l'exigence liée ne demande pas."
+      ]}
+    ]
+  }
 }

@@ -22,6 +22,8 @@ the work stopped, in the right order.
   avancement.py <kb> task block <stage> <id> [--sprint S] --detail D
   avancement.py <kb> task skip  <stage> <id> [--sprint S] --detail D
                                                                   (the agents' tasks of a stage, under `## Tâches`)
+  avancement.py <kb> juge <stage> <id> [--sprint S]               (`hosa-juge`'s questions for a task, and its verdict path)
+  avancement.py <kb> juge                                         (the judge's measure, from `kb/jugements/log.md`)
 
 `start` refuses (exit 1) while an earlier stage of the same pipeline isn't
 done or skipped — `--force` only once the user has confirmed going out of
@@ -32,7 +34,14 @@ stages the loop re-runs after it) and <from>, and counts the round under
 once the user chose to go on. A different `--cause` restarts the count;
 `done <from>` closes its loops. `task add` lists one agent dispatch of an
 open stage; `task done` refuses (exit 1) without `--sortie`, the paths the
-agent wrote, each one existing; `done <stage>` refuses while one of its tasks
+agent wrote, or when a control fails on them: each one exists (a `.md` not
+empty), its KB files pass OKF, then the controls pipeline.json's `tasks`
+declares for the task — `juge` reads `hosa-juge`'s verdict on the closed
+questions declared there (HOSA_JUGE=0 skips it). A refusal counts a round by
+cause (the control, or the judge's question that failed); past
+`tasks.max` rounds of one cause the task is `bloqué` and the user decides —
+`task add --force` restarts the count, `task done --force` accepts the
+output. `done <stage>` refuses while one of its tasks
 is `à faire` or `bloqué`, and clears them once done. Sprint stages need
 `--sprint`. Exit 2 = bad invocation. Stdlib only.
 """
@@ -43,6 +52,7 @@ import json
 import re
 import sys
 from datetime import datetime, timezone
+from fnmatch import fnmatchcase as fnmatch
 from pathlib import Path
 
 # the stage graph lives in pipeline.json, shared with hooks/budget.js
@@ -51,6 +61,7 @@ PIPELINES = [(p["title"], p["stages"]) for p in GRAPH["pipelines"]]
 SPRINT = GRAPH["sprint"]
 SKILL = GRAPH["skill"]
 LOOPS = GRAPH["loops"]
+TASKS = GRAPH["tasks"]
 OPEN, SHUT = "ouverte", "fermée"
 LOOP_ROW = re.compile(r"^\|\s*`([\w-]+)`\s*→\s*`([\w-]+)`(?:\s*\(([^)]*)\))?\s*\|\s*(\d+)/\d+\s*\|"
                       r"\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
@@ -274,17 +285,23 @@ def infra_with(kb: Path, heading: str) -> str | None:
 SCRIPTS = Path(__file__).resolve().parents[2]
 
 
-def script(rel: str, *args) -> list[str]:
-    """Gaps a Hosa checker reports (exit 1). Any other failure is not the stage's: fail-open."""
+def run_script(rel: str, *args):
+    """A Hosa checker's run, or None when it could not run."""
     import os
     import subprocess
     try:
-        r = subprocess.run([sys.executable, str(SCRIPTS / rel), *map(str, args)], capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=60, env={**os.environ, "PYTHONIOENCODING": "utf-8"},
-                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        return subprocess.run([sys.executable, str(SCRIPTS / rel), *map(str, args)], capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=60,
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except (OSError, subprocess.SubprocessError):
-        return []
-    if r.returncode != 1:
+        return None
+
+
+def script(rel: str, *args) -> list[str]:
+    """Gaps a Hosa checker reports (exit 1). Any other failure is not the stage's: fail-open."""
+    r = run_script(rel, *args)
+    if r is None or r.returncode != 1:
         return []
     lines = [x.strip() for x in r.stdout.splitlines() if x.strip()]
     more = f" (+{len(lines) - 5})" if len(lines) > 5 else ""
@@ -490,17 +507,191 @@ def show(sections: dict, resume: str, loops: list[dict] = (), tasks: list[dict] 
     return "\n".join(lines + [x for x in open_loops(loops) if x not in (resume or "")] + task_lines(tasks))
 
 
-def exists(kb: Path, p: str, sprint: str = "") -> bool:
+def resolve(kb: Path, p: str, sprint: str = "") -> Path | None:
     """An output path as an agent gives it: absolute, `kb/…`, `.hosa/kb/…`, from the project root
-    or from the sprint's worktree."""
+    or from the sprint's worktree. None when it exists nowhere."""
     p = p.strip().strip("`")
     if not p:
-        return False
+        return None
     worktree = field(read(kb / "sprints" / f"{sprint}.md"), "worktree") if sprint else None
     roots = [Path.cwd(), kb] + ([kb.parent.parent] if kb.parent.name == ".hosa" else []) + \
         ([Path(worktree.strip("\"'"))] if worktree else [])
     candidates = [Path(p)] + [r / p for r in roots] + ([kb / p[3:]] if p.startswith("kb/") else [])
-    return any(c.exists() for c in candidates)
+    return next((c for c in candidates if c.exists()), None)
+
+
+def kb_rel(kb: Path, f: Path) -> str | None:
+    try:
+        return f.resolve().relative_to(kb.resolve()).as_posix()
+    except ValueError:
+        return None
+
+
+def ctl_sortie(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """Each output exists; a `.md` one is not empty (an empty code file, `__init__.py`, can be right)."""
+    return [f"absente — {p}" for p, f in files if f is None] + \
+        [f"vide — {p}" for p, f in files if f and f.is_file() and f.suffix == ".md" and not (read(f) or "").strip()]
+
+
+def ctl_okf(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """The OKF errors of the task's own KB files: an older fault elsewhere in the KB is not the task's."""
+    rels = [r for _, f in files if f and f.suffix == ".md" and (r := kb_rel(kb, f))]
+    if not rels:
+        return []
+    r = run_script("okf/scripts/okf_validate.py", kb, "--json")
+    try:
+        errors = json.loads(r.stdout)["errors"] if r and r.returncode == 1 else []
+    except (ValueError, KeyError, TypeError):
+        return []
+    return [e for e in errors if any(e.startswith(f"{rel}: ") for rel in rels)]
+
+
+def tickets_of(kb: Path, files: list[tuple[str, Path | None]]) -> list[Path]:
+    return [f for _, f in files if f and (kb_rel(kb, f) or "").startswith("tickets/")]
+
+
+def ctl_verdict(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """A review task wrote its verdict: a `## Revue` line with PASS, PASS-WITH-NOTES or FAIL in each ticket."""
+    tickets = tickets_of(kb, files)
+    if not tickets:
+        return ["aucun ticket `kb/tickets/<slug>.md` en sortie"]
+    return [f"{f.stem} : pas de `## Revue` avec PASS, PASS-WITH-NOTES ou FAIL" for f in tickets
+            if not re.search(r"\b(PASS-WITH-NOTES|PASS|FAIL)\b", section(read(f), "Revue") or "")]
+
+
+def juge_questions(stage: str, tid: str) -> list[str]:
+    return [q for x in TASKS["controls"] if x["stage"] == stage and fnmatch(tid, x["id"]) for q in x.get("juge", [])]
+
+
+def juge_path(kb: Path, t: dict) -> Path:
+    return kb / "jugements" / ("-".join(x for x in (t["stage"], t["scope"], t["id"]) if x) + ".md")
+
+
+def ctl_juge(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`hosa-juge`'s written verdict, newer than the tickets it judged: each question of pipeline.json
+    answered per ticket, none `Non`. A gap starts with its question: the round's cause is that question."""
+    import os
+    if os.environ.get("HOSA_JUGE") == "0":
+        return []
+    questions, verdict = juge_questions(t["stage"], t["id"]), juge_path(kb, t)
+    tickets = tickets_of(kb, files)
+    if not questions or not tickets:
+        return []
+    rel = f"kb/{kb_rel(kb, verdict)}"
+    if not verdict.is_file():
+        return [f"pas de verdict `{rel}` : dispatche `hosa-juge` sur ces tickets"]
+    if verdict.stat().st_mtime < max(f.stat().st_mtime for f in tickets):
+        return [f"verdict `{rel}` plus ancien que les tickets : relance `hosa-juge`"]
+    text, gaps = read(verdict) or "", []
+    for f in tickets:
+        answers = dict(re.findall(r"^-\s*(Q\d+)\s*—\s*((?:Oui|Non)\b.*)$", section(text, f.stem) or "", re.M))
+        for i in range(1, len(questions) + 1):
+            a = answers.get(f"Q{i}")
+            if a is None:
+                gaps.append(f"Q{i} — {f.stem} : sans réponse dans `{rel}`")
+            elif a.startswith("Non"):
+                gaps.append(f"Q{i} — {f.stem} : {a}")
+            elif (bad := unproved(kb, a)):
+                gaps.append(f"Q{i} — {f.stem} : {bad}")
+    return sorted(gaps, key=lambda g: int(re.match(r"Q(\d+)", g)[1]))
+
+
+JUGE_LOG = re.compile(r"^- \d\d:\d\dZ — `([\w-]+) ([\w.-]+)`(?: \(([^)]*)\))? — (validé|refus|forcé sur)(?: `([\w-]+)`)?")
+
+
+def judged(t: dict) -> bool:
+    import os
+    return "juge" in task_controls(t["stage"], t["id"]) and os.environ.get("HOSA_JUGE") != "0"
+
+
+def log_juge(kb: Path, t: dict, result: str) -> None:
+    """One line per `task done` the judge decided, in `kb/jugements/log.md` (OKF §9: a heading per day,
+    newest first): the measure of the judge, its verdicts outlive the tasks cleared at `done <stage>`."""
+    path = kb / "jugements" / "log.md"
+    stamp = now()
+    line = f"- {stamp[11:16]}Z — `{t['stage']} {t['id']}`" + (f" ({t['scope']})" if t["scope"] else "") + \
+        f" — {cell(result)}"
+    text = read(path) or ""
+    day = f"## {stamp[:10]}"
+    if text.startswith(day + "\n"):
+        text = text.replace(day + "\n", f"{day}\n{line}\n", 1)
+    else:
+        text = f"{day}\n{line}\n" + ("\n" + text if text else "")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def juge_stats(kb: Path) -> list[str]:
+    """What the journal says of the judge: tasks judged, validated at their first round, refusals and
+    user overrides per question — a question the user overrides again and again is a bad question."""
+    events = [m for m in map(JUGE_LOG.match, (read(kb / "jugements" / "log.md") or "").splitlines()) if m]
+    if not events:
+        return ["Aucun jugement dans `kb/jugements/log.md`."]
+    first: dict = {}
+    for m in reversed(events):  # the journal runs newest first
+        first.setdefault((m[1], m[2], m[3]), m[4])
+    per_q: dict = {}
+    for m in events:
+        if m[5]:
+            r = per_q.setdefault(m[5], {"refus": 0, "forcé sur": 0})
+            r[m[4]] = r.get(m[4], 0) + 1
+    out = [f"- Tâches jugées : {len(first)} — validées au premier passage : "
+           f"{sum(v == 'validé' for v in first.values())}"]
+    for q, r in sorted(per_q.items()):
+        out.append(f"- `{q}` : {r['refus']} refus, {r['forcé sur']} fois passé outre par l'utilisateur")
+        if r["forcé sur"] >= 2:
+            out.append(f"  → l'utilisateur contredit `{q}` : la réécrire ou la retirer de pipeline.json")
+    return out
+
+
+def unproved(kb: Path, answer: str) -> str:
+    """Why a `Oui — <fichier>:<ligne> « <extrait> »` proves nothing: no citation, no such line, or the
+    line lacks the excerpt (each piece around a `…`, in order). Empty when the line holds it."""
+    m = re.match(r"Oui\s*—\s*`?([^`:\s]+):(\d+)`?\s*«\s*(.+?)\s*»", answer)
+    if not m:
+        return "Oui sans preuve `fichier:ligne « extrait »`"
+    rel, n, excerpt = m[1].removeprefix("kb/").removeprefix(".hosa/kb/"), int(m[2]), m[3]
+    lines = (read(kb / rel) or "").splitlines()
+    if not 1 <= n <= len(lines):
+        return f"preuve introuvable — {rel}:{n} n'existe pas"
+    norm = lambda s: " ".join(s.split())  # noqa: E731
+    line, at = norm(lines[n - 1]), 0
+    for piece in (norm(p) for p in excerpt.split("…") if p.strip()):
+        at = line.find(piece, at)
+        if at < 0:
+            return f"preuve introuvable — {rel}:{n} ne contient pas « {piece} »"
+        at += len(piece)
+    return ""
+
+
+# the controls a task's outputs pass at `task done`, in order: `sortie` and `okf` always, then the ones
+# pipeline.json's `tasks.controls` declares for the task; the first that fails is the round's cause
+CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "juge": ctl_juge}
+REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)\)(?: — )?")
+
+
+def task_controls(stage: str, tid: str) -> list[str]:
+    return ["sortie", "okf"] + [c for x in TASKS["controls"] if x["stage"] == stage and fnmatch(tid, x["id"])
+                                for c in x["check"]]
+
+
+def controlled(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> tuple[str, list[str]]:
+    """(cause, gaps) of the first control that fails — a gap naming its question (`Q2 — …`) refines the
+    cause to `<control>-Q2`. A control that crashes is not the task's fault: fail-open."""
+    for c in task_controls(t["stage"], t["id"]):
+        try:
+            gaps = CONTROLS[c](kb, files, t)
+        except Exception:  # noqa: BLE001
+            continue
+        if gaps:
+            q = re.match(r"(Q\d+) — ", gaps[0])
+            return (f"{c}-{q[1]}" if q else c), gaps
+    return "", []
+
+
+def refusals(t: dict) -> tuple[int, str]:
+    m = REFUS.match(t.get("detail") or "")
+    return (int(m[1]), m[2]) if m else (0, "")
 
 
 def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
@@ -523,7 +714,10 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
         if t is None:
             t = {"id": tid, "stage": stage, "scope": scope}
             tasks.append(t)
-        t.update(agent=a.agent, objet=a.objet, statut=TODO, at=now(), sortie="", detail=a.detail)
+        # a task re-added keeps its refusals: only the user's word (--force) restarts the count
+        kept = "" if a.force or t.get("statut") == DONE or not refusals(t)[0] else t["detail"]
+        t.update(agent=a.agent, objet=a.objet, statut=TODO, at=now(), sortie="",
+                 detail=" — ".join(x for x in (kept, a.detail) if x))
         return 0, ""
     if t is None:
         known = ", ".join(f"`{x['id']}`" for x in tasks if (x["stage"], x["scope"]) == (stage, scope)) or "aucune"
@@ -532,13 +726,28 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
         return 2, f"error: task {op} needs --detail"
     if op == "done":
         paths = [p.strip() for p in a.sortie.split(",") if p.strip()]
-        missing = [p for p in paths if not exists(kb, p, scope)]
-        if (not paths or missing) and not a.force:
-            return 1, (f"✗ tâche `{tid}` ({where}) pas faite : "
-                       + ("aucune sortie (--sortie : les chemins que l'agent a écrits)" if not paths
-                          else "sortie(s) absente(s) — " + ", ".join(missing))
-                       + ". Relance l'agent, ou --force si l'utilisateur accepte.")
-        t.update(statut=DONE, at=now(), sortie=", ".join(paths), detail=a.detail or t["detail"])
+        if not paths and not a.force:
+            return 1, (f"✗ tâche `{tid}` ({where}) pas faite : aucune sortie "
+                       "(--sortie : les chemins que l'agent a écrits)")
+        files = [(p, resolve(kb, p, scope)) for p in paths]
+        cause, gaps = controlled(kb, files, t)
+        if judged(t) and (not gaps or cause.startswith("juge")):
+            log_juge(kb, t, ("forcé sur" if a.force else "refus") + f" `{cause}` — " + " ; ".join(gaps)
+                     if gaps else "validé")
+        if gaps and not a.force:
+            n, prev = refusals(t)
+            n = n + 1 if prev == cause else 1
+            t.update(statut=TODO if n <= TASKS["max"] else BLOCKED, at=now(),
+                     detail=f"refus {n}/{TASKS['max']} ({cause}) — " + " ; ".join(gaps))
+            head = f"✗ tâche `{tid}` ({where}) refusée par `{cause}` (refus {n}/{TASKS['max']}) :\n" + \
+                "\n".join(f"- {g}" for g in gaps)
+            if n <= TASKS["max"]:
+                return 1, head + "\nRelance l'agent avec ces manques exacts, puis `task done` à nouveau."
+            return 1, (head + f"\nBorne atteinte : {n - 1} tours sans sortie propre pour `{cause}`, la tâche est bloquée. "
+                       "Arrête et montre à l'utilisateur ce que chaque tour a donné. Un tour de plus → "
+                       f"`task add {stage} {tid} … --force` ; accepter la sortie telle quelle → `task done … --force`.")
+        t.update(statut=DONE, at=now(), sortie=", ".join(paths),
+                 detail=a.detail or ("" if refusals(t)[0] else t["detail"]))
     else:
         t.update(statut=BLOCKED if op == "block" else SKIPPED, at=now(), detail=a.detail.strip().splitlines()[0])
     return 0, ""
@@ -608,7 +817,7 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
     ap.add_argument("action", choices=["show", "next", "check", "start", "progress", "done", "block", "skip", "reprise",
-                                       "back", "init", "task"])
+                                       "back", "init", "task", "juge"])
     ap.add_argument("stage", nargs="?")
     ap.add_argument("to", nargs="?")
     ap.add_argument("item", nargs="?")
@@ -635,11 +844,27 @@ def main(argv: list[str]) -> int:
         return 0
     if a.action == "task":
         code, out = task(a.kb, sections, tasks, a)
+        if code == 1:  # a refused output counts its round
+            save(path, sections, resume, loops, tasks)
         if code:
             print(out, file=sys.stderr if code == 2 else sys.stdout)
             return code
         save(path, sections, resume, loops, tasks)
         print(show(*load(path), loops, tasks))
+        return 0
+    if a.action == "juge":  # what `hosa-juge` answers, and where: the questions live in pipeline.json only
+        if not a.stage:
+            print("\n".join(juge_stats(a.kb)))
+            return 0
+        questions = juge_questions(a.stage or "", a.to or "")
+        if not questions:
+            print(f"error: pipeline.json ne déclare pas de questions `juge` pour `{a.stage}` `{a.to}`", file=sys.stderr)
+            return 2
+        scope = a.sprint if a.stage in SPRINT else ""
+        verdict = juge_path(a.kb, {"stage": a.stage, "scope": scope or "", "id": a.to})
+        print(f"Verdict : {verdict.as_posix()}\nUne section `## <slug du ticket>` par ticket, une ligne par question :\n"
+              "- Qn — Oui — <fichier:ligne> « <extrait qui le prouve> »\n- Qn — Non — <le manque exact>\n\nQuestions :")
+        print("\n".join(f"Q{i}. {q}" for i, q in enumerate(questions, 1)))
         return 0
     if a.action == "init":
         if path.exists():
