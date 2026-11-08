@@ -54,10 +54,12 @@ Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle c
 
 Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Sonnet dans un projet Hosa. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
 
-Trois barrières de budget (hook `budget.js`) :
+Les barrières de budget (hook `budget.js`) :
 - Quand une étape s'est terminée dans une session dont le contexte dépasse 60 000 tokens, le skill de l'étape suivante est refusé une fois. Claude s'arrête et te propose `/clear`, puis « reprends ». Si tu préfères rester, il relance le skill, qui passe cette fois. Le seuil se règle avec `HOSA_CONTEXTE_MAX` (en tokens).
-- Au-delà du double de ce seuil (120 000 tokens), tout skill Hosa est refusé une fois, étape terminée ou non, puis de nouveau tous les 60 000 tokens de plus. Même proposition : `/clear`, puis « reprends ».
-- Un agent Hosa est arrêté au-delà de 50 appels d'outils pour `hosa-ux-designer`, et de 150 pour les autres. À 80 % de ce plafond, il est prévenu une fois : il finit l'étape en cours et n'en commence pas d'autre. Il rend son rapport avec `## Reprise`, et un nouvel agent reprend à partir de là.
+- Au-delà du double de ce seuil (120 000 tokens), tout skill Hosa et tout lancement d'agent sont refusés une fois, étape terminée ou non, puis de nouveau tous les 60 000 tokens de plus. Même proposition : `/clear`, puis « reprends ».
+- Un agent Hosa est arrêté au-delà de 50 appels d'outils pour `hosa-ux-designer`, et de 150 pour les autres, ou quand son contexte atteint 120 000 tokens (`HOSA_AGENT_CONTEXTE_MAX`). À 80 % de ce plafond, il est prévenu une fois : il finit l'étape en cours et n'en commence pas d'autre. Il rend son rapport avec `## Reprise`, et un nouvel agent reprend à partir de là.
+- Un agent inactif depuis plus de 5 minutes, avec plus de 60 000 tokens de contexte, n'est pas relancé par un message : son cache a expiré, et le message réécrirait tout son contexte. Claude lance un nouvel agent avec sa `## Reprise`. Si tu veux quand même relancer l'ancien, il renvoie le message, qui passe cette fois.
+- Pendant une étape que `pipeline.json` (`dispatch`) déclare, le nombre d'agents Hosa en même temps et le modèle de certains agents sont imposés. Pendant `backlog` : 2 agents au plus, et `hosa-security` et `hosa-legal` sur Sonnet.
 
 Pour les couper : `HOSA_BUDGET=0`.
 

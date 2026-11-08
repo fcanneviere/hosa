@@ -22,7 +22,9 @@ the work stopped, in the right order.
   avancement.py <kb> task block <stage> <id> [--sprint S] --detail D
   avancement.py <kb> task skip  <stage> <id> [--sprint S] --detail D
                                                                   (the agents' tasks of a stage, under `## Tâches`)
-  avancement.py <kb> juge <stage> <id> [--sprint S]               (`hosa-juge`'s questions for a task, and its verdict path)
+  avancement.py <kb> juge <stage> <id> [--sprint S] [--tickets T[,T…]] [--force]
+                                                                  (`hosa-juge`'s questions for a task, its verdict path and,
+                                                                   with --tickets, the numbered lines to judge them on)
   avancement.py <kb> juge                                         (the judge's measure, from `kb/jugements/log.md`)
 
 `start` refuses (exit 1) while an earlier stage of the same pipeline isn't
@@ -37,7 +39,12 @@ open stage; `task done` refuses (exit 1) without `--sortie`, the paths the
 agent wrote, or when a control fails on them: each one exists (a `.md` not
 empty), its KB files pass OKF, then the controls pipeline.json's `tasks`
 declares for the task — `juge` reads `hosa-juge`'s verdict on the closed
-questions declared there (HOSA_JUGE=0 skips it). A refusal counts a round by
+questions declared there (HOSA_JUGE=0 skips it), each ticket on its newest
+verdict (a re-judgment of some tickets writes `<verdict>.<n>.md`), `lot` the
+most tickets one task outputs. A task declared `after` another (`securite-2`
+after `stories-2`) is refused at `task add` while that one is not done. `juge
+--tickets` refuses (exit 1) a ticket already judged `1 + tasks.max` times —
+`--force` on the user's word. A refusal counts a round by
 cause (the control, or the judge's question that failed); past
 `tasks.max` rounds of one cause the task is `bloqué` and the user decides —
 `task add --force` restarts the count, `task done --force` accepts the
@@ -567,9 +574,23 @@ def juge_path(kb: Path, t: dict) -> Path:
     return kb / "jugements" / ("-".join(x for x in (t["stage"], t["scope"], t["id"]) if x) + ".md")
 
 
+def verdict_files(kb: Path, t: dict) -> list[Path]:
+    """The task's verdict and its re-judgments (`<verdict>.<n>.md`, some tickets each), oldest name first."""
+    main = juge_path(kb, t)
+    parts = sorted(main.parent.glob(f"{main.stem}.*.md"), key=lambda f: int(f.stem.rsplit(".", 1)[1])
+                   if f.stem.rsplit(".", 1)[1].isdigit() else 0)
+    return [f for f in [main, *parts] if f.is_file()]
+
+
+def judgments(kb: Path, t: dict, slug: str) -> list[tuple[Path, str]]:
+    """(verdict file, section) of each judgment of one ticket, oldest first: the newest is its answer."""
+    found = [(f, s) for f in verdict_files(kb, t) if (s := section(read(f), slug)) is not None]
+    return sorted(found, key=lambda x: x[0].stat().st_mtime)
+
+
 def ctl_juge(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
-    """`hosa-juge`'s written verdict, newer than the tickets it judged: each question of pipeline.json
-    answered per ticket, none `Non`. A gap starts with its question: the round's cause is that question."""
+    """`hosa-juge`'s written verdicts, each ticket on its newest one, newer than the ticket: each question of
+    pipeline.json answered, none `Non`. A gap starts with its question: the round's cause is that question."""
     import os
     if os.environ.get("HOSA_JUGE") == "0":
         return []
@@ -578,13 +599,15 @@ def ctl_juge(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[st
     if not questions or not tickets:
         return []
     rel = f"kb/{kb_rel(kb, verdict)}"
-    if not verdict.is_file():
+    if not verdict_files(kb, t):
         return [f"pas de verdict `{rel}` : dispatche `hosa-juge` sur ces tickets"]
-    if verdict.stat().st_mtime < max(f.stat().st_mtime for f in tickets):
-        return [f"verdict `{rel}` plus ancien que les tickets : relance `hosa-juge`"]
-    text, gaps = read(verdict) or "", []
+    gaps, stale = [], []
     for f in tickets:
-        answers = dict(re.findall(r"^-\s*(Q\d+)\s*—\s*((?:Oui|Non)\b.*)$", section(text, f.stem) or "", re.M))
+        found = judgments(kb, t, f.stem)
+        if found and found[-1][0].stat().st_mtime < f.stat().st_mtime:
+            stale.append(f.stem)
+            continue
+        answers = dict(re.findall(r"^-\s*(Q\d+)\s*—\s*((?:Oui|Non)\b.*)$", found[-1][1] if found else "", re.M))
         for i in range(1, len(questions) + 1):
             a = answers.get(f"Q{i}")
             if a is None:
@@ -593,7 +616,24 @@ def ctl_juge(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[st
                 gaps.append(f"Q{i} — {f.stem} : {a}")
             elif (bad := unproved(kb, a)):
                 gaps.append(f"Q{i} — {f.stem} : {bad}")
+    if stale:  # judged an earlier version: only those tickets go back to the judge
+        return [f"verdict plus ancien que le ticket — {s} : relance `hosa-juge` avec `--tickets {','.join(stale)}`"
+                for s in stale]
     return sorted(gaps, key=lambda g: int(re.match(r"Q(\d+)", g)[1]))
+
+
+def control_value(stage: str, tid: str, key: str):
+    return next((x[key] for x in TASKS["controls"] if x["stage"] == stage and fnmatch(tid, x["id"]) and key in x), None)
+
+
+def ctl_lot(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """At most `lot` tickets per task: an agent's context, and the judge's after it, grow with each ticket
+    (rieki: one pass wrote 39 tickets up to 273 k tokens)."""
+    lot, tickets = control_value(t["stage"], t["id"], "lot"), tickets_of(kb, files)
+    if not lot or len(tickets) <= lot:
+        return []
+    return [f"lot de {len(tickets)} tickets, {lot} au plus : `task done` avec {lot} d'entre eux, "
+            f"puis `task add {t['stage']} {t['id']}b` pour les {len(tickets) - lot} autres"]
 
 
 JUGE_LOG = re.compile(r"^- \d\d:\d\dZ — `([\w-]+) ([\w.-]+)`(?: \(([^)]*)\))? — (validé|refus|forcé sur)(?: `([\w-]+)`)?")
@@ -664,15 +704,60 @@ def unproved(kb: Path, answer: str) -> str:
     return ""
 
 
+def next_verdict(main: Path) -> Path:
+    """The file this judgment writes: the task's verdict the first time, then `<verdict>.<n>.md`. Reserved at
+    once (frontmatter only), so two judges dispatched together never write the same file."""
+    path, n = main, 1
+    while path.exists():
+        n += 1
+        path = main.with_name(f"{main.stem}.{n}.md")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"---\ntype: Jugement\ntitle: \"Jugement {path.stem}\"\n"
+                    "description: \"Réponses de hosa-juge aux questions de pipeline.json\"\ntags: [juge]\n"
+                    f"generated: {{ by: hosa-juge/1.0, at: {now()} }}\n---\n", encoding="utf-8")
+    return path
+
+
+def numbered(kb: Path, rel: str, keep) -> list[str]:
+    """`### <rel>` then `<n>: <line>` for each non-empty body line whose `## ` section `keep` accepts (None:
+    before the first one). The numbers are the file's: a Oui cites `<rel>:<n>` as it is."""
+    lines, out, heading = (read(kb / rel) or "").splitlines(), [f"### {rel}"], None
+    start = 0
+    if lines and lines[0].strip() == "---":
+        start = next((i + 1 for i in range(1, len(lines)) if lines[i].strip() == "---"), 0)
+    for i in range(start, len(lines)):
+        if lines[i].startswith("## "):
+            heading = lines[i][3:].strip()
+        if lines[i].strip() and keep(heading):
+            out.append(f"{i + 1}: {lines[i]}")
+    return out
+
+
+def juge_extract(kb: Path, slugs: list[str]) -> str:
+    """What `hosa-juge` reads, and nothing else: each ticket's story, `Lié à :` and criteria, then once each
+    exigence they link, numbered as in the files (rieki: whole tickets, 5 notes each, read again per ticket,
+    up to 198 k tokens for one pass)."""
+    out, exigences = ["## Extrait — les seules lignes à lire ; une preuve cite `<fichier>:<n>` d'ici"], []
+    for s in slugs:
+        rel = f"tickets/{s}.md"
+        out += numbered(kb, rel, lambda h: h in (None, "Critères d'acceptation"))
+        for link in re.findall(r"\]\((?:\.\./)?(cdc/[\w.-]+\.md)\)", (read(kb / rel) or "").split("\n## ")[0]):
+            if link not in exigences and (kb / link).is_file():
+                exigences.append(link)
+    for rel in exigences:
+        out += numbered(kb, rel, lambda h: True)
+    return "\n".join(out)
+
+
 # the controls a task's outputs pass at `task done`, in order: `sortie` and `okf` always, then the ones
 # pipeline.json's `tasks.controls` declares for the task; the first that fails is the round's cause
-CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "juge": ctl_juge}
+CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge}
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)\)(?: — )?")
 
 
 def task_controls(stage: str, tid: str) -> list[str]:
     return ["sortie", "okf"] + [c for x in TASKS["controls"] if x["stage"] == stage and fnmatch(tid, x["id"])
-                                for c in x["check"]]
+                                for c in x.get("check", [])]
 
 
 def controlled(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> tuple[str, list[str]]:
@@ -687,6 +772,14 @@ def controlled(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> tuple
             q = re.match(r"(Q\d+) — ", gaps[0])
             return (f"{c}-{q[1]}" if q else c), gaps
     return "", []
+
+
+def after(stage: str, tid: str) -> str:
+    """The task `tid` waits for, from pipeline.json's `after` (`securite-*` after `stories-*`: same suffix)."""
+    for x in TASKS["controls"]:
+        if x["stage"] == stage and "after" in x and fnmatch(tid, x["id"]):
+            return x["after"].replace("*", tid[len(x["id"].split("*")[0]):], 1)
+    return ""
 
 
 def refusals(t: dict) -> tuple[int, str]:
@@ -711,6 +804,11 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
             return 2, "error: task add needs --agent"
         if row[1] not in (DOING, BLOCKED):
             return 1, f"✗ {where} est {row[1]} : `start` l'étape d'abord, puis liste ses tâches."
+        if (need := after(stage, tid)) and not a.force:
+            prev = next((x for x in tasks if (x["id"], x["stage"], x["scope"]) == (need, stage, scope)), None)
+            if prev and prev.get("statut") != DONE:
+                return 1, (f"✗ tâche `{tid}` ({where}) après `{need}`, qui est {prev.get('statut')} : "
+                           f"elle ajoute ses critères à des tickets validés. `task done {stage} {need}` d'abord.")
         if t is None:
             t = {"id": tid, "stage": stage, "scope": scope}
             tasks.append(t)
@@ -829,6 +927,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--agent", default="")
     ap.add_argument("--objet", default="")
     ap.add_argument("--sortie", default="")
+    ap.add_argument("--tickets", default="")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -860,11 +959,27 @@ def main(argv: list[str]) -> int:
         if not questions:
             print(f"error: pipeline.json ne déclare pas de questions `juge` pour `{a.stage}` `{a.to}`", file=sys.stderr)
             return 2
-        scope = a.sprint if a.stage in SPRINT else ""
-        verdict = juge_path(a.kb, {"stage": a.stage, "scope": scope or "", "id": a.to})
+        t = {"stage": a.stage, "scope": (a.sprint if a.stage in SPRINT else "") or "", "id": a.to}
+        verdict = juge_path(a.kb, t)
+        slugs = [Path(x.strip()).stem for x in re.split(r"[,\s]+", a.tickets) if x.strip()]
+        if slugs:
+            missing = [s for s in slugs if not (a.kb / "tickets" / f"{s}.md").is_file()]
+            if missing:
+                print(f"error: pas de ticket `kb/tickets/{missing[0]}.md`", file=sys.stderr)
+                return 2
+            done = [(s, n) for s in slugs if (n := len(judgments(a.kb, t, s))) > TASKS["max"]]
+            if done and not a.force:
+                print(f"✗ borne : {', '.join(f'`{s}` déjà jugé {n} fois' for s, n in done)} "
+                      f"(un jugement et {TASKS['max']} relectures). Arrête et montre à l'utilisateur les refus de "
+                      f"chaque tour (`kb/jugements/{verdict.stem}*.md`) ; un tour de plus seulement sur sa parole "
+                      "(`--force`).")
+                return 1
+            verdict = next_verdict(verdict)
         print(f"Verdict : {verdict.as_posix()}\nUne section `## <slug du ticket>` par ticket, une ligne par question :\n"
               "- Qn — Oui — <fichier:ligne> « <extrait qui le prouve> »\n- Qn — Non — <le manque exact>\n\nQuestions :")
         print("\n".join(f"Q{i}. {q}" for i, q in enumerate(questions, 1)))
+        if slugs:
+            print("\n" + juge_extract(a.kb, slugs))
         return 0
     if a.action == "init":
         if path.exists():

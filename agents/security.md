@@ -194,7 +194,7 @@ The constraints you wrote in Mode 1 and Mode 3 reach the code only through the t
 2. **Abuse cases become criteria.** Each abuse case whose boundary or asset this ticket touches, and that this ticket must refuse: an existing `CAn` already states it → cite it; otherwise append a criterion after the last `CAn` (never renumber), in Given/When/Then — « Étant donné …, quand un attaquant …, alors … ». An abuse case that another ticket refuses goes there, not here.
 3. **Rules become requirements.** For each `Security Rule` the ticket touches, write what it demands *here*: the threshold, the key, the field, the failure mode, the response — the numbers copied from the rule, never your own.
 4. **Mechanisms are dependencies.** A constraint that needs a mechanism another ticket builds (the security log, the rate-limit store, the production configuration) names that ticket; the skill adds it to `depends_on`. A mechanism no ticket builds yet → Open Question: it needs its own ticket.
-5. Write the note in `backlog`'s Step 5b form (all five bullets, `aucun` when one doesn't apply). Run `<hosa> ticket_check .hosa/kb <tickets>` and fix every security-note gap it lists. Log to `kb/tickets/log.md`.
+5. Write the note in the Step 5b form of `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md` (read that section only, not `backlog`'s `SKILL.md`) (all five bullets, `aucun` when one doesn't apply). Run `<hosa> ticket_check .hosa/kb <tickets>` and fix every security-note gap it lists. Log to `kb/tickets/log.md`.
 
 Return `## Notes de tickets`: one line per ticket — criteria added, dependencies proposed, Open Questions.
 

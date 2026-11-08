@@ -69,6 +69,63 @@ test('a hosa- subagent past its cap is refused every further call', () => {
   assert.equal(other, null);
 });
 
+const agentFile = (id) => path.join(project, 't', 'subagents', `agent-${id}.jsonl`);
+const setAgentContext = (id, n, ago = 0) => {
+  fs.mkdirSync(path.dirname(agentFile(id)), { recursive: true });
+  fs.writeFileSync(agentFile(id), JSON.stringify({ type: 'assistant', isSidechain: true,
+    message: { usage: { input_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: n } } }) + '\n');
+  const t = (Date.now() - ago) / 1000;
+  fs.utimesSync(agentFile(id), t, t);
+};
+const pre = (tool, session, input = {}, extra = {}) => processPayload({ hook_event_name: 'PreToolUse', tool_name: tool,
+  session_id: session, cwd: project, transcript_path: transcript, tool_input: input, ...extra });
+
+test('a hosa- subagent is warned, then stopped, on the size of its own context', () => {
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's7', agent_id: 'a7', agent_type: 'hosa:hosa-product-owner' });
+  setAgentContext('a7', 100000);
+  const call = () => pre('Write', 's7', {}, { agent_id: 'a7' });
+  assert.match(call().hookSpecificOutput.additionalContext, /100 k tokens of context \(cap 120 k\)/);
+  assert.equal(call(), null);                                                    // warned once
+  setAgentContext('a7', 125000);
+  assert.match(call().hookSpecificOutput.permissionDecisionReason, /120 k tokens of context/);
+  assert.equal(pre('SubagentHandback', 's7', {}, { agent_id: 'a7' }), null);
+});
+
+test('past the ceiling an agent dispatch from the main session is refused once', () => {
+  setPlan(3); setContext(130000);
+  assert.ok(denied(pre('Agent', 's8', { subagent_type: 'hosa:hosa-product-owner' })));
+  assert.equal(pre('Agent', 's8', { subagent_type: 'hosa:hosa-product-owner' }), null);
+});
+
+test('an agent idle past its cache with a heavy context is not resumed, once', () => {
+  setPlan(3); setContext(10000);
+  setAgentContext('old', 180000, 30 * 60000);
+  assert.match(pre('SendMessage', 's9', { to: 'old' }).hookSpecificOutput.permissionDecisionReason, /idle 30 min with 180 k/);
+  assert.equal(pre('SendMessage', 's9', { to: 'old' }), null);                   // the user wants it resumed
+  setAgentContext('fresh', 180000, 60000);
+  assert.equal(pre('SendMessage', 's9', { to: 'fresh' }), null);                 // its cache still holds
+  setAgentContext('light', 20000, 30 * 60000);
+  assert.equal(pre('SendMessage', 's9', { to: 'light' }), null);
+});
+
+test('during backlog: two Hosa agents at once, the security and legal notes on sonnet', () => {
+  fs.writeFileSync(plan, '## Structuration\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
+    '| `interface` | fait |  |  |\n| `backlog` | en cours |  |  |\n');
+  setContext(10000);
+  const start = (id) => processPayload({ hook_event_name: 'SubagentStart', session_id: 's10', agent_id: id, agent_type: 'hosa:hosa-juge' });
+  start('b1'); start('b2');
+  const po = () => pre('Agent', 's10', { subagent_type: 'hosa:hosa-product-owner' });
+  assert.match(po().hookSpecificOutput.permissionDecisionReason, /2 Hosa agents are running/);
+  assert.equal(pre('Agent', 's10', { subagent_type: 'Explore' }), null);        // not a Hosa agent
+  processPayload({ hook_event_name: 'SubagentStop', session_id: 's10', agent_id: 'b1' });
+  assert.equal(po(), null);
+  assert.match(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security' }).hookSpecificOutput.permissionDecisionReason,
+    /model: "sonnet"/);
+  assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security', model: 'sonnet' }), null);
+  setPlan(3);                                                                    // backlog no longer under way
+  assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security' }), null);
+});
+
 test('kill switch', () => {
   process.env.HOSA_BUDGET = '0';
   assert.equal(skill('qa', 's4'), null);

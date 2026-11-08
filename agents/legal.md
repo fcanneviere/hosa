@@ -146,7 +146,7 @@ The constraints you wrote in Mode 1 reach the code only through the tickets. Pil
 2. **Constraints become criteria.** Each constraint this ticket delivers: an existing `CAn` already states it → cite it; otherwise append a criterion after the last `CAn` (never renumber), testable by a test or a named person — « l'écran d'inscription affiche la mention d'information avant l'envoi, aucune case n'est cochée par défaut », not « conforme au RGPD ». A constraint delivered by another ticket goes there, not here.
 3. **Personal data has its register line.** Each personal field the ticket collects, shows, exports or erases: the register's processing, its legal basis and its retention. A field the register doesn't have → Open Question: the analysis must be updated (Mode 1) before the ticket is built.
 4. **The text is the user's, the page is the ticket's.** A ticket that displays a document (CGU, politique de confidentialité, notice) checks the page and the version; the document's content goes under **Hors logiciel**, with who writes it — never a criterion the developer can't meet.
-5. Write the note in `backlog`'s Step 5c form (all three bullets, `aucun` when one doesn't apply). Run `<hosa> ticket_check .hosa/kb <tickets>` and fix every legal-note gap it lists. Log to `kb/tickets/log.md`.
+5. Write the note in the Step 5c form of `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md` (read that section only, not `backlog`'s `SKILL.md`) (all three bullets, `aucun` when one doesn't apply). Run `<hosa> ticket_check .hosa/kb <tickets>` and fix every legal-note gap it lists. Log to `kb/tickets/log.md`.
 
 Return `## Notes de tickets`: one line per ticket — criteria added, Open Questions.
 

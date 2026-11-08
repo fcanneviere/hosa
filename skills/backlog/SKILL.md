@@ -7,7 +7,14 @@ description: "Use to turn every stable Exigence into Product Backlog tickets —
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start backlog`; refused → name the missing stage to the user and stop. Stopped on a user question: `block backlog --detail "<question>"`. Once the stage's output is written and committed: `done backlog`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
-**Tâches.** Once Step 1 has cut the exigences into batches of 8, list each batch's dispatches: `avancement.py task add backlog stories-<k> --agent hosa-product-owner --objet "<exigences du lot>"`, then `securite-<k>` (`hosa-security`) and `juridique-<k>` (`hosa-legal`) with `--objet "lot <k>"`. Each return → `task done backlog <id> --sortie <the ticket paths it wrote or completed>`. `stories-<k>` needs the judge first: when `hosa-product-owner` returns, `task add backlog juge-<k> --agent hosa-juge --objet "stories-<k>"`, dispatch `hosa-juge` with `backlog stories-<k>` and the ticket paths, `task done backlog juge-<k> --sortie <the verdict path it gives>`, then `task done backlog stories-<k>`. Refused by `juge-Qn` → dispatch `hosa-product-owner` again on those tickets with the refusal's lines as they are, then the judge again (`task add` the same `juge-<k>`). A `## Reprise` report → `task add` a new id (`stories-<k>b`) for what it lists, then `task done` the cut one with what it did write. A security or legal analysis still missing (fallback line) → `task skip backlog securite-<k> --detail "pas encore d'analyse"`.
+**Tâches.** A lot is **8 tickets at most**, not 8 exigences (rieki: 2 exigences gave 52 tickets, one pass wrote 39 of them up to 273 k tokens of context). `task done stories-<k>` refuses more (`lot`, pipeline.json). An exigence that splits into more: its first pass decides the whole split, writes the first 8 and lists the others under `## Reprise` (slug — scope — `depends_on`, one line each); the next pass is `stories-<k>b` on that list.
+- `avancement.py task add backlog stories-<k> --agent hosa-product-owner --objet "<exigences, tickets>"`.
+- When it returns: `task add backlog juge-<k> --agent hosa-juge --objet "stories-<k>"`, dispatch `hosa-juge` with `backlog stories-<k>` and the slugs of the tickets, `task done backlog juge-<k> --sortie <the verdict path it gives>`, then `task done backlog stories-<k> --sortie <the ticket paths>`.
+- Refused by `juge-Qn` → dispatch a fresh `hosa-product-owner` on the refused tickets only, with the refusal's lines as they are, then `hosa-juge` on those tickets only (`task add` the same `juge-<k>`) — never the whole lot again: each ticket keeps its newest verdict. Refused as `plus ancien que le ticket` → the judge on the slugs it lists. The judge's script counts each ticket's judgments: at the bound it stops, and you show the user what each round refused.
+- Only once `stories-<k>` is done: `task add` `securite-<k>` (`hosa-security`) and `juridique-<k>` (`hosa-legal`) with `--objet "lot <k>"`. They are refused before (`after`): they add their criteria to judged tickets, and a correction of the PO would renumber them.
+- Each return → `task done backlog <id> --sortie <the ticket paths it wrote or completed>`. A `## Reprise` report → `task add` a new id (`<id>b`) for what it lists, then `task done` the cut one with what it did write. A security or legal analysis still missing (fallback line) → `task skip backlog securite-<k> --detail "pas encore d'analyse"`.
+
+**Dispatch.** `budget.js` applies pipeline.json's `dispatch` for `backlog`: **2 Hosa agents at once** at most (the judge of lot k beside the PO of lot k+1), and `hosa-security` and `hosa-legal` with `model: "sonnet"` (notes de tickets; their threat model, audits and gates stay on Opus). Four agents at once used up the 5-hour limit in 21 minutes on rieki. An agent cut by a limit or a pause is **not resumed** with `SendMessage`: its cache lasts 5 minutes, and a message writes its whole context again (rieki: 460 k for one agent). Dispatch a fresh one with its `## Reprise` and the files it wrote — refused past 5 minutes and 60 k tokens.
 
 Turns "what the application must do" (the stable cahier des charges) into Product Backlog tickets — each one carrying the business story, its technical feasibility, where it lands in the architecture, and where it lands in the interface, so nothing enters `kb/tickets/` disconnected from the technical reality already decided by `stack`, `architecture`, and `interface`.
 
@@ -106,172 +113,12 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 
 A target still "pas encore de chiffre" → the item says so; `qa-plan` then tests nothing for it, and the report says it. An `nfr` exigence that also needs something built (a data export for the right of access, a backup job) → its feature part gets a ticket, like any other exigence. Update this file in place on a re-run; log it to `kb/rules/design/log.md`.
 
-## Step 2: Write the Story (PO role)
+## Steps 2-5c: Write the Tickets
 
-**By batches.** Dispatch `hosa-product-owner` for this step on at most 8 exigences at a time, a fresh dispatch per batch, each given its exigence paths and the slugs already written (for `depends_on`) — one pass over a whole cahier des charges (51 tickets on the pilot) hits its tool-call cap six times. A report with `## Reprise` → a fresh dispatch on what it lists.
-
-For each `Exigence` left after Step 1, **split it into tickets** first. A ticket is a **vertical slice**: something a persona can exercise end to end, through every layer it needs (data, logic, interface) — never one layer of many features ("toutes les tables", "toute l'API"). Built, tested and demonstrated alone inside one sprint: one screen with its action, one rule, one import. The first ticket of an exigence is the thinnest path that works; the next ones widen it. A process with several screens, roles or rules gives several tickets. An exigence that is already that small stays one ticket. When a ticket can't work before another (it needs its data, its screen or its endpoint: authentication, a reference table, a creation before its edition), give it `depends_on: [<slug>]` — a real dependency only, never "plus logique après". A cycle means the split is wrong: re-slice. Unsure where to cut, or which comes first → ask the user.
-
-**Too big.** More than 10 criteria, two variants of one flow (two kinds of token, two triggers, two populations), or a ticket that adds a migration, a scheduled command and a screen → split, one variant or one rule per ticket (pilot2: « Ce n'était pas moi », 16 criteria over two variants, estimated "simple"; « Changer son adresse e-mail », 15 criteria with a migration and a daily purge, estimate 2). A catch-all ticket ("corrections de l'interface", eleven unrelated retouches plus a new action) is split by screen, and a new action goes to the ticket of its feature.
-
-**Security and compliance mechanisms first.** A mechanism several tickets use — the security event log, the security headers and production configuration, the rate-limit store, the legal pages and the CGU version, consent, the purge of expired data — is its own ticket, the first of its exigence, and every ticket that uses it lists it in `depends_on`: a criterion « … est journalisé » needs the log's ticket. Pilot2 ranked the security log at 43, the legal pages at 49 and the security headers at 51, while 14 tickets ranked 7 to 39 wrote to the log and the signup asked to accept CGU no page showed: security and compliance were left to the end, where they cost a redevelopment.
-
-**Production setup is a ticket, not a release surprise.** A `## Documents à produire hors logiciel` line or a production prerequisite (least-privilege accounts, encrypted backups with a tested restore, proxy configuration) that needs code or configuration gets its ticket here, not from the audit (pilot2: three database Blocking findings and four production-setup tickets created after sprint 1). The document itself stays the user's.
-
-**Exigences tagged `socle-comptes`** are not re-sliced: take the split of `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md` § Découpage en tickets, the tickets the variants keep, with its `depends_on`. Rate limiting is in `connexion`'s criteria, never a later ticket (pilot2: login shipped without it). In Step 6, propose these tickets first, in the split's order.
-
-Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
-
-```markdown
----
-type: Ticket
-title: <titre>
-description: "<description courte>"
-tags: []
-state: todo
-depends_on: []          # tickets à livrer avant celui-ci — retiré si vide
-generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
----
-En tant que [persona],
-je veux [besoin],
-afin de [valeur].
-
-Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
-```
-
-If the `Exigence` names no clear persona, ask the user which persona it serves before writing the story — same "no guessing" discipline as every other Hosa skill.
-
-Then append acceptance criteria derived from the `Exigence`'s own text — its `## Règles de gestion`, `## Cas d'erreur` and `## Contraintes juridiques` above all — at least one scenario per rule, per error case and per legal constraint this ticket covers, plus the nominal path:
-
-```markdown
-## Critères d'acceptation
-- CA1 — Étant donné [contexte], quand [action], alors [résultat attendu]
-```
-
-Number the criteria `CA1`, `CA2`… in order and never renumber one: test plans, recettes and validation cite them by number. A criterion is checkable by a test or a named person: « corrigée sous un mois », « notée hors application » or « une capture est jointe » are procedures, not criteria — they go to the procedure document the ticket writes, and the criterion checks that document exists and says it. If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
-
-## Grounding Rule (Steps 3-5c)
-
-These notes are what a developer builds from, not a summary for a manager. Write them from the real project:
-- First read the data dictionary (its path is in the `Infra` entry), the architecture and interface documentation, and query the project graph: `map` once per run, then `find`/`explain` on every module, entity, route or component the ticket touches.
-- **Every bullet names something real** — a path, an entity with its exact fields and types, a route, a function or component — as the dictionary, the documentation or the graph give it. Something that doesn't exist yet is `à créer`: a new file in an existing module is plain `à créer`; a missing module, layer, entity, field or screen is `à créer — owner: <hosa-architect | hosa-data-engineer | hosa-ux-designer>`, a structural gap `sprint` won't plan until its owner fills it.
-- A file another ticket marks `à créer` is cited by its path **and** that ticket goes into `depends_on` — never as if it already existed: `sprint` would plan this ticket without its creator (pilot2: `core/limitation.py`). The checker lists every path cited as existing that the project lacks.
-- No bullet without a reference: "faisable avec la stack", "couche service", "écran principal" are not answers. Can't name it → `inconnu — <ce qu'il faudrait lire ou décider>`, a visible gap.
-- A bullet that doesn't apply says `aucun`; never leave a bullet out.
-
-## Step 3: Add the Technical Note (senior dev role)
-
-Read `kb/stack/` for `Stack Decision` concepts. If at least one exists, append to the ticket just written:
-
-```markdown
-## Note technique (senior dev)
-- **Contrat** : <méthode + route, ou signature> — entrée <champs et types>, sortie <champs et types>, erreurs <code ou exception → cas>
-- **Règles et validations** : <règle précise> → critère « <Étant donné… du Step 2> » (une ligne par règle)
-- **Tests à écrire** : <chemin du fichier de test> — <cas : nominal, erreur, limite>
-- **Hors périmètre** : <ce que ce ticket ne fait pas, et le ticket qui le fera>
-- **Complexité** : <1|2|3> — <la partie qui coûte, et pourquoi au regard de la stack>
-```
-
-If `kb/stack/` has no `Stack Decision` yet (this skill invoked standalone, before `stack` ran), append instead:
-
-```markdown
-## Note technique (senior dev)
-Stack pas encore choisie — faisabilité non évaluée.
-```
-
-Never block ticket creation on a missing `Stack Decision`.
-
-## Step 4: Add the Architecture Placement (architect role)
-
-Read `kb/infra/` for the `Infra` entry's `## Documentation d'architecture` heading (written by `architecture`) — that heading, specifically, not the data dictionary or migrations paths `schema-app`/`schema-db` also record in the same `Infra` entry. If it's there, read the documentation it points to and append to the ticket:
-
-```markdown
-## Placement architecture (architecte)
-- **Module/couche** : <module> (<chemin>) — <pourquoi ici>
-- **Fichiers touchés** : `<chemin>` — <ce qui y change> (un par ligne ; `à créer` si absent)
-- **Données** : <Entité>.<champ> (<type>) lu/écrit — ou `aucun`
-- **Migration** : <ce qu'elle ajoute ou modifie> — ou `aucune`
-- **Points d'appel** : <symbole existant qui appellera ce code, d'après `graph.py affected`>
-```
-
-If no architecture documentation path is recorded yet (this skill invoked standalone, before `architecture` ran), append instead:
-
-```markdown
-## Placement architecture (architecte)
-Architecture pas encore scaffoldée — placement non déterminé.
-```
-
-Never block ticket creation on a missing architecture doc.
-
-## Step 5: Add the Interface Placement (UX/UI designer role)
-
-Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading (written by `interface`) — that heading, specifically, not the architecture doc, the data dictionary, or the migrations paths the same `Infra` entry may also record. If it's there, read the documentation it points to and `kb/interface/navigation.md`, and append to the ticket:
-
-```markdown
-## Placement interface (UX/UI)
-- **Écran / route** : <écran du plan de navigation> (`<route>`, `<chemin>`)
-- **Composants** : `<chemin du composant>` — <rôle dans ce ticket> (`à créer` si absent) — ou `aucun`
-- **États** : chargement, vide, erreur, succès — <ce que l'utilisateur voit dans chacun>
-- **Libellés** : « <texte exact> » pour chaque bouton, message et titre ajouté
-[Tout est nommé avec les termes de `kb/interface/lexique.md` ; un écran ou un terme absent est ajouté via `interface`, jamais inventé ici]
-```
-
-If no interface documentation path is recorded yet (this skill invoked standalone, before `interface` ran), append instead:
-
-```markdown
-## Placement interface (UX/UI)
-Interface pas encore scaffoldée — placement non déterminé.
-```
-
-Never block ticket creation on a missing interface doc.
-
-## Step 5b: Add the Security Note (`hosa-security`)
-
-Dispatch `hosa-security` (Mode 5 — Notes de tickets), by batches of 8 tickets like Step 2, with the ticket paths. A note only listing rule names is not a note: pilot2's said « Règles X et Y : compteurs atomiques… », and its sprint 1 then had 2 reviews FAIL on a rule, 14 audit findings and 13 follow-up tickets. The agent reads `kb/cdc/securite.md`, `kb/securite/modele-menaces.md`, the `Security Rule`s and the linked `Exigence`'s `## Contraintes de sécurité`, then for each ticket:
-- **appends an acceptance criterion per abuse case** this ticket must refuse, after the last `CAn`, in the PO's Given/When/Then form — « Étant donné …, quand un attaquant …, alors … » — unless an existing criterion already states it;
-- writes the note:
-
-```markdown
-## Note sécurité (expert cybersécurité)
-- **Règles** : `<slug de règle>` — <ce que la règle exige ici : seuil, clé, champ, mode de panne> (une ligne par règle)
-- **Cas d'abus** : (un par ligne, recopié de `kb/cdc/securite.md` ou du modèle de menaces) — ou `aucun`
-  - Étant donné …, quand un attaquant …, alors … → CAn
-- **Contrôle d'accès** : <rôles permis, rôles refusés et leur réponse, filtre (foyer, propriétaire)> — ou `aucun`
-- **Journalisation** : <événement, journal, champs ; ticket qui fournit le journal, dans `depends_on`> — ou `aucun`
-- **Données sensibles** : <champ (classification)> — <où il ne doit jamais sortir : journal, réponse, e-mail, cache> — ou `aucun`
-```
-
-A ticket with no constraint of its own writes `aucun` on each bullet but **Règles** (the general rules it touches). If `kb/cdc/securite.md` doesn't exist yet (`securite` never ran), append instead:
-
-```markdown
-## Note sécurité (expert cybersécurité)
-Analyse de sécurité pas encore faite — contraintes non déterminées.
-```
-
-Never block ticket creation on a missing analysis.
-
-## Step 5c: Add the Legal Note (`hosa-legal`)
-
-Dispatch `hosa-legal` (Mode 3 — Notes de tickets), same batches. Pilot2's tickets had no legal note: legal constraints sat in the security note as « Contrainte juridique : RGPD art. 12 à 20 », and the legal gate at release was the first to check them. The agent reads `kb/cdc/juridique.md` (registre, contraintes retenues, documents hors logiciel) and the linked `Exigence`'s `## Contraintes juridiques`, then for each ticket:
-- **appends an acceptance criterion per legal constraint** the ticket delivers, unless an existing criterion already states it — testable, not « respecter le RGPD »;
-- writes the note:
-
-```markdown
-## Note juridique (expert conformité)
-- **Contraintes** : (une par ligne) — ou `aucun`
-  - <contrainte> — <article> → CAn
-- **Données personnelles** : <traitement du registre> — <données touchées> — base légale <…> — conservation <durée> — ou `aucun`
-- **Hors logiciel** : <document de `## Documents à produire hors logiciel` lié, et qui le produit> — ou `aucun`
-```
-
-If `kb/cdc/juridique.md` doesn't exist yet (`juridique` never ran), append instead:
-
-```markdown
-## Note juridique (expert conformité)
-Analyse juridique pas encore faite — contraintes non déterminées.
-```
-
-Never block ticket creation on a missing analysis.
+What each ticket holds — the split, the story, the criteria, the Grounding Rule and the five notes — is in `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md`, the one file the writing agents read (give them its path, never this skill):
+- Steps 2-5, `hosa-product-owner`, one `stories-<k>` pass of 8 tickets at most: split, story and criteria, technical note (senior dev role), architecture placement, interface placement. Each pass gets its exigence paths, the slugs already written (for `depends_on`) and, from the second pass of an exigence on, the `## Reprise` split of the first.
+- Step 5b, `hosa-security` (Mode 5 — Notes de tickets), `securite-<k>` with the lot's ticket paths: security note, each abuse case a criterion.
+- Step 5c, `hosa-legal` (Mode 3 — Notes de tickets), `juridique-<k>`, same lot: legal note, each legal constraint a criterion.
 
 ## Step 6: Priority and Estimate
 

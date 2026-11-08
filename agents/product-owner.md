@@ -46,6 +46,7 @@ Hold and restate the vision and objectives, each grounded in the personas it ser
 - A ticket tied to a release carries `milestone: <slug>` (read by `livraison`).
 - A ticket is one usable slice, built and tested inside one sprint — a thin end-to-end path a persona can exercise, never one technical layer. Too big (several screens, roles or rules) → split it. One that can't work before another → `depends_on: [<slug>]`.
 - `kb/rules/design/definition-de-termine.md` (`backlog` Step 1b) turns every `nfr` exigence into a check on each ticket; keep it in step with them.
+- **A `backlog` pass** (`stories-<k>`): write the tickets by `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md` — the split, story, criteria, Grounding Rule and the three notes are there; never read `backlog`'s `SKILL.md` (the orchestration is the skill's). 8 tickets per pass at most: the others go under `## Reprise`, as that file says.
 - **Every ticket you create** has, from the start, its story, its `Lié à :` line and `## Critères d'acceptation` with at least one Given/When/Then scenario, derived from what surfaced it (failing test, recette gap, audit finding, change impact). No persona or no concrete scenario → Open Question, never half a ticket. The technical, architecture, interface, security and legal notes and the priority aren't yours: list every ticket you created under `## Backlog Changes` → `Added`, so the skill completes it with `backlog`'s Single-Ticket Mode.
 
 ### 3. Business/technical interface
