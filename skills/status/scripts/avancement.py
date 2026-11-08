@@ -24,7 +24,7 @@ the work stopped, in the right order.
                                                                   (the agents' tasks of a stage, under `## Tâches`)
   avancement.py <kb> juge <stage> <id> [--sprint S] [--tickets T[,T…]] [--force]
                                                                   (`hosa-juge`'s questions for a task, its verdict path and,
-                                                                   with --tickets, the numbered lines to judge them on)
+                                                                   with --tickets, the file of numbered lines to judge them on)
   avancement.py <kb> juge                                         (the judge's measure, from `kb/jugements/log.md`)
 
 `start` refuses (exit 1) while an earlier stage of the same pipeline isn't
@@ -46,7 +46,8 @@ most tickets one task outputs. A task declared `after` others (`juge-2` after
 done nor skipped; a judge's task judges the tickets those tasks wrote, and
 each Non reopens the task its question names (`to`) with its exact lines. `juge
 --tickets` refuses (exit 1) a ticket already judged `1 + tasks.max` times —
-`--force` on the user's word. A refusal counts a round by
+`--force` on the user's word — and tickets whose extract passes `JUGE_MAX`
+characters: it gives the groups, one judge each. A refusal counts a round by
 cause (the control, or the judge's question that failed); past
 `tasks.max` rounds of one cause the task is `bloqué` and the user decides —
 `task add --force` restarts the count, `task done --force` accepts the
@@ -707,9 +708,22 @@ def juge_stats(kb: Path) -> list[str]:
     return out
 
 
+ABSENT = re.compile(r"Oui\s*—\s*`?([^`:\s]+\.md)`?\s+n'a pas de section\s*«\s*(?:## )?(.+?)\s*»")
+
+
 def unproved(kb: Path, answer: str) -> str:
     """Why a `Oui — <fichier>:<ligne> « <extrait> »` proves nothing: no citation, no such line, or the
-    line lacks the excerpt (each piece around a `…`, in order). Empty when the line holds it."""
+    line lacks the excerpt (each piece around a `…`, in order). Empty when the line holds it. A section
+    to cover that the exigence lacks has no line to cite: `Oui — <fichier> n'a pas de section « <titre> »`
+    proves it when the file has no such `## ` heading (rieki: 59 such Oui refused, each a round lost)."""
+    if (m := ABSENT.match(answer)):
+        rel, title = m[1].removeprefix("kb/").removeprefix(".hosa/kb/"), m[2].strip()
+        text = read(kb / rel)
+        if text is None:
+            return f"preuve introuvable — {rel} n'existe pas"
+        if any(x.startswith("## ") and x[3:].strip().lower().startswith(title.lower()) for x in text.splitlines()):
+            return f"preuve fausse — {rel} a la section « {title} »"
+        return ""
     m = re.match(r"Oui\s*—\s*`?([^`:\s]+):(\d+)`?\s*«\s*(.+?)\s*»", answer)
     if not m:
         return "Oui sans preuve `fichier:ligne « extrait »`"
@@ -786,6 +800,21 @@ def juge_extract(kb: Path, slugs: list[str]) -> str:
         lines = numbered(kb, dest, lambda h, w=heading.lower(): bool(h) and h.lower().startswith(w))
         out += [f"### {dest} § {heading}"] + lines[1:]
     return "\n".join(out)
+
+
+# the most an extract holds: the judge reads it whole in one `Read` (rieki: a lot of 7 tickets made 43 k
+# characters, a Bash output past 20 k lost its middle and the judge answered Non on the missing lines)
+JUGE_MAX = 60_000
+
+
+def juge_groups(kb: Path, slugs: list[str]) -> list[list[str]]:
+    """`slugs` in order, cut into groups whose extract fits `JUGE_MAX`: one judge per group."""
+    groups: list[list[str]] = [[]]
+    for s in slugs:
+        if groups[-1] and len(juge_extract(kb, groups[-1] + [s])) > JUGE_MAX:
+            groups.append([])
+        groups[-1].append(s)
+    return groups
 
 
 # the controls a task's outputs pass at `task done`, in order: `sortie` and `okf` always, then the ones
@@ -1059,12 +1088,24 @@ def main(argv: list[str]) -> int:
                       f"chaque tour (`kb/jugements/{verdict.stem}*.md`) ; un tour de plus seulement sur sa parole "
                       "(`--force`).")
                 return 1
+            extract = juge_extract(a.kb, slugs)
+            if len(extract) > JUGE_MAX and len(slugs) > 1:
+                print(f"✗ extrait de {len(extract)} caractères, {JUGE_MAX} au plus : un `hosa-juge` par groupe, "
+                      "dispatchés ensemble — " +
+                      " ; ".join(f"`--tickets {','.join(g)}`" for g in juge_groups(a.kb, slugs)))
+                return 1
             verdict = next_verdict(verdict)
+            # a file, read whole by `Read`: a Bash output that long is cut (hook, harness), and a Non follows
+            where = a.kb.parent / "juge" / f"{verdict.stem}.md"
+            where.parent.mkdir(parents=True, exist_ok=True)
+            where.write_text(extract + "\n", encoding="utf-8")
         print(f"Verdict : {verdict.as_posix()}\nUne section `## <slug du ticket>` par ticket, une ligne par question :\n"
-              "- Qn — Oui — <fichier:ligne> « <extrait qui le prouve> »\n- Qn — Non — <le manque exact>\n\nQuestions :")
+              "- Qn — Oui — <fichier:ligne> « <extrait qui le prouve> »\n"
+              "- Qn — Oui — <fichier> n'a pas de section « <titre> »   (une section à couvrir que l'exigence n'a pas)\n"
+              "- Qn — Non — <le manque exact>\n\nQuestions :")
         print("\n".join(f"Q{i}. {q}" for i, q in enumerate(questions, 1)))
         if slugs:
-            print("\n" + juge_extract(a.kb, slugs))
+            print(f"\nExtrait : {where.as_posix()} — `Read` ce fichier en entier : les seules lignes à lire.")
         return 0
     if a.action == "init":
         if path.exists():

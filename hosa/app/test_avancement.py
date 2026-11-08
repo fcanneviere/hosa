@@ -435,6 +435,15 @@ class Tasks(unittest.TestCase):
         self.assertIn("ne contient pas « CA2 »", av.unproved(k, "Oui — tickets/t1.md:7 « b … CA2 »"))  # in order
         self.assertIn("n'existe pas", av.unproved(k, "Oui — cdc/absente.md:1 « x »"))
 
+    def test_a_oui_on_a_section_the_exigence_lacks_is_proved_by_its_absence(self):
+        k = kb({"cdc/e.md": "---\ntype: Exigence\n---\n## Règles de gestion\n- R1\n## Contraintes juridiques\n- RGPD\n"})
+        self.assertEqual(av.unproved(k, "Oui — cdc/e.md n'a pas de section « Contraintes de sécurité »"), "")
+        self.assertEqual(av.unproved(k, "Oui — `cdc/e.md n'a pas de section « ## Contraintes de sécurité »`"), "")
+        self.assertIn("a la section", av.unproved(k, "Oui — cdc/e.md n'a pas de section « Contraintes juridiques »"))
+        self.assertIn("n'existe pas", av.unproved(k, "Oui — cdc/x.md n'a pas de section « Contraintes de sécurité »"))
+        q = av.juge_questions("backlog", "juge-1")  # the questions give the form the script accepts
+        self.assertTrue(any("n'a pas de section « Contraintes de sécurité »" in x for x in q))
+
     def test_hosa_juge_0_skips_the_judge(self):
         k = kb({"tickets/t1.md": TICKET, "jugements/backlog-juge-1.md": "---\ntype: Jugement\n---\n"})
         closed_until(k, "interface")
@@ -474,6 +483,32 @@ class Tasks(unittest.TestCase):
                                               for i in range(1, n + 1)) for s in slugs)
         Path(path).write_text(Path(path).read_text(encoding="utf-8") + body, encoding="utf-8")
 
+    @staticmethod
+    def extract(out):
+        return Path(re.search(r"^Extrait : (.+?) — ", out, re.M)[1]).read_text(encoding="utf-8")
+
+    def test_the_extract_is_a_file_the_judge_reads_whole_not_a_bash_output(self):
+        k = self.judge_setup("t1")
+        code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1")
+        self.assertEqual(code, 0)
+        self.assertNotIn("### tickets/t1.md", out)  # past 20 k characters a Bash output loses its middle
+        self.assertIn("### tickets/t1.md", self.extract(out))
+        self.assertEqual(Path(re.search(r"^Extrait : (.+?) — ", out, re.M)[1]).parent, k.parent / "juge")
+
+    def test_an_extract_too_long_for_one_judge_is_cut_into_groups_before_any_verdict(self):
+        k = self.judge_setup("t1", "t2", "t3")
+        one = len(av.juge_extract(k, ["t1"]))
+        with unittest.mock.patch.object(av, "JUGE_MAX", one + 150):
+            code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1,t2,t3")
+            self.assertEqual(code, 1)
+            groups = av.juge_groups(k, ["t1", "t2", "t3"])
+            self.assertGreater(len(groups), 1)
+            self.assertEqual(sum(groups, []), ["t1", "t2", "t3"])
+            self.assertTrue(all(len(av.juge_extract(k, g)) <= av.JUGE_MAX for g in groups))
+            self.assertIn(f"`--tickets {','.join(groups[0])}`", out)
+            self.assertFalse((k / "jugements" / "backlog-juge-1.md").exists())  # nothing reserved
+            self.assertEqual(run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[0], 0)  # one ticket always goes
+
     def test_a_re_judgment_of_some_tickets_gets_its_own_file_and_each_ticket_its_newest_answer(self):
         k = self.judge_setup("t1", "t2")
         done = lambda: run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")  # noqa: E731
@@ -508,7 +543,7 @@ class Tasks(unittest.TestCase):
                                              "  - quand un attaquant forge le foyer → CA3\n"
                                              "## Note juridique (expert conformité)\n- **Contraintes** : aucun\n",
                                              encoding="utf-8")
-        out = run(k, "juge", "backlog", "juge-1", "--tickets", "kb/tickets/t1.md")[1]
+        out = self.extract(run(k, "juge", "backlog", "juge-1", "--tickets", "kb/tickets/t1.md")[1])
         self.assertIn("### tickets/t1.md\n5: En tant que parent,\n7: Lié à : [e](../cdc/e.md)", out)
         self.assertIn("10: - CA2 — b", out)
         self.assertNotIn("secret", out)
@@ -523,13 +558,13 @@ class Tasks(unittest.TestCase):
                                         "- R1 — essais limités : voir [Limites](limites.md) § Seuils.\n", encoding="utf-8")
         (k / "cdc" / "limites.md").write_text("---\ntype: Exigence\n---\n## Objectif du processus\n- secret\n"
                                               "## Seuils\n- 5 essais par 15 min\n", encoding="utf-8")
-        out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[1]
+        out = self.extract(run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[1])
         self.assertIn("### cdc/limites.md § Seuils\n6: ## Seuils\n7: - 5 essais par 15 min", out)
         self.assertNotIn("secret", out)
         self.assertEqual(av.unproved(k, "Oui — cdc/limites.md:7 « 5 essais »"), "")
         (k.parent / f"{k.name}-hors.md").write_text("## Seuils\n- hors de la KB\n", encoding="utf-8")
         (k / "cdc" / "e.md").write_text(f"- R1 : voir [x](../../{k.name}-hors.md) § Seuils.\n", encoding="utf-8")
-        self.assertNotIn("hors de la KB", run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[1])
+        self.assertNotIn("hors de la KB", self.extract(run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[1]))
 
     def test_a_ticket_judged_once_and_re_judged_twice_stops_for_the_user(self):
         k = self.judge_setup("t1")
