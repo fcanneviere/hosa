@@ -40,7 +40,20 @@ test('an open loop survives a later resume point, a closed one is not shown', ()
   assert.match(ctx, /Boucle ouverte : `relecture` → `redaction` — tour 2\/2 — A2 : cas d'erreur manquant/);
   assert.doesNotMatch(ctx, /`qa` → `develop`/);
   assert.match(ctx, /Prochaine étape du plan : `redaction` \(Cahier des charges\)/);
-  assert.match(ctx, /`back <de> <vers>/);
+  assert.match(ctx, /`reprendre` gives the resume card/);
+});
+
+test('a detail the resume point and the stage row share is said once, on the row', () => {
+  const detail = `Découpe des 20 tickets ${'x'.repeat(500)}`;
+  const root = kb([
+    '---', 'type: Plan d\'avancement', '---',
+    '## Point de reprise', `- En cours : \`backlog\` — ${detail}`, '',
+    '## Structuration', '| Étape | Statut | Mis à jour | Détail |', '|---|---|---|---|', `| \`backlog\` | en cours | 2026-11-08 | ${detail} |`,
+  ].join('\n'));
+  const ctx = resumeContext(root);
+  assert.equal(ctx.split('Découpe des 20 tickets').length - 1, 1);
+  assert.match(ctx, /Structuration : `backlog` en cours — Découpe/);
+  assert.match(ctx, /… \(`reprendre` : le détail entier\)/);           // a line is bounded at 400 characters
 });
 
 test('resumes at the next agent task of each stage and shows the blocked ones', () => {

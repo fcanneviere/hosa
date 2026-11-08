@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { findKbRoot, hosaCommand } = require('./graph');
+const { findKbRoot } = require('./graph');
 
 // Where the KB lives: on its own branch (worktree at .hosa/kb, with a .git file) or still
 // tracked in the code branches (to migrate). Fast, read-only, never blocks.
@@ -30,9 +30,8 @@ function resumeContext(cwd) {
   const note = kbLayoutNote(root);
   const kb = path.join(root, '.hosa', 'kb');
   const file = path.join(kb, 'project', 'avancement.md');
-  const how = `Keep it current: \`${hosaCommand()} avancement "${kb.replace(/\\/g, '/')}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; ` +
-    '`back <de> <vers> --detail …` when a stage sends work back (a loop, counted); `task add|done|block|skip <étape> <id>` for each agent a stage dispatches; ' +
-    '`next` gives the stage to run, its skill and what it still lacks; `reprendre` the resume card (skill `reprendre`, on « reprends »).';
+  const how = `Keep it current with \`<hosa> avancement "${kb.replace(/\\/g, '/')}" <action>\`: \`reprendre\` gives the resume card ` +
+    '(stage, skill, tasks, agents still running, next action), `next` the stage to run; each skill names its other actions.';
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
     return `${note}\n\n## Plan d'avancement\n\nNo progress plan yet for this project — the \`status\` skill creates it from the KB. ${how}`;
@@ -66,7 +65,17 @@ function resumeContext(cwd) {
     if (!next && status !== 'fait' && status !== 'non applicable') next = `\`${stage}\` (${section}) — ${status}`;
   }
   if (next) out.push(`- Prochaine étape du plan : ${next}`);
-  return `${note}\n\n## Plan d'avancement — reprise\n\n${[...new Set(out)].join('\n')}\n\nResume from here before anything else: finish the stage in progress, or the next one, in order — never skip ahead. ${how}`;
+  // The resume point and the stage's row carry the same detail (rieki: 1 KB twice): say it once — the row, which
+  // names the stage and its status, comes later and wins — each line bounded.
+  const seen = new Set();
+  const kept = [];
+  for (const l of [...out].reverse()) {
+    const detail = l.split(' — ').slice(1).join(' — ').trim();
+    if (detail && seen.has(detail)) continue;
+    if (detail) seen.add(detail);
+    kept.unshift(l.length > 400 ? `${l.slice(0, 400).trimEnd()}… (\`reprendre\` : le détail entier)` : l);
+  }
+  return `${note}\n\n## Plan d'avancement — reprise\n\n${[...new Set(kept)].join('\n')}\n\nResume from here before anything else: finish the stage in progress, or the next one, in order — never skip ahead. ${how}`;
 }
 
 module.exports = { resumeContext };

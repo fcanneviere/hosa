@@ -530,6 +530,34 @@ def show(sections: dict, resume: str, loops: list[dict] = (), tasks: list[dict] 
     return "\n".join(lines + [x for x in open_loops(loops) if x not in (resume or "")] + task_lines(tasks))
 
 
+SILENT = 15 * 60  # seconds: an agent silent this long no longer counts as running — same value as hooks/budget.js
+
+
+def running_agents(kb: Path) -> list[dict]:
+    """The Hosa agents of this KB still running, from hooks/budget.js's state (any session: a /clear leaves them
+    running, and their reports reach the next session — rieki, 0.1.78: one was dispatched again, then stopped)."""
+    import os
+    import tempfile
+    import time
+    folder = Path(os.environ.get("HOSA_STATE_DIR") or Path(tempfile.gettempdir()) / "hosa-compress")
+    out = []
+    for f in folder.glob("budget-*.json"):
+        if f.name.endswith("-main.json"):
+            continue
+        try:
+            s = json.loads(f.read_text(encoding="utf-8"))
+            if s.get("stopped") or not s.get("kb") or Path(s["kb"]).resolve() != kb.resolve():
+                continue
+            idle = time.time() - f.stat().st_mtime
+        except (OSError, ValueError, TypeError):
+            continue  # fail-open: a state file being written, or foreign
+        if idle < SILENT:
+            out.append({"type": str(s.get("type", "?")).split(":")[-1], "what": s.get("what") or "",
+                        "minutes": int((time.time() - (s.get("started") or 0) / 1000) // 60) if s.get("started") else None,
+                        "idle": int(idle // 60)})
+    return sorted(out, key=lambda a: -(a["minutes"] or 0))
+
+
 def clip(text: str, n: int = 300) -> str:
     return text if len(text) <= n else text[:n].rstrip() + f"… (+{len(text) - n} caractères : `check`)"
 
@@ -567,9 +595,15 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
     out += [line for line in (resume or "").splitlines()
             if line.strip() and line.strip() != "- Rien en cours." and re.sub(r"^- [^:]+ : (`[\w-]+`( \([^)]*\))? — )?", "", line).strip() not in said
             and not re.match(r"^- (En cours|Bloqué) : `[\w-]+`$", line.strip())]
+    agents = running_agents(kb)
+    out += [f"- Agent encore actif : `{a['type']}`" + (f" — « {a['what']} »" if a["what"] else "")
+            + (f" (lancé il y a {a['minutes']} min" if a["minutes"] is not None else " (")
+            + f", dernier appel il y a {a['idle']} min) : son rapport arrivera dans cette session" for a in agents]
     todo = next((t for t in mine if t["statut"] == TODO), None)
     blocked = [t for t in mine if t["statut"] == BLOCKED]
     go = f"invoque `hosa:{skill}` avec `args: \"reprise\"`"
+    if agents:
+        go = "ne relance pas le travail des agents encore actifs ci-dessus : attends leur rapport, puis " + go
     if status == BLOCKED or blocked:
         action = "montre à l'utilisateur les questions bloquantes ci-dessus (Q1…, avec leurs options) et arrête-toi ; " \
                  f"sa réponse reçue, {go}."

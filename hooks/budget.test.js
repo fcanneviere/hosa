@@ -91,6 +91,19 @@ test('a hosa- subagent is warned, then stopped, on the size of its own context',
   assert.equal(pre('SubagentHandback', 's7', {}, { agent_id: 'a7' }), null);
 });
 
+test('each Hosa agent records its KB and what its dispatch was for, for the resume card', () => {
+  setPlan(0); setContext(10000);
+  pre('Agent', 's12', { subagent_type: 'hosa:hosa-product-owner', description: 'Découpe tickets lot 5' });
+  pre('Agent', 's12', { subagent_type: 'Explore', description: 'not Hosa' });
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's12', agent_id: 'd1', agent_type: 'hosa:hosa-product-owner', cwd: project });
+  const dir = process.env.HOSA_STATE_DIR;
+  const state = fs.readdirSync(dir).filter((f) => f.startsWith('budget-')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')))
+    .find((s) => s.what === 'Découpe tickets lot 5');
+  assert.ok(state, 'the agent state holds its dispatch description');
+  assert.equal(path.resolve(state.kb), path.resolve(project, '.hosa', 'kb'));
+  assert.ok(state.started > 0);
+});
+
 test('a long final report is refused once, its questions and its resume point excluded', () => {
   processPayload({ hook_event_name: 'SubagentStart', session_id: 's11', agent_id: 'r1', agent_type: 'hosa:hosa-product-owner' });
   setAgentContext('r1', 30000);

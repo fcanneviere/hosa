@@ -241,10 +241,39 @@ function dispatchGate(p) {
   return null;
 }
 
+// What each dispatch is for, so the resume card names an agent still running after a /clear (rieki, 0.1.78: an
+// agent dispatched without `task add` was dispatched again by the next session, then stopped). The main session's
+// Agent call knows the description, SubagentStart the agent's id: the oldest pending dispatch of its type is its.
+const pendingFile = (session) => path.join(stateDir(), `pending-${hash(session, 12)}.json`);
+const short = (type) => String(type || '').split(':').pop();
+
+function recordDispatch(p) {
+  const input = p.tool_input || {};
+  const type = short(input.subagent_type);
+  if (!/^hosa-/.test(type)) return;
+  const list = load(pendingFile(p.session_id)).list || [];
+  list.push({ type, what: String(input.description || '').slice(0, 120), at: Date.now() });
+  save(pendingFile(p.session_id), { list: list.filter((d) => Date.now() - d.at < SILENT) });
+}
+
+function takeDispatch(session, type) {
+  const list = load(pendingFile(session)).list || [];
+  const i = list.findIndex((d) => d.type === short(type));
+  if (i < 0) return '';
+  const [d] = list.splice(i, 1);
+  save(pendingFile(session), { list });
+  return d.what;
+}
+
 function processPayload(p) {
   if (process.env.HOSA_BUDGET === '0' || !p || !p.session_id) return null;
   if (p.hook_event_name === 'SubagentStart') {
-    if (p.agent_id && p.agent_type) save(stateFile(p.session_id, p.agent_id), { type: p.agent_type, calls: 0 });
+    if (p.agent_id && p.agent_type) {
+      let kb = null;
+      try { const r = findKbRoot(p.cwd || process.cwd()); kb = r && path.join(r, '.hosa', 'kb'); } catch (e) {}
+      save(stateFile(p.session_id, p.agent_id), { type: p.agent_type, calls: 0, kb, started: Date.now(),
+        what: takeDispatch(p.session_id, p.agent_type) });
+    }
     return null;
   }
   if (p.hook_event_name === 'SubagentStop') {
@@ -256,7 +285,10 @@ function processPayload(p) {
   }
   if (p.agent_id) return agentGate(p);
   if (p.tool_name === 'Skill') return stageGate(p);
-  return ['Agent', 'Task', 'SendMessage'].includes(p.tool_name) ? dispatchGate(p) : null;
+  if (!['Agent', 'Task', 'SendMessage'].includes(p.tool_name)) return null;
+  const out = dispatchGate(p);
+  if (!out && p.tool_name !== 'SendMessage') recordDispatch(p);
+  return out;
 }
 
 module.exports = { processPayload, contextTokens };

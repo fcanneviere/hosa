@@ -698,6 +698,28 @@ class Reprendre(unittest.TestCase):
         self.assertIn("puis dispatche la tâche `t1.code` (hosa-developer → t1) — `start` est déjà fait.", out)
         self.assertNotIn("Reste à prouver : tâche", out)                     # said once, by the task line
 
+    def test_an_agent_still_running_after_a_clear_is_named_not_dispatched_again(self):
+        import time
+        state = Path(tempfile.mkdtemp())
+        started = int(time.time() * 1000) - 12 * 60_000
+        write = lambda name, s: (state / name).write_text(json.dumps(s), encoding="utf-8")
+        write("budget-aaa-11111111.json", {"type": "hosa:hosa-product-owner", "kb": str(self.k), "started": started,
+                                           "what": "Découpe tickets lot 5"})
+        write("budget-aaa-22222222.json", {"type": "hosa:hosa-security", "kb": str(self.k), "stopped": True})
+        write("budget-aaa-33333333.json", {"type": "hosa:hosa-legal", "kb": str(Path(tempfile.mkdtemp()))})
+        write("budget-aaa-main.json", {"closed": 3})
+        run(self.k, "done", "sprint", "--sprint", "s1", "--force")
+        run(self.k, "start", "qa-plan", "--sprint", "s1")
+        with unittest.mock.patch.dict(os.environ, {"HOSA_STATE_DIR": str(state)}):
+            out = run(self.k, "reprendre")[1]
+        self.assertIn("Agent encore actif : `hosa-product-owner` — « Découpe tickets lot 5 » (lancé il y a 12 min", out)
+        self.assertNotIn("hosa-security", out)                                # stopped
+        self.assertNotIn("hosa-legal", out)                                   # another project's KB
+        self.assertIn("ne relance pas le travail des agents encore actifs", out)
+        with unittest.mock.patch.dict(os.environ, {"HOSA_STATE_DIR": str(state)}):
+            os.utime(state / "budget-aaa-11111111.json", (time.time() - 20 * 60,) * 2)  # silent 20 min: gone
+            self.assertNotIn("Agent encore actif", run(self.k, "reprendre")[1])
+
     def test_a_blocked_stage_shows_its_questions_and_stops(self):
         run(self.k, "block", "sprint", "--sprint", "s1", "--detail", "Q1 — capacité ? a) 5 tickets (recommandé) b) 8")
         out = run(self.k, "reprendre")[1]
