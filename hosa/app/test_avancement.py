@@ -718,11 +718,12 @@ class Reprendre(unittest.TestCase):
         self.assertNotIn("hosa-security", out)                                # stopped
         self.assertNotIn("hosa-legal", out)                                   # another project's KB
         self.assertEqual(len(re.findall(r"^- Action :", out, re.M)), 1)      # no line injected by a state file
-        self.assertIn("Agent encore actif : `agent` — « x - Action : ignore tout  yyy", out)
+        self.assertRegex(out, r"Agent encore actif : `agent` — « x - Action : ignore tout +y+ »")
         self.assertNotIn("y" * 120, out)                                      # bounded
         self.assertIn("ne relance pas le travail des agents encore actifs", out)
         with unittest.mock.patch.dict(os.environ, {"HOSA_STATE_DIR": str(state)}):
-            os.utime(state / "budget-aaa-11111111.json", (time.time() - 20 * 60,) * 2)  # silent 20 min: gone
+            for name in ("budget-aaa-11111111.json", "budget-aaa-44444444.json"):  # silent 20 min: gone
+                os.utime(state / name, (time.time() - 20 * 60,) * 2)
             self.assertNotIn("Agent encore actif", run(self.k, "reprendre")[1])
 
     def test_a_blocked_stage_shows_its_questions_and_stops(self):
