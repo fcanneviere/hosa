@@ -335,19 +335,19 @@ class Tasks(unittest.TestCase):
         self.assertEqual(run(k, "task", "done", "develop", "t1.revue", "--sprint", "s1",
                              "--sortie", "kb/tickets/t1.md")[0], 0)  # a FAIL is a verdict: the correction follows
 
-    def test_the_judge_s_verdict_gates_a_story_batch_with_the_failed_question_as_cause(self):
+    def test_the_judge_s_verdict_gates_a_batch_with_the_failed_question_as_cause(self):
         k = kb({"tickets/t1.md": TICKET})
         closed_until(k, "interface")
         run(k, "start", "backlog")
-        run(k, "task", "add", "backlog", "stories-1", "--agent", "hosa-product-owner")
-        done = lambda: run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md")  # noqa: E731
-        code, out = done()
-        self.assertEqual((code, "pas de verdict `kb/jugements/backlog-stories-1.md`" in out), (1, True))
-        n = len(av.juge_questions("backlog", "stories-1"))
+        batch(k, "1", ["t1"])
+        verdict = k / "jugements" / "backlog-juge-1.md"
+        done = lambda: run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")  # noqa: E731
+        verdict.parent.mkdir(exist_ok=True)
+        verdict.write_text("---\ntype: Jugement\n---\n", encoding="utf-8")
+        self.assertIn("Q1 — t1 : sans réponse", done()[1])  # the judge judges the batch's tickets, not its verdict
+        n = len(av.juge_questions("backlog", "juge-1"))
         lines = [f"- Q{i} — Oui — tickets/t1.md:6 « CA1 … a »" for i in range(1, n + 1)]
         lines[1] = "- Q2 — Non — la règle R3 n'a pas de critère"
-        verdict = k / "jugements" / "backlog-stories-1.md"
-        verdict.parent.mkdir(exist_ok=True)
         verdict.write_text("---\ntype: Jugement\n---\n## t1\n" + "\n".join(lines) + "\n", encoding="utf-8")
         code, out = done()
         self.assertEqual((code, "refusée par `juge-Q2`" in out, "Q2 — t1 : Non — la règle R3 n'a pas de critère" in out),
@@ -360,36 +360,60 @@ class Tasks(unittest.TestCase):
         verdict.write_text("---\ntype: Jugement\n---\n## t1\n" + "\n".join(lines) + "\n", encoding="utf-8")
         self.assertEqual(done()[0], 0)
 
+    def test_each_non_reopens_the_task_its_question_names_with_its_exact_lines(self):
+        k = kb({"tickets/t1.md": TICKET, "tickets/t2.md": TICKET})
+        closed_until(k, "interface")
+        run(k, "start", "backlog")
+        batch(k, "1", ["t1", "t2"])
+        items = av.juge_items("backlog", "juge-1")
+        owner = lambda to: next(i for i, q in enumerate(items, 1) if q["to"] == to)  # noqa: E731
+        po, sec = owner("stories-*"), owner("securite-*")
+        verdict = k / "jugements" / "backlog-juge-1.md"
+        verdict.parent.mkdir(exist_ok=True)
+        body = "".join(f"## {s}\n" + "".join(
+            f"- Q{i} — " + ("Non — CA9 sans origine" if (s, i) == ("t1", po) else
+                           "Non — abus A2 sans critère" if (s, i) == ("t2", sec) else "Oui — tickets/t1.md:6 « CA1 »") + "\n"
+            for i in range(1, len(items) + 1)) for s in ("t1", "t2"))
+        verdict.write_text("---\ntype: Jugement\n---\n" + body, encoding="utf-8")
+        code, out = run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")
+        self.assertEqual(code, 1)
+        self.assertIn(f"`stories-1` (hosa-product-owner) : Q{po} — t1 : Non — CA9 sans origine", out)
+        self.assertIn(f"`securite-1` (hosa-security) : Q{sec} — t2 : Non — abus A2 sans critère", out)
+        tasks = {t["id"]: t for t in av.load_tasks(k / "project" / "avancement.md")}
+        self.assertEqual((tasks["stories-1"]["statut"], tasks["securite-1"]["statut"], tasks["juridique-1"]["statut"]),
+                         (av.TODO, av.TODO, av.DONE))
+        self.assertIn(f"rouvert par `juge-1` (juge-Q{po}) — Q{po} — t1 : Non — CA9", tasks["stories-1"]["detail"])
+        self.assertNotIn("t2", tasks["stories-1"]["detail"])
+
     def test_each_judged_done_is_journaled_and_measured(self):
         k = kb({"tickets/t1.md": TICKET})
         closed_until(k, "interface")
         run(k, "start", "backlog")
         self.assertIn("Aucun jugement", run(k, "juge")[1])
-        n = len(av.juge_questions("backlog", "stories-1"))
-        verdict = k / "jugements" / "backlog-stories-1.md"
+        for x in ("1", "2", "3"):
+            batch(k, x, ["t1"])
+        n = len(av.juge_questions("backlog", "juge-1"))
+        verdict = k / "jugements" / "backlog-juge-1.md"
         verdict.parent.mkdir(exist_ok=True)
         ok = "".join(f"- Q{i} — Oui — tickets/t1.md:6 « CA1 »\n" for i in range(1, n + 1))
-        done = lambda tid, *f: run(k, "task", "done", "backlog", tid, "--sortie", "kb/tickets/t1.md", *f)  # noqa: E731
-        for tid in ("stories-1", "stories-2"):
-            run(k, "task", "add", "backlog", tid, "--agent", "hosa-product-owner")
+        done = lambda tid, *f: run(k, "task", "done", "backlog", tid, "--sortie",  # noqa: E731
+                                   f"kb/jugements/backlog-{tid}.md", *f)
         verdict.write_text("---\ntype: Jugement\n---\n## t1\n" + ok.replace("Q2 — Oui — tickets/t1.md:6 « CA1 »",
                                                                            "Q2 — Non — R3"), encoding="utf-8")
-        done("stories-1")
-        done("stories-1", "--force")  # the user overrides the judge
-        (k / "jugements" / "backlog-stories-2.md").write_text("---\ntype: Jugement\n---\n## t1\n" + ok, encoding="utf-8")
-        done("stories-2")
+        done("juge-1")
+        done("juge-1", "--force")  # the user overrides the judge
+        (k / "jugements" / "backlog-juge-2.md").write_text("---\ntype: Jugement\n---\n## t1\n" + ok, encoding="utf-8")
+        done("juge-2")
         log = (k / "jugements" / "log.md").read_text(encoding="utf-8").splitlines()
         self.assertEqual(len([x for x in log if x.startswith("## ")]), 1)
-        self.assertIn("`backlog stories-2` — validé", log[1])
-        self.assertIn("`backlog stories-1` — forcé sur `juge-Q2` — Q2 — t1 : Non — R3", log[2])
-        self.assertIn("`backlog stories-1` — refus `juge-Q2`", log[3])
+        self.assertIn("`backlog juge-2` — validé", log[1])
+        self.assertIn("`backlog juge-1` — forcé sur `juge-Q2` — Q2 — t1 : Non — R3", log[2])
+        self.assertIn("`backlog juge-1` — refus `juge-Q2`", log[3])
         out = run(k, "juge")[1]
         self.assertIn("Tâches jugées : 2 — validées au premier passage : 1", out)
         self.assertIn("`juge-Q2` : 1 refus, 1 fois passé outre", out)
-        run(k, "task", "add", "backlog", "stories-3", "--agent", "hosa-product-owner")
-        verdict.write_text(verdict.read_text(encoding="utf-8"), encoding="utf-8")
-        (k / "jugements" / "backlog-stories-3.md").write_text(verdict.read_text(encoding="utf-8"), encoding="utf-8")
-        done("stories-3", "--force")
+        (k / "jugements" / "backlog-juge-3.md").write_text(verdict.read_text(encoding="utf-8"), encoding="utf-8")
+        done("juge-3", "--force")
         self.assertIn("la réécrire ou la retirer", run(k, "juge")[1])
 
     @unittest.skipUnless(importlib.util.find_spec("yaml"), "okf_validate needs pyyaml")
@@ -412,20 +436,20 @@ class Tasks(unittest.TestCase):
         self.assertIn("n'existe pas", av.unproved(k, "Oui — cdc/absente.md:1 « x »"))
 
     def test_hosa_juge_0_skips_the_judge(self):
-        k = kb({"tickets/t1.md": TICKET})
+        k = kb({"tickets/t1.md": TICKET, "jugements/backlog-juge-1.md": "---\ntype: Jugement\n---\n"})
         closed_until(k, "interface")
         run(k, "start", "backlog")
-        run(k, "task", "add", "backlog", "stories-1", "--agent", "hosa-product-owner")
+        batch(k, "1", ["t1"])
         with unittest.mock.patch.dict(os.environ, {"HOSA_JUGE": "0"}):
-            self.assertEqual(run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md")[0], 0)
+            self.assertEqual(run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")[0], 0)
 
     def test_juge_prints_the_questions_of_pipeline_json_and_the_verdict_path(self):
         k = kb({})
-        code, out = run(k, "juge", "backlog", "stories-3")
+        code, out = run(k, "juge", "backlog", "juge-3")
         self.assertEqual(code, 0)
-        self.assertIn("jugements/backlog-stories-3.md", out)
+        self.assertIn("jugements/backlog-juge-3.md", out)
         self.assertIn("Q1. La story", out)
-        self.assertEqual(run(k, "juge", "backlog", "juge-3")[0], 2)
+        self.assertEqual(run(k, "juge", "backlog", "stories-3")[0], 2)
 
     def test_each_declared_control_exists(self):
         stages = [s for _, ss in av.PIPELINES for s in ss] + av.SPRINT
@@ -440,11 +464,11 @@ class Tasks(unittest.TestCase):
                {"cdc/e.md": "---\ntype: Exigence\n---\n## Règles de gestion\n- R1 — un seul foyer\n"})
         closed_until(k, "interface")
         run(k, "start", "backlog")
-        run(k, "task", "add", "backlog", "stories-1", "--agent", "hosa-product-owner")
+        batch(k, "1", list(tickets))
         return k
 
     def answer(self, k, path, slugs, q2="Oui — tickets/{s}.md:10 « CA2 — b »"):
-        n = len(av.juge_questions("backlog", "stories-1"))
+        n = len(av.juge_questions("backlog", "juge-1"))
         body = "".join(f"## {s}\n" + "".join(f"- Q{i} — " + (q2.format(s=s) if i == 2 else
                                                             f"Oui — tickets/{s}.md:9 « CA1 — a »") + "\n"
                                               for i in range(1, n + 1)) for s in slugs)
@@ -452,68 +476,83 @@ class Tasks(unittest.TestCase):
 
     def test_a_re_judgment_of_some_tickets_gets_its_own_file_and_each_ticket_its_newest_answer(self):
         k = self.judge_setup("t1", "t2")
-        done = lambda: run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md,kb/tickets/t2.md")  # noqa: E731
-        code, out = run(k, "juge", "backlog", "stories-1", "--tickets", "t1,t2")
-        first = k / "jugements" / "backlog-stories-1.md"
+        done = lambda: run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")  # noqa: E731
+        code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1,t2")
+        first = k / "jugements" / "backlog-juge-1.md"
         self.assertEqual((code, f"Verdict : {first.as_posix()}" in out), (0, True))
         self.assertTrue(first.is_file())  # reserved: a judge dispatched alongside gets the next file
         self.answer(k, first, ["t1", "t2"], q2="Non — R1 sans critère")
         self.assertIn("Q2 — t1 : Non — R1", done()[1])
-        code, out = run(k, "juge", "backlog", "stories-1", "--tickets", "t1,t2")
-        second = k / "jugements" / "backlog-stories-1.2.md"
+        code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1,t2")
+        second = k / "jugements" / "backlog-juge-1.2.md"
         self.assertIn(f"Verdict : {second.as_posix()}", out)
         self.answer(k, second, ["t1", "t2"])
         self.assertEqual(done()[0], 0)
 
     def test_a_ticket_corrected_after_its_judgment_alone_goes_back_to_the_judge(self):
         k = self.judge_setup("t1", "t2")
-        run(k, "juge", "backlog", "stories-1", "--tickets", "t1,t2")
-        verdict = k / "jugements" / "backlog-stories-1.md"
+        run(k, "juge", "backlog", "juge-1", "--tickets", "t1,t2")
+        verdict = k / "jugements" / "backlog-juge-1.md"
         self.answer(k, verdict, ["t1", "t2"])
         os.utime(verdict, (1, 1))
         os.utime(k / "tickets" / "t1.md", (0, 0))
-        out = run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md,kb/tickets/t2.md")[1]
+        out = run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")[1]
         self.assertIn("--tickets t2", out)
         self.assertNotIn("— t1 :", out)
 
-    def test_the_judge_gets_numbered_lines_of_the_story_the_criteria_and_the_exigence_only(self):
+    def test_the_judge_gets_numbered_lines_of_the_story_the_criteria_the_notes_and_the_exigence_only(self):
         k = self.judge_setup("t1")
         (k / "tickets" / "t1.md").write_text((k / "tickets" / "t1.md").read_text(encoding="utf-8") +
-                                             "## Note technique (senior dev)\n- **Contrat** : secret\n", encoding="utf-8")
-        out = run(k, "juge", "backlog", "stories-1", "--tickets", "kb/tickets/t1.md")[1]
+                                             "## Note technique (senior dev)\n- **Contrat** : secret\n"
+                                             "## Note sécurité (expert cybersécurité)\n- **Cas d'abus** :\n"
+                                             "  - quand un attaquant forge le foyer → CA3\n"
+                                             "## Note juridique (expert conformité)\n- **Contraintes** : aucun\n",
+                                             encoding="utf-8")
+        out = run(k, "juge", "backlog", "juge-1", "--tickets", "kb/tickets/t1.md")[1]
         self.assertIn("### tickets/t1.md\n5: En tant que parent,\n7: Lié à : [e](../cdc/e.md)", out)
         self.assertIn("10: - CA2 — b", out)
         self.assertNotIn("secret", out)
+        self.assertIn("15:   - quand un attaquant forge le foyer → CA3", out)  # where a criterion comes from
+        self.assertIn("17: - **Contraintes** : aucun", out)
         self.assertIn("### cdc/e.md\n4: ## Règles de gestion\n5: - R1 — un seul foyer", out)
         self.assertEqual(av.unproved(k, "Oui — tickets/t1.md:10 « CA2 — b »"), "")  # the numbers are the file's
 
     def test_a_ticket_judged_once_and_re_judged_twice_stops_for_the_user(self):
         k = self.judge_setup("t1")
         for _ in range(3):
-            self.assertEqual(run(k, "juge", "backlog", "stories-1", "--tickets", "t1")[0], 0)
-            self.answer(k, sorted((k / "jugements").glob("backlog-stories-1*.md"), key=os.path.getmtime)[-1], ["t1"],
+            self.assertEqual(run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[0], 0)
+            self.answer(k, sorted((k / "jugements").glob("backlog-juge-1*.md"), key=os.path.getmtime)[-1], ["t1"],
                         q2="Non — R1")
-        code, out = run(k, "juge", "backlog", "stories-1", "--tickets", "t1")
+        code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1")
         self.assertEqual((code, "`t1` déjà jugé 3 fois" in out), (1, True))
-        self.assertEqual(run(k, "juge", "backlog", "stories-1", "--tickets", "t1", "--force")[0], 0)
-        self.assertEqual(run(k, "juge", "backlog", "stories-1", "--tickets", "absent")[0], 2)
+        self.assertEqual(run(k, "juge", "backlog", "juge-1", "--tickets", "t1", "--force")[0], 0)
+        self.assertEqual(run(k, "juge", "backlog", "juge-1", "--tickets", "absent")[0], 2)
 
     def test_a_story_task_outputs_eight_tickets_at_most(self):
         names = [f"t{i}" for i in range(9)]
         k = self.judge_setup(*names)
-        out = run(k, "task", "done", "backlog", "stories-1", "--sortie", ",".join(f"kb/tickets/{n}.md" for n in names))[1]
+        run(k, "task", "add", "backlog", "stories-2", "--agent", "hosa-product-owner")
+        out = run(k, "task", "done", "backlog", "stories-2", "--sortie", ",".join(f"kb/tickets/{n}.md" for n in names))[1]
         self.assertIn("refusée par `lot`", out)
-        self.assertIn("`task add backlog stories-1b` pour les 1 autres", out)
+        self.assertIn("`task add backlog stories-2b` pour les 1 autres", out)
 
-    def test_the_security_notes_of_a_batch_wait_for_its_judged_stories(self):
-        k = self.judge_setup("t1")
+    def test_the_notes_wait_for_their_stories_and_the_judge_for_both_notes(self):
+        k = kb({"tickets/t1.md": TICKET})
+        closed_until(k, "interface")
+        run(k, "start", "backlog")
+        run(k, "task", "add", "backlog", "stories-1", "--agent", "hosa-product-owner")
         code, out = run(k, "task", "add", "backlog", "securite-1", "--agent", "hosa-security")
         self.assertEqual((code, "après `stories-1`" in out), (1, True))
         self.assertEqual(run(k, "task", "add", "backlog", "juridique-1", "--agent", "hosa-legal")[0], 1)
         self.assertEqual(run(k, "task", "add", "backlog", "securite-9", "--agent", "hosa-security")[0], 0)  # no such batch
-        with unittest.mock.patch.dict(os.environ, {"HOSA_JUGE": "0"}):
-            run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md")
-        self.assertEqual(run(k, "task", "add", "backlog", "securite-1", "--agent", "hosa-security")[0], 0)
+        run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md")
+        for tid, agent in (("securite-1", "hosa-security"), ("juridique-1", "hosa-legal")):
+            self.assertEqual(run(k, "task", "add", "backlog", tid, "--agent", agent)[0], 0)
+        run(k, "task", "done", "backlog", "securite-1", "--sortie", "kb/tickets/t1.md")
+        code, out = run(k, "task", "add", "backlog", "juge-1", "--agent", "hosa-juge")
+        self.assertEqual((code, "après `juridique-1`" in out), (1, True))
+        run(k, "task", "skip", "backlog", "juridique-1", "--detail", "pas encore d'analyse")  # skipped counts as closed
+        self.assertEqual(run(k, "task", "add", "backlog", "juge-1", "--agent", "hosa-juge")[0], 0)
 
     def test_task_rows_are_never_read_as_stages(self):
         run(self.k, "task", "add", "stack", "a", "--agent", "hosa-senior-dev")
@@ -586,6 +625,15 @@ class Graph(unittest.TestCase):
                 for s in e["to"] + e.get("then", []):
                     self.assertLess(pipe.index(s), pipe.index(e["from"]), e)
                 self.assertGreaterEqual(e["max"], 1)
+
+
+def batch(k, n, tickets):
+    """A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added."""
+    sortie = ",".join(f"kb/tickets/{t}.md" for t in tickets)
+    for tid, agent in (("stories", "hosa-product-owner"), ("securite", "hosa-security"), ("juridique", "hosa-legal")):
+        run(k, "task", "add", "backlog", f"{tid}-{n}", "--agent", agent)
+        run(k, "task", "done", "backlog", f"{tid}-{n}", "--sortie", sortie)
+    run(k, "task", "add", "backlog", f"juge-{n}", "--agent", "hosa-juge")
 
 
 def closed_until(k, stage):

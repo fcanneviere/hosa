@@ -125,7 +125,7 @@ Never block ticket creation on a missing interface doc.
 
 ## Step 5b: Add the Security Note (`hosa-security`)
 
-`hosa-security` (Mode 5 — Notes de tickets), on one lot of 8 tickets at most, once the judge validated its stories. A note only listing rule names is not a note: pilot2's said « Règles X et Y : compteurs atomiques… », and its sprint 1 then had 2 reviews FAIL on a rule, 14 audit findings and 13 follow-up tickets. The agent reads `kb/cdc/securite.md`, `kb/securite/modele-menaces.md`, the `Security Rule`s and the linked `Exigence`'s `## Contraintes de sécurité`, then for each ticket:
+`hosa-security` (Mode 5 — Notes de tickets), on one lot of 8 tickets at most, once its stories are written; `hosa-juge` judges the lot after the security and legal notes. A note only listing rule names is not a note: pilot2's said « Règles X et Y : compteurs atomiques… », and its sprint 1 then had 2 reviews FAIL on a rule, 14 audit findings and 13 follow-up tickets. The agent reads `kb/cdc/securite.md`, `kb/securite/modele-menaces.md`, the `Security Rule`s and the linked `Exigence`'s `## Contraintes de sécurité`, then for each ticket:
 - **appends an acceptance criterion per abuse case** this ticket must refuse, after the last `CAn`, in the PO's Given/When/Then form — « Étant donné …, quand un attaquant …, alors … » — unless an existing criterion already states it;
 - writes the note:
 

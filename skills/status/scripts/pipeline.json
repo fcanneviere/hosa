@@ -1,5 +1,5 @@
 {
-  "description": "Hosa's stage graph, the one definition: avancement.py reads it (the dashboard through avancement.py), hooks/budget.js too. Stages run in the listed order; `skill` names the skill of a stage whose name differs; `loops` are the back edges: `from` sends work back to one of `to`, the stages of `then` run again after it, then `from`; past `max` rounds the user decides. `tasks`: the controls an agent's task passes at `task done` besides `sortie` and `okf` (each `id` a glob of task ids), `juge` the closed questions `hosa-juge` answers Oui/Non per ticket, `lot` the most tickets one task outputs, `after` the task (same suffix) that must be done before this one is added; `max` the refusals of one cause before the user decides. `dispatch`: while a stage is under way, the most Hosa agents running at once (`parallel`) and the model an agent type is dispatched on (`model`), refused otherwise by hooks/budget.js.",
+  "description": "Hosa's stage graph, the one definition: avancement.py reads it (the dashboard through avancement.py), hooks/budget.js too. Stages run in the listed order; `skill` names the skill of a stage whose name differs; `loops` are the back edges: `from` sends work back to one of `to`, the stages of `then` run again after it, then `from`; past `max` rounds the user decides. `tasks`: the controls an agent's task passes at `task done` besides `sortie` and `okf` (each `id` a glob of task ids), `juge` the closed questions `hosa-juge` answers Oui/Non per ticket, `lot` the most tickets one task outputs, `after` the tasks (same suffix) that must be done or skipped before this one is added; a `juge` item's `to` is the task (same suffix) a Non to its question reopens, with the exact gaps; `max` the refusals of one cause before the user decides. `dispatch`: while a stage is under way, the most Hosa agents running at once (`parallel`) and the model an agent type is dispatched on (`model`), refused otherwise by hooks/budget.js.",
   "pipelines": [
     {"title": "Cahier des charges",
      "stages": ["hosa", "interview", "redaction", "fondamentaux", "juridique", "securite", "relecture", "contestation"]},
@@ -25,13 +25,18 @@
     "max": 2,
     "controls": [
       {"stage": "develop", "id": "*.revue", "check": ["verdict"]},
-      {"stage": "backlog", "id": "securite-*", "after": "stories-*"},
-      {"stage": "backlog", "id": "juridique-*", "after": "stories-*"},
-      {"stage": "backlog", "id": "stories-*", "check": ["lot", "juge"], "lot": 8, "juge": [
-        "La story « En tant que … » nomme un persona de sa ligne `Lié à :`, et son besoin est un besoin que l'exigence liée exprime.",
-        "Chaque règle de gestion, cas d'erreur et contrainte juridique de l'exigence liée que ce ticket couvre a au moins un critère `CAn`.",
-        "Chaque critère `CAn` décrit un résultat qu'un test ou une personne nommée peut constater (pas une procédure, pas « correctement », pas « rapidement » sans chiffre).",
-        "Aucun critère n'exige un comportement que l'exigence liée ne demande pas."
+      {"stage": "backlog", "id": "stories-*", "check": ["lot"], "lot": 8},
+      {"stage": "backlog", "id": "securite-*", "after": ["stories-*"]},
+      {"stage": "backlog", "id": "juridique-*", "after": ["stories-*"]},
+      {"stage": "backlog", "id": "juge-*", "after": ["securite-*", "juridique-*"], "check": ["juge"], "juge": [
+        {"to": "stories-*", "q": "La story « En tant que … » nomme un persona de sa ligne `Lié à :`, et son besoin est un besoin que l'exigence liée exprime."},
+        {"to": "stories-*", "q": "Chaque règle de gestion et chaque cas d'erreur de l'exigence liée que ce ticket couvre a au moins un critère `CAn`."},
+        {"to": "stories-*", "q": "Chaque critère `CAn` qu'aucune note ne relie par `→ CAn` décrit un résultat qu'un test ou une personne nommée peut constater (pas une procédure, pas « correctement », pas « rapidement » sans chiffre)."},
+        {"to": "stories-*", "q": "Aucun critère `CAn` n'exige un comportement que l'exigence liée ne demande pas, hors ceux qu'une note relie par `→ CAn` et ceux de la forme « quand un attaquant … »."},
+        {"to": "securite-*", "q": "Chaque contrainte de `## Contraintes de sécurité` de l'exigence liée que ce ticket couvre a une ligne de la note sécurité, sous `Règles` ou `Cas d'abus`. Une note « Analyse … pas encore faite » : Oui, cette ligne en preuve."},
+        {"to": "securite-*", "q": "Chaque ligne `Cas d'abus` de la note sécurité finit par `→ CAn`, et ce critère existe, refuse cet abus et décrit un résultat constatable ; aucun critère « quand un attaquant … » n'est sans sa ligne `Cas d'abus`. Une note « Analyse … pas encore faite » : Oui, cette ligne en preuve."},
+        {"to": "juridique-*", "q": "Chaque contrainte de `## Contraintes juridiques` de l'exigence liée que ce ticket couvre a une ligne `Contraintes` de la note juridique. Une note « Analyse … pas encore faite » : Oui, cette ligne en preuve."},
+        {"to": "juridique-*", "q": "Chaque ligne `Contraintes` de la note juridique finit par `→ CAn`, et ce critère existe, applique cette contrainte et décrit un résultat constatable (pas « respecter le RGPD »). Une note « Analyse … pas encore faite » : Oui, cette ligne en preuve."}
       ]}
     ]
   },

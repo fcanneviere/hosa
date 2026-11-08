@@ -41,8 +41,10 @@ empty), its KB files pass OKF, then the controls pipeline.json's `tasks`
 declares for the task — `juge` reads `hosa-juge`'s verdict on the closed
 questions declared there (HOSA_JUGE=0 skips it), each ticket on its newest
 verdict (a re-judgment of some tickets writes `<verdict>.<n>.md`), `lot` the
-most tickets one task outputs. A task declared `after` another (`securite-2`
-after `stories-2`) is refused at `task add` while that one is not done. `juge
+most tickets one task outputs. A task declared `after` others (`juge-2` after
+`securite-2` and `juridique-2`) is refused at `task add` while one is neither
+done nor skipped; a judge's task judges the tickets those tasks wrote, and
+each Non reopens the task its question names (`to`) with its exact lines. `juge
 --tickets` refuses (exit 1) a ticket already judged `1 + tasks.max` times —
 `--force` on the user's word. A refusal counts a round by
 cause (the control, or the judge's question that failed); past
@@ -566,8 +568,17 @@ def ctl_verdict(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list
             if not re.search(r"\b(PASS-WITH-NOTES|PASS|FAIL)\b", section(read(f), "Revue") or "")]
 
 
-def juge_questions(stage: str, tid: str) -> list[str]:
+def juge_items(stage: str, tid: str) -> list[dict]:
     return [q for x in TASKS["controls"] if x["stage"] == stage and fnmatch(tid, x["id"]) for q in x.get("juge", [])]
+
+
+def juge_questions(stage: str, tid: str) -> list[str]:
+    return [q["q"] for q in juge_items(stage, tid)]
+
+
+def suffixed(pattern: str, tid: str, of: str) -> str:
+    """`pattern`'s task for the batch of `tid` (glob `of`): `securite-*` for `juge-2b` is `securite-2b`."""
+    return pattern.replace("*", tid[len(of.split("*")[0]):], 1)
 
 
 def juge_path(kb: Path, t: dict) -> Path:
@@ -734,13 +745,15 @@ def numbered(kb: Path, rel: str, keep) -> list[str]:
 
 
 def juge_extract(kb: Path, slugs: list[str]) -> str:
-    """What `hosa-juge` reads, and nothing else: each ticket's story, `Lié à :` and criteria, then once each
-    exigence they link, numbered as in the files (rieki: whole tickets, 5 notes each, read again per ticket,
-    up to 198 k tokens for one pass)."""
+    """What `hosa-juge` reads, and nothing else: each ticket's story, `Lié à :`, criteria, security and legal
+    notes (their `→ CAn` say where a criterion the exigence doesn't ask comes from), then once each exigence
+    they link, numbered as in the files (rieki: whole tickets, 5 notes each, read again per ticket, up to
+    198 k tokens for one pass)."""
     out, exigences = ["## Extrait — les seules lignes à lire ; une preuve cite `<fichier>:<n>` d'ici"], []
+    keep = lambda h: h in (None, "Critères d'acceptation") or h.startswith(("Note sécurité", "Note juridique"))  # noqa: E731
     for s in slugs:
         rel = f"tickets/{s}.md"
-        out += numbered(kb, rel, lambda h: h in (None, "Critères d'acceptation"))
+        out += numbered(kb, rel, keep)
         for link in re.findall(r"\]\((?:\.\./)?(cdc/[\w.-]+\.md)\)", (read(kb / rel) or "").split("\n## ")[0]):
             if link not in exigences and (kb / link).is_file():
                 exigences.append(link)
@@ -774,12 +787,51 @@ def controlled(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> tuple
     return "", []
 
 
-def after(stage: str, tid: str) -> str:
-    """The task `tid` waits for, from pipeline.json's `after` (`securite-*` after `stories-*`: same suffix)."""
+def after(stage: str, tid: str) -> list[str]:
+    """The tasks `tid` waits for, from pipeline.json's `after` (`juge-2` after `securite-2` and `juridique-2`)."""
     for x in TASKS["controls"]:
         if x["stage"] == stage and "after" in x and fnmatch(tid, x["id"]):
-            return x["after"].replace("*", tid[len(x["id"].split("*")[0]):], 1)
-    return ""
+            return [suffixed(p, tid, x["id"]) for p in x["after"]]
+    return []
+
+
+def lot_tickets(kb: Path, tasks: list[dict], t: dict) -> list[tuple[str, Path | None]]:
+    """The tickets the tasks `t` comes after wrote, and those before them: what the judge of a batch judges,
+    once its stories, security and legal notes are all written."""
+    seen, out, todo = set(), [], after(t["stage"], t["id"])
+    while todo:
+        tid = todo.pop(0)
+        if tid in seen:
+            continue
+        seen.add(tid)
+        todo += after(t["stage"], tid)
+        x = next((x for x in tasks if (x["id"], x["stage"], x["scope"]) == (tid, t["stage"], t["scope"])), None)
+        for p in (x or {}).get("sortie", "").split(","):
+            f = resolve(kb, p, t["scope"]) if p.strip() else None
+            if f and (kb_rel(kb, f) or "").startswith("tickets/") and all(f != g for _, g in out):
+                out.append((p.strip(), f))
+    return out
+
+
+def reopen(tasks: list[dict], t: dict, cause: str, gaps: list[str]) -> list[str]:
+    """Each Non goes back to the task pipeline.json names for its question (`to`), with its exact lines:
+    the PO's story, the security or the legal note. Lines naming no question (no verdict, stale) stay here."""
+    items, of = juge_items(t["stage"], t["id"]), next(
+        x["id"] for x in TASKS["controls"] if x["stage"] == t["stage"] and fnmatch(t["id"], x["id"]) and "juge" in x)
+    per: dict[str, list[str]] = {}
+    for g in gaps:
+        m = re.match(r"Q(\d+) — ", g)
+        if m and int(m[1]) <= len(items) and items[int(m[1]) - 1].get("to"):
+            per.setdefault(suffixed(items[int(m[1]) - 1]["to"], t["id"], of), []).append(g)
+    out = []
+    for tid, lines in per.items():
+        x = next((x for x in tasks if (x["id"], x["stage"], x["scope"]) == (tid, t["stage"], t["scope"])), None)
+        if x is None:
+            out.append(f"`{tid}` : pas de tâche — `task add {t['stage']} {tid}` avec ces manques : " + " ; ".join(lines))
+            continue
+        x.update(statut=TODO, at=now(), detail=f"rouvert par `{t['id']}` ({cause}) — " + " ; ".join(lines))
+        out.append(f"`{tid}` ({x.get('agent', '?')}) : " + " ; ".join(lines))
+    return out
 
 
 def refusals(t: dict) -> tuple[int, str]:
@@ -804,11 +856,11 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
             return 2, "error: task add needs --agent"
         if row[1] not in (DOING, BLOCKED):
             return 1, f"✗ {where} est {row[1]} : `start` l'étape d'abord, puis liste ses tâches."
-        if (need := after(stage, tid)) and not a.force:
+        for need in ([] if a.force else after(stage, tid)):
             prev = next((x for x in tasks if (x["id"], x["stage"], x["scope"]) == (need, stage, scope)), None)
-            if prev and prev.get("statut") != DONE:
+            if prev and prev.get("statut") not in CLOSED:
                 return 1, (f"✗ tâche `{tid}` ({where}) après `{need}`, qui est {prev.get('statut')} : "
-                           f"elle ajoute ses critères à des tickets validés. `task done {stage} {need}` d'abord.")
+                           f"elle travaille sur ses tickets finis. `task done {stage} {need}` d'abord.")
         if t is None:
             t = {"id": tid, "stage": stage, "scope": scope}
             tasks.append(t)
@@ -828,6 +880,8 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
             return 1, (f"✗ tâche `{tid}` ({where}) pas faite : aucune sortie "
                        "(--sortie : les chemins que l'agent a écrits)")
         files = [(p, resolve(kb, p, scope)) for p in paths]
+        if "juge" in task_controls(stage, tid):  # the judge's output is its verdict; it judges the batch's tickets
+            files += [x for x in lot_tickets(kb, tasks, t) if all(x[1] != f for _, f in files)]
         cause, gaps = controlled(kb, files, t)
         if judged(t) and (not gaps or cause.startswith("juge")):
             log_juge(kb, t, ("forcé sur" if a.force else "refus") + f" `{cause}` — " + " ; ".join(gaps)
@@ -839,6 +893,11 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
                      detail=f"refus {n}/{TASKS['max']} ({cause}) — " + " ; ".join(gaps))
             head = f"✗ tâche `{tid}` ({where}) refusée par `{cause}` (refus {n}/{TASKS['max']}) :\n" + \
                 "\n".join(f"- {g}" for g in gaps)
+            sent = reopen(tasks, t, cause, gaps) if cause.startswith("juge") and n <= TASKS["max"] else []
+            if sent:
+                return 1, (head + "\nRenvoyé, chaque tâche avec ses manques exacts :\n" + "\n".join(f"- {s}" for s in sent) +
+                           f"\nRelance chaque agent sur ses tickets seulement, `task done` sa tâche, puis `hosa-juge` "
+                           f"sur les tickets corrigés et `task done {stage} {tid}` à nouveau.")
             if n <= TASKS["max"]:
                 return 1, head + "\nRelance l'agent avec ces manques exacts, puis `task done` à nouveau."
             return 1, (head + f"\nBorne atteinte : {n - 1} tours sans sortie propre pour `{cause}`, la tâche est bloquée. "
