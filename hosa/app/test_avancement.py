@@ -527,6 +527,9 @@ class Tasks(unittest.TestCase):
         self.assertIn("### cdc/limites.md § Seuils\n6: ## Seuils\n7: - 5 essais par 15 min", out)
         self.assertNotIn("secret", out)
         self.assertEqual(av.unproved(k, "Oui — cdc/limites.md:7 « 5 essais »"), "")
+        (k.parent / f"{k.name}-hors.md").write_text("## Seuils\n- hors de la KB\n", encoding="utf-8")
+        (k / "cdc" / "e.md").write_text(f"- R1 : voir [x](../../{k.name}-hors.md) § Seuils.\n", encoding="utf-8")
+        self.assertNotIn("hors de la KB", run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[1])
 
     def test_a_ticket_judged_once_and_re_judged_twice_stops_for_the_user(self):
         k = self.judge_setup("t1")

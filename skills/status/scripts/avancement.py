@@ -779,7 +779,8 @@ def juge_extract(kb: Path, slugs: list[str]) -> str:
     for rel in exigences:
         for target, heading in VOIR.findall(read(kb / rel) or ""):
             dest = posixpath.normpath(posixpath.join(posixpath.dirname(rel), target))
-            if dest not in exigences and (dest, heading.strip()) not in cited and (kb / dest).is_file():
+            inside = (kb / dest).resolve().is_relative_to(kb.resolve())  # a link never reads outside the KB
+            if inside and dest not in exigences and (dest, heading.strip()) not in cited and (kb / dest).is_file():
                 cited.append((dest, heading.strip()))
     for dest, heading in cited:
         lines = numbered(kb, dest, lambda h, w=heading.lower(): bool(h) and h.lower().startswith(w))
