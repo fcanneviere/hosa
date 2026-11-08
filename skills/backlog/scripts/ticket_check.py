@@ -3,7 +3,8 @@
 
 A ticket is complete when it has, in its body:
   - a user story ("En tant que ...") and a "Lié à :" line,
-  - a "## Critères d'acceptation" section with at least one scenario,
+  - a "## Critères d'acceptation" section with at least one scenario and
+    10 at most (more: two variants or rules in one ticket — split it),
   - "## Note technique (senior dev)", "## Placement architecture (architecte)",
     "## Placement interface (UX/UI)", "## Note sécurité (expert
     cybersécurité)" and "## Note juridique (expert conformité)" sections
@@ -55,7 +56,14 @@ TRACED = {
     "## Note juridique (expert conformité)": "Contraintes",
 }
 CA_REF = re.compile(r"(?:→|->)\s*CA(\d+)")
+# what a criterion is, for every Hosa script: avancement.py reads it from here, so qa-plan counts the same ones
+CRITERION = re.compile(r"^\s*[-*]\s+(CA\d+)\b", re.M)
 TOO_MANY_CRITERIA = 10  # pilot2: 16 criteria and two variants in one ticket estimated "simple"
+
+
+def criteria_ids(content: str | None) -> list[str]:
+    """The `CAn` of a `## Critères d'acceptation` section, in order, once each."""
+    return list(dict.fromkeys(CRITERION.findall(content or "")))
 
 
 def bullet_items(content: str, label: str) -> list[str]:
@@ -208,7 +216,7 @@ def gaps(path: Path) -> list[str]:
             missing.append(f"section `{heading}` sans aucun scénario")
         else:
             missing += grounding(heading, content)
-    criteria = set(re.findall(r"^\s*[-*]\s+CA(\d+)\b", section(body, "## Critères d'acceptation") or "", re.M))
+    criteria = {c[2:] for c in criteria_ids(section(body, "## Critères d'acceptation"))}
     for heading in list(SECTIONS)[1:]:
         cited = (n for tail in re.findall(r"(?:→|->)(.*)", section(body, heading) or "")
                  for n in re.findall(r"\bCA(\d+)", tail))
@@ -226,7 +234,8 @@ def gaps(path: Path) -> list[str]:
     if not field(front, "priority"):
         missing.append("(info) pas de `priority` — passera après les tickets priorisés")
     if len(criteria) > TOO_MANY_CRITERIA:
-        missing.append(f"(info) {len(criteria)} critères — plusieurs variantes ou règles : à découper ?")
+        missing.append(f"{len(criteria)} critères, {TOO_MANY_CRITERIA} au plus — plusieurs variantes ou règles : "
+                       "découper le ticket")
     return missing
 
 

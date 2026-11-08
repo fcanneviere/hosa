@@ -57,7 +57,9 @@ is `à faire` or `bloqué`, and clears them once done. Sprint stages need
 from __future__ import annotations
 
 import argparse
+import functools
 import json
+import posixpath
 import re
 import sys
 from datetime import datetime, timezone
@@ -243,8 +245,18 @@ def field(text: str | None, name: str) -> str | None:
 
 
 def criteria(text: str | None) -> list[str]:
-    ids = re.findall(r"^-\s*(CA\d+)\b", section(text, "Critères d'acceptation") or "", re.M)
-    return list(dict.fromkeys(ids))
+    """What a criterion is comes from `ticket_check.py`, the one definition: qa-plan counts what backlog counted."""
+    return ticket_check().criteria_ids(section(text, "Critères d'acceptation"))
+
+
+@functools.cache
+def ticket_check():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "backlog" / "scripts" / "ticket_check.py"
+    spec = importlib.util.spec_from_file_location("ticket_check", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def coverage(kb: Path, ticket: str) -> dict:
@@ -744,10 +756,13 @@ def numbered(kb: Path, rel: str, keep) -> list[str]:
     return out
 
 
+VOIR = re.compile(r"\]\(([\w./-]+\.md)\)\s*§\s*([^\n.;,)»]+)")
+
+
 def juge_extract(kb: Path, slugs: list[str]) -> str:
     """What `hosa-juge` reads, and nothing else: each ticket's story, `Lié à :`, criteria, security and legal
     notes (their `→ CAn` say where a criterion the exigence doesn't ask comes from), then once each exigence
-    they link, numbered as in the files (rieki: whole tickets, 5 notes each, read again per ticket, up to
+    they link, then each section those exigences cite by `voir [..](..) § <section>`, numbered as in the files (rieki: whole tickets, 5 notes each, read again per ticket, up to
     198 k tokens for one pass)."""
     out, exigences = ["## Extrait — les seules lignes à lire ; une preuve cite `<fichier>:<n>` d'ici"], []
     keep = lambda h: h in (None, "Critères d'acceptation") or h.startswith(("Note sécurité", "Note juridique"))  # noqa: E731
@@ -759,6 +774,16 @@ def juge_extract(kb: Path, slugs: list[str]) -> str:
                 exigences.append(link)
     for rel in exigences:
         out += numbered(kb, rel, lambda h: True)
+    # one source per fact (`redaction`): a value lives in its owner's fiche, the others say `voir [..](x.md) § S`
+    cited = []
+    for rel in exigences:
+        for target, heading in VOIR.findall(read(kb / rel) or ""):
+            dest = posixpath.normpath(posixpath.join(posixpath.dirname(rel), target))
+            if dest not in exigences and (dest, heading.strip()) not in cited and (kb / dest).is_file():
+                cited.append((dest, heading.strip()))
+    for dest, heading in cited:
+        lines = numbered(kb, dest, lambda h, w=heading.lower(): bool(h) and h.lower().startswith(w))
+        out += [f"### {dest} § {heading}"] + lines[1:]
     return "\n".join(out)
 
 

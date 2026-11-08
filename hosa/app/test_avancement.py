@@ -517,12 +517,23 @@ class Tasks(unittest.TestCase):
         self.assertIn("### cdc/e.md\n4: ## Règles de gestion\n5: - R1 — un seul foyer", out)
         self.assertEqual(av.unproved(k, "Oui — tickets/t1.md:10 « CA2 — b »"), "")  # the numbers are the file's
 
+    def test_the_judge_gets_the_section_an_exigence_cites_for_a_value_it_does_not_copy(self):
+        k = self.judge_setup("t1")
+        (k / "cdc" / "e.md").write_text("---\ntype: Exigence\n---\n## Règles de gestion\n"
+                                        "- R1 — essais limités : voir [Limites](limites.md) § Seuils.\n", encoding="utf-8")
+        (k / "cdc" / "limites.md").write_text("---\ntype: Exigence\n---\n## Objectif du processus\n- secret\n"
+                                              "## Seuils\n- 5 essais par 15 min\n", encoding="utf-8")
+        out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[1]
+        self.assertIn("### cdc/limites.md § Seuils\n6: ## Seuils\n7: - 5 essais par 15 min", out)
+        self.assertNotIn("secret", out)
+        self.assertEqual(av.unproved(k, "Oui — cdc/limites.md:7 « 5 essais »"), "")
+
     def test_a_ticket_judged_once_and_re_judged_twice_stops_for_the_user(self):
         k = self.judge_setup("t1")
         for _ in range(3):
-            self.assertEqual(run(k, "juge", "backlog", "juge-1", "--tickets", "t1")[0], 0)
-            self.answer(k, sorted((k / "jugements").glob("backlog-juge-1*.md"), key=os.path.getmtime)[-1], ["t1"],
-                        q2="Non — R1")
+            code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1")
+            self.assertEqual(code, 0)  # the file it reserved, by its path: two in one tick share an mtime
+            self.answer(k, re.search(r"^Verdict : (.+)$", out, re.M)[1], ["t1"], q2="Non — R1")
         code, out = run(k, "juge", "backlog", "juge-1", "--tickets", "t1")
         self.assertEqual((code, "`t1` déjà jugé 3 fois" in out), (1, True))
         self.assertEqual(run(k, "juge", "backlog", "juge-1", "--tickets", "t1", "--force")[0], 0)

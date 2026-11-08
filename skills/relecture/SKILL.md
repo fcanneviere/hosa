@@ -60,6 +60,7 @@ Each exigence follows the template of its nature (`redaction`, Step 2): **proces
 - `Qui fait quoi`: names an actual persona/rôle for every action listed, not "l'utilisateur" generically when a specific persona applies
 - `Règles de gestion`: each rule testable — a condition, a threshold, a calculation or a status change with an example; not "selon les règles en vigueur". "Aucune règle propre" only for pure entry or consultation
 - `Cas d'erreur`: at least one, each with the expected reaction; not "gérer les erreurs"
+- `Contraintes de sécurité` / `Contraintes juridiques` (added by `securite` and `juridique`): each bullet testable like a rule — what the product does or refuses, with its value; not « sécuriser l'accès » or « respecter le RGPD ». `backlog` turns each one into a criterion and the judge checks that the ticket's note holds it: a vague one becomes a guessed criterion
 - `Responsable`: exactly one clear owner, not "l'équipe" or left implicit
 - `espace` (frontmatter, processus only): `front-office`, `back-office` or both, consistent with the roles in `Qui fait quoi`; `hors-application` for a process with no screen (a scheduled job, an operator's script, a procedure)
 - `Besoin(s) persona répondu(s)`: a real link to a `kb/personnas/` file, or an explicit "Aucun — exigence transverse"

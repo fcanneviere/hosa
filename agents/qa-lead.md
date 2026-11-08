@@ -55,6 +55,7 @@ generated: { by: hosa-qa-lead/1.0, at: <ISO8601> }
 ## Cas de test
 - [CA1] <cas de test technique, dans les termes de hosa-tester>
 - [sécurité] <rôle refusé, entrée hostile…>
+- [CAn][sécurité] <cas d'abus de la note sécurité, refusé>
 - [CAn][juridique] <contrainte de la note juridique, prouvée>
 - [navigateur] <parcours principal de l'écran>
 - [nfr] <exigence> — <cible> — <mesure>

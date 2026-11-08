@@ -39,7 +39,7 @@ Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
 
 If the `Exigence` names no clear persona, ask the user which persona it serves before writing the story — same "no guessing" discipline as every other Hosa skill.
 
-Then append acceptance criteria derived from the `Exigence`'s own text — its `## Règles de gestion`, `## Cas d'erreur` and `## Contraintes juridiques` above all — at least one scenario per rule, per error case and per legal constraint this ticket covers, plus the nominal path:
+Then append acceptance criteria derived from the `Exigence`'s own text — its `## Règles de gestion` and `## Cas d'erreur` above all — at least one scenario per rule and per error case this ticket covers. The criteria of its `## Contraintes juridiques` are `hosa-legal`'s (Step 5c), those of its abuse cases `hosa-security`'s (Step 5b): each criterion has one writer, and the judge asks each writer for its own (`pipeline.json`, `juge-*`). A value the exigence gives by `voir [..](..) § ..` is the one of the fiche it cites:
 
 ```markdown
 ## Critères d'acceptation

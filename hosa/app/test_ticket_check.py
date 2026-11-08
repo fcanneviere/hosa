@@ -81,6 +81,17 @@ class SecurityAndLegalNotes(unittest.TestCase):
         gaps = tc.gaps(self.write("connexion", "", body + JURIDIQUE.replace("- **Hors logiciel** : aucun\n", "")))
         self.assertIn("`Note juridique (expert conformité)` : puce « Hors logiciel » absente", gaps)
 
+    def test_more_than_ten_criteria_blocks_and_a_criterion_is_the_same_for_every_script(self):
+        many = "## Critères d'acceptation\n" + "".join(f"- CA{i} — c\n" for i in range(1, 12))
+        gaps = tc.gaps(self.write("gros", "priority: 1\n", many))
+        self.assertIn("11 critères, 10 au plus — plusieurs variantes ou règles : découper le ticket", gaps)
+        self.assertEqual(tc.criteria_ids("- CA1 — a\n  * CA2 — b\n- CA1 — a\n-CA3"), ["CA1", "CA2"])
+        av_spec = importlib.util.spec_from_file_location("avancement", SCRIPT.parents[2] / "status" / "scripts" /
+                                                         "avancement.py")
+        av = importlib.util.module_from_spec(av_spec)
+        av_spec.loader.exec_module(av)
+        self.assertEqual(av.criteria("## Critères d'acceptation\n- CA1 — a\n  * CA2 — b\n"), ["CA1", "CA2"])
+
     def test_dependency_ranked_after_its_ticket(self):
         self.write("journal", "priority: 43\n", "")
         self.write("fait", "state: done\n", "")
