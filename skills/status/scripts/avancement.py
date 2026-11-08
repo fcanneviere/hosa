@@ -540,11 +540,18 @@ def running_agents(kb: Path) -> list[dict]:
     import tempfile
     import time
     folder = Path(os.environ.get("HOSA_STATE_DIR") or Path(tempfile.gettempdir()) / "hosa-compress")
+    uid = getattr(os, "getuid", lambda: None)()
+    # The state is text the model reads: on a shared /tmp another account could plant a file. Only the current
+    # user's files count, and their fields are data — one line, no backtick or quote mark, bounded.
+    clean = lambda v, n: re.sub(r"[`«»\r\n\t]+", " ", str(v or "")).strip()[:n]
     out = []
     for f in folder.glob("budget-*.json"):
         if f.name.endswith("-main.json"):
             continue
         try:
+            st = f.stat()
+            if uid is not None and (st.st_uid != uid or st.st_mode & 0o022):
+                continue
             s = json.loads(f.read_text(encoding="utf-8"))
             if s.get("stopped") or not s.get("kb") or Path(s["kb"]).resolve() != kb.resolve():
                 continue
@@ -552,7 +559,8 @@ def running_agents(kb: Path) -> list[dict]:
         except (OSError, ValueError, TypeError):
             continue  # fail-open: a state file being written, or foreign
         if idle < SILENT:
-            out.append({"type": str(s.get("type", "?")).split(":")[-1], "what": s.get("what") or "",
+            kind = str(s.get("type", "?")).split(":")[-1]
+            out.append({"type": kind if re.fullmatch(r"hosa-[\w-]{1,40}", kind) else "agent", "what": clean(s.get("what"), 120),
                         "minutes": int((time.time() - (s.get("started") or 0) / 1000) // 60) if s.get("started") else None,
                         "idle": int(idle // 60)})
     return sorted(out, key=lambda a: -(a["minutes"] or 0))
