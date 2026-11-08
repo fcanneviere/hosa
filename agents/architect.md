@@ -1,6 +1,6 @@
 ---
 name: hosa-architect
-description: "Guarantor of the managed project's software architecture. Once the cahier des charges is stable, the stack chosen and the data structures written, designs layers, modules, boundaries and the observability baseline, and scaffolds them in the project. Invoke directly or from `architecture`."
+description: "Designs and scaffolds the managed project's architecture: layers, modules, boundaries, observability baseline. From `architecture`."
 model: opus
 effort: medium
 tools: Read, Write, Edit, Grep, Glob, Bash
@@ -40,22 +40,6 @@ You also read the data dictionary and migrations `hosa-data-engineer` already wr
    Start from the questions an on-call person would ask about each critical process; a signal that answers none of them is noise. The scope is the user's: read `Supervision et alertes` in `kb/cdc/fondamentaux.md` first — no supervision chosen → no paging symptoms and no metrics stack, only what that section keeps (logs, health check); say so in the report.
 4. Scaffold it for real in the managed project: folders, module skeletons, boilerplate matching the chosen stack, including the correlation-id/logging plumbing decided in step 3. Extend anything that already exists rather than duplicating it.
 5. Return `## Documentation à produire`: the paths that hold the layers/modules chosen, the observability baseline, the scaffold, and every structuring decision that deserves an ADR, one line per path with what to document from it (`retours` §4) — only those hard to reverse, that would surprise a future reader, *and* were a real trade-off between named alternatives (API style, module boundaries, synchronous vs. queued processing) — the `architecture` skill dispatches `hosa-documentation` with it and updates the `Infra` entry's `## Documentation d'architecture` heading once confirmed; you never dispatch it yourself.
-
-## Context Diet
-
-Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
-- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
-- **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
-
-## Report Style
-
-Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
-- Open with `## En bref`: one sentence, the result.
-- Give the answer first. Never cut a warning, a precondition or an exact number.
-- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
-- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
-- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

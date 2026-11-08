@@ -27,6 +27,28 @@ class UsageOnce(unittest.TestCase):
         self.assertEqual((row["calls"], row["cache_read"]), (2, 2000))
         self.assertEqual(by_model["m"]["cache_write"], 200)
 
+    def test_agent_wakes_counted_and_sdk_session_apart(self):
+        """A turn an agent's hand-back or task-notification starts is a wake; an SDK-driven session is not Hosa's."""
+        base = Path(tempfile.mkdtemp())
+        user = lambda text: json.dumps({"type": "user", "message": {"content": text}})
+        tool = {"type": "tool_use", "id": "t1", "name": "Bash", "input": {}}
+        result = json.dumps({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "t1", "content": "ok"}]}})
+        (base / "s.jsonl").write_text("\n".join([
+            user("fais le backlog"), line("a", tool), result, line("b", {"type": "text", "text": "lancé"}),
+            user("[Subagent hand-back] rapport"), line("c", tool), result, line("d", {"type": "text", "text": "noté"}),
+            user("<task-notification>fini</task-notification>"), line("e", {"type": "text", "text": "."}),
+        ]), encoding="utf-8")
+        sdk = json.loads(user("Review this change"))
+        sdk["entrypoint"] = "sdk-py"
+        (base / "sdk.jsonl").write_text("\n".join([json.dumps(sdk), line("f", {"type": "text", "text": "[]"})]), encoding="utf-8")
+        by_actor, _, _, _, stats = ur.scan(base, None, None)
+        self.assertEqual(stats["wakes"], [3, 3303])
+        self.assertEqual(stats["main_ctx_total"], 5 * 1101)
+        self.assertEqual(by_actor["session SDK (hors Hosa)"]["calls"], 1)
+        self.assertEqual(by_actor["session principale"]["calls"], 5)
+        self.assertIn("3 appels", ur.wake_line(stats))
+        self.assertIn("(60 %", ur.wake_line(stats))
+
     def test_cost_per_model_and_review_verdict(self):
         usage = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 1_000_000, "output_tokens": 1_000_000}
         self.assertAlmostEqual(ur.usd("claude-sonnet-5", usage), 10.20)

@@ -1,6 +1,6 @@
 ---
 name: hosa-git
-description: "Opens a sprint's branch, worktree and Docker environment when it starts, and merges it locally into the base branch once every ticket has a green QA record. Also handles ad hoc git requests on the managed project. Invoke directly or from the `git`, `sprint` and `qa` skills."
+description: "Opens a sprint's branch, worktree and Docker environment, makes checkpoints, merges a validated sprint; ad hoc git requests. From `git`, `sprint`, `qa` and every checkpoint."
 model: haiku
 effort: low
 tools: Read, Write, Edit, Grep, Glob, Bash
@@ -104,22 +104,6 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments still running on a vanished sprint folder — stop each (`docker compose -p <name> down`) once the user confirms. No KB write unless it concerns a sprint (then Mode 1/2 applies).
 
 **Push / PR:** only when the request names it explicitly (e.g. `livraison` after the user confirmed it) — never as part of finishing a sprint or a release. Confirm the remote and branch before `git push`; never force-push. The KB is on its own branch `hosa-kb`: ask whether to push it too (`git -C <root>/.hosa/kb push origin hosa-kb`) — it carries the project's specification and history. A PR needs the same explicit ask and a title/body: derive them from the release notes or sprint, and say what you used.
-
-## Context Diet
-
-Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
-- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
-- **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
-
-## Report Style
-
-Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
-- Open with `## En bref`: one sentence, the result.
-- Give the answer first. Never cut a warning, a precondition or an exact number.
-- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
-- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
-- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## Output Format
 

@@ -20,7 +20,7 @@ const skill = (name, session = 's1') => processPayload({ hook_event_name: 'PreTo
   cwd: project, transcript_path: transcript, tool_input: { skill: name } });
 
 test('a heavy session that closed a stage is stopped once before the next stage', () => {
-  setPlan(3); setContext(100000);
+  setPlan(3); setContext(80000);
   assert.equal(skill('hosa:develop'), null);            // baseline of the session
   assert.equal(skill('hosa:develop'), null);            // nothing closed since
   setPlan(4);
@@ -30,20 +30,20 @@ test('a heavy session that closed a stage is stopped once before the next stage'
 });
 
 test('the stages come from pipeline.json: `audit` runs `qualite`, a stage too', () => {
-  setPlan(3); setContext(100000);
+  setPlan(3); setContext(80000);
   assert.equal(skill('hosa:develop', 's6'), null);
   setPlan(4);
   assert.ok(denied(skill('hosa:qualite', 's6')));      // missing from the old hand-kept list
 });
 
 test('a light session chains freely', () => {
-  setPlan(3); setContext(100000);
+  setPlan(3); setContext(80000);
   assert.equal(skill('develop', 's2'), null);
   setPlan(4); setContext(30000);
   assert.equal(skill('qa', 's2'), null);
 });
 
-test('past the ceiling any Hosa skill is refused once, then every 60 k more', () => {
+test('past the ceiling any Hosa skill is refused once, then every 50 k more', () => {
   setPlan(3); setContext(130000);
   assert.ok(denied(skill('hosa:changement', 's5')));
   assert.equal(skill('hosa:changement', 's5'), null);   // the user chose to stay
@@ -89,6 +89,26 @@ test('a hosa- subagent is warned, then stopped, on the size of its own context',
   setAgentContext('a7', 125000);
   assert.match(call().hookSpecificOutput.permissionDecisionReason, /120 k tokens of context/);
   assert.equal(pre('SubagentHandback', 's7', {}, { agent_id: 'a7' }), null);
+});
+
+test('a long final report is refused once, its questions and its resume point excluded', () => {
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's11', agent_id: 'r1', agent_type: 'hosa:hosa-product-owner' });
+  setAgentContext('r1', 30000);
+  const report = (body, extra = '') => ({ message: `## En bref\nFait.\n\n## Sortie\n${body}\n${extra}` });
+  const back = (input, id = 'r1') => pre('SubagentHandback', 's11', input, { agent_id: id });
+  const questions = `## Open Questions\n${'**Q1 — choix ?** (bloquante)\n'.repeat(400)}\n## Reprise\n${'reste '.repeat(800)}`;
+  assert.equal(back(report('- `kb/tickets/a.md`', questions)), null);   // long, but only questions and resume point
+  const out = back(report('détail '.repeat(700)));
+  assert.match(out.hookSpecificOutput.permissionDecisionReason, /4929 characters .*4000 at most/);
+  assert.equal(pre('Write', 's11', {}, { agent_id: 'r1' }), null);     // moves its details into a file
+  assert.equal(back(report('détail '.repeat(700))), null);              // the retry passes
+  // the report is the deliverable: no Write in its tools
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's11', agent_id: 'r2', agent_type: 'hosa:hosa-reviewer' });
+  assert.equal(back(report('écart '.repeat(900)), 'r2'), null);
+  // at its context cap the agent can't write a file any more
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's11', agent_id: 'r3', agent_type: 'hosa:hosa-security' });
+  setAgentContext('r3', 125000);
+  assert.equal(back(report('détail '.repeat(700)), 'r3'), null);
 });
 
 test('past the ceiling an agent dispatch from the main session is refused once', () => {

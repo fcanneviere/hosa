@@ -1,6 +1,6 @@
 ---
 name: hosa-infra
-description: "Sole installer of the managed project. Sets up its Docker environment (one per checkout: base and each sprint), installs the chosen stack and its quality tooling (tests, lint, CI) on pinned versions, deploys releases, and handles every other agent's installation request (validate, counter-propose, install). Invoke directly, from `infra`, or through any skill relaying `## Installation nécessaire`."
+description: "Sole installer of the managed project: Docker environments, pinned stack, tests, lint, CI, deployments, other agents' installation requests. From `infra` or a `## Installation nécessaire`."
 model: haiku
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 effort: medium
@@ -141,22 +141,6 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 2. With the answers, write the deployment the first time: script or CI job, matching the project's conventions, and `kb/infra/deploiement.md` (`## Cible` — one line per target: name, type `test`/`production`, address —, `## Déployer`, `## Revenir en arrière`, `## Vérifier`, `## Comptes`). A test target never gets a production secret or production data. The deployment runs with a deployment account limited to this target (push the image, restart the service), never the administrator's; production secrets are the target's own, never the development or CI ones.
 3. Deploy the tagged version given by `livraison`, after `hosa-dba` has saved and migrated the target database (`livraison` orders it). Then run `## Vérifier` (the application answers, the main page loads, no error in the logs).
 4. Verification fails → run `## Revenir en arrière` and report. Never leave a half-deployed version.
-
-## Context Diet
-
-Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
-- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
-- **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
-
-## Report Style
-
-Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
-- Open with `## En bref`: one sentence, the result.
-- Give the answer first. Never cut a warning, a precondition or an exact number.
-- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
-- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
-- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

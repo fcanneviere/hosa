@@ -95,11 +95,11 @@ test('find: one line per directory', () => {
 
 test('over budget, grep names every file it does not show', () => {
   const hits = [];
-  for (let f = 0; f < 400; f++) for (let n = 1; n <= 3; n++) hits.push(`src/dir/file${f}.py:${n}:${'y'.repeat(30)}`);
+  for (let f = 0; f < 300; f++) for (let n = 1; n <= 3; n++) hits.push(`src/dir/file${f}.py:${n}:${'y'.repeat(30)}`);
   const out = processPayload({ tool_name: 'Grep', tool_input: { pattern: 'y' }, tool_response: { mode: 'content', content: hits.join('\n') } }).content;
   assert.ok(out.length < 25000);
   assert.match(out, /more group\(s\) not shown/);
-  for (let f = 0; f < 400; f++) assert.match(out, new RegExp(`src/dir/file${f}\\.py`));
+  for (let f = 0; f < 300; f++) assert.match(out, new RegExp(`src/dir/file${f}\\.py`));
 });
 
 test('over budget, a diff keeps whole files and names the others with their counts', () => {

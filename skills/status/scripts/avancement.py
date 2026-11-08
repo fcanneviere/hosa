@@ -8,6 +8,7 @@ the work stopped, in the right order.
   avancement.py <kb> show
   avancement.py <kb> init                                         (no plan yet: built from the KB's proofs)
   avancement.py <kb> next                                        (stage to run, its skill, what it still lacks)
+  avancement.py <kb> reprendre                                   (the resume card: stage, skill, sprint, tasks, proofs, the action)
   avancement.py <kb> check    <stage> [--sprint S]                (exit 1 + gaps when its proof is missing)
   avancement.py <kb> start    <stage> [--sprint S] [--detail D] [--reprise R] [--force]
   avancement.py <kb> progress <stage> [--sprint S]  --detail D  [--reprise R]
@@ -529,6 +530,63 @@ def show(sections: dict, resume: str, loops: list[dict] = (), tasks: list[dict] 
     return "\n".join(lines + [x for x in open_loops(loops) if x not in (resume or "")] + task_lines(tasks))
 
 
+def clip(text: str, n: int = 300) -> str:
+    return text if len(text) <= n else text[:n].rstrip() + f"… (+{len(text) - n} caractères : `check`)"
+
+
+def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[dict]) -> str:
+    """Everything a resumed session needs, in one output: before it, a resume cost 11 calls and about
+    530 k tokens of context before its first action (median, rieki, pilot2, hosa-ui: ls, cat, show, 2-3 skills)."""
+    kbs = kb.resolve().as_posix()
+    out = ["## Fiche de reprise", f"- KB : `{kbs}`"]
+    found = first_open(sections)
+    if not found:
+        out += [f"- Étape : {next_open(sections)}", "- Action : invoque `hosa:sprint`."]
+        return "\n".join(out + [r for r in (resume or "").splitlines() if r.strip() and r.strip() != "- Rien en cours."])
+    title, (stage, status, _, detail) = found
+    sprint = title[len("Sprint "):] if title.startswith("Sprint ") else ""
+    skill = SKILL.get(stage, stage)
+    flag = f" --sprint {sprint}" if sprint else ""
+    out.append(f"- Étape : `{stage}` ({title}) — {status} → skill `hosa:{skill}`" + (f" — {detail}" if detail else ""))
+    if sprint:
+        text = read(kb / "sprints" / f"{sprint}.md")
+        facts = [f"{k} `{v}`" for k in ("branch", "base", "worktree", "docker_project") if (v := field(text, k))]
+        out.append(f"- Sprint `{sprint}` : " + (", ".join(facts) if facts else f"`kb/sprints/{sprint}.md`"))
+    mine = [t for t in tasks if t["stage"] == stage and t["scope"] == sprint]
+    closed = [t for t in mine if t["statut"] in CLOSED]
+    if closed:  # their outputs passed `task done`: never re-read to check them; the paths stay in `show`
+        out.append(f"- Tâches faites ({len(closed)}) : " + ", ".join(
+            f"`{t['id']}`" + (f" ({n} fichier{'s' * (n > 1)})" if (n := len([x for x in t["sortie"].split(",") if x.strip()])) else "")
+            for t in closed))
+    out += [f"- À faire : {task_name(t)}" + (f" — {t['detail']}" if t["detail"] else "") for t in mine if t["statut"] == TODO]
+    out += [f"- Bloquée : {task_name(t)} — {t['detail']}" for t in mine if t["statut"] == BLOCKED]
+    gaps = check(kb, stage, sprint or None) if status == DOING else []
+    out += [f"- Reste à prouver : {clip(g)}" for g in gaps if not g.startswith("tâche `")]  # the task lines say it
+    out += [x for x in open_loops(loops)]
+    said = "\n".join(out)  # the resume point repeats the stage's detail: keep only what it adds
+    out += [line for line in (resume or "").splitlines()
+            if line.strip() and line.strip() != "- Rien en cours." and re.sub(r"^- [^:]+ : (`[\w-]+`( \([^)]*\))? — )?", "", line).strip() not in said
+            and not re.match(r"^- (En cours|Bloqué) : `[\w-]+`$", line.strip())]
+    todo = next((t for t in mine if t["statut"] == TODO), None)
+    blocked = [t for t in mine if t["statut"] == BLOCKED]
+    go = f"invoque `hosa:{skill}` avec `args: \"reprise\"`"
+    if status == BLOCKED or blocked:
+        action = "montre à l'utilisateur les questions bloquantes ci-dessus (Q1…, avec leurs options) et arrête-toi ; " \
+                 f"sa réponse reçue, {go}."
+    elif status == TODO:
+        action = f"`<hosa> avancement \"{kbs}\" start {stage}{flag}`, puis {go}."
+    elif todo:
+        action = f"{go}, puis dispatche la tâche `{todo['id']}` ({todo['agent']}" + \
+                 (f" → {todo['objet']}" if todo["objet"] else "") + ")" +                  (", comme son détail le dit" if todo["detail"] else "") + " — `start` est déjà fait."
+    elif mine and not gaps:
+        action = f"toutes les tâches et les preuves sont là : `<hosa> avancement \"{kbs}\" done {stage}{flag}`, " \
+                 "puis l'étape suivante."
+    else:
+        action = f"{go} et reprends sur ce qui reste à prouver ci-dessus — `start` est déjà fait."
+    out.append(f"- Action : {action}")
+    return "\n".join(out)
+
+
 def resolve(kb: Path, p: str, sprint: str = "") -> Path | None:
     """An output path as an agent gives it: absolute, `kb/…`, `.hosa/kb/…`, from the project root
     or from the sprint's worktree. None when it exists nowhere."""
@@ -1028,8 +1086,8 @@ def init(kb: Path) -> tuple[dict, list[str]]:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
-    ap.add_argument("action", choices=["show", "next", "check", "start", "progress", "done", "block", "skip", "reprise",
-                                       "back", "init", "task", "juge"])
+    ap.add_argument("action", choices=["show", "next", "reprendre", "check", "start", "progress", "done", "block", "skip",
+                                       "reprise", "back", "init", "task", "juge"])
     ap.add_argument("stage", nargs="?")
     ap.add_argument("to", nargs="?")
     ap.add_argument("item", nargs="?")
@@ -1115,6 +1173,12 @@ def main(argv: list[str]) -> int:
         save(path, sections, "- Plan créé depuis la KB (`init`) : confirmer les arrêts ci-dessous avec l'utilisateur.", [])
         print("\n".join(report) or "- Toutes les étapes prouvées.")
         print(show(*load(path)))
+        return 0
+    if a.action == "reprendre":
+        if not path.exists():
+            print("Pas de plan d'avancement : invoque `hosa:status`, qui le crée depuis l'état de la KB.")
+            return 0
+        print(card(a.kb, sections, resume, loops, tasks))
         return 0
     if a.action == "next":
         if not path.exists():

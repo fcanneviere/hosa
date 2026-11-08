@@ -46,6 +46,18 @@ MAIN_CTX_MAX = 150_000  # main session context: one session per stage wasn't kep
 CAPS = {"hosa-ux-designer": 50}  # tool calls per agent pass — same values as hooks/budget.js
 CAP = 150
 COST_RISE = 1.5         # cost per ticket vs the median of the earlier sprints
+WAKES_MAX = 0.25        # share of the main session's context spent on agent wakes (rieki, pilot2 before 0.1.78: 30-45 %)
+
+
+def share(stats: dict) -> str:
+    total = stats.get("main_ctx_total", 0)
+    return f"{100 * stats.get('wakes', [0, 0])[1] / total:.0f} %" if total else "0 %"
+
+
+def wake_line(stats: dict) -> str:
+    calls, ctx = stats.get("wakes", [0, 0])
+    return (f"- Réveils de la session principale par les agents : {calls} appels, "
+            f"{fmt(ctx)} de contexte relu ({share(stats)} du contexte de la session principale)")
 
 
 def context(usage: dict) -> int:
@@ -124,7 +136,8 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
     seen: set[str] = set()                              # message ids already counted
     verdicts: dict = defaultdict(int)                   # hosa-reviewer final verdict -> runs
     # main session's largest context and screenshots; whole-context rewrites; each agent pass
-    stats = {"main_ctx": 0, "main_images": 0, "rewrites": [0, 0], "passes": {}}
+    # wakes: main-session calls an agent's hand-back or task-notification triggered — [calls, context tokens]
+    stats = {"main_ctx": 0, "main_ctx_total": 0, "main_images": 0, "rewrites": [0, 0], "passes": {}, "wakes": [0, 0]}
 
     def measure(usage: dict) -> int:
         if (usage.get("cache_creation_input_tokens", 0) or 0) >= REWRITE:
@@ -141,6 +154,9 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
             sidechain.append((path, entries))
             continue
         skill = None
+        # a session an SDK script drove (an outside security review…) is not Hosa's main session
+        sdk = any(str(e.get("entrypoint", "")).startswith("sdk") for e in entries[:20])
+        wake, idle = False, True
         for e in entries:
             if outside(e, since, until):
                 continue
@@ -151,6 +167,8 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
                 content = (e.get("message") or {}).get("content")
                 if isinstance(content, str) or not any(b.get("type") == "tool_result" for b in blocks(e)):
                     skill = None
+                    text = content if isinstance(content, str) else " ".join(b.get("text", "") for b in blocks(e))
+                    wake = "<task-notification>" in text or "[Subagent hand-back]" in text
                 result = e.get("toolUseResult")
                 if isinstance(result, dict) and result.get("agentId"):
                     for b in blocks(e):
@@ -158,14 +176,25 @@ def scan(base: Path, since: str | None, session: str | None, until: str | None =
                             agent_of[str(result["agentId"])] = agent_types[b["tool_use_id"]]
                 count_reads(e, pending_read, reads)
                 stats["main_images"] += images(e)
+            elif e.get("type") == "attachment":
+                att = e.get("attachment") or {}
+                # queued while the session was idle: it starts a turn; queued mid-turn, it rides on a tool result
+                if att.get("type") == "queued_command" and "<task-notification>" in str(att.get("prompt", "")) and idle:
+                    wake = True
             elif e.get("type") == "assistant":
-                actor = f"skill {skill}" if skill else "session principale"
+                actor = "session SDK (hors Hosa)" if sdk else f"skill {skill}" if skill else "session principale"
                 usage = usage_once(e, seen)
                 if usage:
                     model = (e.get("message") or {}).get("model", "?")
                     add(by_actor, actor, usage, model)
                     add(by_model, model, usage, model)
-                    stats["main_ctx"] = max(stats["main_ctx"], measure(usage))
+                    if not sdk:
+                        stats["main_ctx"] = max(stats["main_ctx"], measure(usage))
+                        stats["main_ctx_total"] += context(usage)
+                        if wake:
+                            stats["wakes"][0] += 1
+                            stats["wakes"][1] += context(usage)
+                idle = (e.get("message") or {}).get("stop_reason") == "end_turn"
                 for b in blocks(e):
                     if b.get("type") != "tool_use":
                         continue
@@ -294,6 +323,7 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
             f" — constats prouvés {fixes['prouves']}, non reproduits {fixes['non_reproduits']}" if fixes["n"] else "- Corrections : aucune"),
            f"- Session principale : contexte max {fmt(stats['main_ctx'])} — captures ouvertes : {stats['main_images']}",
            f"- Réécritures complètes du cache (≥ {fmt(REWRITE)}) : {stats['rewrites'][0]} ({fmt(stats['rewrites'][1])})",
+           wake_line(stats),
            "- Passages d'agent les plus longs : " + (", ".join(f"{r['kind'].split(':')[-1]} {r['tools']} appels ({fmt(r['ctx'])})" for r in passes[:3]) or "aucun"),
            f"- Sprints précédents : " + (f"coût par ticket médian {base:.2f} $ ({len(earlier)} sprint(s))" if base else "aucune mesure"),
            "", "### Propositions"]
@@ -309,6 +339,9 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
         props.append(f"{debugger} passages hosa-debugger pour {done} tickets : les plans du tech-lead ou le développeur ne suffisent pas.")
     if stats["main_ctx"] > MAIN_CTX_MAX:
         props.append(f"Session principale montée à {fmt(stats['main_ctx'])} : une session par étape (`/clear`, puis « reprends »).")
+    if stats.get("main_ctx_total") and stats["wakes"][1] >= WAKES_MAX * stats["main_ctx_total"]:
+        props.append(f"Réveils par les agents : {share(stats)} du contexte de la session principale — dispatcher les agents "
+                     "indépendants d'un seul message, et finir sans texte un tour qui n'a rien à faire (`using-hosa`, « Agent wakes »).")
     if stats["main_images"]:
         props.append(f"{stats['main_images']} capture(s) ouverte(s) dans la session principale : donner leur chemin, ne pas les ouvrir.")
     for r in passes:
@@ -386,7 +419,7 @@ def main(argv: list[str]) -> int:
             write_section(path, out)
         print("\n".join(out))
         return 0
-    by_actor, by_model, reads, verdicts, _ = scan(base, a.since, a.session, a.until)
+    by_actor, by_model, reads, verdicts, stats = scan(base, a.since, a.session, a.until)
     if not by_actor:
         print("Aucun échange trouvé pour ce filtre.")
         return 0
@@ -398,7 +431,7 @@ def main(argv: list[str]) -> int:
            "Session principale : attribuée au dernier skill lancé depuis ton dernier message (approximation).", "",
            "## Résultat", f"- Coût total : {total:.2f} $",
            f"- Tickets livrés (commits `Hosa-Ticket:`) : {len(tickets)}" + (f" — {total/len(tickets):.2f} $ par ticket" if tickets else ""),
-           f"- Revues `hosa-reviewer` : {reviews}", ""]
+           f"- Revues `hosa-reviewer` : {reviews}", wake_line(stats), ""]
     out += table("Par agent et par skill", by_actor) + [""] + table("Par modèle", by_model) + [""]
     out += [f"## Fichiers les plus lus (top {a.top})", "| fichier | lectures | caractères renvoyés |", "|---|---|---|"]
     for f, (n, chars) in sorted(reads.items(), key=lambda kv: -kv[1][1])[: a.top]:

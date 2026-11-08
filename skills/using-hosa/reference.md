@@ -15,6 +15,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `test` | Run tests, identify gaps, write new tests, commit them |
 | `review` | Check implementation against spec → fix gaps → loop until clean |
 | `debug` | Systematic root cause analysis → confirm with user → fix → commit |
+| `reprendre` | Resume after a /clear: the resume card in one call, then the next action |
 | `status` | Snapshot of project state — spec, progress, tests, next step |
 | `pilotage` | Open the local dashboard in the browser — progress plan, board, sprints, KB, graph, journal |
 | `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`.hosa/kb/`), from a markdown brief if given (`/hosa brief.md`) |
@@ -63,6 +64,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Test this", "Run tests", "Check if it works" | `test` |
 | "Does this match the spec?", "Check requirements", "Is everything implemented?" | `review` |
 | "It's broken", "This isn't working", "I'm getting an error", "There's a bug" | `debug` |
+| "Reprends", "On reprend", "Continue" (after a /clear) | `reprendre` |
 | "Where are we?", "What's done?", "Catch me up", "What's left?" | `status` |
 | "Initialise le projet", "Configure hosa", "Crée un persona pour...", "Démarre le projet à partir de ce brief" | `hosa` |
 | "Fais une recette de...", "Valide ça avec [persona]", "Est-ce que ça répond au besoin de..." | `recette` |

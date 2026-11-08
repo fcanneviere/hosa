@@ -32,7 +32,7 @@ function resumeContext(cwd) {
   const file = path.join(kb, 'project', 'avancement.md');
   const how = `Keep it current: \`${hosaCommand()} avancement "${kb.replace(/\\/g, '/')}" start|progress|done|block|skip <étape> [--sprint <slug>] [--detail …] [--reprise …]\`; ` +
     '`back <de> <vers> --detail …` when a stage sends work back (a loop, counted); `task add|done|block|skip <étape> <id>` for each agent a stage dispatches; ' +
-    '`next` gives the stage to run, its skill and what it still lacks.';
+    '`next` gives the stage to run, its skill and what it still lacks; `reprendre` the resume card (skill `reprendre`, on « reprends »).';
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
     return `${note}\n\n## Plan d'avancement\n\nNo progress plan yet for this project — the \`status\` skill creates it from the KB. ${how}`;

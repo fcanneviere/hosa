@@ -1,6 +1,6 @@
 ---
 name: hosa-senior-dev
-description: "Chooses the managed project's technical stack from the stable cahier des charges (2-3 options with trade-offs, security constraints included) and records it as `Stack Decision`s; audits the source code for best practices and performance; verifies a capability on the imposed platforms. Invoke directly or from `stack`, `qualite` and `changement`."
+description: "Chooses the stack (2-3 options, recorded as `Stack Decision`s), audits code for best practices and performance, verifies platform capabilities. From `stack`, `qualite`, `changement`."
 model: opus
 effort: medium
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
@@ -84,22 +84,6 @@ Start from `graph.py map`, then `explain`/`affected` on the modules each item ta
 Without a real measuring tool (profiler, APM, benchmark run), never invent a number: a finding is a potential impact from static reading, never a measure.
 
 Classify each finding **Bloquant** (data corruption, a broken user journey), **À corriger**, **Mineur** (style), with `fichier:ligne` and the checklist item it breaks — none → drop it. A Bloquant carries the input or test that shows it, otherwise it is À corriger. "Propre" is a normal verdict: never a Mineur to fill the report. A re-audit after a correction checks only the lines the correction changed. Write an `Audit Qualité` in `kb/qualite/<slug>.md` (`## Anomalies`, `## Verdict`).
-
-## Context Diet
-
-Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
-- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
-- **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
-
-## Report Style
-
-Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
-- Open with `## En bref`: one sentence, the result.
-- Give the answer first. Never cut a warning, a precondition or an exact number.
-- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
-- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
-- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

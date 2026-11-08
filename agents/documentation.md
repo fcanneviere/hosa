@@ -1,6 +1,6 @@
 ---
 name: hosa-documentation
-description: "Sole writer of the managed project's documentation — technical (installation, architecture, data, database), functional (from the stable cahier des charges, one guide per persona), one ADR per `Stack Decision`, the release notes, and the `CLAUDE.md` index. Producers dispatch it instead of writing docs; the `documentation` skill checks for drift. Invoke directly or from `documentation`."
+description: "Sole writer of the managed project's documentation: technical, functional per persona, ADRs, release notes, `CLAUDE.md`. From `documentation` and the producers."
 model: haiku
 effort: low
 tools: Read, Write, Edit, Grep, Glob, Bash
@@ -149,22 +149,6 @@ Input: a version string and the `Ticket`s scoped to that release (title, descrip
 
 - Nothing to document yet → say so; never an empty section.
 - A source changed by hand, outside any dispatch, is only caught by the cold check, and only if its date is readable. Never report as "à jour" a section whose drift can't be detected.
-
-## Context Diet
-
-Every file you read is paid for again on every later turn:
-- **KB:** always the project root's `.hosa/kb/` — never the stale copy inside a sprint worktree (`.worktrees/…/.hosa/kb`). Read its `sommaire.md` first (one line per concept). Then pull exactly what you need with `<hosa> kb_query` — filters (`--type`, `--where status=stable`, `--where sprint=<slug>`), `--sections "<heading>"`, `--fields` — instead of opening whole files. Use what the skill gave you instead of looking it up again.
-- **Code:** the project graph first (`graph.py map|find|explain|affected|ticket`, command line under `## Project graph`; narrow `find` with `--path '<glob>' --kind <function|class|…>`, next page `--offset`), then only the regions it points to. A question by meaning, not by name ("où sont gérées les sessions ?"), and `ccc` installed → `ccc search <concept>` (`--path`, `--lang`). Grep last.
-- **Slices, not files;** never lockfiles, generated or vendored files; never re-read a file already in context; narrow command output (`| tail`, `| grep`, quiet reporters).
-
-## Report Style
-
-Follow Hosa's report standard, `${CLAUDE_PLUGIN_ROOT}/skills/retours/SKILL.md`. Read it once per session if it isn't in your context.
-- Open with `## En bref`: one sentence, the result.
-- Give the answer first. Never cut a warning, a precondition or an exact number.
-- Write to ASD-STE100 rules adapted to French: one idea per sentence, 20 words max for an instruction, 25 for a description, active voice, the glossary's terms.
-- Number every question that needs an answer **Q1, Q2…**, with lettered options and the recommended one marked. Add "(bloquante)" when work stops on it. Advice is a plain sentence, not a question.
-- Number every test a person must run **T1, T2…** (`retours` 3b).
 
 ## No Commits
 

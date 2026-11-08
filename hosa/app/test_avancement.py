@@ -656,6 +656,55 @@ class Next(unittest.TestCase):
         self.assertIn("→ skill `git`", run(k, "next")[1])
 
 
+class Reprendre(unittest.TestCase):
+    """`reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action."""
+
+    def setUp(self):
+        self.k = kb({"sprints/s1.md": SPRINT.replace("type: Sprint", "type: Sprint\nbranch: sprint/s1\ndocker_project: p-s1"),
+                     "tickets/t1.md": TICKET})
+        for stage in av.PIPELINES[0][1] + av.PIPELINES[1][1]:
+            run(self.k, "done", stage, "--force")
+
+    def test_without_a_plan_points_to_status(self):
+        self.assertIn("invoque `hosa:status`", run(kb({}), "reprendre")[1])
+
+    def test_nothing_open_composes_a_sprint(self):
+        out = run(self.k, "reprendre")[1]
+        self.assertIn("- Action : invoque `hosa:sprint`.", out)
+        self.assertNotIn("Rien en cours", out)
+
+    def test_a_stage_to_start_is_started_first(self):
+        run(self.k, "done", "sprint", "--sprint", "s1", "--force")
+        out = run(self.k, "reprendre")[1]
+        self.assertIn("`qa-plan` (Sprint s1) — à faire → skill `hosa:qa-plan`", out)
+        self.assertRegex(out, r"Action : `<hosa> avancement \".+\" start qa-plan --sprint s1`, "
+                              r"puis invoque `hosa:qa-plan` avec `args: \"reprise\"`")
+
+    def test_a_stage_in_progress_resumes_at_its_next_task(self):
+        run(self.k, "done", "sprint", "--sprint", "s1", "--force")
+        run(self.k, "done", "qa-plan", "--sprint", "s1", "--force")
+        run(self.k, "done", "git-demarrage", "--sprint", "s1", "--force")
+        run(self.k, "start", "develop", "--sprint", "s1")
+        (self.k / "tickets" / "t1.md").write_text(TICKET + "x", encoding="utf-8")
+        run(self.k, "task", "add", "develop", "t1.tests", "--sprint", "s1", "--agent", "hosa-tester", "--objet", "t1")
+        run(self.k, "task", "done", "develop", "t1.tests", "--sprint", "s1", "--sortie", str(self.k / "tickets" / "t1.md"))
+        run(self.k, "task", "add", "develop", "t1.code", "--sprint", "s1", "--agent", "hosa-developer", "--objet", "t1")
+        code, out = run(self.k, "reprendre")
+        self.assertEqual(code, 0)
+        self.assertIn("`develop` (Sprint s1) — en cours → skill `hosa:develop`", out)
+        self.assertIn("branch `sprint/s1`, docker_project `p-s1`", out)
+        self.assertIn("Tâches faites (1) : `t1.tests` (1 fichier)", out)   # done: never re-read to check
+        self.assertIn("À faire : `t1.code` hosa-developer → t1", out)
+        self.assertIn("puis dispatche la tâche `t1.code` (hosa-developer → t1) — `start` est déjà fait.", out)
+        self.assertNotIn("Reste à prouver : tâche", out)                     # said once, by the task line
+
+    def test_a_blocked_stage_shows_its_questions_and_stops(self):
+        run(self.k, "block", "sprint", "--sprint", "s1", "--detail", "Q1 — capacité ? a) 5 tickets (recommandé) b) 8")
+        out = run(self.k, "reprendre")[1]
+        self.assertEqual(out.count("Q1 — capacité"), 1)                      # the resume point doesn't repeat it
+        self.assertIn("montre à l'utilisateur les questions bloquantes", out)
+
+
 class Graph(unittest.TestCase):
     """pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards."""
 

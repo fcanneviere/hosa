@@ -19,7 +19,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const SAFE_TOOLS = ['Bash', 'Grep', 'Glob', 'WebFetch', 'WebSearch'];
-const MAX_CHARS = 20000, MIN_LEN = 400, DEDUP_MIN = 2048, MIN_WIN = 64;
+const MAX_CHARS = Number(process.env.HOSA_COMPRESS_MAX) || 10000, MIN_LEN = 400, DEDUP_MIN = 2048, MIN_WIN = 64;
 const REPEAT_MIN = 4, SIMILAR_MIN = 6, MAX_SALVAGED = 30, MAX_LINE = 300, MAX_INDEX = 300, SPILL_KEEP = 40;
 const ANSI_RE = /\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g;
 const SALVAGE_RE = /\b(error|err!|fail(ed|ure|ing)?|exception|traceback|panic|fatal|denied|refused|timed?[ _-]?out|assert(ion)?|segfault|cannot find|not found|warning)\b/i;

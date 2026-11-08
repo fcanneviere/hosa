@@ -27,7 +27,7 @@ const CAP = 150;
 // An agent stopped dead at its cap loses the step under way: it is told early, once (« wrap up at 25 of 30 »,
 // github.com/drona23/claude-token-efficient).
 const WARN = 0.8;
-const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 60000; // tokens: /clear restarts at 20-30 k
+const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 50000; // tokens: /clear restarts at 20-30 k; 45 % of the main context was spent past 120 k (rieki, pilot2)
 // Past it, any Hosa skill is refused once, then again every HEAVY more: `changement` closes no stage,
 // and a pilot2 session chained four skills up to 244 k without a single refusal.
 const CEILING = 2 * HEAVY;
@@ -48,6 +48,7 @@ const GRAPH = graph();
 const STAGES = GRAPH ? new Set([...GRAPH.pipelines.flatMap((p) => p.stages), ...GRAPH.sprint].map((s) => GRAPH.skill[s] || s))
   : new Set();
 const DISPATCH = (GRAPH && GRAPH.dispatch) || {};
+const { REPORT_MAX } = require('./subagent-start'); // the agents are told the same value
 
 const stateDir = () => process.env.HOSA_STATE_DIR || path.join(os.tmpdir(), 'hosa-compress');
 const hash = (s, n) => crypto.createHash('sha256').update(String(s)).digest('hex').slice(0, n);
@@ -133,18 +134,43 @@ function stageGate(p) {
     `Only if the user answers they want to go on in this session, invoke \`${skill}\` again: it will pass.`);
 }
 
+// An agent whose tools hold Write can move its details into a file; the others' report is their deliverable
+// (hosa-challenger, hosa-reviewer, hosa-tech-lead).
+function canWrite(type) {
+  try {
+    const head = fs.readFileSync(path.join(__dirname, '..', 'agents', `${type.replace(/^hosa-/, '')}.md`), 'utf8').split('\n---', 1)[0];
+    return /^tools:.*\bWrite\b/m.test(head);
+  } catch (e) { return false; } // fail-open: no refusal
+}
+
+// The final report stays in the main session's context until its /clear, re-read on every later call:
+// longer than REPORT_MAX besides `## Open Questions` and `## Reprise` (kept whole), it is refused once.
+function reportGate(p, file, s, type) {
+  if (s.reportRefused || !canWrite(type)) return null;
+  if ((s.calls || 0) >= (CAPS[type] || CAP)) return null; // at its cap the agent can't write a file any more
+  const body = String((p.tool_input || {}).message || '')
+    .replace(/^## (Open Questions|Reprise)\b[\s\S]*?(?=^## |(?![\s\S]))/gm, '');
+  if (body.length <= REPORT_MAX) return null;
+  if (contextTokens(agentTranscript(p, p.agent_id), true) >= AGENT_MAX) return null; // same: its tools are refused
+  save(file, { ...s, reportRefused: true });
+  return deny(`this report is ${body.length} characters besides \`## Open Questions\` and \`## Reprise\` (${REPORT_MAX} at most): ` +
+    'it stays in the main session\'s context and is re-read on every later call. Move the details into the files you wrote ' +
+    '(or one file next to them), keep `## En bref`, the paths written, `## Open Questions` and `## Reprise` in full, ' +
+    'then call SubagentHandback again. Nothing to move (the report is the deliverable)? Call it again unchanged: it will pass.');
+}
+
 function agentGate(p) {
   const file = stateFile(p.session_id, p.agent_id);
   const s = load(file);
   const type = String(p.agent_type || s.type || '').split(':').pop();
   if (!/^hosa-/.test(type)) return null;
-  if (p.tool_name === 'SubagentHandback') return null; // the final report: refusing it loses the pass
+  if (p.tool_name === 'SubagentHandback') return reportGate(p, file, s, type);
   const calls = (s.calls || 0) + 1;
   const cap = CAPS[type] || CAP;
   const ctx = contextTokens(agentTranscript(p, p.agent_id), true);
   const k = Math.round(ctx / 1000);
   const warn = !s.warned && (calls >= Math.floor(cap * WARN) || ctx >= AGENT_MAX * WARN);
-  save(file, { type, calls, warned: s.warned || warn });
+  save(file, { ...s, type, calls, warned: s.warned || warn });
   const report = 'write your final report with what is done, and under `## Reprise` what is left and the files to read';
   if (calls > cap || ctx >= AGENT_MAX) {
     return deny(`this ${type} pass reached its cap of ` + (calls > cap ? `${cap} tool calls` :
