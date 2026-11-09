@@ -14,8 +14,11 @@ fs.mkdirSync(path.dirname(plan), { recursive: true });
 const setPlan = (done) => fs.writeFileSync(plan, `## Sprint s1\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n` +
   ['sprint', 'qa-plan', 'git-demarrage', 'develop', 'qa'].map((s, i) => `| \`${s}\` | ${i < done ? 'fait' : 'à faire'} |  |  |`).join('\n'));
 const transcript = path.join(project, 't.jsonl');
-const setContext = (n) => fs.writeFileSync(transcript, JSON.stringify({ type: 'assistant',
-  message: { usage: { input_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: n } } }) + '\n');
+const usage = (n) => JSON.stringify({ type: 'assistant',
+  message: { usage: { input_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: n } } }) + '\n';
+// The session's first call (its start), then its last one.
+const setContext = (n, start = 30000) => fs.writeFileSync(transcript,
+  JSON.stringify({ type: 'user', message: { content: 'x'.repeat(300 * 1024) } }) + '\n' + usage(start) + usage(n));
 const skill = (name, session = 's1') => processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Skill', session_id: session,
   cwd: project, transcript_path: transcript, tool_input: { skill: name } });
 
@@ -41,6 +44,19 @@ test('a light session chains freely', () => {
   assert.equal(skill('develop', 's2'), null);
   setPlan(4); setContext(30000);
   assert.equal(skill('qa', 's2'), null);
+});
+
+test('the thresholds count above the session start: 54 k is no stage', () => {
+  setPlan(3); setContext(54000, 54000);
+  assert.equal(skill('hosa:develop', 's12'), null);
+  setPlan(4); setContext(70000, 54000);
+  assert.equal(skill('hosa:qa', 's12'), null);           // 16 k since the start
+  setPlan(5); setContext(76000, 54000);
+  assert.match(skill('hosa:qa', 's12').hookSpecificOutput.permissionDecisionReason, /76 k tokens \(22 k since its start\)/);
+  setContext(118000, 54000);
+  assert.equal(skill('hosa:changement', 's12'), null);   // under start + 70 k
+  setContext(125000, 54000);
+  assert.ok(denied(skill('hosa:changement', 's12')));
 });
 
 test('past the ceiling any Hosa skill is refused once, then every 50 k more', () => {

@@ -3,7 +3,7 @@
 // - PreToolUse Skill, main session: a stage of the progress plan closed in this session and the
 //   context is heavy → the next pipeline stage is refused once: /clear then « reprends »
 //   (README « Une session par étape »). The retry passes: the user chose to stay.
-// - Same refusal for any Hosa skill once the context passes CEILING, stage closed or not.
+// - Same refusal for any Hosa skill once the context passes start + CEILING, stage closed or not.
 // - Same refusal for an agent dispatch (Agent, SendMessage): a stage orchestrated by agents never calls
 //   Skill (rieki's backlog: 28 agents, main session up to 260 k without one refusal).
 // - PreToolUse, in a hosa- subagent: at WARN of its cap of tool calls, or of AGENT_MAX tokens of context,
@@ -27,10 +27,18 @@ const CAP = 150;
 // An agent stopped dead at its cap loses the step under way: it is told early, once (« wrap up at 25 of 30 »,
 // github.com/drona23/claude-token-efficient).
 const WARN = 0.8;
-const HEAVY = Number(process.env.HOSA_CONTEXTE_MAX) || 50000; // tokens: /clear restarts at 20-30 k; 45 % of the main context was spent past 120 k (rieki, pilot2)
-// Past it, any Hosa skill is refused once, then again every HEAVY more: `changement` closes no stage,
+// The main session's thresholds count above its start: a /clear saves only what grew since. The start moved
+// from 29 k to 54 k on 2026-11-08 (Claude Code's system prompt and tools, not Hosa), and an absolute 50 k then
+// refused after every stage. 45 % of the main context was spent past 120 k (rieki, pilot2).
+const HEAVY = Number(process.env.HOSA_CONTEXTE_MARGE) || 20000;
+// Past start + CEILING, any Hosa skill is refused once, then again every STEP more: `changement` closes no stage,
 // and a pilot2 session chained four skills up to 244 k without a single refusal.
-const CEILING = 2 * HEAVY;
+const CEILING = 70000;
+const STEP = 50000;
+// The start when the transcript gives none (the pre-2026-11-08 one).
+const START = 30000;
+// An agent's context past which an idle one is not resumed: agents start at 16 k, their own floor.
+const AGENT_RESUME = 50000;
 // A subagent's context: rieki's backlog passes reached 273 k at 41 tool calls, far from any call cap.
 const AGENT_MAX = Number(process.env.HOSA_AGENT_CONTEXTE_MAX) || 120000;
 // A subagent's prompt cache lives 5 min (measured 2026-11-05): resumed later, its whole context is written again
@@ -102,9 +110,43 @@ function contextTokens(transcript, sidechain = false) {
   return 0;
 }
 
-// Past CEILING, refused once, then again every HEAVY more: `again` is what passes on the retry.
+// Context of the session's first call, from the head of its transcript (the start after /clear).
+function startTokens(transcript) {
+  let fd;
+  try {
+    fd = fs.openSync(transcript, 'r');
+    const chunk = Buffer.alloc(256 * 1024);
+    let rest = '';
+    for (let pos = 0, n; pos < 4 * 1024 * 1024 && (n = fs.readSync(fd, chunk, 0, chunk.length, pos)) > 0; pos += n) {
+      const lines = (rest + chunk.toString('utf8', 0, n)).split('\n');
+      rest = lines.pop();
+      for (const line of lines) {
+        if (!line.includes('"usage"')) continue;
+        try {
+          const e = JSON.parse(line);
+          const u = e.type === 'assistant' && !e.isSidechain && e.message && e.message.usage;
+          if (u) return (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+        } catch (e) {}
+      }
+    }
+  } catch (e) {} finally { if (fd !== undefined) fs.closeSync(fd); }
+  return 0;
+}
+
+// The session's start, read once and kept in its state.
+function sessionStart(p, file, s) {
+  if (s.start) return s.start;
+  const start = startTokens(p.transcript_path);
+  if (!start) return START;
+  save(file, { ...s, start });
+  return start;
+}
+
+// Past start + CEILING, refused once, then again every STEP more: `again` is what passes on the retry.
 function ceilingGate(p, file, s, now, again, before = '') {
-  if (now < CEILING || now < (s.ceiling || 0) + HEAVY) return null;
+  const start = sessionStart(p, file, s);
+  s = load(file);
+  if (now < start + CEILING || now < (s.ceiling || 0) + STEP) return null;
   save(file, { ...s, ceiling: now });
   return deny(`the context is at ${Math.round(now / 1000)} k tokens. ` +
     `Stop here and tell the user, in one line: « Pour économiser les tokens : /clear, puis « reprends » — le plan d'avancement garde tout. » ` +
@@ -119,17 +161,18 @@ function stageGate(p) {
   const closed = closedStages(p.cwd || process.cwd());
   if (closed == null) return null;
   const file = stateFile(p.session_id);
-  const s = load(file);
   const now = contextTokens(p.transcript_path);
-  const ceiling = ceilingGate(p, file, s, now, `invoke \`${raw}\``);
+  const ceiling = ceilingGate(p, file, load(file), now, `invoke \`${raw}\``);
   if (ceiling) return ceiling;
   if (!STAGES.has(skill)) return null;
+  const s = load(file);
   if (s.closed == null) { save(file, { ...s, closed }); return null; }
   if (closed <= s.closed || s.refused === closed) return null;
-  const tokens = now;
-  if (tokens < HEAVY) return null;
-  save(file, { ...s, refused: closed });
-  return deny(`a stage closed in this session and its context is at ${Math.round(tokens / 1000)} k tokens. ` +
+  const start = sessionStart(p, file, s);
+  if (now < start + HEAVY) return null;
+  save(file, { ...load(file), refused: closed });
+  return deny(`a stage closed in this session and its context is at ${Math.round(now / 1000)} k tokens ` +
+    `(${Math.round((now - start) / 1000)} k since its start). ` +
     `Stop here and tell the user, in one line: « Pour économiser les tokens : /clear, puis « reprends » — le plan d'avancement garde tout. » ` +
     `Only if the user answers they want to go on in this session, invoke \`${skill}\` again: it will pass.`);
 }
@@ -204,11 +247,11 @@ function dispatchGate(p) {
   const text = planText(p.cwd || process.cwd());
   if (text == null) return null;
   const file = stateFile(p.session_id);
-  const s = load(file);
   const input = p.tool_input || {};
-  const ceiling = ceilingGate(p, file, s, contextTokens(p.transcript_path), 'dispatch',
+  const ceiling = ceilingGate(p, file, load(file), contextTokens(p.transcript_path), 'dispatch',
     'let the agents still running hand back, then ');
   if (ceiling) return ceiling;
+  const s = load(file);
   if (p.tool_name === 'SendMessage') {
     const to = String(input.to || '');
     const t = agentTranscript({ transcript_path: p.transcript_path }, to);
@@ -216,7 +259,7 @@ function dispatchGate(p) {
     try { idle = Date.now() - fs.statSync(t).mtimeMs; } catch (e) { return null; }
     const ctx = contextTokens(t, true);
     const resumed = s.resumed || {};
-    if (idle < IDLE || ctx < HEAVY || resumed[to]) return null;
+    if (idle < IDLE || ctx < AGENT_RESUME || resumed[to]) return null;
     save(file, { ...s, resumed: { ...resumed, [to]: true } });
     return deny(`agent ${to} has been idle ${Math.round(idle / 60000)} min with ${Math.round(ctx / 1000)} k tokens of context: ` +
       `a subagent's cache lasts 5 min, this message would write its ${Math.round(ctx / 1000)} k again. Dispatch a fresh agent ` +
