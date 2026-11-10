@@ -73,6 +73,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 - Base : `docker compose -p <projet> up -d --build`, lancé depuis la racine du projet
 - Sprint : `docker compose -f "<worktree>/docker-compose.yml" -p <projet>-sprint-<slug> up -d --build`, avec <APP_PORT=…, DB_PORT=…> pour ne pas entrer en conflit avec la base
 - Contrôle : `<hosa> docker_check <projet compose> <dossier du checkout>`
+- Port fixe : le port de l'application, `<APP_PORT>` (par exemple 8511), noté ici une fois. Une recette ouvre cette URL et rien d'autre. Avant chaque recette, `docker_check` prouve que le conteneur sert le code du checkout.
 - Tests : <commande de la suite complète, service où elle tourne>
 
 ## Comptes
