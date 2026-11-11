@@ -58,6 +58,8 @@ Les skills tournent dans ta session, sur le modèle choisi par `/model` : elle c
 
 Depuis Claude Code 2.1.290, Hosa le fait pour toi : la session passe d'elle-même sur Sonnet dans un projet Hosa. Une ligne sous le prompt affiche la phase et le remplissage du contexte. Quand une étape se termine et que le contexte dépasse 20 %, une notification propose `/clear`. Pour garder la main sur `/model` : `HOSA_MODELE=0`.
 
+Un panneau « Hosa » montre où en est le projet : l'étape ouverte, les questions qui t'attendent, le point de reprise, les boucles ouvertes, les tâches des agents et l'avancement de chaque pipeline. Il lit le plan d'avancement et se met à jour à chaque changement. `/hosa-panneau` l'ouvre. Dans l'application de bureau et dans VS Code, il s'ouvre seul dans un projet Hosa ; pour l'empêcher : `HOSA_PANNEAU=0`.
+
 Les barrières de budget (hook `budget.js`) :
 - Les seuils de la session principale se comptent au-dessus de son contexte de départ, mesuré au 1ᵉʳ appel : un `/clear` n'économise que ce qui a grandi depuis. Ce départ est passé de 29 000 à 54 000 tokens le 8 novembre 2026, par le prompt système et les outils de Claude Code.
 - Quand une étape s'est terminée dans une session qui a grandi de plus de 20 000 tokens depuis son départ, le skill de l'étape suivante est refusé une fois. Claude s'arrête et te propose `/clear`, puis « reprends ». Si tu préfères rester, il relance le skill, qui passe cette fois. Cette marge se règle avec `HOSA_CONTEXTE_MARGE` (en tokens).
