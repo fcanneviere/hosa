@@ -14,6 +14,9 @@ the work stopped, in the right order.
   avancement.py <kb> progress <stage> [--sprint S]  --detail D  [--reprise R]
   avancement.py <kb> done     <stage> [--sprint S] [--detail D] [--force]
   avancement.py <kb> block    <stage> [--sprint S]  --detail D   (D: the questions in full, one line each)
+  avancement.py <kb> reponse  <stage> [--sprint S] [--agent A] --detail "Q1 a, Q2 b"
+                                                                  (the user's answers: journal, and the stage goes on)
+  avancement.py <kb> reponse  [--sprint S]                        (the questions' measure, from `kb/questions/log.md`)
   avancement.py <kb> skip     <stage> [--sprint S]  --detail D   (non applicable)
   avancement.py <kb> reprise  "<next action>"                     (outside the pipeline)
   avancement.py <kb> back     <from> <to> [--sprint S] [--ticket T] [--cause C] --detail D [--reprise R] [--force]
@@ -54,13 +57,18 @@ cause (the control, or the judge's question that failed); past
 `task add --force` restarts the count, `task done --force` accepts the
 output. `done <stage>` refuses while one of its tasks
 is `à faire` or `bloqué`, and clears them once done. Sprint stages need
-`--sprint`. Exit 2 = bad invocation. Stdlib only.
+`--sprint`. A stage blocked on Q-numbered questions leaves `bloqué` by
+`reponse` only: `start`, `progress`, `done` and `skip` refuse (exit 1) until
+each question has its answer in the journal (HOSA_REPONSES=0 skips it); an
+answer `a` is the recommended option, followed. Exit 2 = bad invocation.
+Stdlib only.
 """
 from __future__ import annotations
 
 import argparse
 import functools
 import json
+import os
 import posixpath
 import re
 import sys
@@ -614,7 +622,8 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
         go = "ne relance pas le travail des agents encore actifs ci-dessus : attends leur rapport, puis " + go
     if status == BLOCKED or blocked:
         action = "montre à l'utilisateur les questions bloquantes ci-dessus (Q1…, avec leurs options) et arrête-toi ; " \
-                 f"sa réponse reçue, {go}."
+                 f"sa réponse reçue, `<hosa> avancement \"{kbs}\" reponse {stage}{flag} --detail \"Q1 <choix>, …\"` " \
+                 f"(tâche bloquée : ajoute `--agent <son agent>` et `Qn <choix> — <la question>`), puis {go}."
     elif status == TODO:
         action = f"`<hosa> avancement \"{kbs}\" start {stage}{flag}`, puis {go}."
     elif todo:
@@ -805,6 +814,71 @@ def juge_stats(kb: Path) -> list[str]:
         out.append(f"- `{q}` : {r['refus']} refus, {r['forcé sur']} fois passé outre par l'utilisateur")
         if r["forcé sur"] >= 2:
             out.append(f"  → l'utilisateur contredit `{q}` : la réécrire ou la retirer de pipeline.json")
+    return out
+
+
+# `- 10:42Z — `backlog` (s1) — hosa-security — suivie — Q1 a — <the question>`
+ANSWER_LOG = re.compile(r"^- \d\d:\d\dZ — `([\w-]+)`(?: \(([^)]*)\))? — ([\w:.-]+) — (suivie|autre) — (Q\d+ .*?) — (.*)$")
+# a question waiting in the resume point: `Q1. …`, `- **Q1** — …`, or on the `- Bloqué : …` line itself
+Q_LINE = re.compile(r"^(?:- Bloqué : `[\w-]+`(?: \([^)]*\))? — )?\W*Q(\d+)\b\W*(.*)$")
+ANSWER = re.compile(r"Q(\d+)\s*[:=→]?\s*(.+?)\s*(?=[,;\n]\s*Q\d+\b|$)", re.S)
+DEFAULT_AFTER = 5  # questions of one stage and one asker, all followed: no longer worth a stop
+
+
+def waiting(resume: str, where: str) -> dict[str, str]:
+    """{n: text} of the Q-numbered questions the resume point still holds for the blocked stage <where>."""
+    if not resume.startswith(f"- Bloqué : {where} — "):
+        return {}
+    return {m[1]: m[2].strip() for m in map(Q_LINE.match, resume.splitlines()) if m}
+
+
+def answers(detail: str) -> list[tuple[str, str, str]]:
+    """[(n, choice, question)] of `Q1 a, Q2 b` or of one `Qn <choice> — <question>` per line."""
+    out = []
+    for m in ANSWER.finditer(detail):
+        choice, _, text = (x.strip() for x in m[2].partition("—"))
+        out.append((m[1], re.sub(r"^([A-Za-z])\)$", r"\1", choice), text))
+    return out
+
+
+def log_answers(kb: Path, stage: str, scope: str, agent: str, given: list[tuple[str, str, str]]) -> None:
+    """One line per answered question in `kb/questions/log.md` (OKF §9, like the judge's journal): whether the
+    user took the recommended option — always `a` — or another one. The measure of the questions."""
+    path = kb / "questions" / "log.md"
+    stamp = now()
+    lines = [f"- {stamp[11:16]}Z — `{stage}`" + (f" ({scope})" if scope else "") + f" — {agent} — "
+             f"{'suivie' if c.lower() == 'a' else 'autre'} — Q{n} {cell(c)} — {cell(q) or '(sans texte)'}"
+             for n, c, q in given]
+    text = read(path) or ""
+    day = f"## {stamp[:10]}"
+    block = "\n".join(lines) + "\n"
+    if text.startswith(day + "\n"):
+        text = text.replace(day + "\n", f"{day}\n{block}", 1)
+    else:
+        text = f"{day}\n{block}" + ("\n" + text if text else "")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def answer_stats(kb: Path, sprint: str | None = None) -> list[str]:
+    """What the journal says of the questions: how often the user takes the recommendation, per stage and
+    asker. A group always followed is a stop that decided nothing; the answers that differ show what the
+    user really owns."""
+    events = [m for m in map(ANSWER_LOG.match, (read(kb / "questions" / "log.md") or "").splitlines())
+              if m and (not sprint or m[2] == sprint)]
+    if not events:
+        return ["Aucune réponse dans `kb/questions/log.md`."]
+    followed = sum(m[4] == "suivie" for m in events)
+    out = [f"- Questions : {len(events)} — recommandation suivie : {followed} ({round(100 * followed / len(events))} %)"]
+    groups: dict = {}
+    for m in events:
+        groups.setdefault((m[1], m[3]), []).append(m)
+    for (stage, agent), g in sorted(groups.items()):
+        n = sum(m[4] == "suivie" for m in g)
+        out.append(f"- `{stage}` {agent} : {len(g)} question{'s' * (len(g) > 1)}, {n} suivie{'s' * (n > 1)}")
+        out += [f"  - autre : {m[5]} — {m[6]}" for m in g if m[4] == "autre"]
+        if n == len(g) >= DEFAULT_AFTER:
+            out.append(f"  → toujours suivie ({len(g)} fois) : candidate à la décision par défaut")
     return out
 
 
@@ -1146,7 +1220,7 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
     ap.add_argument("action", choices=["show", "next", "reprendre", "check", "start", "progress", "done", "block", "skip",
-                                       "reprise", "back", "init", "task", "juge"])
+                                       "reprise", "back", "init", "task", "juge", "reponse"])
     ap.add_argument("stage", nargs="?")
     ap.add_argument("to", nargs="?")
     ap.add_argument("item", nargs="?")
@@ -1282,16 +1356,51 @@ def main(argv: list[str]) -> int:
         save(path, sections, out, loops)
         print(show(*load(path), loops, tasks))
         return 0
+    if a.action == "reponse" and not a.stage:
+        print("\n".join(answer_stats(a.kb, a.sprint)))
+        return 0
     if not a.stage:
         print(f"error: {a.action} needs a stage", file=sys.stderr)
         return 2
-    if a.action in ("progress", "block", "skip") and not a.detail:
+    if a.action in ("progress", "block", "skip", "reponse") and not a.detail:
         print(f"error: {a.action} needs --detail", file=sys.stderr)
         return 2
 
     title, rows = locate(sections, a.stage, a.sprint)
     row = next(r for r in rows if r[0] == a.stage)
     where = f"`{a.stage}`" + (f" (sprint {a.sprint})" if a.sprint else "")
+    asked = waiting(resume, where) if row[1] == BLOCKED else {}
+    if a.action == "reponse":
+        given = [(n, c, q or asked.get(n, "")) for n, c, q in answers(a.detail)]
+        if not given:
+            print("error: reponse needs --detail \"Q1 a, Q2 b\" (or one `Qn <choix> — <question>` per line)",
+                  file=sys.stderr)
+            return 2
+        log_answers(a.kb, a.stage, (a.sprint if a.stage in SPRINT else "") or "", a.agent or "session", given)
+        if asked:  # the answers replace their questions in the resume point: a /clear keeps them
+            got = {n: (c, q) for n, c, q in given}
+            lines = [f"- Répondu : Q{m[1]} → {got[m[1]][0]} — {got[m[1]][1]}" if (m := Q_LINE.match(x)) and m[1] in got
+                     else x for x in resume.splitlines()]
+            if any(n not in got for n in asked):
+                if not lines[0].startswith("- Bloqué : "):  # its one line was the answered question
+                    lines.insert(0, f"- Bloqué : {where} — questions en attente")
+            else:
+                row[1:] = [DOING, now(), "réponses reçues, à appliquer"]
+                lines = [f"- En cours : {where} — réponses reçues, à appliquer"] + \
+                        [x for x in lines if not x.startswith("- Bloqué : ")]
+            resume = "\n".join(lines)
+            save(path, sections, resume, loops, tasks)
+        print(show(*load(path), loops, tasks))
+        return 0
+    if asked and a.action in ("start", "progress", "done", "skip") and not a.force and os.environ.get("HOSA_REPONSES") != "0":
+        kbs = a.kb.resolve().as_posix()
+        qs = sorted(asked, key=int)
+        print(f"✗ {where} attend la réponse de l'utilisateur à {', '.join(f'Q{n}' for n in qs)}. Enregistre-la d'abord : "
+              f"`<hosa> avancement \"{kbs}\" reponse {a.stage}" + (f" --sprint {a.sprint}" if a.sprint else "")
+              + f" --detail \"{', '.join(f'Q{n} <choix>' for n in qs)}\"` (le choix : sa lettre, `a` = l'option "
+              "recommandée ; ou sa réponse en clair), puis relance. Pas encore de réponse → montre-lui les questions "
+              "et arrête-toi.")
+        return 1
     if a.action == "start":
         before = rows[: rows.index(row)]
         if title != "Cahier des charges" or a.stage != "hosa":

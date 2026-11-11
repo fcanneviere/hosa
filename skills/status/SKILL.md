@@ -36,6 +36,8 @@ It reads Claude Code's local transcripts and reports token use per agent, per sk
 
 "Est-ce que le juge tient ?" → `<hosa> avancement .hosa/kb juge`: tasks judged, validated at their first round, refusals and user overrides per question, from `kb/jugements/log.md`. A question the user overrode twice or more is flagged: propose rewriting it or removing it from `pipeline.json`, the user decides.
 
+"Est-ce que les questions servent ?" → `<hosa> avancement .hosa/kb reponse [--sprint <slug>]`: the questions answered, the share where the user took the recommended option, per stage and asker, and each answer that differed, from `kb/questions/log.md`. A group always followed over 5 questions or more is flagged « candidate à la décision par défaut »: show it, the user decides whether Hosa stops asking it.
+
 ## Mode Hosa (`.hosa/kb/` exists)
 
 **Plan d'avancement first:** run `<hosa> avancement .hosa/kb show` from the managed project's root — its resume point and stage in progress lead the snapshot. No plan yet (`kb/project/avancement.md` missing — a project started before it existed) → create it now: `<hosa> avancement .hosa/kb init`. It marks each stage done while its proof holds (the same proofs `done` checks), in the order of `skills/status/scripts/pipeline.json`, and prints where each section stops and why. Show those stops to the user: a stage the project ruled out → `skip <stage> --detail "<raison>"`, one done before today's proofs existed → `done <stage> --force` on the user's word, then `init`'s report is settled. That's this skill's only write.

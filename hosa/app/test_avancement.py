@@ -209,6 +209,94 @@ class Block(unittest.TestCase):
         self.assertEqual(next(r for r in sections["Structuration"] if r[0] == "schema-db")[3], "2 questions bloquantes")
 
 
+class Reponse(unittest.TestCase):
+    """`reponse`: the user's answers leave a blocked stage, and the journal says whether they took the recommendation."""
+
+    Q = "2 questions bloquantes\nQ1. Clé primaire ? a) uuid (recommandé) b) entier\n- **Q2** — Casse des e-mails ? a) citext b) lower()"
+
+    def setUp(self):
+        self.k = kb({})
+        run(self.k, "block", "schema-db", "--detail", self.Q)
+
+    def row(self):
+        sections, resume = av.load(self.k / "project" / "avancement.md")
+        return next(r for r in sections["Structuration"] if r[0] == "schema-db"), resume
+
+    def test_a_blocked_stage_goes_on_by_its_answers_only(self):
+        for action in (("start",), ("progress", "--detail", "x"), ("done",), ("skip", "--detail", "x")):
+            code, out = run(self.k, action[0], "schema-db", *action[1:])
+            self.assertEqual(code, 1, action)
+            self.assertIn('reponse schema-db --detail "Q1 <choix>, Q2 <choix>"', out)
+        self.assertEqual(self.row()[0][1], av.BLOCKED)
+        self.assertEqual(run(self.k, "reponse", "schema-db", "--detail", "Q1 a, Q2 b")[0], 0)
+        row, resume = self.row()
+        self.assertEqual(row[1], av.DOING)
+        self.assertIn("- Répondu : Q2 → b — Casse des e-mails ? a) citext b) lower()", resume)  # survives a /clear
+        self.assertNotIn("Bloqué", resume)
+        self.assertEqual(run(self.k, "progress", "schema-db", "--detail", "x")[0], 0)
+
+    def test_the_journal_counts_the_recommendation_followed(self):
+        run(self.k, "reponse", "schema-db", "--detail", "Q1 a, Q2 b")
+        log = (self.k / "questions" / "log.md").read_text(encoding="utf-8").splitlines()
+        self.assertRegex(log[0], r"^## \d{4}-\d\d-\d\d$")
+        self.assertIn("`schema-db` — session — suivie — Q1 a — Clé primaire ? a) uuid (recommandé) b) entier", log[1])
+        self.assertIn("— autre — Q2 b — Casse des e-mails", log[2])
+        out = run(self.k, "reponse")[1]
+        self.assertIn("Questions : 2 — recommandation suivie : 1 (50 %)", out)
+        self.assertIn("`schema-db` session : 2 questions, 1 suivie", out)
+        self.assertIn("  - autre : Q2 b — Casse des e-mails", out)
+
+    def test_a_partial_answer_keeps_the_stage_blocked_on_the_rest(self):
+        run(self.k, "reponse", "schema-db", "--detail", "Q2 a")
+        row, resume = self.row()
+        self.assertEqual(row[1], av.BLOCKED)
+        self.assertIn("- Répondu : Q2 → a", resume)
+        code, out = run(self.k, "done", "schema-db")
+        self.assertEqual(code, 1)
+        self.assertIn('--detail "Q1 <choix>"', out)
+        run(self.k, "reponse", "schema-db", "--detail", "Q1 plutôt un entier court")  # an answer in plain words
+        row, resume = self.row()
+        self.assertEqual(row[1], av.DOING)
+        self.assertIn("- Répondu : Q2 → a", resume)
+        self.assertIn("— autre — Q1 plutôt un entier court — Clé primaire", (self.k / "questions" / "log.md").read_text(encoding="utf-8"))
+
+    def test_one_question_on_the_blocked_line_itself(self):
+        k = kb({})
+        run(k, "block", "stack", "--detail", "Q1 — hébergement ? a) Scaleway (recommandé) b) OVH")
+        self.assertEqual(run(k, "start", "stack")[0], 1)
+        self.assertEqual(run(k, "reponse", "stack", "--detail", "Q1 a)")[0], 0)
+        self.assertIn("— suivie — Q1 a — hébergement ?", (k / "questions" / "log.md").read_text(encoding="utf-8"))
+        self.assertEqual(next(r for r in av.load(k / "project" / "avancement.md")[0]["Structuration"] if r[0] == "stack")[1], av.DOING)
+
+    def test_a_block_without_question_and_the_switch_and_force_pass(self):
+        k = kb({})
+        run(k, "block", "infra", "--detail", "Docker ne démarre pas")
+        self.assertEqual(run(k, "progress", "infra", "--detail", "x")[0], 0)
+        with unittest.mock.patch.dict(os.environ, {"HOSA_REPONSES": "0"}):
+            self.assertEqual(run(self.k, "progress", "schema-db", "--detail", "x")[0], 0)
+        run(self.k, "block", "schema-db", "--detail", self.Q)
+        self.assertEqual(run(self.k, "done", "schema-db", "--force")[0], 0)
+
+    def test_a_task_s_question_is_logged_with_its_agent_and_text(self):
+        k = kb({})
+        code, _ = run(k, "reponse", "juridique", "--agent", "hosa-legal", "--detail",
+                      "Q1 a — Hébergeur hors UE ?\nQ2 a — Durée de conservation, 3 ans ?")
+        self.assertEqual(code, 0)
+        for _ in range(2):
+            run(k, "reponse", "juridique", "--agent", "hosa-legal", "--detail", "Q1 a — x, y ?\nQ2 a — z ?")
+        out = run(k, "reponse")[1]
+        self.assertIn("`juridique` hosa-legal : 6 questions, 6 suivies", out)
+        self.assertIn("candidate à la décision par défaut", out)
+        self.assertIn("Aucune réponse", run(k, "reponse", "--sprint", "s9")[1])
+        self.assertEqual(run(k, "reponse", "juridique", "--detail", "oui")[0], 2)
+
+    @unittest.skipUnless(importlib.util.find_spec("yaml"), "okf_validate needs pyyaml")
+    def test_the_journal_is_a_valid_okf_log(self):
+        run(self.k, "reponse", "schema-db", "--detail", "Q1 a, Q2 b | c")
+        r = av.run_script("okf/scripts/okf_validate.py", self.k, "--json")
+        self.assertEqual([w for w in json.loads(r.stdout)["warnings"] if "questions/log.md" in w], [])
+
+
 STACK = {"stack/s.md": "---\ntype: Stack Decision\n---\n"}
 
 

@@ -36,7 +36,7 @@ Manual: `/bilan-sprint <slug-sprint>`. Auto: "fais le bilan du sprint X", "rétr
 
 ## Step 1b: Measure the Sprint
 
-`<hosa> usage_report <root> --sprint <slug> --write` writes `## Mesures` in `kb/sprints/<slug>.md`: cost per ticket, review verdicts, the corrections by type with their findings proved or not reproduced (the relevance of reviews, audits and recettes), `hosa-debugger` passes, the main session's largest context, the longest agent passes, compared with the earlier sprints — and `### Propositions` for what crossed a threshold (e.g. `HOSA_HAIKU=0` when reviews fail on Haiku). Never apply a proposition yourself.
+`<hosa> usage_report <root> --sprint <slug> --write` writes `## Mesures` in `kb/sprints/<slug>.md`: cost per ticket, review verdicts, the corrections by type with their findings proved or not reproduced (the relevance of reviews, audits and recettes), `hosa-debugger` passes, the main session's largest context, the longest agent passes, compared with the earlier sprints — and `### Propositions` for what crossed a threshold (e.g. `HOSA_HAIKU=0` when reviews fail on Haiku). Never apply a proposition yourself. Then `avancement.py … reponse --sprint <slug>` gives the questions' measure of the sprint (recommendations followed per stage and asker, from `kb/questions/log.md`): pass it to `hosa-product-owner` with `## Mesures` and show it in the report — a group marked « candidate à la décision par défaut » is a stop that decided nothing.
 
 ## Step 2: Dispatch `hosa-product-owner`
 
