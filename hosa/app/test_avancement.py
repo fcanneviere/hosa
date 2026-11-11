@@ -248,6 +248,35 @@ class Tasks(unittest.TestCase):
         self.assertEqual(run(self.k, "done", "stack")[0], 0)
         self.assertEqual(av.load_tasks(self.k / "project" / "avancement.md"), [])
 
+    def test_a_missing_task_id_is_found_when_only_one_fits(self):
+        """rieki: 12 calls lost on `task add <stage>` without an id, 15 on `--sortie a b`."""
+        code, out = run(self.k, "task", "add", "stack", "--agent", "hosa:hosa-senior-dev", "--objet", "options")
+        self.assertEqual(code, 0)
+        self.assertIn("tâche `senior-dev-1` ajoutée à `stack` — `task done stack senior-dev-1` à son retour", out)
+        (self.k / "stack").mkdir(exist_ok=True)
+        for f in ("a.md", "b.md"):
+            (self.k / "stack" / f).write_text("---\ntype: Stack Decision\ntitle: t\n---\n", encoding="utf-8")
+        self.assertEqual(run(self.k, "task", "done", "stack", "--sortie", "stack/a.md", "stack/b.md", "--force")[0], 0)
+        self.assertIn("stack/a.md, stack/b.md", (self.k / "project" / "avancement.md").read_text(encoding="utf-8"))
+        run(self.k, "task", "add", "stack", "--agent", "hosa-senior-dev")
+        run(self.k, "task", "add", "stack", "--agent", "hosa-senior-dev")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(run(self.k, "task", "skip", "stack", "--detail", "x")[0], 2)  # two fit: never a guess
+            self.assertEqual(run(self.k, "task", "add", "senior-dev", "--agent", "hosa-senior-dev")[0], 2)
+        self.assertIn("l'id manque ; tâches : `senior-dev-1` (fait), `senior-dev-2` (à faire), `senior-dev-3` (à faire)",
+                      err.getvalue())
+        self.assertIn("`senior-dev` n'est pas une étape", err.getvalue())
+
+    def test_a_stage_with_controlled_ids_never_gets_a_made_up_one(self):
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET})
+        run(k, "init")
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(run(k, "task", "add", "develop", "--sprint", "s1", "--agent", "hosa-reviewer")[0], 2)
+        self.assertIn("ses ids ont une forme contrôlée : `*.revue`", err.getvalue())
+
     def test_show_gives_the_next_task_and_each_blocked_one(self):
         run(self.k, "task", "add", "stack", "a", "--agent", "hosa-senior-dev")
         run(self.k, "task", "add", "stack", "b", "--agent", "hosa-infra", "--objet", "docker")

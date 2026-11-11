@@ -140,7 +140,10 @@ test('a cd into the KB is refused, a subshell or another folder passes', () => {
   const r = project({});
   assert.match(denied(bash(r, 'cd .hosa/kb/cdc && ls')), /inside the KB/);
   assert.match(denied(bash(r, `cd "${path.join(r, '.hosa')}"`)), /git -C/);
+  assert.match(denied(bash(r, 'cd .hosa/kb/cdc && ls')), /\(cd <path> && …\)/);          // the form that passes, named
   assert.equal(bash(r, '(cd .hosa/kb && git status)'), null);
+  // an agent's cd lasts one command: nothing to protect, no call to lose
+  assert.equal(processPayload({ tool_name: 'Bash', cwd: r, agent_id: 'a1', tool_input: { command: 'cd .hosa/kb/cdc && ls' } }), null);
   assert.equal(bash(r, 'cd .worktrees/sprint/s1 && ls'), null);
 });
 

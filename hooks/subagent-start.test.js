@@ -4,7 +4,11 @@ const { processPayload } = require('./subagent-start');
 
 test('injects the auto-audit rule into Hosa agents only', () => {
   assert.match(processPayload({ agent_type: 'hosa-security' }).hookSpecificOutput.additionalContext, /## Retour Hosa/);
-  assert.match(processPayload({ agent_type: 'hosa-security' }, 'linux').hookSpecificOutput.additionalContext, /never `cd` into `\.hosa\/`/);
+  assert.match(processPayload({ agent_type: 'hosa-security' }, 'linux').hookSpecificOutput.additionalContext, /A `cd` lasts one command/);
+  const linux = processPayload({ agent_type: 'hosa-tester' }, 'linux').hookSpecificOutput.additionalContext;
+  assert.match(linux, /Run every command in the foreground/);
+  assert.doesNotMatch(linux, /PYTHONIOENCODING/);
+  assert.match(processPayload({ agent_type: 'hosa-tester' }, 'win32').hookSpecificOutput.additionalContext, /PYTHONIOENCODING=utf-8/);
   assert.match(processPayload({ agent_type: 'hosa-dba' }).hookSpecificOutput.additionalContext, /`<hosa>` in your instructions means `".+" ".+"`/);
   assert.ok(processPayload({ agent_type: 'hosa:hosa-git' }));
   assert.equal(processPayload({ agent_type: 'Explore' }), null);

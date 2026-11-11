@@ -119,7 +119,7 @@ Fix each gap through its skill, then merge.`;
 function cdGate(cmd, cwd) {
   const seg = segments(cmd).find((s) => s[0] === 'cd' && s[1] && /[\\/]\.hosa([\\/]|$)/.test(path.resolve(cwd, native(s[1]))));
   return seg && `\`cd ${seg[1]}\` would leave the session inside the KB. ` +
-    'Stay at the project root: use `git -C <path>` and absolute paths.';
+    'Stay at the project root: use `git -C <path>` and absolute paths, or a subshell — `(cd <path> && …)`.';
 }
 
 // `docker compose … up|create|run` builds containers from the project directory's files and `.env`:
@@ -224,7 +224,9 @@ function processPayload(p) {
   const cmd = (p.tool_input || {}).command;
   if (!cmd) return null;
   const cwd = native(p.cwd || process.cwd());
-  const cd = cdGate(cmd, cwd) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd) : null) || scriptGate(cmd);
+  // An agent's `cd` lasts one command (rieki: 337 of 337 left its cwd unchanged), and 79 of the 109 `cd` refusals
+  // of that project were agents': each one a lost call that re-reads the agent's context. Main session only.
+  const cd = (p.agent_id ? null : cdGate(cmd, cwd)) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd) : null) || scriptGate(cmd);
   if (cd) return deny(cd);
   if (!/\bgit\b/.test(cmd)) return null;
   for (const call of gitCalls(cmd, cwd)) {

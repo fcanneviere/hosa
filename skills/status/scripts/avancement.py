@@ -997,8 +997,25 @@ def refusals(t: dict) -> tuple[int, str]:
 def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
     """`task add|done|block|skip <stage> <id>`. (exit code, message)"""
     op, stage, tid = a.stage, a.to, a.item
-    if op not in ("add", "done", "block", "skip") or not stage or not tid:
+    if op not in ("add", "done", "block", "skip") or not stage:
         return 2, "error: task add|done|block|skip <stage> <id>"
+    if stage not in SPRINT and not any(stage in stages for _, stages in PIPELINES):
+        return 2, (f"error: `{stage}` n'est pas une étape — task {op} <étape> <id> : l'étape d'abord, "
+                   f"puis l'id de la tâche (`task {op} develop <ticket>.revue --sprint <s>`)")
+    if not tid:
+        # rieki: 12 calls lost on a `task add <stage>` without its id. The id is found when only one fits.
+        scope = a.sprint if stage in SPRINT else ""
+        mine = [x for x in tasks if (x["stage"], x["scope"]) == (stage, scope)]
+        forms = [c["id"] for c in TASKS["controls"] if c.get("stage") == stage]
+        if op == "add" and not forms and a.agent:
+            base = a.agent.split(":")[-1].removeprefix("hosa-")
+            tid = next(f"{base}-{n}" for n in range(1, len(mine) + 2) if f"{base}-{n}" not in {x["id"] for x in mine})
+        elif op != "add" and len(still := [x for x in mine if x.get("statut") not in CLOSED]) == 1:
+            tid = still[0]["id"]
+        else:
+            hint = ("ses ids ont une forme contrôlée : " + ", ".join(f"`{f}`" for f in forms) if op == "add" and forms
+                    else "tâches : " + (", ".join(f"`{x['id']}` ({x.get('statut')})" for x in mine) or "aucune"))
+            return 2, f"error: task {op} {stage} <id> — l'id manque ; {hint}"
     if not TASK_ID.match(tid):
         return 2, f"error: task id `{tid}` — letters, digits, `.`, `_`, `-` only"
     title, rows = locate(sections, stage, a.sprint)
@@ -1023,7 +1040,7 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
         kept = "" if a.force or t.get("statut") == DONE or not refusals(t)[0] else t["detail"]
         t.update(agent=a.agent, objet=a.objet, statut=TODO, at=now(), sortie="",
                  detail=" — ".join(x for x in (kept, a.detail) if x))
-        return 0, ""
+        return 0, "" if a.item else f"tâche `{tid}` ajoutée à {where} — `task done {stage} {tid}` à son retour"
     if t is None:
         known = ", ".join(f"`{x['id']}`" for x in tasks if (x["stage"], x["scope"]) == (stage, scope)) or "aucune"
         return 2, f"error: {where} n'a pas de tâche `{tid}` — tâches : {known}"
@@ -1140,10 +1157,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--reprise", default="")
     ap.add_argument("--agent", default="")
     ap.add_argument("--objet", default="")
-    ap.add_argument("--sortie", default="")
+    ap.add_argument("--sortie", default=[], nargs="+")  # `--sortie a b` or `--sortie a,b` (rieki: 15 calls lost on the first)
     ap.add_argument("--tickets", default="")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args(argv)
+    a.sortie = ",".join(a.sortie)
     if not a.kb.is_dir():
         print(f"error: {a.kb} is not a directory", file=sys.stderr)
         return 2
@@ -1163,7 +1181,7 @@ def main(argv: list[str]) -> int:
             print(out, file=sys.stderr if code == 2 else sys.stdout)
             return code
         save(path, sections, resume, loops, tasks)
-        print(show(*load(path), loops, tasks))
+        print((out + "\n" if out else "") + show(*load(path), loops, tasks))
         return 0
     if a.action == "juge":  # what `hosa-juge` answers, and where: the questions live in pipeline.json only
         if not a.stage:

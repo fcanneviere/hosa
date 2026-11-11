@@ -30,8 +30,14 @@ const AGENT_RULES = `## Hosa agent rules (your own instructions win where they d
 const TESTS_RULE = `**Tests a person runs** go under \`## Tests à faire par toi\`: the environment and its full URL, a test account of the dataset, then \`| N° | Page | Action | Résultat attendu |\` numbered T1, T2…, one action per row with the interface's exact labels, an observable result with exact values; end with « Réponds en une ligne : « T1 OK, T2 KO : … » ».`;
 const TESTERS = /(^|:)hosa-(tester|qa-lead|ux-designer)$/;
 
-// gate.js refuses a `cd` into `.hosa/`: 41 refusals across 13 agents on the pilot2 run.
-const KB_PATHS = 'Read and write the KB by absolute path (`<root>/.hosa/kb/…`, `kb_query.py`, `git -C`): never `cd` into `.hosa/` — the hook refuses it.';
+// An agent's `cd` lasts one command (rieki: 337 of 337), so gate.js refuses a `cd` into `.hosa/` in the main session
+// only (41 refusals on pilot2, 79 on rieki, each a lost agent call). What an agent needs to know is that it doesn't carry.
+const KB_PATHS = 'Read and write the KB by absolute path (`<root>/.hosa/kb/…`, `kb_query.py`, `git -C`). A `cd` lasts one command: the next call starts at the project root again.';
+
+// rieki: 18 failed calls on `sleep N; cat <output>`, `Monitor` and `TaskStop` — an agent has no tool to wait for or
+// stop a background command — and 3 on a `python -c` printing « → » to a cp1252 console.
+const FOREGROUND = 'Run every command in the foreground, with a `timeout` long enough for it (a test suite, a build): you have no tool to wait for or stop a background command, and `sleep` then `cat` of its output is refused.';
+const WINDOWS_PYTHON = 'A `python -c` or script of your own that prints accents or « → »: prefix it with `PYTHONIOENCODING=utf-8`.';
 
 // Windows: Bash eats the backslashes of an unquoted `C:\…` passed to a script.
 const WINDOWS_PATHS = 'Pass every path argument in double quotes, with forward slashes (`"C:/dev/projet"`): Bash strips the backslashes of an unquoted `C:\\…`.';
@@ -51,7 +57,7 @@ function pythonLine() {
 
 function processPayload(payload, platform = process.platform) {
   if (!/(^|:)hosa-/.test(payload.agent_type || '')) return null;
-  const context = [AGENT_RULES, ...(TESTERS.test(payload.agent_type) ? [TESTS_RULE] : []), RULE, KB_PATHS, pythonLine(), ...(platform === 'win32' ? [WINDOWS_PATHS] : [])].filter(Boolean).join('\n\n');
+  const context = [AGENT_RULES, ...(TESTERS.test(payload.agent_type) ? [TESTS_RULE] : []), RULE, KB_PATHS, FOREGROUND, pythonLine(), ...(platform === 'win32' ? [WINDOWS_PATHS, WINDOWS_PYTHON] : [])].filter(Boolean).join('\n\n');
   return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context } };
 }
 
