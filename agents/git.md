@@ -60,10 +60,11 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
    - `environnement-docker.md` has `## Outillage qualité` with a test and a lint command — otherwise Open Question (bloquante) proposing `infra`: a sprint never starts without a test runner, a linter and a CI.
    - The clean-tree gate (rules above): uncommitted source would never reach the worktree.
    - `sprint/<slug>` or `.worktrees/sprint/<slug>` already exists → Open Question: reuse, or clean up (Mode 3). Never overwrite.
+   - Every file or folder the compose mounts from the checkout reaches a worktree: `docker compose config --format json` in the root lists the `bind` sources; one under the root that git ignores (`git check-ignore -q <source>` succeeds) and that no step of `environnement-docker.md` creates → Open Question (bloquante) naming it, before any worktree exists (rieki: an ignored glossary, a failed start, a worktree to remove).
    - `.worktrees/`, `.hosa/` or `.claude/agent-memory-local/` not ignored (`git check-ignore -q <dir>/x` fails) → add the missing ones to `.gitignore`, commit that file alone (`chore: ignore Hosa folders`). Untracked files under them never count as uncommitted source.
 4. `git -C <root> worktree add .worktrees/sprint/<slug> -b sprint/<slug> <base>`; confirm with `git worktree list`.
 5. **Environment:** from the worktree, `docker compose -p <projet>-sprint-<slug> up -d --build` with the sprint's port variables, then `docker_check.py`. With a database: `hosa-dba`'s *état*, *migrer*, *état*.
-6. **Baseline:** the dataset's `## Remise à zéro`, then the full suite. Red → Open Question with two options:
+6. **Baseline:** the dataset's `## Remise à zéro`, then the full suite — every test command of `## Outillage qualité`, the browser tests too when it lists one; a command you can't run is written under `## Baseline` as « non exécuté : <commande> — <raison> », never left out. Red → Open Question with two options:
    - start anyway: record the failures under `## Baseline` in the sprint, so QA doesn't blame the sprint for them;
    - cancel: `docker compose -p … down -v`, `git worktree remove`, `git branch -d`; `state` stays `planned`.
    Lint red on the base → recorded under `## Baseline` the same way.

@@ -112,7 +112,7 @@ type: Revue Relecture
 title: Relecture du cahier des charges
 description: "Anomalies de précision, de complétude et de cohérence, et leur suite"
 tags: [relecture]
-generated: { by: relecture, at: <ISO8601> }
+generated: { by: process:relecture, at: <ISO8601> }
 ---
 ## Anomalies
 - A1 [p1, bloquante | mineure, texte | correction | regle-hosa] — [exigence](<slug>.md) § <section> — <problème précis> — → redaction | → interview | → utilisateur — ouverte

@@ -325,7 +325,7 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
            f"- Réécritures complètes du cache (≥ {fmt(REWRITE)}) : {stats['rewrites'][0]} ({fmt(stats['rewrites'][1])})",
            wake_line(stats),
            "- Passages d'agent les plus longs : " + (", ".join(f"{r['kind'].split(':')[-1]} {r['tools']} appels ({fmt(r['ctx'])})" for r in passes[:3]) or "aucun"),
-           f"- Sprints précédents : " + (f"coût par ticket médian {base:.2f} $ ({len(earlier)} sprint(s))" if base else "aucune mesure"),
+           f"- Sprints précédents : " + (f"coût par ticket médian {base:.2f} $ ({len(earlier)} sprint(s))" if base else "aucune mesure — ce sprint est la première, pas d'écart à commenter"),
            "", "### Propositions"]
     props = []
     if reviews >= 3 and fails / reviews >= 1 / 3 and any("haiku" in m for m in by_model):

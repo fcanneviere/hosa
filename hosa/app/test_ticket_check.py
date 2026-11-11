@@ -92,6 +92,44 @@ class SecurityAndLegalNotes(unittest.TestCase):
         av_spec.loader.exec_module(av)
         self.assertEqual(av.criteria("## Critères d'acceptation\n- CA1 — a\n  * CA2 — b\n"), ["CA1", "CA2"])
 
+    def test_story_with_an_elided_que(self):
+        for story in ("En tant qu'administrateur,", "En tant qu’administrateur,", "En tant que parent,"):
+            self.assertNotIn("story « En tant que … » absente", tc.gaps(self.write("s", "", story + "\n")))
+        self.assertIn("story « En tant que … » absente", tc.gaps(self.write("s", "", "En tant quelconque\n")))
+
+    def test_skipped_stage_note_is_written_from_the_plan_and_accepted(self):
+        plan = self.tickets.parent / "project" / "avancement.md"
+        plan.parent.mkdir()
+        plan.write_text("| Étape | Statut | Date | Détail |\n|---|---|---|---|\n"
+                        "| `securite` | fait | 2026-11-01T10:00:00Z |  |\n"
+                        "| `juridique` | non applicable | 2026-11-01T11:50:34Z | Utilisateur : usage de test |\n",
+                        encoding="utf-8")
+        waiting = "## Note juridique (expert conformité)\nAnalyse juridique pas encore faite — contraintes non déterminées.\n"
+        body = "## Critères d'acceptation\n- CA1 — nominal\n" + waiting + "\n## Suite\nfin\n"
+        p = self.write("import", "", body)
+        self.assertTrue(any("encore au texte d'attente — étape `juridique` écartée" in g for g in tc.gaps(p)))
+        skipped = tc.skipped_stages(self.tickets.parent)
+        self.assertEqual(skipped, {"juridique": "Utilisateur : usage de test"})
+        self.assertEqual(tc.write_skipped(p, skipped), ["## Note juridique (expert conformité)"])
+        text = p.read_text(encoding="utf-8")
+        self.assertIn("## Note juridique (expert conformité)\nNon applicable — étape `juridique` écartée : "
+                      "Utilisateur : usage de test\n\n## Suite\nfin\n", text)
+        self.assertTrue(text.startswith("---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n"))
+        self.assertFalse(any("Note juridique" in g for g in tc.gaps(p)))
+        self.assertEqual(tc.write_skipped(p, skipped), [])  # written once
+        absent = self.write("sans", "", "## Critères d'acceptation\n- CA1 — nominal\n")
+        tc.write_skipped(absent, skipped)
+        self.assertTrue(absent.read_text(encoding="utf-8").endswith(
+            "\n\n## Note juridique (expert conformité)\nNon applicable — étape `juridique` écartée : "
+            "Utilisateur : usage de test\n"))
+        real = self.write("reel", "", JURIDIQUE)
+        self.assertEqual(tc.write_skipped(real, skipped), [])  # a real note is never touched
+
+    def test_non_applicable_note_refused_when_the_plan_keeps_the_stage(self):
+        p = self.write("import", "", "## Note sécurité (expert cybersécurité)\nNon applicable — étape `securite` écartée\n")
+        self.assertIn("section `## Note sécurité (expert cybersécurité)` « Non applicable » alors que le plan "
+                      "d'avancement n'écarte pas l'étape `securite`", tc.gaps(p))
+
     def test_dependency_ranked_after_its_ticket(self):
         self.write("journal", "priority: 43\n", "")
         self.write("fait", "state: done\n", "")

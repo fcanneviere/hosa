@@ -8,7 +8,9 @@ A ticket is complete when it has, in its body:
   - "## Note technique (senior dev)", "## Placement architecture (architecte)",
     "## Placement interface (UX/UI)", "## Note sécurité (expert
     cybersécurité)" and "## Note juridique (expert conformité)" sections
-    holding a real note, not `backlog`'s "pas encore …" fallback line,
+    holding a real note, not `backlog`'s "pas encore …" fallback line — or,
+    for the security and the legal note, the line `Non applicable — étape …`
+    when the progress plan marks that stage `non applicable`,
   - a `depends_on` (if any) naming existing tickets, without a cycle, none
     ranked after this ticket (`priority`),
   - grounded notes (`backlog`'s Grounding Rule): every note carries its
@@ -23,6 +25,10 @@ A ticket is complete when it has, in its body:
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
+      python ticket_check.py <kb-dir> --ecartees [ticket.md ...]
+      First writes that `Non applicable` line in the tickets whose security or
+      legal note is absent, empty or on its fallback line while the plan marks
+      the stage `non applicable` — no agent needed — then checks.
 Exit: 0 all complete, 1 at least one incomplete, 2 bad invocation.
 Stdlib only, so any Python 3.9+ runs it.
 """
@@ -49,6 +55,51 @@ BULLETS = {
     "## Note sécurité (expert cybersécurité)": ("Règles", "Cas d'abus", "Contrôle d'accès", "Journalisation", "Données sensibles"),
     "## Note juridique (expert conformité)": ("Contraintes", "Données personnelles", "Hors logiciel"),
 }
+
+# The stage each note waits for. Set aside by the user (`avancement.py skip`), its note is one line read from the plan:
+# rieki skipped `juridique` and 107 tickets stayed refused until a 3-bullet note was written by hand in each.
+STAGE = {
+    "## Note sécurité (expert cybersécurité)": "securite",
+    "## Note juridique (expert conformité)": "juridique",
+}
+SKIPPED_NOTE = "Non applicable"
+SKIPPED_ROW = re.compile(r"^\|\s*`?([\w-]+)`?\s*\|\s*non applicable\s*\|[^|]*\|\s*(.*?)\s*\|\s*$", re.M)
+
+
+def skipped_stages(kb: Path) -> dict[str, str]:
+    """{stage: detail} of the stages the progress plan marks `non applicable`."""
+    plan = kb / "project" / "avancement.md"
+    return dict(SKIPPED_ROW.findall(plan.read_text(encoding="utf-8"))) if plan.is_file() else {}
+
+
+def skipped_note(stage: str, detail: str) -> str:
+    return f"{SKIPPED_NOTE} — étape `{stage}` écartée" + (f" : {detail}" if detail else "")
+
+
+def write_skipped(path: Path, skipped: dict[str, str]) -> list[str]:
+    """Write the `Non applicable` line of each skipped stage whose note is absent, empty or on its
+    fallback line. Returns the headings written. A real note is never touched."""
+    text = path.read_text(encoding="utf-8")
+    body = split(text)[1]
+    head, written = text[:len(text) - len(body)], []
+    for heading, stage in STAGE.items():
+        if stage not in skipped:
+            continue
+        content, note = section(body, heading), skipped_note(stage, skipped[stage])
+        if content is None:
+            body = body.rstrip("\n") + f"\n\n{heading}\n{note}\n"
+        elif not content or content.startswith(SECTIONS[heading]):
+            lines = body.splitlines()
+            i = next(k for k, line in enumerate(lines) if line.strip() == heading)
+            j = next((k for k in range(i + 1, len(lines)) if re.match(r"^#{1,2} ", lines[k])), len(lines))
+            body = "\n".join(lines[:i + 1] + [note] + ([""] if j < len(lines) else []) + lines[j:]) + "\n"
+        else:
+            continue
+        written.append(heading)
+    if written:
+        path.write_text(head + body, encoding="utf-8", newline="\n")
+    return written
+
 
 # Bullets whose every item is built and tested as an acceptance criterion, not left to the audit or the recette.
 TRACED = {
@@ -199,8 +250,8 @@ def gaps(path: Path) -> list[str]:
     front, body = split(path.read_text(encoding="utf-8"))
     if field(front, "type") != "Ticket":
         return ["pas un `Ticket` (type manquant ou différent)"]
-    missing = []
-    if not re.search(r"^En tant que\b", body, re.M):
+    missing, skipped = [], skipped_stages(path.parent.parent)
+    if not re.search(r"^En tant qu(?:e\b|['’])", body, re.M):  # « En tant qu'administrateur » is a story too (rieki)
         missing.append("story « En tant que … » absente")
     if not re.search(r"^Lié à\s*:", body, re.M):
         missing.append("ligne « Lié à : » absente")
@@ -210,8 +261,14 @@ def gaps(path: Path) -> list[str]:
             missing.append(f"section `{heading}` absente")
         elif not content:
             missing.append(f"section `{heading}` vide")
+        elif heading in STAGE and content.startswith(SKIPPED_NOTE):
+            if STAGE[heading] not in skipped:
+                missing.append(f"section `{heading}` « {SKIPPED_NOTE} » alors que le plan d'avancement "
+                               f"n'écarte pas l'étape `{STAGE[heading]}`")
         elif fallback and content.startswith(fallback):
-            missing.append(f"section `{heading}` encore au texte d'attente")
+            missing.append(f"section `{heading}` encore au texte d'attente" + (
+                f" — étape `{STAGE[heading]}` écartée : `ticket_check <kb> --ecartees` écrit la note"
+                if STAGE.get(heading) in skipped else ""))
         elif fallback is None and not re.search(r"^\s*[-*] \S", content, re.M):
             missing.append(f"section `{heading}` sans aucun scénario")
         else:
@@ -269,8 +326,10 @@ def late_dependencies(path: Path, front: str) -> list[str]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
-        print("usage: ticket_check.py <kb-dir> [ticket.md ...]", file=sys.stderr)
+        print("usage: ticket_check.py <kb-dir> [--ecartees] [ticket.md ...]", file=sys.stderr)
         return 2
+    fill = "--ecartees" in argv
+    argv = [a for a in argv if a != "--ecartees"]
     kb = Path(argv[0])
     if not kb.is_dir():
         print(f"error: {kb} is not a directory", file=sys.stderr)
@@ -281,6 +340,11 @@ def main(argv: list[str]) -> int:
         paths = [p for p in sorted((kb / "tickets").glob("*.md"))
                  if p.name not in ("index.md", "log.md")
                  and field(split(p.read_text(encoding="utf-8"))[0], "state") == "todo"]
+    if fill:
+        skipped = skipped_stages(kb)
+        filled = [p.name for p in paths if p.is_file() and write_skipped(p, skipped)]
+        print(f"{len(filled)} ticket(s) : note « {SKIPPED_NOTE} » écrite"
+              + (f" (étapes écartées : {', '.join(s for s in STAGE.values() if s in skipped)})" if filled else ""))
     incomplete = 0
     for p in paths:
         if not p.is_file():

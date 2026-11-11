@@ -114,6 +114,8 @@ Read `kb/infra/` for the `Infra` entry's `## Documentation d'interface` heading 
 [Tout est nommé avec les termes de `kb/interface/lexique.md` ; un écran ou un terme absent est ajouté via `interface`, jamais inventé ici]
 ```
 
+A component never hides what a criterion asks to see: when a `CAn` demands a refusal message (a wrong file type, a value out of range), the placement keeps the server-side refusal and its message reachable — no client-side filter or disabled control that makes the refused case impossible to enter (rieki: `type=` on the upload field hid the French refusal CA2 required). Reread each `CAn` naming a message against **Composants** and **États** before writing the note.
+
 If no interface documentation path is recorded yet (this skill invoked standalone, before `interface` ran), append instead:
 
 ```markdown
@@ -168,5 +170,7 @@ If `kb/cdc/juridique.md` doesn't exist yet (`juridique` never ran), append inste
 ## Note juridique (expert conformité)
 Analyse juridique pas encore faite — contraintes non déterminées.
 ```
+
+A `securite` or `juridique` stage the progress plan marks `non applicable` gets neither a note from you nor a criterion: `backlog` writes its line (`Non applicable — étape … écartée : …`) with `ticket_check --ecartees`. Leave that line as it is.
 
 Never block ticket creation on a missing analysis.
