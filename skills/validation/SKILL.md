@@ -47,7 +47,7 @@ Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with
 ## Step 3: Apply the Verdict
 
 - **Accept:** `hosa-product-owner` writes `state: done` and `verified: { by: hosa-product-owner/1.0, at: <ISO8601> }` on the ticket directly (it already owns `kb/tickets/` writes) — confirm it did.
-- **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix). Record the round first: `avancement.py … back validation develop --sprint <slug> --ticket <ticket> --detail "<manque>"` (it reopens `develop`, then `qa`), or `back validation qa …` for a re-run only. Refused (exit 1: two rounds already on this ticket) → show the user what each round tried and let them decide (`--force`, or the ticket goes back to `hosa-product-owner`).
+- **Reject:** ticket stays `doing`/`blocked`. Relay the missing criterion/result to the user, and suggest the right next skill: `develop <ticket> correction` (an implementation gap or a bug, fixed in this sprint), or `qa` (a recette or a test to re-run after a fix). Record the round first: `avancement.py … back validation develop --sprint <slug> --ticket <ticket> --detail "<manque>"` (it reopens `develop`, `audit`, then `qa`), or `back validation qa …` for a re-run only. Refused (exit 1: two rounds already on this ticket) → show the user what each round tried and let them decide (`--force`, or the ticket goes back to `hosa-product-owner`).
 
 ## Step 3b: Sprint Demo
 

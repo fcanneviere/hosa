@@ -5,7 +5,7 @@ description: "Use to ship merged work: scope done tickets, quality gate (`qualit
 
 # Livraison
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start livraison --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block livraison --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done livraison --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start livraison --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block livraison --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done livraison --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 `git` Mode 2 merges a sprint locally; nothing after that checks the whole, versions it, deploys it, or tells anyone what shipped. This skill closes that gap: scope what's new, pass the quality gate, write it down, tag a tested version, deploy it if asked, record the release, and push only if asked.
 
@@ -169,7 +169,7 @@ generated: { by: human:<user>, at: <ISO8601> }
 
 `## Retour arrière` is filled before the release, not after an incident: no rollback mechanism, or a migration with no verified way back → say so there; a release with no way back is the user's informed choice. The user ticks `## Vérification après déploiement` after deploying.
 
-Overwrite the previous version of this file — it's a pointer to "the last release" of its type, not a history; the history is the changelog, the tags, and this file's own git history.
+This file is the stage's proof: `done livraison` refuses without one of the two, with its `## Version`. Overwrite the previous version of this file — it's a pointer to "the last release" of its type, not a history; the history is the changelog, the tags, and this file's own git history.
 
 ## Step 8: Push / PR (Optional)
 

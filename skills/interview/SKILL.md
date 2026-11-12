@@ -5,7 +5,7 @@ description: "Use to gather the cahier des charges: business processes, who does
 
 # Interview
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interview`; refused → name the missing stage to the user and stop. Stopped on a user question: `block interview --detail "<question>"`. Once the stage's output is written and committed: `done interview`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interview`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block interview --detail "<question>"`. Once the stage's output is written and committed: `done interview`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 **Tâches.** One task per dispatch (Step 2): `avancement.py task add interview <persona-slug>-<k> --agent hosa-key-user --objet "<persona> : <processus>"`, all added before the first dispatch. When its answers are confirmed (Step 3) and written in the compte rendu: `task done interview <id> --sortie kb/cdc/interviews/<fichier>`. After a `/clear`, resume at the first open task and the first process not ticked in the compte rendu; never ask again what a ticked process holds.
 

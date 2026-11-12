@@ -5,7 +5,7 @@ description: "Use to put every basic software function (administration, users, r
 
 # Fondamentaux
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start fondamentaux`; refused → name the missing stage to the user and stop. Stopped on a user question: `block fondamentaux --detail "<question>"`. Once the stage's output is written and committed: `done fondamentaux`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start fondamentaux`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block fondamentaux --detail "<question>"`. Once the stage's output is written and committed: `done fondamentaux`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 **Tâches.** After `start`: `avancement.py task add fondamentaux couverture --agent hosa-product-owner` and `task add fondamentaux ecriture --agent hosa-product-owner`. `couverture` is done once `## Choix validés` is written (Step 3): `task done fondamentaux couverture --sortie kb/cdc/fondamentaux.md`; `ecriture` → `--sortie` the exigences it wrote and `kb/cdc/fondamentaux.md`. Stopped on an Open Question → `task block fondamentaux <id> --detail "<la question>"`, and `task add` the same id again once answered.
 
@@ -85,7 +85,7 @@ Dispatch `hosa-product-owner` **with `model: opus`** — judging what the cahier
 
 Show the user every **Manquant** item at once, as one list: "Voici les fonctions de base absentes du cahier des charges. Je les ajoute toutes, sauf celles que tu rayes :" — each with the PO's project-specific example. One answer, not one question per item. An item struck out needs a one-line reason ("pas de données externes", "application mono-utilisateur"…), recorded as is. Silence on an item means it stays in.
 
-With the same list, show the `espace` the PO proposes for any functional exigence that doesn't have one yet — confirmed together, corrected if wrong.
+With the same list, show the `espace` the PO proposes for any functional exigence that doesn't have one yet — confirmed together, corrected if wrong. Reopened by `back interface fondamentaux`: each `stable` exigence given its `espace` goes back to `status: draft` without `verified` — `done fondamentaux` refuses until each exigence the loop named (`[exigences : …]` in `## Boucles`) has its `espace` and is unsigned; `relecture` then `contestation` run again on them, and `done contestation` refuses until the user signs them again.
 
 Then ask, grouped, only what's needed to write the items kept: the actor or rule the PO couldn't derive, the concrete target for each NFR (number, level, threshold — "pas encore de chiffre" is a valid answer, never invented) and how it is measured, and the priority and lot of each kept item as one proposed table (`redaction`, frontmatter: a basic function is usually `indispensable`, in the lot of the first process that needs it).
 

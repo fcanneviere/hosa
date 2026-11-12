@@ -5,7 +5,7 @@ description: "Use to put every legal constraint (RGPD, AI Act, cookies, LCEN, co
 
 # Juridique
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start juridique`; refused → name the missing stage to the user and stop. Stopped on a user question: `block juridique --detail "<question>"`. Once the stage's output is written and committed: `done juridique`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (the Livraison mode excepted: not a stage, no call): `avancement.py start juridique`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block juridique --detail "<question>"`. Once the stage's output is written and committed: `done juridique`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 **Tâches.** After `start`: `avancement.py task add juridique phase-1 --agent hosa-legal` and `task add juridique phase-2 --agent hosa-legal`. `phase-1` is done once `## Choix validés` is written (Step 2): `task done juridique phase-1 --sortie kb/cdc/juridique.md`; `phase-2` → `--sortie` the legal exigences and `kb/cdc/juridique.md`. Stopped on an Open Question → `task block juridique <id> --detail "<la question>"`, and `task add` the same id again once answered.
 
@@ -35,7 +35,7 @@ Checkpoint hosa-git (Mode 3), puis enchaîne : securite (Analyse)
 
 ## Trigger
 
-Manual: `/juridique [analyse|livraison]`. Auto: immediately after `fondamentaux`; "vérifie la conformité RGPD", "est-ce que l'AI Act s'applique ?", "quelles contraintes juridiques ?", "conformité dès la conception". `contestation` invokes Analyse itself if `kb/cdc/juridique.md` is missing or out of date; `livraison` invokes Livraison. Progress-plan stage: `juridique` (CDC pipeline).
+Manual: `/juridique [analyse|livraison]`. Auto: immediately after `fondamentaux`; "vérifie la conformité RGPD", "est-ce que l'AI Act s'applique ?", "quelles contraintes juridiques ?", "conformité dès la conception". `contestation` invokes Analyse itself if `kb/cdc/juridique.md` is missing or out of date; `livraison` invokes Livraison. Progress-plan stage: `juridique` (CDC pipeline); the Livraison mode is not a stage: no `start`, no `done`.
 
 ---
 

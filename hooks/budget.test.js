@@ -32,6 +32,15 @@ test('a heavy session that closed a stage is stopped once before the next stage'
   assert.equal(skill('hosa:qa'), null);                 // the user chose to stay
 });
 
+test('a loop reopens stages: the ones closed again after it are seen', () => {
+  setPlan(4); setContext(80000);
+  assert.equal(skill('hosa:qa', 's-loop'), null);       // baseline: 4 closed
+  setPlan(3);                                           // `back qa develop` reopened one
+  assert.equal(skill('hosa:develop', 's-loop'), null);
+  setPlan(4);                                           // closed again in this session
+  assert.ok(denied(skill('hosa:qa', 's-loop')));
+});
+
 test('the stages come from pipeline.json: `audit` runs `qualite`, a stage too', () => {
   setPlan(3); setContext(80000);
   assert.equal(skill('hosa:develop', 's6'), null);

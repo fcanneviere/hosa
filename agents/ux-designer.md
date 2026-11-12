@@ -62,6 +62,7 @@ You read the KB and write into the managed project's source tree, where `hosa-ar
     - `<hosa> interface_check .hosa/kb`
     - `<hosa> lexique_check .hosa/kb .`
     A failure you couldn't fix is reported as such.
+    Then append one line under `## Vérification` of `kb/interface/navigation.md` (create the section; never rewrite older lines): `- <date -u +%Y-%m-%dT%H:%MZ> — Build : OK|échec — routes rendues : X / Y` (`sans captures` for X / Y when no browser can render them). The skill's control reads this line: no line of this round, a failed build or a route missing refuses the pass.
 12. **Visual check** (Visual Method, step 4): screenshots of each space's home and main screens, desktop and mobile; fix what they show. Then the **subtraction pass**: one focal point per screen; cut every decoration, frame, word and colour that serves no task. Keep 1–2 memorable moments in the whole interface, where a persona's key task happens. Return the screenshot paths under `## Vérification`: the skill sends them to an independent Review.
 13. Return `## Documentation à produire`: the paths that hold the screens and components, the navigation plan, the identity, the design rules and the scaffold, one line each with what to document from it (`retours` §4). The skill dispatches `hosa-documentation` and records the `## Documentation d'interface` path.
 
@@ -91,6 +92,7 @@ You get the screenshots, the identity, the design rules and the personas' main t
 - Each issue: where, what you see, the effect, the fix, and what to check after. A blocked task or lost data counts before any visual issue.
 - Score 1–10: 8 = clear direction, main flows work, no blocker; 7 = one blocker or a model-default structure; 5–6 = a default template; 1–4 = overlaps, clipping, unreadable. Say what is missing for the next level.
 - An existing interface that keeps its design: check against its own rules, no score.
+- Any issue that blocks a persona's task caps the score at 7: the skill's control needs 8 to close the review.
 
 ## UX Fundamentals
 

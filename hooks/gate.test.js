@@ -160,3 +160,9 @@ test('two FAIL reviews in a row stop the correction loop until the user decides'
   r = project({ '.hosa/kb/tickets/t1.md': ticket(`${two}\n- 2026-10-11 — DÉCISION — continuer, une correction de plus`) });
   assert.equal(dev(r, 'correction t1'), null);                               // the user chose: count restarts
 });
+
+test('the review loop\'s bound is the graph\'s, not a second number in the hook', () => {
+  const g = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'skills', 'status', 'scripts', 'pipeline.json'), 'utf8'));
+  assert.equal(g.tasks.controls.find((c) => c.stage === 'develop' && c.id === '*.revue').fails, 2);
+  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, 'gate.js'), 'utf8'), /LOOP_MAX = \d/);
+});

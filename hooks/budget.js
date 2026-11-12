@@ -199,7 +199,9 @@ function stageGate(p) {
   if (!STAGES.has(skill)) return null;
   const s = load(file);
   if (s.closed == null) { save(file, { ...s, closed }); return null; }
-  if (closed <= s.closed || s.refused === closed) return null;
+  // a loop (`back`) reopened stages: count from there, or the stages closed again would never be seen
+  if (closed < s.closed) { save(file, { ...s, closed, refused: null }); return null; }
+  if (closed === s.closed || s.refused === closed) return null;
   const start = sessionStart(p, file, s);
   if (now < start + HEAVY) return null;
   save(file, { ...load(file), refused: closed });

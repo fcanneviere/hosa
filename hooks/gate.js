@@ -107,7 +107,7 @@ function mergeGate(call) {
   if (!root) return null;
   // One source of truth for a stage's proofs: avancement.py `check`.
   const r = spawnSync(python(), [AVANCEMENT, path.join(root, '.hosa', 'kb'), 'check', 'validation', '--sprint', slug],
-    { encoding: 'utf8', timeout: 10000, windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
+    { encoding: 'utf8', timeout: 4000, windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
   if (r.status !== 1) return null; // passed, or the check itself failed: fail-open
   return `sprint ${slug} can't land, the QA gate fails:
 ${r.stdout.trim()}
@@ -178,7 +178,13 @@ function scriptGate(cmd) {
 
 // The review loop's bound (`develop` Step 4c): two FAIL in a row on a ticket → the user decides, not a third
 // correction. Counted on the ticket's `## Revue` lines; a `- <date> — DÉCISION — …` line restarts the count.
-const LOOP_MAX = 2;
+// The bound is the graph's (`tasks.controls`, `*.revue`, `fails`): one definition. Unreadable → 2.
+const LOOP_MAX = (() => {
+  try {
+    const g = JSON.parse(fs.readFileSync(path.join(path.dirname(AVANCEMENT), 'pipeline.json'), 'utf8'));
+    return g.tasks.controls.find((c) => c.stage === 'develop' && c.fails).fails || 2;
+  } catch (e) { return 2; }
+})();
 function failRun(text) {
   let run = 0;
   for (const line of (section(text, 'Revue') || '').split(/\r?\n/).filter((l) => /^\s*-\s/.test(l))) {

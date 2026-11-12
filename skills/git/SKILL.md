@@ -33,7 +33,7 @@ From the request, determine whether this is a start (Mode 1), a finish (Mode 2),
 
 ## Step 1b: Progress Plan
 
-Mode 1 is stage `git-demarrage`, Mode 2 is `git-fusion` (`avancement.py <root>/.hosa/kb start|done <stage> --sprint <slug>`). `start` refuses Mode 1 before `qa-plan` is done, and Mode 2 before `validation` is done — do those first, or use `--force` only once the user has confirmed going out of order. Mark `done` only when `hosa-git` reports success; `block` with its reason otherwise.
+Mode 1 is stage `git-demarrage`, Mode 2 is `git-fusion` (`avancement.py <root>/.hosa/kb start|done <stage> --sprint <slug>`). `start` refuses Mode 1 before `qa-plan` is done, and Mode 2 before `validation` is done — do those first, or use `--force` only once the user has confirmed going out of order. Mark `done` only when `hosa-git` reports success; `block` with its reason otherwise. Mode 1 « en rattachement » (the sprint already started, its environment missing) is not a stage: no `start`, no `done`.
 
 ## Step 2: Dispatch `hosa-git`
 

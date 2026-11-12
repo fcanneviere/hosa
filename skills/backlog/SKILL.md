@@ -5,7 +5,7 @@ description: "Use to turn every stable Exigence into Product Backlog tickets —
 
 # Backlog
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start backlog`; refused → name the missing stage to the user and stop. Stopped on a user question: `block backlog --detail "<question>"`. Once the stage's output is written and committed: `done backlog`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (Single-Ticket Mode excepted: not a stage, no call): `avancement.py start backlog`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block backlog --detail "<question>"`. Once the stage's output is written and committed: `done backlog`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 **Tâches.** A lot is **8 tickets at most**, not 8 exigences (rieki: 2 exigences gave 52 tickets, one pass wrote 39 of them up to 273 k tokens of context). `task done stories-<k>` refuses more (`lot`, pipeline.json). An exigence that splits into more: its first pass decides the whole split, writes the first 8 and lists the others under `## Reprise` (slug — scope — `depends_on`, one line each); the next pass is `stories-<k>b` on that list.
 A lot is a graph of four tasks, the judge last: `stories-<k>` → `securite-<k>` and `juridique-<k>` → `juge-<k>`. Each is refused at `task add` before the ones it comes after are done or skipped (`after`, pipeline.json).
@@ -143,7 +143,7 @@ Every structuration skill ends with its `hosa-git` checkpoint, so the foundation
 
 ## Single-Ticket Mode
 
-Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already meets the Grounding Rule.
+Not a stage: no `start`, no `done` — the `backlog` stage stays as it is. Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already meets the Grounding Rule.
 
 1. Run the checker on the ticket. Already complete → say so and stop.
 2. Story, `Lié à :` or `## Critères d'acceptation` missing → dispatch `hosa-product-owner` (Responsibility 4) to add them, with the concept that surfaced the ticket. It returns an Open Question instead of guessing a persona or a scenario — ask the user and redispatch.

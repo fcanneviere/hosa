@@ -5,7 +5,7 @@ description: "Use to set up or update the managed project's identity and persona
 
 # Hosa
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Init flow, right after the Bootstrap (the KB exists from then on): `avancement.py start hosa`; refused → name the missing stage to the user and stop. Stopped on a user question: `block hosa --detail "<question>"`. Once the stage's output is written and committed: `done hosa`. Updating an existing identity or persona is not a stage: no call. `done hosa` refuses an identity still `status: draft`, a project with no persona, and a persona with no `## Besoins`.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Init flow, right after the Bootstrap (the KB exists from then on): `avancement.py start hosa`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block hosa --detail "<question>"`. Once the stage's output is written and committed: `done hosa`. Updating an existing identity or persona, an out-of-band note and « qui a demandé X ? » are not a stage: no call. `done hosa` refuses an identity still `status: draft`, a project with no persona, and a persona with no `## Besoins`.
 
 **Tâches.** One task per persona to enrich: `avancement.py task add hosa persona-<slug> --agent hosa-key-user --objet <persona>`; `task done hosa persona-<slug> --sortie kb/personnas/<slug>.md` once it returns no Open Question; its questions waiting for the user → `task block hosa persona-<slug> --detail "<les questions>"`, and `task add` the same id again once answered.
 

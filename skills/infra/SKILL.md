@@ -5,7 +5,7 @@ description: "Use to set up the managed project's Docker environment, its stack 
 
 # Infra
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start infra`; refused → name the missing stage to the user and stop. Stopped on a user question: `block infra --detail "<question>"`. Once the stage's output is written and committed: `done infra`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (Modes 2 and 3 excepted: not a stage, no call): `avancement.py start infra`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block infra --detail "<question>"`. Once the stage's output is written and committed: `done infra`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Turns a chosen stack into a real, running, documented Docker environment for the managed project — the environment every later stage (and every day-to-day command against the managed project) runs inside. This skill is the only one that talks to the user or dispatches other agents on `hosa-infra`'s behalf — the actual provisioning is `hosa-infra`'s.
 
@@ -48,6 +48,8 @@ Dispatch `hosa-documentation` (Mode 1) with the lines `hosa-infra` returned unde
 Dispatched by `livraison` only (`hosa-infra` Mode 3). Relay its Open Questions on the target, access and rollback to the user.
 
 ## Mode 2 — Relay an On-Demand Installation Request
+
+Modes 2 and 3 are not a stage: no `start`, no `done` — the `infra` stage stays as it is.
 
 Any other agent, when it needs a server/framework/dependency it can't provision itself, returns that need under its own `## Installation nécessaire` field instead of dispatching `hosa-infra` directly (no agent dispatches another agent). Whichever skill dispatched that agent handles the relay:
 

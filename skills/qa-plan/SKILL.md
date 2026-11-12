@@ -5,7 +5,7 @@ description: "Use to add the tests to a sprint before it starts: one test plan p
 
 # QA Plan
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start qa-plan --sprint <slug>`; refused → name the missing stage to the user and stop. Stopped on a user question: `block qa-plan --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done qa-plan --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (a ticket added to a sprint whose `qa-plan` is done excepted: no call): `avancement.py start qa-plan --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block qa-plan --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done qa-plan --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, before the sprint starts — so `develop` can write each ticket's tests before its code, and `qa` has something concrete to execute. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
 
@@ -29,7 +29,7 @@ Propose de démarrer le sprint (git Mode 1)
 
 ## Trigger
 
-Manual: `/qa-plan <slug-sprint>`. Auto: immediately after `sprint` (part of composing it), and for any ticket added to a sprint later, or "prépare les tests du sprint", "planifie les tests techniques du sprint".
+Manual: `/qa-plan <slug-sprint>`. Auto: immediately after `sprint` (part of composing it), and for any ticket added to a sprint later (not a stage then: no `start`, the stage stays done; `check qa-plan --sprint <slug>` names the plan to write), or "prépare les tests du sprint", "planifie les tests techniques du sprint".
 
 ---
 

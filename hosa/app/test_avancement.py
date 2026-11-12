@@ -1155,6 +1155,301 @@ class Docs(unittest.TestCase):
                 self.assertEqual(re.findall(r"`([\w-]+)`", line)[:len(want)], want, f"{doc} : {start}")
 
 
+class Bounds(unittest.TestCase):
+    """The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test."""
+
+    def test_two_causes_in_turn_do_not_restart_a_loop_s_count(self):
+        k = kb({})
+        for s in ("sprint", "qa-plan", "git-demarrage", "develop", "audit"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        back = lambda c: run(k, "back", "qa", "develop", "--sprint", "s1", "--cause", c, "--detail", "KO")[0]  # noqa: E731
+        self.assertEqual([back(c) for c in "ABABAB"], [0, 0, 0, 0, 1, 1])
+        loops = av.load_loops(k / "project" / "avancement.md")
+        self.assertEqual({lp["cause"]: lp["tours"] for lp in loops}, {"A": 2, "B": 2})
+        run(k, "done", "qa", "--sprint", "s1", "--force")  # the stage came out clean: every cause's row closes
+        self.assertEqual({lp["etat"] for lp in av.load_loops(k / "project" / "avancement.md")}, {av.SHUT})
+        self.assertEqual(back("A"), 0)
+
+    def test_two_causes_in_turn_do_not_restart_a_task_s_refusals(self):
+        k = kb({"stack/vide.md": ""})
+        run(k, "start", "hosa")
+        run(k, "task", "add", "hosa", "t", "--agent", "hosa-x")
+        path = k / "project" / "avancement.md"
+        tasks = av.load_tasks(path)
+        tasks[0]["detail"] = "refus 2/2 (sortie ; okf 2) — vide — kb/stack/vide.md"
+        av.save(path, *av.load(path), None, tasks)
+        self.assertEqual(av.refused(av.load_tasks(path)[0]), {"sortie": 2, "okf": 2})
+        code, out = run(k, "task", "done", "hosa", "t", "--sortie", "kb/stack/vide.md")
+        self.assertEqual((code, "Borne atteinte" in out), (1, True))
+        t = av.load_tasks(path)[0]
+        self.assertEqual((t["statut"], av.refused(t)), (av.BLOCKED, {"sortie": 3, "okf": 2}))
+
+    def test_a_task_blocked_at_its_bound_is_added_again_on_the_user_s_word_only(self):
+        k = kb({})
+        run(k, "start", "hosa")
+        run(k, "task", "add", "hosa", "t", "--agent", "hosa-x")
+        for _ in range(3):
+            run(k, "task", "done", "hosa", "t", "--sortie", "kb/absent.md")
+        code, out = run(k, "task", "add", "hosa", "t", "--agent", "hosa-x")
+        self.assertEqual((code, "bloquée à sa borne" in out), (1, True))
+        self.assertEqual(av.load_tasks(k / "project" / "avancement.md")[0]["statut"], av.BLOCKED)
+        self.assertEqual(run(k, "task", "add", "hosa", "t", "--agent", "hosa-x", "--force")[0], 0)
+        run(k, "task", "block", "hosa", "t", "--detail", "Q1. A ou B ?")  # blocked on a question: no bound, re-added freely
+        self.assertEqual(run(k, "task", "add", "hosa", "t", "--agent", "hosa-x")[0], 0)
+
+    def test_progress_does_not_open_a_stage_past_start_s_order(self):
+        k = kb({})
+        code, out = run(k, "progress", "backlog", "--detail", "x")
+        self.assertEqual((code, "`start backlog` d'abord" in out), (1, True))
+        run(k, "start", "hosa")
+        self.assertEqual(run(k, "progress", "hosa", "--detail", "x")[0], 0)
+
+    def test_a_detail_on_two_lines_keeps_the_stage_s_row(self):
+        k = kb({})
+        run(k, "start", "hosa")
+        run(k, "progress", "hosa", "--detail", "ligne 1\n## Tâches\nligne 3 | x")
+        sections, resume = av.load(k / "project" / "avancement.md")
+        self.assertEqual(sections["Cahier des charges"][0][1:4:2], [av.DOING, "ligne 1 ## Tâches ligne 3 / x"])
+        self.assertIn("ligne 3", resume)  # the resume point keeps every line, none read as a section
+
+    def test_a_blocked_stage_keeps_its_questions_under_a_later_resume_point(self):
+        k = kb({})
+        run(k, "start", "hosa")
+        run(k, "block", "hosa", "--detail", "Q1. A ou B ?\nQ2. C ou D ?")
+        run(k, "reprise", "autre chose")
+        _, resume = av.load(k / "project" / "avancement.md")
+        self.assertTrue(resume.startswith("- Bloqué : `hosa` — Q1. A ou B ?\nQ2. C ou D ?\n- Depuis le blocage :"))
+        self.assertIn("autre chose", resume)
+        run(k, "reprise", "une suite")  # the block once, the latest action after it
+        _, resume = av.load(k / "project" / "avancement.md")
+        self.assertEqual((resume.count("Q1. A ou B ?"), "autre chose" in resume, "une suite" in resume), (1, False, True))
+        self.assertEqual(run(k, "start", "hosa")[0], 1)  # still waiting for Q1 and Q2
+        run(k, "reponse", "hosa", "--detail", "Q1 a, Q2 b")
+        self.assertEqual(run(k, "progress", "hosa", "--detail", "suite")[0], 0)
+
+    def test_skip_clears_the_stage_s_tasks_and_closes_its_loops(self):
+        k = kb({})
+        closed_until(k, "securite")
+        run(k, "back", "relecture", "redaction", "--detail", "A2")
+        run(k, "start", "relecture", "--force")
+        run(k, "task", "add", "relecture", "t", "--agent", "hosa-challenger")
+        run(k, "skip", "relecture", "--detail", "écartée par l'utilisateur")
+        path = k / "project" / "avancement.md"
+        self.assertEqual((av.load_tasks(path), [lp["etat"] for lp in av.load_loops(path)]), ([], [av.SHUT]))
+
+    def test_sprint_on_an_upstream_stage_is_ignored(self):
+        k = kb({})
+        closed_until(k, "relecture")
+        run(k, "back", "relecture", "redaction", "--sprint", "s1", "--detail", "A2")
+        run(k, "done", "redaction", "--force")
+        run(k, "done", "relecture", "--force")
+        lp = av.load_loops(k / "project" / "avancement.md")[0]
+        self.assertEqual((lp["scope"], lp["etat"]), ("", av.SHUT))
+
+    def test_livraison_needs_its_release_record(self):
+        k = kb({"sprints/s1.md": SPRINT})
+        self.assertIn("derniere-livraison.md", av.check(k, "livraison", "s1")[0])
+        (k / "infra").mkdir()
+        (k / "infra" / "derniere-livraison-test.md").write_text("---\ntype: Infra\n---\n## Version\n1.0\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "livraison", "s1"), [])
+
+    def test_one_writer_of_the_plan_at_a_time(self):
+        import threading
+        k, order = kb({}), []
+        with unittest.mock.patch.dict(os.environ, {"HOSA_STATE_DIR": str(k)}):
+            def second():
+                with av.locked(k):
+                    order.append("second")
+            with av.locked(k):
+                t = threading.Thread(target=second)
+                t.start()
+                t.join(0.3)
+                order.append("first")
+            t.join(5)
+        self.assertEqual(order, ["first", "second"])
+        self.assertEqual(list(k.glob("*.lock")), [])
+
+    def test_a_checker_that_crashes_is_said_and_blocks_nothing(self):
+        crash = unittest.mock.Mock(returncode=1, stdout="")
+        err = io.StringIO()
+        with unittest.mock.patch.object(av, "run_script", return_value=crash), contextlib.redirect_stderr(err):
+            self.assertEqual(av.script("backlog/scripts/ticket_check.py", "x"), [])
+        self.assertIn("contrôleur `ticket_check` pas exécuté", err.getvalue())
+
+    def test_the_graph_names_only_what_exists(self):
+        stages = {s for _, ss in av.PIPELINES for s in ss} | set(av.SPRINT)
+        self.assertEqual(len(stages), sum(len(ss) for _, ss in av.PIPELINES) + len(av.SPRINT))  # no stage twice
+        self.assertLessEqual(set(av.SKILL), stages)
+        self.assertLessEqual(set(av.GRAPH["dispatch"]), stages)
+        root = SCRIPT.parents[3]
+        for s in stages | av.INNER:  # each stage has its skill, each inner loop too
+            self.assertTrue((root / "skills" / av.SKILL.get(s, s) / "SKILL.md").is_file(), s)
+        seen = set()
+        for e in av.LOOPS:
+            for t in e["to"]:  # one edge per (from, to): `edge` takes the first
+                self.assertNotIn((e["from"], t), seen)
+                seen.add((e["from"], t))
+            if e["from"] not in av.INNER:  # `then` runs in order between `to` and `from`
+                pipe = av.SPRINT if e["from"] in av.SPRINT else [s for _, ss in av.PIPELINES for s in ss]
+                at = [pipe.index(s) for s in e.get("then", [])]
+                self.assertEqual(at, sorted(at), e)
+                self.assertTrue(all(max(pipe.index(t) for t in e["to"]) < i for i in at), e)
+        ids = [c["id"] for c in av.TASKS["controls"]]
+        for c in av.TASKS["controls"]:
+            self.assertIn(c["stage"], stages)
+            self.assertLessEqual(set(c.get("check", [])), set(av.CONTROLS))
+            for ref in c.get("after", []) + [q["to"] for q in c.get("juge", [])]:
+                self.assertIn(ref, ids, c["id"])
+        for stage, rule in av.GRAPH["dispatch"].items():
+            for agent in rule.get("model", {}):
+                self.assertTrue((root / "agents" / f"{agent.removeprefix('hosa-')}.md").is_file(), agent)
+
+
+class LoopsClosed(unittest.TestCase):
+    """The audit's five points left open, 2026-11-12: each one is now a refusal."""
+
+    def test_the_interface_gate_is_a_task_control_bounded_by_cause(self):
+        k = kb({})
+        run(k, "start", "interface", "--force")
+        run(k, "task", "add", "interface", "3c", "--agent", "hosa-ux-designer")
+        out_file = Path(tempfile.mkdtemp()) / "Accueil.tsx"  # the scaffold's code: outside the KB, no OKF
+        out_file.write_text("x", encoding="utf-8")
+        gaps = ["interface_check : écran « Accueil » sans espace (front-office / back-office)",
+                "interface_check : exigence `e1` sans `espace` (front-office / back-office) — à préciser par le PO"]
+        with unittest.mock.patch.object(av, "interface_gaps", return_value=gaps):
+            for n in (1, 2):
+                code, out = run(k, "task", "done", "interface", "3c", "--sortie", str(out_file))
+                self.assertEqual((code, f"refusée par `interface` (refus {n}/2)" in out, "Accueil" in out, "`e1`" in out),
+                                 (1, True, True, False))  # a missing `espace` is the PO's: never the designer's round
+            run(k, "task", "add", "interface", "3c", "--agent", "hosa-ux-designer")  # a new round keeps the count
+            code, out = run(k, "task", "done", "interface", "3c", "--sortie", str(out_file))
+            self.assertEqual((code, "Borne atteinte" in out), (1, True))
+        with unittest.mock.patch.object(av, "interface_gaps", return_value=gaps[1:]), \
+                unittest.mock.patch.object(av, "verification_gaps", return_value=[]):
+            run(k, "task", "add", "interface", "3c", "--agent", "hosa-ux-designer", "--force")
+            self.assertEqual(run(k, "task", "done", "interface", "3c", "--sortie", str(out_file))[0], 0)
+
+    def test_3c_s_build_and_routes_are_counted_by_its_control(self):
+        nav = "---\ntype: Plan de navigation\ntitle: N\ndescription: d\ntags: [x]\n---\n## Vérification\n"
+        k = kb({"interface/navigation.md": nav + "- 2026-01-01T10:00Z — Build : OK — routes rendues : 3 / 3\n"})
+        t = {"stage": "interface", "id": "3c", "at": av.now()}
+        self.assertIn("de ce tour", av.verification_gaps(k, t)[0])  # an OK of an older round proves nothing
+        stamp = av.now()[:16] + "Z"
+        for line, want in ((f"- {stamp} — Build : échec — routes rendues : 3 / 3", ["build en échec"]),
+                           (f"- {stamp} — Build : OK — routes rendues : 2 / 3", ["routes rendues 2 / 3"]),
+                           (f"- {stamp} — Build : OK — routes rendues : sans captures", []),
+                           (f"- {stamp} — Build : OK — routes rendues : 3 / 3", [])):
+            (k / "interface" / "navigation.md").write_text(nav + line + "\n", encoding="utf-8")
+            self.assertEqual([g.split(" — ")[0] for g in av.verification_gaps(k, t)], want, line)
+
+    def test_the_espace_loop_names_its_exigences_and_fondamentaux_unsigns_them(self):
+        ex = "---\ntype: Exigence\nstatus: stable\nverified: human:u\n---\n## Exigence\nx\n"
+        k = kb({"cdc/e1.md": ex, "cdc/fondamentaux.md": "---\ntype: Revue Fondamentaux\n---\n## Bilan\nok\n"})
+        closed_until(k, "interface")
+        with unittest.mock.patch.object(av, "interface_gaps", return_value=[
+                "interface_check : exigence `e1` sans `espace` (front-office / back-office) — à préciser par le PO"]):
+            run(k, "back", "interface", "fondamentaux", "--detail", "espace manquant")
+        self.assertIn("[exigences : e1]", av.load_loops(k / "project" / "avancement.md")[0]["detail"])
+        self.assertEqual(len(av.espace_gaps(k, av.concepts(k, "cdc", "Exigence"))), 2)  # no espace, still signed
+        (k / "cdc" / "e1.md").write_text(ex.replace("status: stable\nverified: human:u", "status: draft\nespace: [back-office]"),
+                                         encoding="utf-8")
+        self.assertEqual(av.espace_gaps(k, av.concepts(k, "cdc", "Exigence")), [])
+
+    def test_the_review_closes_on_a_written_note_of_8_or_its_two_exits(self):
+        nav = "---\ntype: Plan de navigation\ntitle: N\ndescription: d\ntags: [x]\n---\n## Écrans\n- a\n## Revue visuelle\n"
+        k = kb({"interface/navigation.md": nav})
+        run(k, "start", "interface", "--force")
+        run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer")
+        done = lambda: run(k, "task", "done", "interface", "revue", "--sortie", "kb/interface/navigation.md")  # noqa: E731
+        code, out = done()
+        self.assertEqual((code, "refusée par `score`" in out), (1, True))
+        for line, ok in (("- 2026-11-12 — note 7/10 — 1. le menu masque l'action", False),
+                         ("- 2026-11-12 — note 8/10 — 1. un libellé", True),
+                         ("- 2026-11-12 — sans captures — T-tests à la place", True),
+                         ("- 2026-11-12 — sans note — design conservé", True)):
+            (k / "interface" / "navigation.md").write_text(nav + line + "\n", encoding="utf-8")
+            run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer", "--force")
+            code, out = done()
+            self.assertEqual(code == 0, ok, (line, out))
+            if not ok:
+                self.assertIn("note 7/10, 8 attendu — 1. le menu masque l'action", out)
+
+    def test_a_correction_after_the_audit_needs_a_new_audit(self):
+        k = kb({"sprints/s1.md": SPRINT + "## Audit\n- 2026-11-01T10:00Z — a.py — abc — Bloquant : 0\n",
+                "tickets/t1.md": TICKET + "## Revue\n- 2026-11-01T09:00Z — PASS — ok\n"})
+        for s in ("sprint", "qa-plan", "git-demarrage", "develop", "audit", "qa"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        run(k, "back", "validation", "develop", "--sprint", "s1", "--ticket", "t1", "--detail", "démo KO")
+        sections, _ = av.load(k / "project" / "avancement.md")
+        self.assertEqual([r[1] for r in sections["Sprint s1"][3:7]], [av.TODO] * 4)  # develop, audit, qa, validation
+        self.assertIn("pas de `## Revue` datée après la réouverture", av.check(k, "develop", "s1")[0])
+        self.assertIn("pas de ré-audit daté", " ".join(av.check(k, "audit", "s1")))
+        self.assertEqual(run(k, "done", "audit", "--sprint", "s1")[0], 1)  # the old `Bloquant : 0` proves nothing
+        later = av.now()[:16] + "Z"
+        with open(k / "tickets" / "t1.md", "a", encoding="utf-8") as f:
+            f.write(f"- {later} — PASS — correction relue\n")
+        with open(k / "sprints" / "s1.md", "a", encoding="utf-8") as f:
+            f.write(f"- {later} — a.py — def — Bloquant : 0\n")
+        self.assertEqual((av.check(k, "develop", "s1"), av.check(k, "audit", "s1")), ([], []))
+
+    def test_a_correction_nothing_reproduced_proves_develop_by_its_corrections_line(self):
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- 2026-11-01T09:00Z — PASS — ok\n"})
+        for s in ("sprint", "qa-plan", "git-demarrage", "develop", "audit"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        run(k, "back", "qa", "develop", "--sprint", "s1", "--ticket", "t1", "--detail", "test_x KO")
+        self.assertNotEqual(av.check(k, "develop", "s1"), [])
+        with open(k / "tickets" / "t1.md", "a", encoding="utf-8") as f:
+            f.write(f"## Corrections\n- {av.now()[:16]}Z — qa — technique — 0 prouvé(s), 1 non reproduit(s) — aucun\n")
+        self.assertEqual(av.check(k, "develop", "s1"), [])
+
+    def test_the_interface_proof_keeps_one_backticked_line_per_checker(self):
+        k = kb({})
+        found = ["interface_check : écran a sans espace", "interface_check : b", "lexique_check : c"]
+        with unittest.mock.patch.object(av, "interface_gaps", return_value=found) as m:
+            gaps = [g for g in av.upstream_check(k, "interface") if g.startswith("`")]
+        self.assertEqual((gaps, m.call_count), (["`interface_check` : écran a sans espace ; b", "`lexique_check` : c"], 1))
+
+    def test_a_date_without_its_time_is_newer_only_from_the_next_day(self):
+        self.assertEqual([av.newer(x, "2026-11-12T10:00:00Z") for x in
+                          ("- 2026-11-12 — PASS", "- 2026-11-13 — PASS", "- 2026-11-12T10:05Z — PASS", "- PASS")],
+                         [False, True, True, False])
+
+    def test_the_qa_loop_reruns_the_audit_and_interface_s_reruns_the_review_of_the_cdc(self):
+        self.assertEqual(av.edge("qa", "develop").get("then"), ["audit"])
+        self.assertEqual(av.edge("validation", "develop")["then"], ["audit", "qa"])
+        self.assertEqual(av.edge("interface", "fondamentaux")["then"], ["relecture", "contestation"])
+        k = kb({})
+        closed_until(k, "interface")
+        run(k, "back", "interface", "fondamentaux", "--detail", "espace manquant : e1")
+        sections, resume = av.load(k / "project" / "avancement.md")
+        status = {r[0]: r[1] for t in ("Cahier des charges", "Structuration") for r in sections[t]}
+        self.assertEqual([status[s] for s in ("fondamentaux", "juridique", "relecture", "contestation", "stack", "interface")],
+                         [av.TODO, av.DONE, av.TODO, av.TODO, av.DONE, av.TODO])
+        self.assertIn("`fondamentaux`, puis `relecture`, puis `contestation`, puis `interface`", resume)
+
+    def test_a_sprint_starts_once_the_structuration_is_done(self):
+        k = kb({"sprints/s1.md": SPRINT})
+        closed_until(k, "interface")
+        code, out = run(k, "start", "sprint", "--sprint", "s1")
+        self.assertEqual((code, "`backlog`" in out), (1, True))
+        run(k, "done", "backlog", "--force")
+        self.assertEqual(run(k, "start", "sprint", "--sprint", "s1")[0], 0)
+        run(k, "done", "sprint", "--sprint", "s1", "--force")
+        self.assertEqual(run(k, "start", "qa-plan", "--sprint", "s1")[0], 0)  # the gate is at `sprint` only
+
+    def test_a_closed_stage_reopens_by_a_loop_or_on_the_user_s_request_only(self):
+        k = kb({})
+        closed_until(k, "relecture")
+        code, out = run(k, "start", "redaction")
+        self.assertEqual((code, "`back <de> redaction`" in out, "--rouvre" in out), (1, True, True))
+        run(k, "back", "relecture", "redaction", "--detail", "A2")  # reopened by its edge: a plain start
+        self.assertEqual(run(k, "start", "redaction")[0], 0)
+        code, out = run(k, "start", "hosa", "--rouvre", "ajoute le persona comptable")
+        self.assertEqual(code, 0)
+        row = av.load(k / "project" / "avancement.md")[0]["Cahier des charges"][0]
+        self.assertEqual((row[1], row[3]), (av.DOING, "rouvert à la demande de l'utilisateur : ajoute le persona comptable"))
+
+
 def section_rows(text, heading):
     return [x for x in (av.section(text, heading) or "").splitlines() if x.startswith("| `")]
 
