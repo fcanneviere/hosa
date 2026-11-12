@@ -1144,6 +1144,14 @@ class Init(unittest.TestCase):
 class Docs(unittest.TestCase):
     """The pipelines written in prose (using-hosa, README) follow pipeline.json."""
 
+    def test_each_stage_skill_lists_its_dispatches_as_tasks(self):
+        # a dispatch with no `task add` leaves no `fait` task and skips `task done`'s controls (audit 2026-11, X1)
+        no_agent = {"redaction"}   # writes in the session itself: no dispatch to list
+        stages = [s for _, ss in av.PIPELINES for s in ss] + list(av.SPRINT)
+        for skill in sorted({av.SKILL.get(s, s) for s in stages} - no_agent):
+            text = (SCRIPT.parents[2] / skill / "SKILL.md").read_text(encoding="utf-8")
+            self.assertIn("task add", text, skill)
+
     def test_prose_pipelines_follow_the_graph(self):
         expected = [[av.SKILL.get(s, s) for s in ss] for _, ss in av.PIPELINES] + [[av.SKILL.get(s, s) for s in av.SPRINT]]
         root = SCRIPT.parents[3]
@@ -1391,6 +1399,33 @@ class LoopsClosed(unittest.TestCase):
         with open(k / "sprints" / "s1.md", "a", encoding="utf-8") as f:
             f.write(f"- {later} — a.py — def — Bloquant : 0\n")
         self.assertEqual((av.check(k, "develop", "s1"), av.check(k, "audit", "s1")), ([], []))
+
+    def test_a_blocking_audit_finding_is_a_bounded_loop_and_needs_a_re_audit(self):
+        k = kb({"sprints/s1.md": SPRINT + "## Audit\n- 2026-11-01T10:00Z — a.py — abc — Bloquant : 1\n",
+                "tickets/t1.md": TICKET + "## Revue\n- 2026-11-01T09:00Z — PASS — ok\n"})
+        for s in ("sprint", "qa-plan", "git-demarrage", "develop"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        back = lambda c, *f: run(k, "back", "audit", "develop", "--sprint", "s1", "--ticket", "t1",  # noqa: E731
+                                 "--cause", c, "--detail", f"{c} : injection SQL", *f)
+        code, out = back("B1")
+        self.assertEqual(code, 0)
+        self.assertIn("`audit` → `develop`", out)
+        sections, _ = av.load(k / "project" / "avancement.md")
+        self.assertEqual([r[1] for r in sections["Sprint s1"][3:5]], [av.TODO] * 2)  # develop, audit
+        self.assertIn("pas de `## Revue` datée après la réouverture", av.check(k, "develop", "s1")[0])
+        later = av.now()[:16] + "Z"
+        with open(k / "tickets" / "t1.md", "a", encoding="utf-8") as f:
+            f.write(f"- {later} — PASS — correction relue\n")
+        with open(k / "sprints" / "s1.md", "a", encoding="utf-8") as f:
+            f.write(f"- 2026-11-01T11:00Z — a.py — def — Bloquant : 0\n")
+        self.assertIn("pas de ré-audit daté", " ".join(av.check(k, "audit", "s1")))  # an audit of before the loop
+        with open(k / "sprints" / "s1.md", "a", encoding="utf-8") as f:
+            f.write(f"- {later} — a.py — ghi — Bloquant : 0\n")
+        self.assertEqual((av.check(k, "develop", "s1"), av.check(k, "audit", "s1")), ([], []))
+        self.assertEqual(back("B1")[0], 0)
+        self.assertEqual(back("B1")[0], 1)                     # the bound: the user decides
+        self.assertEqual(back("B2")[0], 0)                     # another finding: its own count
+        self.assertEqual(back("B1", "--force")[0], 0)
 
     def test_a_correction_nothing_reproduced_proves_develop_by_its_corrections_line(self):
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- 2026-11-01T09:00Z — PASS — ok\n"})

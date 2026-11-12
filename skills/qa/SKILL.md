@@ -71,7 +71,11 @@ After each lot's tests and after each persona's recette: `avancement.py … task
 
 ## Step 6: Tooling Health
 
-Once every ticket in the sprint has been run through Steps 3-5: dispatch `hosa-qa-lead` (Mode 2 Phase 1) to review whether the same test was flagged flaky or slow across at least two of this session's runs, and every residue reported under `## Ménage` — data a test or a recette leaves that the reset doesn't cover gets a concrete fix (test isolation, or extending the documented reset), not a note. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 2 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
+Once every ticket in the sprint has been run through Steps 3-5: dispatch `hosa-qa-lead` (Mode 2 Phase 1) to review whether the same test was flagged flaky or slow in at least two runs recorded in the sprint's `## Résultats techniques`, and every residue reported under `## Ménage` — data a test or a recette leaves that the reset doesn't cover gets a concrete fix (test isolation, or extending the documented reset), not a note. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 2 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
+
+## Step 7: Close the Stage
+
+Every ticket's tests passed, every required recette recorded, every task done or skipped → after the commits (Commits below): `avancement.py … done qa --sprint <slug>` (it refuses while a ticket lacks its results or a recette: do what it names), then `validation`, launched without waiting. A failure still routed to a correction → no `done`: the `back qa develop` loop is open.
 
 ## Commits
 

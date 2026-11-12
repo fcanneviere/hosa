@@ -470,7 +470,7 @@ Ordre recommandé, du plus sûr au plus structurant.
 
 **À vérifier avant de corriger.** X7 « example files » (qui créait `exemple-persona.md` ?), `pilotage` (`python` ou `<python>`).
 
-**Lot B — graphe et boucles (code et tests).**
+**Lot B — graphe et boucles (code et tests).** Fait le 2026-11-12, sauf deux points. Boucles `audit → develop` et `schema-db → donnees` (puis `schema-app`) dans `pipeline.json` ; `done audit` exige un ré-audit daté après la boucle (`reopened` lit aussi la source de la boucle) ; `done` ajouté à `qa`, `validation`, `bilan-sprint` ; lignes **Tâches** dans 14 skills, imposées par un test (`test_each_stage_skill_lists_its_dispatches_as_tasks`) ; périmètres de session remplacés par la KB ou git dans 6 skills. **Restent ouverts :** (1) le refus dans `budget.js` — un dispatch qui n'écrit rien (options de `stack`, phase 1 de `sprint` et `donnees`, questions aux personas, analyse d'impact de `changement`) ne peut pas être une tâche, car `task done` exige un fichier ; le refus demande donc une liste d'exemptions à décider ; (2) la borne de `schema-db` Step 1b reste écrite en prose : `task done` ne voit pas un échec de migration de `hosa-dba`. `changement` n'est pas une étape : `task` le refuse, il n'a donc pas de tâches.
 - X10 : arête `audit → develop`, appel `back` dans `qualite`, arête `schema-db → donnees`, borne de `schema-db` Step 1b.
 - X2 : `done` dans `qa`, `validation`, `bilan-sprint`.
 - X1 : lignes **Tâches** dans les 16 skills, puis le refus dans `budget.js` avec son interrupteur et son test.

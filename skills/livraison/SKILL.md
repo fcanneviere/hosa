@@ -7,6 +7,8 @@ description: "Use to ship merged work: scope done tickets, quality gate (`qualit
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start livraison --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block livraison --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done livraison --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** Before each dispatch of this skill, `avancement.py task add livraison <id> --sprint <slug> --agent <agent>`; on its return, `task done livraison <id> --sprint <slug> --sortie <the paths it wrote>`: `notes` (`hosa-documentation`, Step 4) → the changelog and the user documentation; `tag` (`hosa-git`, Step 5) → the files it committed; `base-de-donnees` (`hosa-dba`, Step 6) → `kb/infra/base-de-donnees.md`; `deploiement` (`hosa-infra`, Step 6) → `kb/infra/deploiement.md`. The gates run through `qualite`, `securite` and `juridique`, which keep their own records. Stopped on an Open Question → `task block livraison <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered.
+
 `git` Mode 2 merges a sprint locally; nothing after that checks the whole, versions it, deploys it, or tells anyone what shipped. This skill closes that gap: scope what's new, pass the quality gate, write it down, tag a tested version, deploy it if asked, record the release, and push only if asked.
 
 ## Flow

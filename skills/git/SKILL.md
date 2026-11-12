@@ -35,6 +35,8 @@ From the request, determine whether this is a start (Mode 1), a finish (Mode 2),
 
 Mode 1 is stage `git-demarrage`, Mode 2 is `git-fusion` (`avancement.py <root>/.hosa/kb start|done <stage> --sprint <slug>`). `start` refuses Mode 1 before `qa-plan` is done, and Mode 2 before `validation` is done — do those first, or use `--force` only once the user has confirmed going out of order. Mark `done` only when `hosa-git` reports success; `block` with its reason otherwise. Mode 1 « en rattachement » (the sprint already started, its environment missing) is not a stage: no `start`, no `done`.
 
+**Tâches** (Modes 1 and 2). Before the dispatch, `avancement.py task add <stage> hosa-git --sprint <slug> --agent hosa-git`; on its return, `task done <stage> hosa-git --sprint <slug> --sortie kb/sprints/<slug>.md` (it records the worktree, the environment or the merge there). A relay (`hosa-infra`, `hosa-dba`) → its own task, `infra` or `base-de-donnees`, with the file it updated. Stopped on an Open Question → `task block <stage> hosa-git --sprint <slug> --detail "<la question>"`, and `task add` it again once answered. Mode 0, Mode 3 and checkpoints: no task.
+
 ## Step 2: Dispatch `hosa-git`
 
 Dispatch `hosa-git` in the determined mode — with the sprint slug for Mode 1/2, the root for Mode 0, or the request (or the checkpoint's files and summary) for Mode 3. It reads `kb/sprints/<slug>.md` and the relevant KB when a sprint is involved, performs the worktree creation or QA-gated merge (or handles the ad hoc request directly), and reports back.

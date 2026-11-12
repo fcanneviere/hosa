@@ -7,6 +7,8 @@ description: "Use to compose a sprint from the backlog in priority order, up to 
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start sprint --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block sprint --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done sprint --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** Before Step 3, `avancement.py task add sprint ecriture --sprint <slug> --agent hosa-sprint-planner`; on its return, `task done sprint ecriture --sprint <slug> --sortie kb/sprints/<slug>.md`. Phase 1 writes nothing: no task. Stopped on an Open Question → `task block sprint ecriture --sprint <slug> --detail "<la question>"`, and `task add` it again once answered.
+
 Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line. This skill is the only one that talks to the user — the actual scoping, classification, and write is `hosa-sprint-planner`'s.
 
 ## Flow

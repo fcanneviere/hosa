@@ -38,6 +38,8 @@ Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le tic
 
 `avancement.py … start validation --sprint <slug-sprint>`: refused → propose the stage it names and stop. `check qa --sprint <slug-sprint>` lists, per ticket, missing technical results and missing persona recettes (`kb/test/<slug>-<persona>.md` — a verdict inside the technical plan doesn't count): a line naming this ticket → propose `qa <slug-sprint> <slug>` and stop. Read `kb/tickets/<slug>.md`: no `## Critères d'acceptation` (written before `backlog` carried this field, or standalone) → say so and ask the user to confirm the ticket informally — don't invent criteria. A `Différé` verdict → one numbered question: replay now (recommended), or accept the ticket and keep the replay ticket `rejeu-recettes-persona-<sprint>` in the backlog.
 
+**Tâches.** Before each dispatch, `avancement.py task add validation <id> --sprint <slug-sprint> --agent <agent>`; on its return, `task done validation <id> --sprint <slug-sprint> --sortie <the path>`: `acceptation-<ticket>` (`hosa-product-owner`, Step 2) → `kb/tickets/<ticket>.md`; `demo` (`hosa-qa-lead`, Step 3b) → `kb/sprints/<slug-sprint>.md`, once `## Démo` is written. Stopped on an Open Question → `task block validation <id> --sprint <slug-sprint> --detail "<la question>"`, and `task add` the same id again once answered.
+
 ## Step 2: Dispatch `hosa-product-owner`
 
 Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with the ticket, its acceptance criteria, its technical results, and its recette verdict(s). It returns Accept or Reject with a reason.
@@ -52,9 +54,9 @@ Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with
 ## Step 3b: Sprint Demo
 
 Once every ticket of the sprint is `done` (the sprint audit ran before `qa` — stage `audit`, `qualite`), the user checks the sprint working, in its environment — the agents' recettes simulate personas; the demo is a person. Dispatch `hosa-qa-lead` (Mode 3) and show its T-tests as is, with the sprint's environment running at the dataset's reference state. The user answers in one line ("T1 OK, T2 KO : …"). A ticket `hosa-qa-lead` lists under `Déjà joué en QA` gets no T-test: the user already played its main scenario by hand on this code. Write it in `## Démo` as `- <ticket> — joué en QA le <date> (<cas>)`, with no T-number (the merge gate reads only `Tn OK/KO`). Every ticket already played → no T-test to run: write those lines, and the demo is done.
-- All OK → write `## Démo` in `kb/sprints/<slug>.md`: the date, then one line per T-test, `- T1 OK` or `- T1 KO : <constat>`. A replayed T-test gets a new line; the last one counts. Log to `kb/sprints/log.md`.
+- All OK → write `## Démo` in `kb/sprints/<slug>.md`: the date, then one line per T-test, `- T1 OK` or `- T1 KO : <constat>`. A replayed T-test gets a new line; the last one counts. Log to `kb/sprints/log.md`. Then the checkpoint (Commits below) and `avancement.py … done validation --sprint <slug>` (it refuses while a ticket isn't `done` with its `verified`, or the demo has a KO), then the merge question.
 - A KO → record it the same way, then `back validation develop --sprint <slug> --ticket <ticket> --cause <Tn> --detail "<constat>"` and `develop <ticket> correction` with the user's words as the defect report; after its `qa` and `validation`, redo only the failed T-tests.
-- The user says the demo isn't needed this time → write `## Démo` with "Non faite — choix de l'utilisateur" and the date. `hosa-git` refuses the merge with no `## Démo` at all.
+- The user says the demo isn't needed this time → write `## Démo` with "Non faite — choix de l'utilisateur" and the date, then `done validation` as above. `hosa-git` refuses the merge with no `## Démo` at all.
 
 ## Step 4: Log
 

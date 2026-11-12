@@ -7,6 +7,8 @@ description: "Use to qualify each data item's origin (générée/fournie/saisie)
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start donnees`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block donnees --detail "<question>"`. Once the stage's output is written and committed: `done donnees`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** Before Step 3, `avancement.py task add donnees annotations --agent hosa-data-engineer`; on its return, `task done donnees annotations --sortie <the exigences it annotated>`. Phase 1 and the persona questions write nothing: no task. Stopped on an Open Question → `task block donnees annotations --detail "<la question>"`, and `task add` it again once answered.
+
 Qualifies where each piece of data in the cahier des charges actually comes from — a prerequisite before any real data structure can be derived from it. This skill is the only one that talks to the user or dispatches other agents — the actual scoping and annotation is `hosa-data-engineer`'s.
 
 ## Flow
@@ -34,7 +36,7 @@ Manual: `/donnees`. Auto: immediately after `infra`, or "précise les données d
 
 ## Step 1: Dispatch to Scope and Surface
 
-Dispatch `hosa-data-engineer` with `model: sonnet` — qualifying origins is classification, not design (Responsibility 1 Phase 1, `agents/data-engineer.md`). If `contestation` validated one or more `Exigence`s to `stable` earlier in this same session (whether or not `stack` ran in between), tell it to scope to those; otherwise it scopes to every `stable` `Exigence` in `kb/cdc/`.
+Dispatch `hosa-data-engineer` with `model: sonnet` — qualifying origins is classification, not design (Responsibility 1 Phase 1, `agents/data-engineer.md`). It scopes to every `stable` `Exigence` in `kb/cdc/` whose data items carry no origin annotation yet — read from the KB, never from a session's memory: a re-run only fills the gaps.
 
 If it returns an Open Question (no `stable` Exigence at all) — relay it to the user and stop.
 

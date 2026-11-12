@@ -84,7 +84,7 @@ Then edit the affected sections of the Exigence body itself with the new content
 
 ## Step 6: Mini Relecture/Contestation Loop
 
-Invoke `relecture` — its own Step 1 already scopes to "exigences modifiées dans cette session", which is just this one. Then invoke `contestation`. Neither calls `avancement.py` for its own stage inside this loop (`start`, `done`, or `back` from `relecture`/`contestation`): their stages are done, and a `start` would reopen them and move the resume point off the stage in progress. Scope both passes to this Exigence plus the personas/tickets found in Step 2 — not the whole `kb/cdc/`, that's what makes this loop "mini" rather than a full pipeline re-run.
+Invoke `relecture` with its scope given explicitly: this Exigence's path (it is back to `draft`, Step 5). Then invoke `contestation`. Neither calls `avancement.py` for its own stage inside this loop (`start`, `done`, or `back` from `relecture`/`contestation`): their stages are done, and a `start` would reopen them and move the resume point off the stage in progress. Scope both passes to this Exigence plus the personas/tickets found in Step 2 — not the whole `kb/cdc/`, that's what makes this loop "mini" rather than a full pipeline re-run.
 
 The loop is `changement`'s own, declared in `pipeline.json` and counted by the plan:
 

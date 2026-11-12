@@ -7,6 +7,8 @@ description: "Use to add the tests to a sprint before it starts: one test plan p
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (a ticket added to a sprint whose `qa-plan` is done excepted: no call): `avancement.py start qa-plan --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block qa-plan --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done qa-plan --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** Before each dispatch, `avancement.py task add qa-plan <id> --sprint <slug> --agent <agent>`; on its return, `task done qa-plan <id> --sprint <slug> --sortie <the paths it wrote>`: `plan-<ticket>` (`hosa-qa-lead`, Step 3) → `kb/test/<ticket>-technique.md`; `base-de-test` (`hosa-dba`, Step 3b) → `kb/infra/base-de-donnees.md`; `jeu-de-donnees` (`hosa-data-engineer`, Step 4) → the dataset and its README. Stopped on an Open Question → `task block qa-plan <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered. A ticket added to a sprint whose `qa-plan` is done is not a stage: no task.
+
 Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, before the sprint starts — so `develop` can write each ticket's tests before its code, and `qa` has something concrete to execute. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
 
 ## Flow

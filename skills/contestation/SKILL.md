@@ -7,6 +7,8 @@ description: "Use for the final challenge of the cahier des charges (PO re-quest
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start contestation`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block contestation --detail "<question>"`. Once the stage's output is written and committed: `done contestation`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** Before each dispatch, `avancement.py task add contestation <id> --agent <agent>`; on its return, `task done contestation <id> --sortie <the paths>`: `persona-<slug>-c<k>` (`hosa-key-user`, Step 1) and `challenger-c<k>` (`hosa-challenger`, Step 2) → `kb/cdc/relecture.md` once their findings are written there (Step 3), plus a persona file the agent changed; `documentation` (`hosa-documentation`, Step 4) → the documentation paths. Stopped on an Open Question → `task block contestation <id> --detail "<la question>"`, and `task add` the same id again once answered. Inside `changement`'s loop (no `avancement.py` call for this stage): no task.
+
 The last line of defense before the cahier des charges is considered done: two independent challenges, not one self-check.
 
 ## Flow
@@ -40,7 +42,7 @@ Manual: `/contestation`. Auto: immediately after a clean `relecture`, or "challe
 
 ## Step 0: Fondamentaux Gate
 
-Run this gate once per session, at the first entry: coming back from Step 3 after `relecture`, skip it — a fix to an exigence is already re-checked by `relecture`, and re-running `fondamentaux` for it restarts the whole chain.
+Run this gate at the stage's first entry only: when `avancement.py … show` lists an open loop from `contestation` under `## Boucles` (a return from Step 3 after `relecture`), skip it — a fix to an exigence is already re-checked by `relecture`, and re-running `fondamentaux` for it restarts the whole chain.
 
 `kb/cdc/fondamentaux.md` must exist, and be at least as recent (`generated.at`) as the newest `Exigence` in `kb/cdc/` that is not tagged `fondamentaux`, `juridique` or `securite` (those stages write their own exigences after it, so counting them makes the gate fail on every normal pass) — otherwise the basics haven't been checked against what the cahier des charges now says. Missing or older → say so, `back contestation fondamentaux --detail "<why>"` (it reopens `fondamentaux`, then `relecture`, then `contestation`), and run `fondamentaux`. Same for `kb/cdc/juridique.md` (`Analyse juridique`) → `back contestation juridique`, and for `kb/cdc/securite.md` (`Analyse de sécurité`) → `back contestation securite`, each followed by `relecture`. A cahier des charges is never signed off without its basic functions, its legal constraints and its security constraints in it.
 
@@ -76,7 +78,7 @@ Exit 0 → `<hosa> cdc assemble "<root>/.hosa/kb"`. List every `Exigence` still 
 
 If the user doesn't validate, ask what's still missing and treat it as a new anomaly — route it same as Step 3, with its `back`. `done contestation` refuses while an `Exigence` is not `stable` with its `verified`, or `cdc check` finds a hole. No dispatch to `hosa-documentation` happens in this case — only an actual `stable` transition triggers it.
 
-Once at least one `Exigence` has been validated to `stable` in this session, chain to `stack` without asking (the user just signed the cahier des charges off): say "Le cahier des charges est stable. Je lance le choix de la stack." and invoke it.
+Once `done contestation` passes (every exigence `stable` and signed), chain to `stack` without asking (the user just signed the cahier des charges off): say "Le cahier des charges est stable. Je lance le choix de la stack." and invoke it.
 
 ## No Commits
 
