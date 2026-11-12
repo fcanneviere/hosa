@@ -26,9 +26,10 @@ Repasse l'Exigence en status: draft, ajoute ## Changement
 Mini boucle : relecture (scope auto = cette Exigence, vient
 d'être modifiée) → contestation (Passe 1+2 scopées à cette
 Exigence + personas/tickets liés, pas tout le CDC)
-        ↓ anomalie → reboucle
+        ↓ anomalie → `back changement changement --objet <slug>`
+          (2 tours par cause, puis l'utilisateur décide) → reboucle
         ↓ propre → confirmation finale utilisateur → PO repasse
-status: stable + verified: human:<user>
+status: stable + verified: human:<user> → `done changement --objet <slug>`
 Dispatch hosa-product-owner : crée un Ticket par impact confirmé
 (rework data/architecture/interface/doc)
         ↓
@@ -83,7 +84,14 @@ Then edit the affected sections of the Exigence body itself with the new content
 
 ## Step 6: Mini Relecture/Contestation Loop
 
-Invoke `relecture` — its own Step 1 already scopes to "exigences modifiées dans cette session", which is just this one. Then invoke `contestation`. Neither calls `avancement.py` inside this loop: their stages are done, and a `start` would reopen them and move the resume point off the stage in progress — record `avancement.py reprise "changement <slug> : mini boucle, tour <n>/2"` instead — the round survives a `/clear`. Neither calls `back` either: this loop runs inside `changement`, not between stages. Scope both passes to this Exigence plus the personas/tickets found in Step 2 — not the whole `kb/cdc/`, that's what makes this loop "mini" rather than a full pipeline re-run. Anomaly in either pass → back to Step 5. After 2 rounds that still find anomalies, stop looping: show the user what's still failing and ask whether to run one more round or keep the old wording — the same bound as `contestation`. Clean on both → ask the user for final sign-off, same as `contestation`'s own last step; on yes, dispatch `hosa-product-owner` to set `status: stable` + `verified: { by: human:<user>, at: <ISO8601> }`.
+Invoke `relecture` — its own Step 1 already scopes to "exigences modifiées dans cette session", which is just this one. Then invoke `contestation`. Neither calls `avancement.py` for its own stage inside this loop (`start`, `done`, or `back` from `relecture`/`contestation`): their stages are done, and a `start` would reopen them and move the resume point off the stage in progress. Scope both passes to this Exigence plus the personas/tickets found in Step 2 — not the whole `kb/cdc/`, that's what makes this loop "mini" rather than a full pipeline re-run.
+
+The loop is `changement`'s own, declared in `pipeline.json` and counted by the plan:
+
+- **Its exit is a checker.** A round is clean when `<hosa> cdc revue "<root>/.hosa/kb"` exits 0 (no `bloquante` still `ouverte`) and `contestation`'s challenger returns no `bloquante` on the scope.
+- **A round that isn't clean** → `avancement.py back changement changement --objet <slug> --detail "<the open anomalies, one per line: A<n> — what is wrong>"` (`--cause <A<n>>` when the same anomaly comes back), then Step 5 with those exact lines — never a summary of them. The round and its gaps survive a `/clear`.
+- **The bound is the script's.** `back` refuses (exit 1) past 2 rounds of one cause: stop, show the user what each round tried and what still fails, and ask whether to run one more round (`--force`, on their word only) or keep the old wording.
+- **Clean** → ask the user for final sign-off, same as `contestation`'s own last step; on yes, dispatch `hosa-product-owner` to set `status: stable` + `verified: { by: human:<user>, at: <ISO8601> }`, then `avancement.py done changement --objet <slug>`: it refuses while the Exigence isn't `stable` and signed, or `cdc revue` still finds an open `bloquante`.
 
 ## Step 7: Follow-Up Tickets
 
@@ -93,9 +101,9 @@ Dispatch `hosa-product-owner` to create one `Ticket` per confirmed impact from S
 
 Confirm `kb/cdc/log.md` was updated for the Exigence rewrite and re-stabilization, and `kb/tickets/log.md` for the follow-up tickets — per each dispatched agent's own logging.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed. The checkpoint commit is `hosa-git`'s (Mode 3), dispatched at the end — see `using-hosa`, "Git checkpoints".
+You don't commit yourself. End by dispatching `hosa-git` (Mode 3, `model: haiku`) with the files written and a one-line summary — `using-hosa`, "Git checkpoints". Never a question.
 
 ## Output
 

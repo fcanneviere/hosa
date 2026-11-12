@@ -34,9 +34,9 @@ Manual: `/redaction`. Auto: immediately after `interview` finishes, or "rédige 
 
 ## Step 1: Get the Notes
 
-**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut session restarts at the first one not marked. Over 15 anomalies, dispatch one pass per theme instead of one long pass: a pass is cut at 150 tool calls. A fix that changes a value (threshold, list, message) changes it in its owner fiche, and replaces any copy with a link (« One source per fact », Step 2) — a copy left behind is the next pass's anomaly. Then chain on `relecture`, not `fondamentaux`. Called by `relecture` or `contestation` for `mineure` anomalies only → skip this skill's `avancement.py` calls (the stage is not reopened) and return to the caller, not to `relecture`.
+**Fixing a relecture** (anomalies `ouverte` in `kb/cdc/relecture.md` routed `→ redaction`): those anomalies are the notes. Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut session restarts at the first one not marked. Over 15 anomalies, dispatch one pass per theme instead of one long pass: a pass is cut at 150 tool calls. An anomaly that went through `interview` (its Complément mode) has its answer in `kb/cdc/interviews/*-complement.md` § `### A<n>`: read that section only, write the answer into the exigence. A fix that changes a value (threshold, list, message) changes it in its owner fiche, and replaces any copy with a link (« One source per fact », Step 2) — a copy left behind is the next pass's anomaly. Then chain on `relecture`, not `fondamentaux`. Called by `relecture` or `contestation` for `mineure` anomalies only → skip this skill's `avancement.py` calls (the stage is not reopened) and return to the caller, not to `relecture`.
 
-If `interview` just ran in this session, use its notes directly. Otherwise ask: "Quelles sont les notes à rédiger ?" — accept whatever structure the user provides; you don't require `interview`'s exact format.
+The notes are the comptes rendus of `kb/cdc/interviews/` — read from the KB, never from this session's memory (a `/clear` separates the stages): each `### <Processus>` with no exigence yet in `kb/cdc/`, plus `### Objets métier`, `### Besoins écartés` and `### Questions restées ouvertes`. A compte rendu still `status: draft` → `interview` is not finished: say so and stop. No compte rendu and no inline notes → ask: "Quelles sont les notes à rédiger ?" — accept whatever structure the user provides; you don't require `interview`'s exact format.
 
 ## Step 2: Write One `Exigence` Per Process
 
@@ -76,10 +76,10 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - <rôle/persona> : <action concrète>
 
 ## Règles de gestion
-- <règle précise : calcul, condition, seuil, statut et transition — avec un exemple chiffré>
+- **RG1** — <règle précise : calcul, condition, seuil, statut et transition — avec un exemple chiffré>
 
 ## Cas d'erreur
-- <ce qui peut mal se passer> → <ce que le logiciel fait, ce que voit l'utilisateur>
+- **CE1** — <ce qui peut mal se passer> → <ce que le logiciel fait, ce que voit l'utilisateur>
 
 ## Responsable
 <rôle ou persona responsable>
@@ -104,11 +104,19 @@ Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictate
 
 A process with no rule of its own (pure data entry, say) writes `Aucune règle propre — saisie et consultation.` under `## Règles de gestion`; every process has error cases. These two sections are what `backlog` turns into acceptance criteria: a vague rule here becomes a guessed test later.
 
+**Each rule and each error case has its id** — `RG1`, `RG2`… and `CE1`, `CE2`…, numbered per exigence, one top-level bullet each (its details as sub-bullets). A ticket's criterion cites it (`- CA1 [RG2] — …`), and `ticket_check --regles` refuses the backlog while a rule is cited by no criterion. So an id never moves: never renumber one, never reuse one; a rule that changes keeps its id; a rule dropped keeps its line, `- **RG2** — retirée : <raison>`. `cdc numerote` (Step 3) gives the missing ids — don't count by hand in a fiche you edit — and `cdc check` counts a hole (`règles`) for a rule without one.
+
 If a process serves no specific persona (purely transverse — e.g. a compliance step), write `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` instead of a persona link. Every other section is still required — "transverse" doesn't excuse vagueness.
 
 Each `<besoin précis>` must be found in the linked persona's `Besoins` (`kb_query.py .hosa/kb --type Persona --slug <slug> --sections "Besoins"`). A need the persona doesn't state is either the persona's real need, left unwritten → ask the user, then add it through `hosa` (persona update); or an invented one → remove the line. Never cite a need the persona doesn't hold: `contestation` re-checks exigences against personas.
 
 Every section must be filled with the specific content gathered — a section with no matching information from the notes means you're missing input, not that you should write a placeholder. If information is missing, ask the user rather than writing something generic.
+
+**Held or deduced.** A line the notes mark `[à confirmer]` (`interview`: the persona agent deduced it, the user did not confirm it) keeps its mark in the exigence, at the end of the line, and gets its `**Qn**` in `decisions.md` with the deduction as the proposed answer. Never drop the mark on your own: only the user's answer removes it. `cdc check` counts each marked line as a hole (`recueil`), so the cahier des charges is not signed on a guess. The same holds for what you add yourself to connect two notes: it is a deduction, marked, with its question.
+
+The frequency and volumes of the notes go in `## Déclencheur` (« chaque soir, environ 30 listes »): `fondamentaux` sets the performance targets from them.
+
+A `### Besoins écartés` line of the compte rendu becomes a decision in `decisions.md` (Step 2d): `relecture` reads it to fill the coverage table (`Écarté : <raison>`) instead of raising the need again.
 
 ### Non-functional and constraint exigences
 
@@ -206,17 +214,18 @@ A question you ask the user and they don't answer in this run → a `**Qn**` lin
 
 ## Step 3: Log and Assemble
 
-Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date. Then regenerate the readable document:
+Append to `kb/cdc/log.md` (create if missing) — OKF §9: chronological, most recent date first, grouped by date. Then number the rules and error cases still without an id, and regenerate the readable document:
 
 ```bash
+<hosa> cdc numerote "<root>/.hosa/kb"
 <hosa> cdc assemble "<root>/.hosa/kb"
 ```
 
 It writes `kb/project/cahier-des-charges.md` (`type: Cahier des charges`, `generated: process:hosa-cdc`) in the plan a project manager expects: 0 fiche du document, 1 contexte et enjeux, 2 objectifs et indicateurs, 3 périmètre et lots, 4 acteurs, 5 cartographie puis fiches des processus par domaine, 6 objets métier et glossaire, 7 exigences non fonctionnelles, 8 synthèse des contraintes juridiques et de sécurité, 9 hypothèses et risques, 10 critères de recette globaux, 11 décisions et questions ouvertes, 12 contrôle de complétude, annexes. The technical sections of the fiches (`## Contraintes de sécurité`, `## Contraintes juridiques`) stay in the fiches, linked. Never edit the document: fix the fiche, then regenerate.
 
-## No Commits
+## Commits
 
-You don't commit. Report what changed in the KB and let the user or the orchestrating flow decide when to commit.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints), then `done redaction`.
 
 ## Output
 
@@ -225,7 +234,7 @@ You don't commit. Report what changed in the KB and let the user or the orchestr
 - `kb/cdc/<slug>.md` — <titre> (status: draft)
 
 ## Cahier des charges
-- Document : `kb/project/cahier-des-charges.md` — <N> trou(s) au contrôle de complétude
+- Document : `kb/project/cahier-des-charges.md` — <N> trou(s) au contrôle de complétude, dont <N> ligne(s) `[à confirmer]`
 - Questions ouvertes : <Q1… reprises en fin de rapport, ou « aucune »>
 
 ## Suite

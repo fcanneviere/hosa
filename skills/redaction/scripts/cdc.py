@@ -6,12 +6,19 @@
   cdc.py revue <kb-dir> [--route R] the anomalies of kb/cdc/relecture.md: exit 1 on a badly
                                    tagged one or a `bloquante` still `ouverte` (routed → R when given)
   cdc.py mesure <kb-dir>           the anomalies counted by pass, gravity and origin
+  cdc.py numerote <kb-dir>         give each rule and error case without an id its `RGn` / `CEn`
 
 The fiches stay the source (kb/cdc/, kb/project/identity.md, kb/personnas/):
 the document is regenerated from them, never edited by hand. A hole is a cell of
 a completeness matrix left empty — an objective no exigence serves, an exigence
 with no priority or lot, a state with no way out, a right nobody decided, an open
-question. `contestation` signs nothing while `check` finds one.
+question, a persona need nobody judged, a line still `[à confirmer]` (deduced, never
+confirmed by the user), a rule or an error case without its id. `contestation` signs
+nothing while `check` finds one.
+
+A rule is `- **RG2** — …` under `## Règles de gestion`, an error case `- **CE1** — …`
+under `## Cas d'erreur`. The id is what a ticket's criterion cites (`- CA1 [RG2] — …`,
+checked by `ticket_check.py`): `numerote` adds the missing ones and never moves one.
 
 An anomaly line is `- A12 [p2, bloquante, correction] — … — → redaction — ouverte`:
 its pass (`p<n>` relecture, `c<n>` contestation), its gravity (only a `bloquante`
@@ -41,6 +48,13 @@ ESPACES = {"front-office", "back-office", "hors-application"}
 GRAVITES = ("bloquante", "mineure")
 ORIGINES = ("texte", "correction", "regle-hosa")
 ROUTES = ("redaction", "interview", "utilisateur")
+# a line the persona agent deduced and the user never confirmed (`interview`, `redaction`): never a fact
+A_CONFIRMER = "[à confirmer]"
+# a rule and an error case carry an id (`- **RG2** — …`, `- **CE1** — …`) that a ticket's criterion cites
+# (`- CA1 [RG2] — …`): never renumbered, never reused — a rule dropped keeps its line, `- **RG2** — retirée : <raison>`
+RULES = {"règles de gestion": "RG", "cas d'erreur": "CE"}
+RULE_ID = re.compile(r"^-\s+\*\*((?:RG|CE)\d+)\*\*")
+RETIRED = re.compile(r"^-\s+\*\*(?:RG|CE)\d+\*\*\s*—\s*retirée?\b", re.I)
 OUT = "project/cahier-des-charges.md"
 LINK = re.compile(r"\]\(([^)#\s:]+\.md)(#[^)]*)?\)")
 
@@ -170,6 +184,48 @@ def transitions(text: str) -> list[tuple[str, str, str]]:
     return out
 
 
+def bullets(text: str) -> list[str]:
+    """Top-level `- ` lines that say something."""
+    return [l for l in text.splitlines() if re.match(r"^-\s+\S", l) and not empty(l[1:])]
+
+
+def rule_lines(text: str) -> list[tuple[int, str, str]]:
+    """(line index, `RG` or `CE`, its id or '') of each rule and error case of a fiche:
+    the top-level bullets of `## Règles de gestion` and `## Cas d'erreur`."""
+    out, prefix = [], ""
+    for i, line in enumerate(text.splitlines()):
+        if line.startswith("## "):
+            prefix = RULES.get(line[3:].strip().lower(), "")
+        elif prefix and re.match(r"^-\s+\S", line) and not re.match(r"^-\s+aucun", line, re.I):
+            m = RULE_ID.match(line)
+            out.append((i, prefix, m.group(1) if m else ""))
+    return out
+
+
+def rule_ids(text: str) -> list[str]:
+    """The ids a ticket can cite: every numbered rule and error case still in force, in the fiche's order."""
+    lines = text.splitlines()
+    return [rid for i, _, rid in rule_lines(text) if rid and not RETIRED.match(lines[i])]
+
+
+def numerote(path: Path) -> int:
+    """Give each rule and error case without an id the next free one. An id already there never moves."""
+    with path.open(encoding="utf-8", newline="") as f:  # the file's own line ends are kept
+        text = f.read()
+    lines, found = text.splitlines(keepends=True), rule_lines(text)
+    last = {p: max([int(rid[2:]) for _, _, rid in found if rid.startswith(p)] or [0]) for p in RULES.values()}
+    added = 0
+    for i, prefix, rid in found:
+        if not rid:
+            last[prefix] += 1
+            lines[i] = re.sub(r"^-\s+", f"- **{prefix}{last[prefix]}** — ", lines[i], count=1)
+            added += 1
+    if added:
+        with path.open("w", encoding="utf-8", newline="") as f:
+            f.write("".join(lines))
+    return added
+
+
 def table_rows(text: str) -> list[list[str]]:
     rows = []
     for line in text.splitlines():
@@ -246,9 +302,35 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
     cover = get(rel.secs, "Couverture des personas") if rel else ""
     if d["personas"] and not cover:
         hole("couverture des personas", "cdc/relecture.md", "`## Couverture des personas` absente (relecture à lancer)")
-    for row in table_rows(cover):
+    rows = table_rows(cover)
+    for row in rows:
         if len(row) >= 3 and (empty(row[2]) or row[2].lower().startswith("non couvert")):
             hole("couverture des personas", row[0], f"non couvert : {row[1]}")
+    for p in d["personas"]:
+        needs = len(bullets(get(p.secs, "Besoins"))) + len(bullets(get(p.secs, "Pain points")))
+        if not bullets(get(p.secs, "Besoins")):
+            hole("couverture des personas", p.rel, "persona sans `## Besoins` : rien à couvrir, rien de prouvé")
+        if not cover:
+            continue
+        judged = sum(1 for row in rows if row and (plain(row[0]).strip().lower() == p.title.lower() or f"{p.slug}.md" in row[0]))
+        if judged < needs:
+            hole("couverture des personas", p.title, f"{needs} besoin(s) et irritant(s), {judged} ligne(s) dans la couverture")
+
+    # Recueil : ce que l'agent persona a déduit et que l'utilisateur n'a pas confirmé
+    for c in [*exigences, *(x for x in (d["modele"], d["glossaire"]) if x)]:
+        n = sum(1 for line in c.body.splitlines() if A_CONFIRMER in line.lower())
+        if n:
+            hole("recueil", c.rel, f"{n} ligne(s) `{A_CONFIRMER}` : déduite(s), jamais confirmée(s) par l'utilisateur")
+
+    # Règles : chaque règle et chaque cas d'erreur a son identifiant, celui que les critères des tickets citent
+    for e in exigences:
+        ids = [rid for _, _, rid in rule_lines(e.body)]
+        if "" in ids:
+            hole("règles", e.rel, f"{ids.count('')} règle(s) ou cas d'erreur sans identifiant `RGn`/`CEn` : "
+                                  "`cdc numerote` les numérote")
+        twice = sorted({rid for rid in ids if rid and ids.count(rid) > 1})
+        if twice:
+            hole("règles", e.rel, f"identifiant en double : {', '.join(twice)}")
 
     # Modèle métier : cycles de vie, droits, notifications
     model = d["modele"]
@@ -554,7 +636,7 @@ generated: {{ by: process:hosa-cdc, at: {now} }}
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Assemble the cahier des charges and check its completeness.")
-    ap.add_argument("command", choices=["check", "assemble", "revue", "mesure"])
+    ap.add_argument("command", choices=["check", "assemble", "revue", "mesure", "numerote"])
     ap.add_argument("kb", type=Path)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--route", choices=ROUTES)
@@ -570,6 +652,11 @@ def main(argv: list[str]) -> int:
         return 1 if gaps else 0
     if a.command == "mesure":
         print(mesure(anomalies(d)))
+        return 0
+    if a.command == "numerote":
+        done = [(e.rel, n) for e in d["exigences"] if (n := numerote(e.path))]
+        print(f"{sum(n for _, n in done)} règle(s) et cas d'erreur numéroté(s) dans {len(done)} fiche(s)"
+              + "".join(f"\n- {rel} : {n}" for rel, n in done))
         return 0
     found = holes(d, kb)
     if a.command == "assemble":

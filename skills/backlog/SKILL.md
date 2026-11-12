@@ -81,6 +81,14 @@ The checker is the source of truth — run it from the managed project's root, w
 
 No ticket given → every `state: todo` ticket. Exit `0` = all complete, `1` = gaps listed per ticket.
 
+**Rules × criteria.** Once the last lot is judged, before `done backlog`:
+
+```bash
+<hosa> ticket_check .hosa/kb --regles
+```
+
+It lists each rule (`RGn`) and error case (`CEn`) of an exigence that no criterion of its tickets cites (`- CA1 [RG2] — …`) — the cell the judge can't see, it reads one ticket at a time. Exit `1` → one more `stories-<k>` task for `hosa-product-owner` with those exact lines: a criterion added to the ticket that owns the rule, or a new ticket. `done backlog` refuses while it finds one. An exigence none of whose tickets cites a rule was sliced before the ids existed: it is skipped, never rewritten for this.
+
 ---
 
 ## Step 1: Scope

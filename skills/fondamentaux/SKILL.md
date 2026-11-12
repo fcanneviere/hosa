@@ -7,6 +7,8 @@ description: "Use to put every basic software function (administration, users, r
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start fondamentaux`; refused → name the missing stage to the user and stop. Stopped on a user question: `block fondamentaux --detail "<question>"`. Once the stage's output is written and committed: `done fondamentaux`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
+**Tâches.** After `start`: `avancement.py task add fondamentaux couverture --agent hosa-product-owner` and `task add fondamentaux ecriture --agent hosa-product-owner`. `couverture` is done once `## Choix validés` is written (Step 3): `task done fondamentaux couverture --sortie kb/cdc/fondamentaux.md`; `ecriture` → `--sortie` the exigences it wrote and `kb/cdc/fondamentaux.md`. Stopped on an Open Question → `task block fondamentaux <id> --detail "<la question>"`, and `task add` the same id again once answered.
+
 Personas describe what they need to *do*; they never ask for the plumbing that makes an application usable, operable and safe — an admin panel, user management, error logs, a change history, backups, exports. Making sure those are in the cahier des charges is the Product Owner's job, not the personas'. This stage checks `kb/cdc/` against a standard checklist and writes every missing basic as an `Exigence` — included by default, never silently dropped.
 
 ## Flow
@@ -91,12 +93,14 @@ For the socle comptes, in the same round: the 3 variants (`socle-comptes.md` § 
 
 In the same round, ask the context `juridique` and `securite` will need, so the user is questioned once for the three stages: country or countries of use, B2B or B2C, sector, planned release date, AI vendor if any, data sensitivity and the risks the user is ready to accept. Record the answers in `kb/cdc/fondamentaux.md` under `## Contexte`.
 
+Once the user has answered, before Step 4, write `kb/cdc/fondamentaux.md` (`type: Revue Fondamentaux`) with `## Contexte` and `## Choix validés`: the PO's bilan item by item (covered by which exigence, kept, struck out with its reason), each answer of this round (actors, NFR targets and measures, priorities and lots, the socle's variants, parameters and matrice des rôles). Then `avancement.py progress fondamentaux --detail "choix validés" --reprise "Step 4 : écriture depuis kb/cdc/fondamentaux.md ## Choix validés"`. A cut session resumes at Step 4 without asking again — this round is the longest of the cahier des charges.
+
 ## Step 4: Write (PO)
 
-Redispatch `hosa-product-owner` with the kept items and the user's answers. It writes:
+Redispatch `hosa-product-owner` with the `## Choix validés` of `kb/cdc/fondamentaux.md`; it moves them into the file's own sections (`## Socle comptes`, `## Bilan`) and removes `## Choix validés`. It writes:
 - one `Exigence` per kept item, `status: draft`, in `redaction`'s structure — `tags: [fondamentaux]`, `espace`, `domaine`, `priorite` and `lot` set (most basics are `back-office`; login, account recovery, notifications or user help are usually `front-office` too; a backup or a purge with no screen is `hors-application`), `objectifs: [obligation]` when the item serves no business objective, `tags: [fondamentaux, nfr]` and the non-functional template (`## Exigence`, `## Mesure`…) for an NFR — linking a matching persona if one exists (e.g. an "Administrateur" for admin items), otherwise `Aucun — exigence transverse.` under `## Besoin(s) persona répondu(s)` — expected for most of this list, not a gap;
 - for the socle comptes, every exigence the variants keep, copied from `socle-comptes.md` as its Rules of use say: text unchanged, parameters replaced by the chosen values, roles renamed, matrice des rôles filled in, `tags: [socle-comptes]`; a project exigence on the same process is merged, not duplicated;
-- `kb/cdc/fondamentaux.md`, the record `contestation` checks for:
+- `kb/cdc/fondamentaux.md`, the record `contestation` checks for (`done fondamentaux` refuses it without its `## Bilan`):
 
 ```markdown
 ---
@@ -124,9 +128,9 @@ On a re-run, update this file in place — it always reflects the latest pass.
 
 `hosa-product-owner` appends every file written to `kb/cdc/log.md` — OKF §9.
 
-## No Commits
+## Commits
 
-You don't commit. Report what changed in the KB and let the user or the orchestrating flow decide when to commit.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints), then `done fondamentaux`.
 
 ## Output
 

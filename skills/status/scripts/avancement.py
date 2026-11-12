@@ -21,6 +21,9 @@ the work stopped, in the right order.
   avancement.py <kb> reprise  "<next action>"                     (outside the pipeline)
   avancement.py <kb> back     <from> <to> [--sprint S] [--ticket T] [--cause C] --detail D [--reprise R] [--force]
                                                                   (a loop: <from> sends work back to <to>)
+  avancement.py <kb> back     changement changement --objet <exigence> [--cause C] --detail D [--force]
+  avancement.py <kb> done     changement --objet <exigence> [--reprise R] [--force]
+                                                                  (a loop inside a skill: its rounds, then its proof)
   avancement.py <kb> task add   <stage> <id> [--sprint S] --agent A [--objet O] [--detail D]
   avancement.py <kb> task done  <stage> <id> [--sprint S] --sortie P[,P…] [--detail D] [--force]
   avancement.py <kb> task block <stage> <id> [--sprint S] --detail D
@@ -38,7 +41,11 @@ rule. `back` follows a loop of pipeline.json: it reopens <to> (and the
 stages the loop re-runs after it) and <from>, and counts the round under
 `## Boucles`; past the loop's `max` rounds it refuses (exit 1) — `--force`
 once the user chose to go on. A different `--cause` restarts the count;
-`done <from>` closes its loops. `task add` lists one agent dispatch of an
+`done <from>` closes its loops. A loop whose <from> is no stage (`changement`)
+runs inside its skill: `back changement changement --objet <slug>` counts its
+round and reopens no stage, `done changement --objet <slug>` closes it, refused
+(exit 1) while the exigence isn't `stable` and signed again or a `bloquante`
+is still open. `task add` lists one agent dispatch of an
 open stage; `task done` refuses (exit 1) without `--sortie`, the paths the
 agent wrote, or when a control fails on them: each one exists (a `.md` not
 empty), its KB files pass OKF, then the controls pipeline.json's `tasks`
@@ -82,6 +89,8 @@ PIPELINES = [(p["title"], p["stages"]) for p in GRAPH["pipelines"]]
 SPRINT = GRAPH["sprint"]
 SKILL = GRAPH["skill"]
 LOOPS = GRAPH["loops"]
+# a loop whose `from` is no stage runs inside its skill (`changement`): counted per --objet, it reopens no stage
+INNER = {e["from"] for e in LOOPS} - {s for _, ss in PIPELINES for s in ss} - set(SPRINT)
 TASKS = GRAPH["tasks"]
 OPEN, SHUT = "ouverte", "fermée"
 LOOP_ROW = re.compile(r"^\|\s*`([\w-]+)`\s*→\s*`([\w-]+)`(?:\s*\(([^)]*)\))?\s*\|\s*(\d+)/\d+\s*\|"
@@ -347,18 +356,30 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
     stable = [(p, t) for p, t in exigences if field(front(t), "status") == "stable"]
     if stage == "hosa":
         gaps.append(concept(kb, "project/identity.md", "Project"))
-        if not [p for p, _ in concepts(kb, "personnas", "Persona") if p.name != "exemple-persona.md"]:
+        if field(front(read(kb / "project/identity.md")), "status") == "draft":  # written answer by answer
+            gaps.append("`kb/project/identity.md` encore `draft` : des sections « À compléter. »")
+        personas = [(p, t) for p, t in concepts(kb, "personnas", "Persona") if p.name != "exemple-persona.md"]
+        if not personas:
             gaps.append("aucun persona dans `kb/personnas/` (hors exemple)")
+        # a persona nobody enriched has no need to cover: `interview` and the coverage matrix would prove nothing
+        thin = [p.stem for p, t in personas if not re.search(r"^-\s+\S", section(t, "Besoins") or "", re.M)]
+        if thin:
+            gaps.append(f"persona(s) sans `## Besoins` (`hosa-key-user`, identification) : {', '.join(thin)}")
     elif stage == "interview":
+        drafts = [p.stem for p, t in concepts(kb, "cdc/interviews", "Compte Rendu") if field(front(t), "status") == "draft"]
         if not concepts(kb, "cdc/interviews", "Compte Rendu"):
             gaps.append("aucun compte rendu dans `kb/cdc/interviews/`")
+        if drafts:  # written process by process: `draft` while a process of its list is not gathered
+            gaps.append(f"compte(s) rendu(s) encore `draft` (processus restant à recueillir) : {', '.join(drafts)}")
+        # a loop back to `interview` is done once each gap it was sent has its answer and goes on to `redaction`
+        gaps += script("redaction/scripts/cdc.py", "revue", kb, "--route", "interview")
     elif stage == "redaction":
         if not exigences:
             gaps.append("aucune `Exigence` dans `kb/cdc/`")
         gaps.append(concept(kb, "project/cahier-des-charges.md", "Cahier des charges"))
         gaps += script("redaction/scripts/cdc.py", "revue", kb, "--route", "redaction")
     elif stage == "fondamentaux":
-        gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux"))
+        gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux", "Bilan"))
     elif stage == "juridique":
         gaps.append(concept(kb, "cdc/juridique.md", "Analyse juridique", "Contraintes retenues"))
     elif stage == "securite":
@@ -406,7 +427,23 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
             gaps.append("aucun `Ticket` dans `kb/tickets/`")
         gaps.append(concept(kb, "rules/design/definition-de-termine.md", "Design Rule"))
         gaps += script("backlog/scripts/ticket_check.py", kb)
+        # the rules × criteria matrix: a rule no ticket took is in no ticket the judge reads
+        gaps += script("backlog/scripts/ticket_check.py", kb, "--regles")
     return [g for g in gaps if g]
+
+
+def inner_check(kb: Path, skill: str, objet: str) -> list[str]:
+    """What the KB lacks to prove a loop inside a skill closed. `changement`: the exigence it
+    reworked is `stable` and signed again, and no `bloquante` of its mini review is still open."""
+    text = read(kb / "cdc" / f"{objet}.md")
+    if text is None or (field(front(text), "type") or "").strip("\"'") != "Exigence":
+        return [f"pas de `kb/cdc/{objet}.md` (`type: Exigence`)"]
+    gaps = []
+    if field(front(text), "status") != "stable":
+        gaps.append(f"`{objet}` pas `stable`")
+    elif not field(front(text), "verified"):
+        gaps.append(f"`{objet}` sans `verified` (signature de l'utilisateur)")
+    return gaps + script("redaction/scripts/cdc.py", "revue", kb)
 
 
 def open_tasks(tasks: list[dict], stage: str, sprint: str | None) -> list[dict]:
@@ -1164,7 +1201,10 @@ def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
         return 2, f"error: pipeline.json has no loop `{a.stage}` → `{a.to}` — known: {known}"
     if not a.detail:
         return 2, "error: back needs --detail (what goes back, and why)"
-    scope = ", ".join(x for x in (a.sprint, a.ticket) if x)
+    inner = a.stage in INNER
+    if inner and not a.objet:
+        return 2, f"error: `back {a.stage} {a.to}` needs --objet (what the loop reworks: the exigence's slug)"
+    scope = a.objet if inner else ", ".join(x for x in (a.sprint, a.ticket) if x)
     lp = next((x for x in loops if (x["from"], x["to"], x["scope"]) == (a.stage, a.to, scope)), None)
     same = lp is not None and lp["etat"] == OPEN and (not a.cause or a.cause == lp["cause"])
     n = lp["tours"] + 1 if same else 1
@@ -1179,6 +1219,10 @@ def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
     first = a.detail.strip().splitlines()[0]
     lp.update(tours=n, etat=OPEN, at=now(), cause=a.cause or (lp.get("cause", "") if same else ""), detail=first)
     tour = f"tour {n}/{e['max']}"
+    rest = "".join(f"\n  {x}" for x in a.detail.strip().splitlines()[1:])
+    if inner:  # no stage to reopen: the skill goes on, the plan keeps the round and its exact gaps
+        return 0, (f"- Boucle ouverte : {name} — {tour} — {first}{rest}\n"
+                   f"- Prochaine action : {a.reprise or f'`{a.stage}` {scope} : corriger ces manques, puis repasser'}")
     reruns = [a.to] + e.get("then", [])
     for s in reruns:
         r = next(x for x in locate(sections, s, a.sprint)[1] if x[0] == s)
@@ -1186,7 +1230,6 @@ def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
     r = next(x for x in locate(sections, a.stage, a.sprint)[1] if x[0] == a.stage)
     r[1:] = [TODO, now(), f"retour vers `{a.to}` ({tour})"]
     order = ", puis ".join(f"`{SKILL.get(s, s)}`" for s in reruns + [a.stage])
-    rest = "".join(f"\n  {x}" for x in a.detail.strip().splitlines()[1:])
     return 0, (f"- Boucle ouverte : {name} — {tour} — {first}{rest}\n"
                f"- Prochaine action : {a.reprise or order}")
 
@@ -1365,6 +1408,23 @@ def main(argv: list[str]) -> int:
     if a.action in ("progress", "block", "skip", "reponse") and not a.detail:
         print(f"error: {a.action} needs --detail", file=sys.stderr)
         return 2
+    if a.stage in INNER:  # not a stage: only its loop lives in the plan
+        if a.action != "done" or not a.objet:
+            print(f"error: `{a.stage}` is no stage — `back {a.stage} {a.stage} --objet <slug>` counts a round, "
+                  f"`done {a.stage} --objet <slug>` closes the loop", file=sys.stderr)
+            return 2
+        gaps = inner_check(a.kb, a.stage, a.objet)
+        if gaps and not a.force:
+            print(f"✗ `{a.stage}` ({a.objet}) ne peut pas être fait : preuve(s) manquante(s)\n"
+                  + "\n".join(f"- {g}" for g in gaps)
+                  + "\nComplète-les, ou relance avec --force si l'utilisateur accepte.")
+            return 1
+        for lp in loops:
+            if (lp["from"], lp["scope"], lp["etat"]) == (a.stage, a.objet, OPEN):
+                lp.update(etat=SHUT, at=now())
+        save(path, sections, f"- Prochaine action : {a.reprise}" if a.reprise else "", loops, tasks)
+        print(show(*load(path), loops, tasks))
+        return 0
 
     title, rows = locate(sections, a.stage, a.sprint)
     row = next(r for r in rows if r[0] == a.stage)

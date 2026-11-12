@@ -58,8 +58,8 @@ Each exigence follows the template of its nature (`redaction`, Step 2): **proces
 - `Objectif du processus`: concrete and specific, not a restatement of the title
 - `Données en entrée` / `Données en sortie`: named data, not "les infos nécessaires" or other placeholders
 - `Qui fait quoi`: names an actual persona/rôle for every action listed, not "l'utilisateur" generically when a specific persona applies
-- `Règles de gestion`: each rule testable — a condition, a threshold, a calculation or a status change with an example; not "selon les règles en vigueur". "Aucune règle propre" only for pure entry or consultation
-- `Cas d'erreur`: at least one, each with the expected reaction; not "gérer les erreurs"
+- `Règles de gestion`: each rule testable — a condition, a threshold, a calculation or a status change with an example; not "selon les règles en vigueur". "Aucune règle propre" only for pure entry or consultation. One rule per `RGn` bullet: two rules under one id → **Anomalie** (a criterion that cites the id would prove only one of them)
+- `Cas d'erreur`: at least one, each with the expected reaction; not "gérer les erreurs". One case per `CEn` bullet
 - `Contraintes de sécurité` / `Contraintes juridiques` (added by `securite` and `juridique`): each bullet testable like a rule — what the product does or refuses, with its value; not « sécuriser l'accès » or « respecter le RGPD ». `backlog` turns each one into a criterion and the judge checks that the ticket's note holds it: a vague one becomes a guessed criterion
 - `Responsable`: exactly one clear owner, not "l'équipe" or left implicit
 - `espace` (frontmatter, processus only): `front-office`, `back-office` or both, consistent with the roles in `Qui fait quoi`; `hors-application` for a process with no screen (a scheduled job, an operator's script, a procedure)
@@ -86,9 +86,11 @@ Each hole is an empty cell of a matrix — objectives × exigences, exigences ×
 - `cadrage`, `objectifs`, `priorités`, `périmètre`: a product choice → `interview` (transverse questions, asked to the user);
 - `cartographie`, `chaîne des processus`, `espaces`, `traçabilité`, `exigences non fonctionnelles`: the information is in the notes or the exigences → `redaction`; otherwise → `interview`;
 - `objets métier`, `cycles de vie`, `droits (CRUD)`, `notifications`: `redaction` writes `kb/cdc/modele-metier.md` from the exigences; a state with no way out or a right nobody decided is a missing rule → `interview`;
-- `questions ouvertes`: each one goes to the user in your report, numbered Q1…, with its proposed answer; `redaction` records the answer in `kb/cdc/decisions.md`.
+- `questions ouvertes`: each one goes to the user in your report, numbered Q1…, with its proposed answer; `redaction` records the answer in `kb/cdc/decisions.md`;
+- `recueil`: a line still `[à confirmer]` — the persona agent deduced it, the user never confirmed it → the user, as a question with the deduction as option `a)`; `redaction` removes the mark with the answer. One anomaly per exigence, listing its marked lines. Never judge a marked line as if it were a rule: it is not one yet;
+- `règles`: a rule or an error case without its `RGn`/`CEn`, or an id used twice. No anomaly for a missing id: run `<hosa> cdc numerote "<root>/.hosa/kb"` yourself, then `cdc check` again — it is mechanical, no fiche changes meaning. An id used twice → `redaction` (one of the two rules takes the next free id; the tickets that cite it are checked by `ticket_check`).
 
-**Persona coverage.** `hosa-challenger` (Relecture mode) also returns the table `## Couverture des personas`: every `Besoins` and `Pain points` entry of every persona, and the exigence that answers it — or `Écarté : <raison>` pointing to `kb/cdc/decisions.md`, or `Hors CDC : <ticket ou défaut>` for an implementation defect found in a recette, or `Non couvert`. A `Non couvert` row is an anomaly → `interview`. On a scoped pass, it updates only the rows of the personas linked to the scope.
+**Persona coverage.** `hosa-challenger` (Relecture mode) also returns the table `## Couverture des personas`: every `Besoins` and `Pain points` entry of every persona, one row each, and the exigence that answers it — or `Écarté : <raison>` pointing to `kb/cdc/decisions.md`, or `Hors CDC : <ticket ou défaut>` for an implementation defect found in a recette, or `Non couvert`. A `Non couvert` row is an anomaly → `interview`. On a scoped pass, it updates only the rows of the personas linked to the scope — and adds the row of any entry a persona gained since the last pass (`hosa-key-user` appends irritants during interviews and recettes). `cdc check` counts: a persona with fewer rows than entries, or with no `## Besoins`, is a hole.
 
 ## Step 4: Report and Route
 
@@ -138,7 +140,7 @@ Exit 1 on a tag missing or wrong, a `mineure` not routed `→ redaction`, or a r
 
 `back` refused (exit 1: two rounds already) → stop the loop: show the user the anomalies still open and what each round changed, and ask whether to run one more round (`back … --force`) or to scope the exigences down. `done relecture` refuses while `cdc revue` fails: a `bloquante` still `ouverte`, or a line badly tagged.
 
-This skill never edits an exigence: fixes happen in `redaction` (or `interview`), which marks each anomaly it closes `corrigée` in `kb/cdc/relecture.md`.
+This skill never edits an exigence: fixes happen in `redaction`, which marks each anomaly it closes `corrigée` in `kb/cdc/relecture.md`. `interview` (its Complément mode) closes nothing: it gathers the answer of each `→ interview` anomaly, writes it in `kb/cdc/interviews/<date>-complement.md` and re-routes the anomaly `→ redaction`; `done interview` refuses while a `bloquante` still routes `→ interview`.
 
 ## Output
 

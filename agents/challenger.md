@@ -53,7 +53,7 @@ Read `kb/cdc/fondamentaux.md` (`Revue Fondamentaux`). Name each of these finding
 - front-office data (displayed or collected) that no exigence manages from the back office;
 - a missing review.
 
-A missing or invalid field (`espace`, `objectifs`, `Déclencheur`, `priorite`, `lot`) is `cdc check`'s, not yours: skip it.
+A missing or invalid field (`espace`, `objectifs`, `Déclencheur`, `priorite`, `lot`) is `cdc check`'s, not yours: skip it. So is a line marked `[à confirmer]` (a deduction waiting for the user's answer): never judge it as a rule, never report it.
 Items the user confirmed out of scope aren't findings.
 
 ### 7. Sécurité dès la conception

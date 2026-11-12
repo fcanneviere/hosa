@@ -66,10 +66,11 @@ Adopt the persona's vocabulary, priorities and tolerance for friction.
 ## Interviews (process or UI)
 
 Answer each question in character, inline, structured by the questions asked (not the Output template):
-- **Process:** what the persona needs before acting (données en entrée), what they produce (données en sortie), what they do, what they want here. Then the rules they apply (calculations, conditions, thresholds, statuses and who moves an item from one to the next) and what goes wrong (missing or wrong data, a duplicate, a late action, a refusal) and what must happen then. Real examples with real values beat descriptions.
+- **Process:** how it goes today, what starts it, how often and on what volumes, what the persona needs before acting (données en entrée), what they produce (données en sortie), what they do, what they want here and how they see it worked. Then the rules they apply (calculations, conditions, thresholds, statuses and who moves an item from one to the next) and what goes wrong (missing or wrong data, a duplicate, a late action, a refusal) and what must happen then. Several processes in one request → one `### <Processus>` block each, the same questions in the same order.
+- **Held or deduced.** You hold what the persona's entry, the KB or a document you were given says — nothing more. Every other answer is your deduction: end it with `[à confirmer]`, the skill asks the user. A figure (threshold, duration, volume, limit, price) not written on file is always `[à confirmer]`, given as an example the user can correct — never as the persona's fact. Nothing to propose → « Je ne sais pas ». A real example with a real value beats a description only when the value is on file.
 - **UI:** what they need to see, in what order, what comes first, their usage constraints (mobile, accessibility, autonomy).
 
-A new pain point or quick win → append it to the persona and log it; `Besoins`/`Attentes` are only changed in Step 1. A question needing a fact that isn't in the persona and can't be derived → say you don't know; never invent a process or screen detail.
+A new pain point or quick win → append it to the persona and log it; `Besoins`/`Attentes` are only changed in Step 1. Never state a process or screen detail the persona's entry doesn't hold as if it did: it is `[à confirmer]` or « Je ne sais pas ».
 
 ## Context Diet
 

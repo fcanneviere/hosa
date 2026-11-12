@@ -21,7 +21,9 @@ A ticket is complete when it has, in its body:
     naming a criterion the ticket has,
   - every `dir/file.ext` its technical and architecture notes cite as existing
     (no `à créer` on the line) present in the project — or created by a ticket
-    it `depends_on`.
+    it `depends_on`,
+  - every rule or error case a criterion cites (`- CA1 [RG2, CE1] — …`) in
+    force in an exigence of its `Lié à :` line.
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
@@ -29,11 +31,17 @@ Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       First writes that `Non applicable` line in the tickets whose security or
       legal note is absent, empty or on its fallback line while the plan marks
       the stage `non applicable` — no agent needed — then checks.
+      python ticket_check.py <kb-dir> --regles
+      The rules × criteria matrix, over every ticket: each `RGn`/`CEn` of an
+      exigence is cited by a criterion of one of its tickets (exit 1 otherwise).
+      An exigence whose tickets cite no rule at all predates the ids: skipped.
 Exit: 0 all complete, 1 at least one incomplete, 2 bad invocation.
 Stdlib only, so any Python 3.9+ runs it.
 """
 from __future__ import annotations
 
+import functools
+import importlib.util
 import re
 import sys
 from pathlib import Path
@@ -110,6 +118,72 @@ CA_REF = re.compile(r"(?:→|->)\s*CA(\d+)")
 # what a criterion is, for every Hosa script: avancement.py reads it from here, so qa-plan counts the same ones
 CRITERION = re.compile(r"^\s*[-*]\s+(CA\d+)\b", re.M)
 TOO_MANY_CRITERIA = 10  # pilot2: 16 criteria and two variants in one ticket estimated "simple"
+
+
+# `- CA1 [RG2, CE1] — …`: the rules and error cases of the linked exigence this criterion proves
+RULE_REF = re.compile(r"^\s*[-*]\s+CA\d+\s*\[([^\]]*)\]", re.M)
+EXIGENCE_LINK = re.compile(r"\(\.\./cdc/([^)#\s]+)\.md")
+
+
+def cited_rules(content: str | None) -> set[str]:
+    return {r for inside in RULE_REF.findall(content or "") for r in re.findall(r"\b(?:RG|CE)\d+\b", inside)}
+
+
+def linked_exigences(body: str) -> list[str]:
+    m = re.search(r"^Lié à\s*:(.*)$", body, re.M)
+    return EXIGENCE_LINK.findall(m.group(1)) if m else []
+
+
+@functools.cache
+def cdc():
+    """`cdc.py`, the one definition of a rule's id — or None when it can't be loaded (never this check's failure)."""
+    try:
+        path = Path(__file__).resolve().parents[2] / "redaction" / "scripts" / "cdc.py"
+        spec = importlib.util.spec_from_file_location("cdc", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    except Exception:
+        return None
+
+
+def rules_of(kb: Path, slug: str) -> list[str] | None:
+    """The `RGn`/`CEn` in force in `kb/cdc/<slug>.md`; None when the fiche or `cdc.py` can't be read."""
+    f = kb / "cdc" / f"{slug}.md"
+    if cdc() is None or not f.is_file():
+        return None
+    return cdc().rule_ids(f.read_text(encoding="utf-8"))
+
+
+def unknown_rules(kb: Path, body: str) -> list[str]:
+    """A criterion that cites a rule its exigences don't have: a wrong number, or a rule since dropped."""
+    cited = cited_rules(section(body, "## Critères d'acceptation"))
+    known = [rules_of(kb, slug) for slug in linked_exigences(body)]
+    if not cited or not known or None in known:
+        return []
+    return [f"un critère cite `{r}`, absent de l'exigence liée (ou retiré)"
+            for r in sorted(cited - {r for ids in known for r in ids})]
+
+
+def rule_coverage(kb: Path) -> list[str]:
+    """Each numbered rule and error case of an exigence, cited by a criterion of one of its tickets — the cell
+    the judge can't see: it reads one ticket at a time, and a rule no ticket took is in none of them.
+    An exigence none of whose tickets cites a rule was sliced before the ids: left alone."""
+    cited: dict[str, set[str]] = {}
+    for f in sorted((kb / "tickets").glob("*.md")) if (kb / "tickets").is_dir() else []:
+        front, body = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") != "Ticket":
+            continue
+        for slug in linked_exigences(body):
+            cited.setdefault(slug, set()).update(cited_rules(section(body, "## Critères d'acceptation")))
+    out = []
+    for slug, got in sorted(cited.items()):
+        ids = rules_of(kb, slug) or []
+        lacking = [r for r in ids if r not in got]
+        if lacking and got & set(ids):
+            out.append(f"✗ cdc/{slug}.md — {', '.join(lacking)} : aucun critère de ses tickets ne les cite "
+                       f"(`- CAn [{lacking[0]}] — …`)")
+    return out
 
 
 def criteria_ids(content: str | None) -> list[str]:
@@ -283,6 +357,7 @@ def gaps(path: Path) -> list[str]:
     for dep in depends_on(front):
         if not (path.parent / f"{dep}.md").is_file():
             missing.append(f"`depends_on` cite `{dep}`, ticket introuvable")
+    missing += unknown_rules(path.parent.parent, body)
     missing += phantom_paths(path, front, body)
     missing += late_dependencies(path, front)
     loop = cycle_from(path.stem, path.parent)
@@ -326,7 +401,7 @@ def late_dependencies(path: Path, front: str) -> list[str]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
-        print("usage: ticket_check.py <kb-dir> [--ecartees] [ticket.md ...]", file=sys.stderr)
+        print("usage: ticket_check.py <kb-dir> [--ecartees] [ticket.md ...] | <kb-dir> --regles", file=sys.stderr)
         return 2
     fill = "--ecartees" in argv
     argv = [a for a in argv if a != "--ecartees"]
@@ -334,6 +409,10 @@ def main(argv: list[str]) -> int:
     if not kb.is_dir():
         print(f"error: {kb} is not a directory", file=sys.stderr)
         return 2
+    if "--regles" in argv:
+        lacking = rule_coverage(kb)
+        print("\n".join(lacking) if lacking else "Règles : chaque règle numérotée d'une exigence découpée est citée par un critère.")
+        return 1 if lacking else 0
     if argv[1:]:
         paths = [Path(p) for p in argv[1:]]
     else:

@@ -5,7 +5,11 @@ description: "Use to set up or update the managed project's identity and persona
 
 # Hosa
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Init flow, right after the Bootstrap (the KB exists from then on): `avancement.py start hosa`; refused → name the missing stage to the user and stop. Stopped on a user question: `block hosa --detail "<question>"`. Once the stage's output is written and committed: `done hosa`. Updating an existing identity or persona is not a stage: no call. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Init flow, right after the Bootstrap (the KB exists from then on): `avancement.py start hosa`; refused → name the missing stage to the user and stop. Stopped on a user question: `block hosa --detail "<question>"`. Once the stage's output is written and committed: `done hosa`. Updating an existing identity or persona is not a stage: no call. `done hosa` refuses an identity still `status: draft`, a project with no persona, and a persona with no `## Besoins`.
+
+**Tâches.** One task per persona to enrich: `avancement.py task add hosa persona-<slug> --agent hosa-key-user --objet <persona>`; `task done hosa persona-<slug> --sortie kb/personnas/<slug>.md` once it returns no Open Question; its questions waiting for the user → `task block hosa persona-<slug> --detail "<les questions>"`, and `task add` the same id again once answered.
+
+**State in the KB.** Write `kb/project/identity.md` as soon as questions 1 to 5 are answered (or the brief's extraction is confirmed), `status: draft`, the sections not asked yet as `À compléter.`; update it after each answer, and write each persona's file as soon as the user gives it. A cut session resumes at the first section still `À compléter.`, without asking the rest again. `status: stable` once question 15 is answered. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
 
 Initializes or updates the managed project's identity and personas in `.hosa/kb/`, creates any other OKF concept a natural-language request implies (when no more specific pipeline skill already owns it), and answers provenance questions by reading `generated`/`sources` straight from the KB.
 
@@ -13,7 +17,7 @@ Initializes or updates the managed project's identity and personas in `.hosa/kb/
 
 ```
 Check kb/project/identity.md
-        ↓ missing                          ↓ exists
+        ↓ missing or draft                 ↓ exists
    Init flow                          Update flow
         ↓                                   ↓
 Crée .hosa/kb/index.md +              Show current values → ask which
@@ -22,13 +26,14 @@ git init si besoin (hosa-git Mode 0)
 Brief fourni ? → en extrait les
 réponses, ne demande que le reste
         ↓
-Ask: nom → objectif → descriptif →
-public cible → objectifs mesurables   field(s) to change → confirm each
-(KPI/OKR) → non-objectifs →                  ↓
-contraintes → point de départ →       Apply confirmed changes
-échéances/budget → langue →
-niveau dev → niveau infra
-(one at a time)
+Ask: nom → objectif → niveau dev →
+niveau infra → taille → descriptif →   field(s) to change → confirm each
+contexte → public cible → objectifs          ↓
+mesurables → non-objectifs →          Apply confirmed changes
+contraintes → hypothèses → point de
+départ → échéances/budget → langue
+(one at a time, identity.md écrit
+au fil des réponses)
         ↓
 Ask personas one at a time
 (nom + description) until
@@ -53,7 +58,7 @@ Manual: `/hosa [chemin/vers/brief.md]`. Auto: "initialise le projet", "configure
 
 ---
 
-## Init flow (`kb/project/identity.md` doesn't exist)
+## Init flow (`kb/project/identity.md` doesn't exist, or is still `status: draft`)
 
 ### Bootstrap
 
@@ -72,22 +77,24 @@ If the user gave a brief file (`/hosa brief.md`, or pasted/named one): read it f
 
 ### Questions
 
-Ask one question at a time, in order, waiting for an answer before moving on:
+Ask one question at a time, in order, waiting for an answer before moving on. The user's levels and the project's size come first: every later question is worded for them (`using-hosa`, "Fit the user"). From question 6 on, propose an answer drawn from what the user already said (« je propose : … ») — a proposal to correct is quicker than a blank to fill, and a `débutant` can't answer 9 or 12 from nothing:
 1. Nom du projet
 2. Objectif (une phrase)
-3. Descriptif (texte libre, plus long)
-4. Contexte et enjeux : comment ça se passe aujourd'hui, ce qui rate, ce que ça coûte, pourquoi maintenant
-5. Public cible
-6. Objectifs mesurables (KPI/OKR) : pour chacun, l'indicateur, la cible et comment on le mesure — "aucun encore" accepté ici, mais `contestation` ne signe pas un cahier des charges sans objectif ; propose-les depuis le descriptif et les personas
-7. Non-objectifs (ce que ce projet ne cherche pas à faire — pour cadrer le périmètre)
-8. Contraintes (techniques, réglementaires, business — "aucune" accepté)
-9. Hypothèses, dépendances et risques (ce qu'on tient pour vrai, ce dont le projet dépend, ce qui peut le faire échouer — "aucun" accepté)
-10. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
-11. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
-12. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
-13. Ton niveau en développement : débutant / intermédiaire / expert
-14. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
-15. Taille du projet : petit (quelques écrans, un ou deux personas, un usage principal) / standard — propose "petit" when the description says so ("minuscule", "simple", "perso")
+3. Ton niveau en développement : débutant / intermédiaire / expert
+4. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
+5. Taille du projet : petit (quelques écrans, un ou deux personas, un usage principal) / standard — propose "petit" when the objective says so ("minuscule", "simple", "perso")
+6. Descriptif (texte libre, plus long)
+7. Contexte et enjeux : comment ça se passe aujourd'hui, ce qui rate, ce que ça coûte, pourquoi maintenant
+8. Public cible
+9. Objectifs mesurables (KPI/OKR) : pour chacun, l'indicateur, la cible et comment on le mesure — "aucun encore" accepté ici, mais `contestation` ne signe pas un cahier des charges sans objectif ; propose-les depuis le descriptif et le contexte (un problème constaté à la question 7 donne son indicateur)
+10. Non-objectifs (ce que ce projet ne cherche pas à faire — pour cadrer le périmètre)
+11. Contraintes (techniques, réglementaires, business — "aucune" accepté)
+12. Hypothèses, dépendances et risques (ce qu'on tient pour vrai, ce dont le projet dépend, ce qui peut le faire échouer — "aucun" accepté)
+13. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
+14. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
+15. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
+
+`Taille : petit` → questions 10 to 14 in one message, each with its proposed answer ("Q10 a, Q11 a…" accepted): five quick checks, not five turns.
 
 Then ask for personas one at a time: "Un persona à ajouter ? (nom + description, ou 'terminé' pour finir)". Repeat until the user says done. Zero personas is fine for now — don't force one if the user has none ready yet; but the cahier des charges (`interview`) can't start without one, so say so.
 
@@ -184,12 +191,15 @@ This flow only captures nom + description — not enough to embody the
 persona for recette métier. Once all personas for this session are written
 (the user has said "terminé"), for each persona just created dispatch
 `hosa-key-user` in identification mode (persona file path, no recette
-target). It writes back whatever of Identité / Objectifs / Besoins /
+target) — all the dispatches in one message, the personas are independent. It writes back whatever of Identité / Objectifs / Besoins /
 Attentes / Pain points / Quick wins it can derive to
 `kb/personnas/<slug>.md`, and returns the rest under `## Open Questions` —
 it can't ask the user itself. Ask those questions yourself, one at a time,
-then redispatch it with the answers; repeat until it returns "None". Do this
-one persona at a time — don't batch the interrogation across personas.
+then redispatch it with the answers; repeat until it returns "None". Ask
+one persona's questions at a time — don't mix two personas in one round.
+A persona is ready when its `## Besoins` holds at least one need, in the
+user's words or confirmed by them: `interview` asks from it, and the coverage
+table of `relecture` proves the cahier des charges against it.
 
 Once every persona in this session has been enriched, chain to `interview`
 without asking ("Personas prêts. Je lance l'interview du cahier des charges.").

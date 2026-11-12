@@ -43,8 +43,11 @@ Then append acceptance criteria derived from the `Exigence`'s own text — its `
 
 ```markdown
 ## Critères d'acceptation
-- CA1 — Étant donné [contexte], quand [action], alors [résultat attendu]
+- CA1 [RG2] — Étant donné [contexte], quand [action], alors [résultat attendu]
+- CA2 [RG3, CE1] — Étant donné [contexte], quand [action], alors [résultat attendu]
 ```
+
+**Cite the rule.** A criterion names, in brackets after its number, the rule(s) (`RGn`) and error case(s) (`CEn`) of the linked exigence it proves — the ids as the fiche writes them, never one you make up. When the exigence is split into several tickets, each rule and each error case goes to one ticket at least: decide it with the split, and list in `## Reprise` the ids the later tickets take. The checker refuses an id the exigence doesn't have, and `ticket_check --regles` refuses the backlog while an id of the exigence is cited by none of its tickets. A criterion that comes from no rule (the nominal path of the objective) has no brackets. An exigence whose rules have no id yet: no brackets — never number them yourself, report it under `## Retour Hosa`.
 
 Number the criteria `CA1`, `CA2`… in order and never renumber one: test plans, recettes and validation cite them by number. A criterion is checkable by a test or a named person: « corrigée sous un mois », « notée hors application » or « une capture est jointe » are procedures, not criteria — they go to the procedure document the ticket writes, and the criterion checks that document exists and says it. If the `Exigence` doesn't say enough to derive a concrete scenario, ask the user rather than inventing one. These criteria are what `qa-plan` grounds its technical test cases in, and what `recette`/`validation` check the delivered ticket against — never leave a ticket without at least one.
 

@@ -85,6 +85,35 @@ class Check(unittest.TestCase):
                 "personnas/exemple-persona.md": "---\ntype: Persona\n---\n"})
         self.assertEqual(av.check(k, "hosa", None), ["aucun persona dans `kb/personnas/` (hors exemple)"])
 
+    def test_hosa_needs_each_persona_enriched(self):
+        k = kb({"project/identity.md": "---\ntype: Project\n---\n",
+                "personnas/karim.md": "---\ntype: Persona\n---\nUn parent.\n"})
+        self.assertEqual(av.check(k, "hosa", None), ["persona(s) sans `## Besoins` (`hosa-key-user`, identification) : karim"])
+        (k / "project" / "identity.md").write_text("---\ntype: Project\nstatus: draft\n---\n## Public cible\nÀ compléter.\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "hosa", None)[0], "`kb/project/identity.md` encore `draft` : des sections « À compléter. »")
+        (k / "project" / "identity.md").write_text("---\ntype: Project\nstatus: stable\n---\n", encoding="utf-8")
+        (k / "personnas" / "karim.md").write_text("---\ntype: Persona\n---\n## Besoins\n- Envoyer la liste.\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "hosa", None), [])
+
+    def test_interview_waits_for_its_whole_list_and_for_the_gaps_it_was_sent(self):
+        cr = "---\ntype: Compte Rendu\nstatus: draft\n---\n### Processus à couvrir\n- [ ] Envoyer la liste\n"
+        rel = ("---\ntype: Revue Relecture\n---\n## Anomalies\n"
+               "- A3 [p1, bloquante, texte] — [y](y.md) — besoin — → interview — ouverte\n")
+        k = kb({"cdc/interviews/2026-11-12-interview.md": cr})
+        self.assertEqual(av.check(k, "interview", None),
+                         ["compte(s) rendu(s) encore `draft` (processus restant à recueillir) : 2026-11-12-interview"])
+        (k / "cdc" / "interviews" / "2026-11-12-interview.md").write_text(cr.replace("draft", "stable"), encoding="utf-8")
+        self.assertEqual(av.check(k, "interview", None), [])
+        (k / "cdc" / "relecture.md").write_text(rel, encoding="utf-8")  # a loop back: the old compte rendu proves nothing
+        self.assertEqual(av.check(k, "interview", None), ["`cdc` : anomalies bloquantes → interview encore `ouverte` : A3"])
+        (k / "cdc" / "relecture.md").write_text(rel.replace("→ interview", "→ redaction"), encoding="utf-8")
+        self.assertEqual(av.check(k, "interview", None), [])  # answered: the gap goes on to `redaction`
+        self.assertEqual(av.check(k, "redaction", None)[-1], "`cdc` : anomalies bloquantes → redaction encore `ouverte` : A3")
+
+    def test_fondamentaux_needs_its_write_pass(self):
+        k = kb({"cdc/fondamentaux.md": "---\ntype: Revue Fondamentaux\n---\n## Choix validés\n- x\n"})
+        self.assertEqual(av.check(k, "fondamentaux", None), ["`kb/cdc/fondamentaux.md` n'a pas sa section `## Bilan`"])
+
     def test_securite_needs_its_second_pass(self):
         k = kb({"cdc/securite.md": "---\ntype: Analyse de sécurité\nstatus: draft\n---\n## Choix validés\n- x\n"})
         self.assertEqual(av.check(k, "securite", None), ["`kb/cdc/securite.md` n'a pas sa section `## Menaces et mesures`"])
@@ -869,6 +898,12 @@ class Graph(unittest.TestCase):
                     self.assertLess(pipe.index(s), pipe.index(e["from"]), e)
                 self.assertGreaterEqual(e["max"], 1)
 
+    def test_a_loop_outside_the_stages_is_a_skill_looping_on_itself(self):
+        self.assertEqual(av.INNER, {"changement"})
+        for e in (e for e in av.LOOPS if e["from"] in av.INNER):
+            self.assertEqual((e["to"], e.get("then", [])), ([e["from"]], []))
+            self.assertTrue((SCRIPT.parents[2] / e["from"] / "SKILL.md").is_file())
+
 
 def batch(k, n, tickets):
     """A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added."""
@@ -941,6 +976,36 @@ class Loops(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(run(k, "back", "relecture", "stack", "--detail", "x")[0], 2)
 
+    def test_a_loop_inside_a_skill_is_counted_bounded_and_closed_on_its_proof(self):
+        fiche = "---\ntype: Exigence\nstatus: draft\n---\n"
+        k = kb({"cdc/e1.md": fiche, "cdc/e2.md": fiche})
+        closed_until(k, "contestation")
+        back = lambda slug, *f: run(k, "back", "changement", "changement", "--objet", slug, "--detail", "A3 — seuil flou", *f)  # noqa: E731
+        code, out = back("e1")
+        self.assertEqual(code, 0)
+        self.assertIn("Boucle ouverte : `changement` → `changement` (e1) — tour 1/2 — A3 — seuil flou", out)
+        sections, _ = av.load(k / "project" / "avancement.md")
+        self.assertEqual({r[1] for r in sections["Cahier des charges"]}, {av.DONE})   # no stage reopened
+        self.assertEqual(back("e2")[0], 0)                                         # another exigence: its own count
+        self.assertEqual(back("e1")[0], 0)
+        code, out = back("e1")
+        self.assertEqual(code, 1)                                                  # the bound: the user decides
+        self.assertIn("déjà 2 tour(s)", out)
+        self.assertEqual(back("e1", "--force")[0], 0)
+        code, out = run(k, "done", "changement", "--objet", "e1")
+        self.assertEqual(code, 1)
+        self.assertIn("`e1` pas `stable`", out)
+        (k / "cdc" / "e1.md").write_text(fiche.replace("draft", "stable"), encoding="utf-8")
+        self.assertIn("sans `verified`", run(k, "done", "changement", "--objet", "e1")[1])
+        (k / "cdc" / "e1.md").write_text(fiche.replace("draft", "stable\nverified: { by: human:x }"), encoding="utf-8")
+        self.assertEqual(run(k, "done", "changement", "--objet", "e1")[0], 0)
+        state = {lp["scope"]: lp["etat"] for lp in av.load_loops(k / "project" / "avancement.md")}
+        self.assertEqual(state, {"e1": av.SHUT, "e2": av.OPEN})
+        self.assertIn("tour 1/2", back("e1")[1])                                   # a new change starts at one
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(run(k, "back", "changement", "changement", "--detail", "x")[0], 2)   # no --objet
+            self.assertEqual(run(k, "start", "changement", "--objet", "e1")[0], 2)                 # not a stage
+
     def test_the_mod_and_budget_hook_do_not_read_loops_as_stages(self):
         k = kb({})
         closed_until(k, "relecture")
@@ -953,7 +1018,7 @@ class Loops(unittest.TestCase):
 
 class Init(unittest.TestCase):
     def test_init_marks_the_proved_stages_and_stops_at_the_first_gap(self):
-        k = kb({"project/identity.md": "---\ntype: Project\n---\n", "personnas/parent.md": "---\ntype: Persona\n---\n",
+        k = kb({"project/identity.md": "---\ntype: Project\n---\n", "personnas/parent.md": "---\ntype: Persona\n---\n## Besoins\n- Envoyer la liste.\n",
                 "sprints/s1.md": SPRINT, "tickets/t1.md": TICKET})
         code, out = run(k, "init")
         self.assertEqual(code, 0)

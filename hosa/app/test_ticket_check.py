@@ -1,6 +1,8 @@
 """ticket_check.py: a file cited as existing but created by another ticket needs a `depends_on` on it;
 abuse cases and legal constraints are acceptance criteria; a dependency never ranks after its ticket."""
+import contextlib
 import importlib.util
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -129,6 +131,27 @@ class SecurityAndLegalNotes(unittest.TestCase):
         p = self.write("import", "", "## Note sécurité (expert cybersécurité)\nNon applicable — étape `securite` écartée\n")
         self.assertIn("section `## Note sécurité (expert cybersécurité)` « Non applicable » alors que le plan "
                       "d'avancement n'écarte pas l'étape `securite`", tc.gaps(p))
+
+    def test_a_criterion_cites_rules_its_exigence_has_and_every_rule_is_cited(self):
+        kb = self.tickets.parent
+        (kb / "cdc").mkdir()
+        (kb / "cdc" / "envoi.md").write_text(
+            "---\ntype: Exigence\n---\n## Règles de gestion\n- **RG1** — une seule notification\n"
+            "- **RG2** — retirée : remplacée par RG3\n- **RG3** — 50 articles au plus\n"
+            "## Cas d'erreur\n- **CE1** — liste vide → refus\n", encoding="utf-8")
+        (kb / "cdc" / "ancien.md").write_text("---\ntype: Exigence\n---\n## Règles de gestion\n- **RG1** — a\n", encoding="utf-8")
+        story = "En tant que parent,\nLié à : [p](../personnas/p.md), [e](../cdc/envoi.md)\n## Critères d'acceptation\n"
+        p = self.write("envoyer", "", story + "- CA1 [RG1, CE1] — nominal\n- CA2 [RG2] — retirée\n- CA3 [RG9] — inconnue\n- CA4 — sans règle\n")
+        gaps = tc.gaps(p)
+        self.assertIn("un critère cite `RG2`, absent de l'exigence liée (ou retiré)", gaps)
+        self.assertIn("un critère cite `RG9`, absent de l'exigence liée (ou retiré)", gaps)
+        self.assertFalse(any("`RG1`" in g or "`CE1`" in g for g in gaps))
+        self.write("avant", "state: done\n", story.replace("envoi.md", "ancien.md") + "- CA1 — écrit avant les identifiants\n")
+        self.assertEqual(tc.rule_coverage(kb), ["✗ cdc/envoi.md — RG3 : aucun critère de ses tickets ne les cite (`- CAn [RG3] — …`)"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kb), "--regles"]), 1)
+        self.write("limite", "", story + "- CA1 [RG3] — 51e article refusé\n")   # another ticket of the exigence takes it
+        self.assertEqual(tc.rule_coverage(kb), [])
 
     def test_dependency_ranked_after_its_ticket(self):
         self.write("journal", "priority: 43\n", "")

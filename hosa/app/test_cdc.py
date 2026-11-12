@@ -1,5 +1,7 @@
 """cdc.py assembles the cahier des charges and finds every empty cell of its completeness matrices."""
+import contextlib
 import importlib.util
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -47,7 +49,7 @@ Remettre la liste.
 La liste est complète.
 
 ## Règles de gestion
-- Une seule notification.
+- **RG1** — Une seule notification.
 
 ## Responsable
 Parent.
@@ -158,6 +160,43 @@ class Completeness(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             rel = RELECTURE + "| Les parents | Dupliquer une liste | Non couvert |\n"
             self.assertIn("non couvert : Dupliquer une liste", holes(kb(d, cdc__relecture=rel)))
+
+    def test_every_persona_need_is_judged(self):
+        with tempfile.TemporaryDirectory() as d:
+            persona = PERSONA + "- Dupliquer une liste.\n## Pain points\n- Les SMS se perdent.\n"
+            self.assertIn("3 besoin(s) et irritant(s), 1 ligne(s) dans la couverture",
+                          holes(kb(d, personnas__les_parents=persona)))
+            rel = RELECTURE + ("| [Les parents](../personnas/les-parents.md) | Dupliquer une liste | Écarté : lot 2 |\n"
+                               "| Les parents | Irritant : les SMS se perdent | [Envoyer la liste](envoyer-la-liste.md) |\n")
+            self.assertEqual(holes(kb(d, personnas__les_parents=persona, cdc__relecture=rel)), [])
+            other = "---\ntype: Persona\ntitle: Les ados\n---\nUn adolescent du foyer.\n"
+            found = holes(kb(d, personnas__les_ados=other))
+            self.assertIn("persona sans `## Besoins` : rien à couvrir, rien de prouvé", found)
+
+    def test_a_deduced_line_never_confirmed_blocks(self):
+        with tempfile.TemporaryDirectory() as d:
+            text = EXIGENCE.replace("Une seule notification.", "Une seule notification.\n- **RG2** — Au plus 50 articles. [à confirmer]")
+            self.assertIn("1 ligne(s) `[à confirmer]` : déduite(s), jamais confirmée(s) par l'utilisateur",
+                          holes(kb(d, cdc__envoyer_la_liste=text)))
+
+    def test_each_rule_and_error_case_has_its_id_and_numerote_never_moves_one(self):
+        with tempfile.TemporaryDirectory() as d:
+            text = EXIGENCE.replace("- **RG1** — Une seule notification.\n",
+                                    "- Au plus 50 articles (51e refusé).\n  - détail de la règle\n- **RG4** — Une seule notification.\n"
+                                    "- **RG4** — Envoi une fois.\n\n## Cas d'erreur\n- Liste vide → refus.\n- Aucun.\n")
+            root = kb(d, cdc__envoyer_la_liste=text)
+            found = holes(root)
+            self.assertIn("2 règle(s) ou cas d'erreur sans identifiant `RGn`/`CEn` : `cdc numerote` les numérote", found)
+            self.assertIn("identifiant en double : RG4", found)
+            fiche = root / "cdc" / "envoyer-la-liste.md"
+            self.assertEqual(cdc.numerote(fiche), 2)
+            body = fiche.read_text(encoding="utf-8")
+            self.assertIn("- **RG5** — Au plus 50 articles (51e refusé).\n  - détail de la règle\n- **RG4** — Une seule", body)
+            self.assertIn("- **CE1** — Liste vide → refus.\n- Aucun.\n", body)
+            self.assertEqual(cdc.numerote(fiche), 0)                       # written once
+            self.assertEqual(cdc.rule_ids(body + "- **CE2** — retirée : doublon de CE1\n"), ["RG5", "RG4", "RG4", "CE1"])
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cdc.main(["numerote", str(root)]), 0)
 
     def test_obligation_serves_only_a_legal_security_or_basic_exigence(self):
         with tempfile.TemporaryDirectory() as d:
