@@ -8,7 +8,9 @@
     orphaned, and a space; both spaces exist;
   - every item of the UX fundamentals checklist (read from the `## UX
     Fundamentals` section of `agents/ux-designer.md`, the single source) is
-    marked "Fait" or "Non applicable : <raison>" in `## Fondamentaux UX`.
+    marked "Fait" or "Non applicable : <raison>" in `## Fondamentaux UX`;
+  - in a real `<root>/.hosa/kb`, the project's CSS file carries the tokens of
+    `kb/interface/choix.md`, unedited (`atelier.py ecart`).
 
 Run:  python interface_check.py <kb-dir>
 Exit: 0 complete, 1 gaps listed, 2 bad invocation. Stdlib only.
@@ -105,6 +107,10 @@ def gaps(kb: Path) -> list[str]:
             out.append(f"fondamental UX « {item} » non traité")
         elif not re.match(r"(Fait|Non applicable)\s*:\s*\S", m.group(1)):
             out.append(f"fondamental UX « {item} » ni Fait ni Non applicable justifié")
+    if kb.resolve().parent.name == ".hosa":  # the project's CSS carries the identity's tokens, unedited
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import atelier
+        out += atelier.ecarts(kb)
     return out
 
 

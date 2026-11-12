@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="__ATELIER_CSP__">
+<title>Comparaison — Hosa</title>
+<style>
+:root{--bg:#f4f4f1;--panel:#fff;--text:#1d1d1b;--muted:#5d5d58;--line:#dcdcd6;--accent:#1f5f8b;--on-accent:#fff;--ok:#1d6b3a;--ko:#a3261b;--shadow:0 1px 2px rgb(0 0 0/.06),0 8px 24px rgb(0 0 0/.06);color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--panel:#21211f;--text:#ececea;--muted:#a9a9a3;--line:#3a3a37;--accent:#7cb8e4;--on-accent:#0d1a24;--ok:#7ccf98;--ko:#f08a7e}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:120px}
+a.skip{position:absolute;left:-999px}a.skip:focus{left:12px;top:12px;background:var(--panel);padding:6px 10px;z-index:9}
+header{padding:20px 24px 12px;display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;border-bottom:1px solid var(--line)}
+header h1{font-size:20px;font-weight:600}header p{color:var(--muted);max-width:60em}
+.tools{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel);color:var(--text);border:0;padding:6px 12px;font:inherit;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--on-accent)}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding:20px 24px;display:grid;gap:24px;grid-template-columns:repeat(auto-fill,minmax(var(--col,560px),1fr))}
+main.single{grid-template-columns:1fr}
+main.single article:not(.on){display:none}
+article{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+article.chosen{outline:3px solid var(--accent);outline-offset:-1px}
+.head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.letter{min-width:30px;height:30px;padding:0 8px;border-radius:15px;display:grid;place-items:center;font-weight:700;background:var(--text);color:var(--panel)}
+.letter.base{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:500}
+.head h2{font-size:16px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);white-space:nowrap}
+.choose{background:var(--accent);color:var(--on-accent);border:0;border-radius:8px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+.choose[aria-pressed=true]{background:var(--ok)}
+.stage{position:relative;overflow:hidden;background:repeating-conic-gradient(var(--line) 0 25%,transparent 0 50%) 0 0/16px 16px}
+.stage.real{overflow:auto;max-height:80vh}
+.stage iframe,.stage img{display:block;border:0;background:#fff;transform-origin:0 0}
+.stage img{width:100%;height:auto}
+.down{padding:24px;color:var(--ko)}
+.down button{margin-top:8px}
+.meta{padding:12px 14px;display:grid;gap:8px;border-top:1px solid var(--line)}
+.meta p{color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.trait{font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.sw{width:22px;height:22px;border-radius:5px;border:1px solid rgb(0 0 0/.15)}
+.typo{font-size:12px;color:var(--muted)}
+.ctl{list-style:none;font-size:12px;columns:2;column-gap:16px}
+.ctl .ko{color:var(--ko);font-weight:600}.ctl .ok{color:var(--muted)}
+.src{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+footer{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgb(0 0 0/.08);padding:12px 24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+footer strong{font-size:16px}
+footer textarea{flex:1;min-width:220px;height:44px;resize:vertical;font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+#copy{background:var(--text);color:var(--panel);border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+#copy:disabled{opacity:.4;cursor:default}
+.hint{font-size:12px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:640px){header,main,footer{padding-left:16px;padding-right:16px}main{grid-template-columns:1fr}.tools{margin-left:0}}
+</style>
+</head>
+<body>
+<a class="skip" href="#options">Aller aux options</a>
+<header>
+  <div><h1 id="title"></h1><p id="brief"></p></div>
+  <div class="tools" role="toolbar" aria-label="Affichage">
+    <div class="seg" data-group="layout"><button data-layout="grid" aria-pressed="true">Côte à côte</button><button data-layout="single" aria-pressed="false">Une à la fois</button></div>
+    <div class="seg" data-group="viewport"><button data-viewport="desktop" aria-pressed="true">Bureau</button><button data-viewport="mobile" aria-pressed="false">Mobile</button></div>
+    <div class="seg" data-group="scale"><button data-scale="fit" aria-pressed="true">Ajustée</button><button data-scale="real" aria-pressed="false">Taille réelle (100 %)</button></div>
+  </div>
+</header>
+<main id="options" aria-live="polite"></main>
+<footer>
+  <div><strong id="answer">Choisis une option</strong><div class="hint" id="hint"></div></div>
+  <label class="sr" for="note">Changement demandé</label>
+  <textarea id="note" placeholder="Facultatif : ce que tu veux changer ou mélanger (ex. « la typographie de c »)"></textarea>
+  <button id="copy" disabled>Copier la réponse</button>
+  <span id="copied" class="hint" role="status"></span>
+</footer>
+<script id="data" type="application/json">/*__ATELIER_DONNEES__*/null</script>
+<script>
+(() => {
+const DATA = JSON.parse(document.getElementById("data").textContent);
+const VIEW = { desktop: [1280, 800], mobile: [390, 844] };
+const KEY = "hosa-atelier:" + DATA.empreinte;
+const st = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } })();
+st.layout ||= "grid"; st.viewport ||= "desktop"; st.scale ||= "fit";
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? n.className = v : k.startsWith("on") ? n.addEventListener(k.slice(2), v) : n.setAttribute(k, v);
+  for (const k of kids) n.append(k);
+  return n;
+};
+document.title = DATA.project + " — " + DATA.round;
+$("#title").textContent = DATA.project + " · " + DATA.round;
+$("#brief").textContent = DATA.brief;
+$("#hint").textContent = "Colle la réponse dans la conversation (" + DATA.question + ").";
+const main = $("#options");
+const frames = [];
+const lettre = (c) => c.lettre ? c.lettre.toUpperCase() : "Actuel";
+
+function fit() {
+  const [w, h] = VIEW[st.viewport];
+  main.style.setProperty("--col", (st.viewport === "mobile" ? 380 : 560) + "px");
+  for (const { stage, frame } of frames) {
+    if (!frame) continue;
+    frame.style.width = w + "px"; frame.style.height = h + "px";
+    const real = st.scale === "real";
+    stage.classList.toggle("real", real);
+    const k = real ? 1 : Math.min(1, stage.clientWidth / w);
+    frame.style.transform = real ? "" : `scale(${k})`;
+    stage.style.height = real ? "" : Math.round(h * k) + "px";
+  }
+}
+
+function render() {
+  main.textContent = "";
+  frames.length = 0;
+  DATA.candidates.forEach((c, i) => {
+    const stage = el("div", { class: "stage" });
+    let frame = null;
+    if (c.kind === "image") {
+      stage.append(el("img", { src: c.content, alt: "Capture de l'option " + lettre(c) }));
+    } else {
+      frame = el("iframe", { title: "Option " + lettre(c) + " : " + c.name, loading: "lazy",
+        sandbox: c.kind === "url" ? "allow-scripts allow-same-origin allow-forms" : c.interactive ? "allow-scripts allow-forms" : "" });
+      if (c.kind === "url") {
+        frame.src = c.content;
+        fetch(c.content, { mode: "no-cors" }).catch(() => {
+          const down = el("div", { class: "down" }, "Le serveur local ne répond pas : " + c.content);
+          if (DATA.serve) down.append(el("br"), el("button", { class: "choose", "data-copy-serve": "", onclick: () => copy(DATA.serve.command) }, "Copier la commande de démarrage"));
+          stage.replaceChildren(down);
+        });
+      } else frame.srcdoc = c.content;
+      stage.append(frame);
+    }
+    frames.push({ stage, frame });
+    const chosen = st.chosen === c.id;
+    const head = el("div", { class: "head" },
+      el("span", { class: "letter" + (c.baseline ? " base" : "") }, lettre(c)),
+      el("h2", {}, c.name));
+    if (c.id === DATA.recommande) head.append(el("span", { class: "badge" }, "Recommandée"));
+    if (!c.baseline) head.append(el("button", { class: "choose", "aria-pressed": String(chosen), onclick: () => choose(c.id) }, chosen ? "Choisie" : "Choisir " + lettre(c)));
+    const meta = el("div", { class: "meta" }, el("p", {}, c.concept),
+      el("div", { class: "row" }, ...c.palette.map((p) => el("span", { class: "sw", style: "background:" + p, title: p })), ...c.traits.map((t) => el("span", { class: "trait" }, t))),
+      el("div", { class: "typo" }, c.typography));
+    if (c.controles && c.controles.length) meta.append(el("ul", { class: "ctl", "aria-label": "Contrastes WCAG" }, ...c.controles.map((t) => el("li", { class: /✗/.test(t) ? "ko" : "ok" }, t))));
+    meta.append(el("div", { class: "src" }, c.sourceLabel + (c.interactive ? " · interactive" : "")));
+    main.append(el("article", { class: (chosen ? "chosen " : "") + (i === (st.index || 0) ? "on" : ""), "data-id": c.id }, head, stage, meta));
+  });
+  main.classList.toggle("single", st.layout === "single");
+  for (const g of document.querySelectorAll(".seg")) for (const b of g.children) {
+    const [k, v] = Object.entries(b.dataset)[0];
+    b.setAttribute("aria-pressed", String(st[k] === v));
+  }
+  answer();
+  requestAnimationFrame(fit);
+}
+
+function choose(id) { st.chosen = st.chosen === id ? null : id; save(); render(); }
+
+function reply() {
+  const c = DATA.candidates.find((x) => x.id === st.chosen);
+  if (!c) return "";
+  const note = $("#note").value.trim();
+  return DATA.question + " " + c.lettre + (note ? " — " + note : "");
+}
+function answer() {
+  const c = DATA.candidates.find((x) => x.id === st.chosen);
+  $("#answer").textContent = c ? "Ta réponse : " + DATA.question + " " + c.lettre + " — " + c.name : "Choisis une option";
+  $("#copy").disabled = !c;
+}
+async function copy(text) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch {
+    const a = el("textarea"); a.value = text; a.style.cssText = "position:fixed;opacity:0"; document.body.append(a); a.select();
+    try { ok = document.execCommand("copy"); } catch {} a.remove();
+  }
+  $("#copied").textContent = ok ? "Copié : " + text : "Copie impossible, recopie : " + text;
+}
+
+$("#note").value = st.note || "";
+$("#note").addEventListener("input", (e) => { st.note = e.target.value; save(); });
+$("#copy").addEventListener("click", () => copy(reply()));
+for (const b of document.querySelectorAll(".seg button")) b.addEventListener("click", () => {
+  const [k, v] = Object.entries(b.dataset)[0]; st[k] = v; save(); render();
+});
+addEventListener("keydown", (e) => {
+  if (e.target.closest("textarea") || st.layout !== "single") return;
+  const n = DATA.candidates.length;
+  if (e.key === "ArrowRight") st.index = ((st.index || 0) + 1) % n;
+  else if (e.key === "ArrowLeft") st.index = ((st.index || 0) - 1 + n) % n;
+  else return;
+  save(); render();
+});
+addEventListener("resize", fit);
+render();
+})();
+</script>
+</body>
+</html>

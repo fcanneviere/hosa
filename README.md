@@ -134,13 +134,15 @@ ccc init && ccc index
 ## L'interface : choisir sur des pages de comparaison
 
 Le skill `interface` ne te décrit pas l'interface en paragraphes. Il te la montre, en trois manches, chacune sur une page de comparaison à ouvrir dans ton navigateur :
-1. **Styles** — 4 à 6 cartes de style sur le vrai contenu du projet. Tu en choisis une.
+1. **Styles** — 4 à 6 cartes de style sur le vrai contenu du projet, avec son premier écran. Chaque couleur passe le contraste WCAG AA, calculé : une carte illisible ne t'est jamais montrée. Tu en choisis une.
 2. **Directions** — la navigation, le lexique et 2 ou 3 mises en page vraiment différentes de l'écran principal.
 3. **Pages** — une page complète par espace (front office, back office), à valider avant la construction.
 
-L'interface construite est ensuite vérifiée sur des captures (ordinateur et mobile), puis notée par une revue indépendante. Pour les captures, le poste a besoin de Node 22 et d'un Chrome ou Chromium. Sans eux, Hosa te donne des tests à faire toi-même.
+Sur chaque page, l'option recommandée est la a), comme dans la question qui t'est posée. Le bouton « Copier la réponse » te donne la phrase à coller (`Q1 b`, avec ta demande de changement). Ton choix est noté dans la KB (`kb/interface/choix.md`) : une session coupée le retrouve. Les couleurs de la carte choisie deviennent les variables CSS du projet, générées depuis la KB.
 
-La méthode et les outils viennent d'[oil-ui](https://github.com/oil-oil/oil-ui) (licence MIT), copiés dans `skills/interface/vendor/oil-ui/`.
+L'interface construite est ensuite vérifiée sur des captures (ordinateur et mobile) : chaque route du plan de navigation, avec des contrôles d'accessibilité calculés (contraste, libellés, cibles tactiles). Puis une revue indépendante la note. Pour les captures, le poste a besoin de Node 22 et d'un Chrome, Chromium ou Edge. Sans eux, Hosa te donne des tests à faire toi-même.
+
+Les outils (`atelier`, `capture`) sont ceux de Hosa, dans `skills/interface/scripts/`. La méthode s'inspire d'[oil-ui](https://github.com/oil-oil/oil-ui) (licence MIT).
 
 ## Commandes utiles
 

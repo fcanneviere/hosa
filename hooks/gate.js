@@ -162,7 +162,7 @@ function composeGate(cmd, cwd) {
 
 // A Hosa script run by its path under the plugin cache: that path carries the version and breaks at the
 // next update, and the Python picked (the project's .venv on pilot2) may lack the scripts' modules.
-// Reading the files there (cat, grep, ls…) passes; node tools (oil-ui's shoot.mjs) too.
+// Reading the files there (cat, grep, ls…) passes; a node tool (interface's capture.mjs) too.
 const CACHE_RE = /plugins[\\/]+cache[\\/]+hosa[\\/]+hosa[\\/]+\d[^\\/\s"']*/;
 const READERS = new Set(['cat', 'head', 'tail', 'sed', 'grep', 'rg', 'ls', 'less', 'wc', 'find', 'echo', 'test', 'stat', 'awk', 'diff', 'cd']);
 function scriptGate(cmd) {

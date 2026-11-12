@@ -133,7 +133,7 @@ test('a Hosa script by its cache path is refused, reading the cache passes', () 
   assert.match(denied(bash(r, `python "${S}/okf/scripts/okf_validate.py" .hosa/kb`)), /okf_validate/);
   assert.equal(bash(r, `cat "${S}/qa/SKILL.md"`), null);
   assert.equal(bash(r, `grep -n x "${S}/okf/scripts/kb_query.py"`), null);
-  assert.equal(bash(r, `node "${S}/interface/vendor/oil-ui/scripts/shoot.mjs" page.html`), null);
+  assert.equal(bash(r, `node "${S}/interface/scripts/capture.mjs" page.html`), null);
 });
 
 test('a cd into the KB is refused, a subshell or another folder passes', () => {

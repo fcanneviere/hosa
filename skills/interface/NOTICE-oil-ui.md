@@ -1,3 +1,8 @@
+# oil-ui — notice de licence
+
+Portions of `scripts/atelier.py` (the mock-up resource check, the CSS tokenizer, the storage stand-in) and of `scripts/capture.mjs` (the Chrome DevTools driver, the local file server, `--mark`, `--sheet`, `--mask`) are adapted from oil-ui, https://github.com/oil-oil/oil-ui, commit 7987bb38afeea1ff8e96641b3ffebb5601fe67d2. The rest of the interface tools is Hosa's.
+
+```
 MIT License
 
 Copyright (c) 2026 oil-oil
@@ -19,3 +24,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```

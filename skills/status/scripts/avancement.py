@@ -968,6 +968,27 @@ def ctl_interface(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> li
     return [g for g in interface_gaps(kb) if ESPACE_GAP not in g] + verification_gaps(kb, t)
 
 
+@functools.cache
+def atelier():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "interface" / "scripts" / "atelier.py"
+    spec = importlib.util.spec_from_file_location("atelier", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ctl_choix(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`interface` 3a: each round's choice is in `kb/interface/choix.md`, written by `atelier choisir` after the
+    user's answer (its format: `atelier.py`, the one definition) — 3a records what the user chose, read from the KB.
+    It lived in the dispatch message only, and a `/clear` between the rounds and 3a lost which option was picked."""
+    done = atelier().lit_choix(kb)["manches"]
+    return [f"manche `{r}` sans choix dans `kb/interface/choix.md` — après la réponse de l'utilisateur : "
+            f"`<hosa> atelier choisir .hosa/kb {r} <option> --depuis <cartes.json|manifest.json> --par <utilisateur>` "
+            f"(l'existant gardé, ou une manche d'avant `choix.md` : `--conserve` à la place de l'option)"
+            for r in atelier().MANCHES if not done.get(r, ("",))[0].strip(" —-")]
+
+
 BUILD = re.compile(r"Build\s*:\s*(OK|échec)", re.I)
 ROUTES = re.compile(r"routes rendues\s*:\s*(?:(\d+)\s*/\s*(\d+)|(sans captures))", re.I)
 
@@ -1330,7 +1351,7 @@ def juge_groups(kb: Path, slugs: list[str]) -> list[list[str]]:
 # the controls a task's outputs pass at `task done`, in order: `sortie` and `okf` always, then the ones
 # pipeline.json's `tasks.controls` declares for the task; the first that fails is the round's cause
 CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
-            "interface": ctl_interface, "score": ctl_score}
+            "interface": ctl_interface, "score": ctl_score, "choix": ctl_choix}
 # `refus 2/2 (okf ; sortie 1) — …`: the last refusal's cause and count, then the other causes' counts
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)((?: ; [\w-]+ \d+)*)\)(?: — )?")
 

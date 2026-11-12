@@ -1371,6 +1371,24 @@ class LoopsClosed(unittest.TestCase):
                                          encoding="utf-8")
         self.assertEqual(av.espace_gaps(k, av.concepts(k, "cdc", "Exigence")), [])
 
+    def test_3a_closes_only_once_each_round_s_choice_is_in_the_kb(self):
+        head = "---\ntype: Choix de design\ntitle: C\ndescription: d\ntags: [ux]\n---\n## Manches\n" \
+               "| Manche | Option | Nom | Demande de l'utilisateur | Date |\n|---|---|---|---|---|\n"
+        k = kb({"interface/choix.md": head + "| styles | kiln | Four | — | 2026-11-12T10:00Z |\n"})
+        run(k, "start", "interface", "--force")
+        run(k, "task", "add", "interface", "3a", "--agent", "hosa-ux-designer")
+        done = lambda: run(k, "task", "done", "interface", "3a", "--sortie", "kb/interface/choix.md")  # noqa: E731
+        code, out = done()
+        self.assertEqual((code, "refusée par `choix`" in out), (1, True), out)
+        self.assertIn("manche `directions` sans choix", out)
+        self.assertIn("manche `page` sans choix", out)
+        self.assertNotIn("manche `styles`", out)
+        (k / "interface" / "choix.md").write_text(
+            head + "| styles | conservée | identité existante | — | d |\n| directions | b | Liste | — | d |\n"
+                   "| page | a | Accueil | — | d |\n", encoding="utf-8")
+        run(k, "task", "add", "interface", "3a", "--agent", "hosa-ux-designer", "--force")
+        self.assertEqual(done()[0], 0)
+
     def test_the_review_closes_on_a_written_note_of_8_or_its_two_exits(self):
         nav = "---\ntype: Plan de navigation\ntitle: N\ndescription: d\ntags: [x]\n---\n## Écrans\n- a\n## Revue visuelle\n"
         k = kb({"interface/navigation.md": nav})
