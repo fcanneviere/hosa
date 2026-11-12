@@ -10,7 +10,8 @@
 // - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root;
 // - `docker compose -p <projet>-sprint-<slug> up|create|run` from anywhere but that worktree;
 // - a Hosa script run by its versioned path under the plugin cache, not through `<hosa>`.
-// PreToolUse on Agent: `hosa-developer` dispatched on a ticket whose `## Revue` ends on two FAIL.
+// PreToolUse on Agent: a dispatch while the session's cwd is inside `.hosa/` (the agent's memory would land
+// in the KB); `hosa-developer` dispatched on a ticket whose `## Revue` ends on two FAIL.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
 
 const fs = require('fs');
@@ -218,13 +219,23 @@ function reviewLoopGate(p, cwd) {
   return null;
 }
 
+// An agent's `memory:` folder (`.claude/agent-memory[-local]/`) is resolved from the session's cwd at dispatch:
+// a session left inside `.hosa/` writes it into the KB (pilote, ui, pilote2: 6-18/10, before and around `cdGate`).
+// `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
+function dispatchCwdGate(cwd) {
+  const m = /^(.*?)[\\/]\.hosa([\\/]|$)/.exec(cwd);
+  return m && `the session's working directory is inside the KB (${cwd}): the agent would write its memory ` +
+    `(\`.claude/agent-memory-local/\`) into the KB. Run \`cd "${m[1].replace(/\\/g, '/')}"\`, then dispatch again.`;
+}
+
 function processPayload(p) {
   if (process.env.HOSA_GATE === '0' || !p) return null;
   const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny',
     permissionDecisionReason: `[hosa gate] ${reason}` } });
   if (p.tool_name === 'Agent' || p.tool_name === 'Task') {
-    const loop = reviewLoopGate(p, native(p.cwd || process.cwd()));
-    return loop ? deny(loop) : null;
+    const cwd = native(p.cwd || process.cwd());
+    const reason = dispatchCwdGate(cwd) || reviewLoopGate(p, cwd);
+    return reason ? deny(reason) : null;
   }
   if (p.tool_name !== 'Bash') return null;
   const cmd = (p.tool_input || {}).command;

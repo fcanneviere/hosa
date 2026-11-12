@@ -4,14 +4,14 @@ title: skills/interface/vendor/oil-ui/assets/vendor
 description: '! Alpine.js 3.17.4 | MIT License | https://github.com/alpinejs/alpine'
 resource: skills/interface/vendor/oil-ui/assets/vendor
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:44Z'}
 ---
 
 ## Fichiers
 
 | Fichier | Rôle |
 |---|---|
-| `skills/interface/vendor/oil-ui/assets/vendor/alpine.min.js` | ! Alpine.js 3.17.4 \| MIT License \| https://github.com/alpinejs/alpine |
+| `skills/interface/vendor/oil-ui/assets/vendor/alpine.min.js` | ! Alpine.js 3.17.4 | MIT License | https://github.com/alpinejs/alpine |
 
 ## Symboles publics
 

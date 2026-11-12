@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:44Z'}
 ---
 
 ## Fichiers
@@ -61,7 +61,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 - `KbError` — `hosa/app/kb.py:38`
 - `UsageError` — `hosa/app/kb.py:50`
 - `UsageFailed` — `hosa/app/kb.py:54`
-- `activity` — `hosa/app/kb.py:323` — Entrées des `log.md` : jour, dossier, texte, acteur (humain\|processus\|agent), et `lien` vers le
+- `activity` — `hosa/app/kb.py:323` — Entrées des `log.md` : jour, dossier, texte, acteur (humain|processus|agent), et `lien` vers le
 - `append_log` — `hosa/app/kb.py:225` — Entrée OKF §9 dans le log.md du bundle : groupée par date, plus récente en tête.
 - `board` — `hosa/app/kb.py:444` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
 - `coverage` — `hosa/app/kb.py:401` — Couverture des critères de chaque ticket, par chemin de concept.

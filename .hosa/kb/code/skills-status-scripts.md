@@ -4,7 +4,7 @@ title: skills/status/scripts
 description: '!/usr/bin/env python3'
 resource: skills/status/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:44Z'}
 ---
 
 ## Fichiers
@@ -94,7 +94,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 - `show` — `skills/status/scripts/avancement.py:758`
 - `sprint_slug` — `skills/status/scripts/avancement.py:279` — The sprint's slug as its file names it. `--sprint sprint-2` for `sprints/sprint-2-fiabilite.md` opened a
 - `suffixed` — `skills/status/scripts/avancement.py:1019` — `pattern`'s task for the batch of `tid` (glob `of`): `securite-*` for `juge-2b` is `securite-2b`.
-- `task` — `skills/status/scripts/avancement.py:1415` — `task add\|done\|block\|skip <stage> <id>`. (exit code, message)
+- `task` — `skills/status/scripts/avancement.py:1415` — `task add|done|block|skip <stage> <id>`. (exit code, message)
 - `task_controls` — `skills/status/scripts/avancement.py:1337`
 - `task_lines` — `skills/status/scripts/avancement.py:744` — Per stage: tasks done out of all, the next one to dispatch; each blocked task in full.
 - `task_name` — `skills/status/scripts/avancement.py:200`

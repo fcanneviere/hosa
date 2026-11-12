@@ -4,7 +4,7 @@ title: skills/redaction/scripts
 description: '!/usr/bin/env python3'
 resource: skills/redaction/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:44Z'}
 ---
 
 ## Fichiers
@@ -36,7 +36,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 - `main` — `skills/redaction/scripts/cdc.py:637`
 - `mesure` — `skills/redaction/scripts/cdc.py:425` — One row per pass: how many anomalies, how grave, where they came from — the loop above the loop.
 - `numerote` — `skills/redaction/scripts/cdc.py:211` — Give each rule and error case without an id the next free one. An id already there never moves.
-- `objectives` — `skills/redaction/scripts/cdc.py:164` — Rows of the `## Objectifs mesurables` table: Id \| Objectif \| Indicateur \| Cible \| Mesure.
+- `objectives` — `skills/redaction/scripts/cdc.py:164` — Rows of the `## Objectifs mesurables` table: Id | Objectif | Indicateur | Cible | Mesure.
 - `ordered` — `skills/redaction/scripts/cdc.py:478` — A process comes after the ones its `## Déclencheur` links to.
 - `ordered.visit` — `skills/redaction/scripts/cdc.py:483`
 - `plain` — `skills/redaction/scripts/cdc.py:460` — Links reduced to their label, for table cells.
@@ -48,7 +48,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 - `section_map` — `skills/redaction/scripts/cdc.py:84` — `## Title` → its text, in order; the text before the first heading under ''.
 - `split` — `skills/redaction/scripts/cdc.py:64`
 - `table_rows` — `skills/redaction/scripts/cdc.py:229`
-- `transitions` — `skills/redaction/scripts/cdc.py:177` — `- a → b : comment — exigence` lines of a `### Cycle de vie`.
+- `transitions` — `skills/redaction/scripts/cdc.py:177` — `- a → b : comment — [exigence](x.md)` lines of a `### Cycle de vie`.
 
 ## Tickets et exigences
 

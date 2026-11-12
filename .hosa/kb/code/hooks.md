@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:48Z'}
 ---
 
 ## Fichiers
@@ -119,24 +119,26 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 - `ok` — `hooks/compress-output.test.js:63`
 - `pad` — `hooks/compress-output.test.js:12`
 - `spillOf` — `hooks/compress-output.test.js:11`
-- `cdGate` — `hooks/gate.js:119` — (`.claude/agent-memory-local/`) inside the KB, and later git commands hit `hosa-kb`.
-- `commitGate` — `hooks/gate.js:72`
-- `composeGate` — `hooks/gate.js:130`
-- `failRun` — `hooks/gate.js:188`
-- `gitCalls` — `hooks/gate.js:42` — Each git call: its directory (cd and -C applied), subcommand and arguments.
-- `mergeGate` — `hooks/gate.js:101`
-- `native` — `hooks/gate.js:24`
-- `processPayload` — `hooks/gate.js:221`
-- `processPayload.deny` — `hooks/gate.js:223`
-- `read` — `hooks/gate.js:59`
-- `reviewLoopGate` — `hooks/gate.js:198`
-- `scriptGate` — `hooks/gate.js:167`
-- `section` — `hooks/gate.js:62` — Body of the last `## <heading>` section (up to the next level-2 heading).
-- `segments` — `hooks/gate.js:27` — Shell words grouped by command (split on && \|\| ; \| newline); quotes kept together.
+- `cdGate` — `hooks/gate.js:120` — (`.claude/agent-memory-local/`) inside the KB, and later git commands hit `hosa-kb`.
+- `commitGate` — `hooks/gate.js:73`
+- `composeGate` — `hooks/gate.js:131`
+- `dispatchCwdGate` — `hooks/gate.js:225` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
+- `failRun` — `hooks/gate.js:189`
+- `gitCalls` — `hooks/gate.js:43` — Each git call: its directory (cd and -C applied), subcommand and arguments.
+- `mergeGate` — `hooks/gate.js:102`
+- `native` — `hooks/gate.js:25`
+- `processPayload` — `hooks/gate.js:231`
+- `processPayload.deny` — `hooks/gate.js:233`
+- `read` — `hooks/gate.js:60`
+- `reviewLoopGate` — `hooks/gate.js:199`
+- `scriptGate` — `hooks/gate.js:168`
+- `section` — `hooks/gate.js:63` — Body of the last `## <heading>` section (up to the next level-2 heading).
+- `segments` — `hooks/gate.js:28` — Shell words grouped by command (split on && || ; | newline); quotes kept together.
+- `agent` — `hooks/gate.test.js:152`
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
 - `denied` — `hooks/gate.test.js:19`
-- `dev` — `hooks/gate.test.js:151`
+- `dev` — `hooks/gate.test.js:165`
 - `lot` — `hooks/gate.test.js:45`
 - `project` — `hooks/gate.test.js:9`
 - `sprint` — `hooks/gate.test.js:70`
@@ -214,7 +216,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 - `shorten` — `hooks/session-start.js:19` — Cut `text` to `max` bytes at a line end, saying so.
 - `bytes` — `hooks/session-start.test.js:8`
 - `processPayload` — `hooks/stop.js:28`
-- `stagesInProgress` — `hooks/stop.js:16` — `\| \`stage\` \| en cours \| … \|` rows of avancement.md, with the section they sit in (a sprint, a pipeline).
+- `stagesInProgress` — `hooks/stop.js:16` — `| \`stage\` | en cours | … |` rows of avancement.md, with the section they sit in (a sprint, a pipeline).
 - `stateDir` — `hooks/stop.js:12`
 - `stateFile` — `hooks/stop.js:13`
 - `setPlan` — `hooks/stop.test.js:13`

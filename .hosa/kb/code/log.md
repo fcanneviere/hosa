@@ -1,6 +1,13 @@
 # Log — kb/code
 
 ## 2026-11-12
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-redaction-scripts`
+- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-assets-vendor`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `skills-status-scripts`
 - process:hosa-graph a mis à jour `skills-redaction-scripts`
 - process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-assets-vendor`

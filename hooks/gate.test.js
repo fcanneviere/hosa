@@ -147,6 +147,20 @@ test('a cd into the KB is refused, a subshell or another folder passes', () => {
   assert.equal(bash(r, 'cd .worktrees/sprint/s1 && ls'), null);
 });
 
+test('a dispatch from a session left inside the KB is refused: the agent\'s memory would land there', () => {
+  const r = project({});
+  const agent = (cwd) => processPayload({ tool_name: 'Agent', cwd, tool_input: { subagent_type: 'hosa:hosa-tester', prompt: 'x' } });
+  assert.match(denied(agent(path.join(r, '.hosa', 'kb'))), /inside the KB.*agent-memory-local/s);
+  const out = denied(agent(path.join(r, '.hosa', 'kb', 'tickets')));
+  assert.ok(out.includes(`cd "${r.replace(/\\/g, '/')}"`), out);              // names the root to go back to
+  assert.match(denied(processPayload({ tool_name: 'Task', cwd: '/c/dev/p/.hosa/kb', tool_input: {} })), /inside the KB/);
+  assert.equal(agent(r), null);
+  assert.equal(agent(path.join(r, '.worktrees', 'sprint', 's1')), null);
+  assert.equal(agent(path.join(r, '.hosacode')), null);                        // a name starting with .hosa is not the KB
+  process.env.HOSA_GATE = '0';
+  try { assert.equal(agent(path.join(r, '.hosa', 'kb')), null); } finally { delete process.env.HOSA_GATE; }
+});
+
 test('two FAIL reviews in a row stop the correction loop until the user decides', () => {
   const dev = (r, prompt, type = 'hosa:hosa-developer') =>
     processPayload({ tool_name: 'Agent', cwd: r, tool_input: { subagent_type: type, prompt } });
