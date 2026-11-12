@@ -24,7 +24,7 @@ ne re-génère pas
 Dispatch hosa-data-engineer (Responsabilité 4) : crée/étend,
 documente et charge le jeu de données de test
         ↓
-Propose de démarrer le sprint (git Mode 1)
+Enchaîne sur le démarrage du sprint (git Mode 1)
 ```
 
 ## Trigger
@@ -59,9 +59,9 @@ Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` **wi
 
 The dataset is done when every `CAn` of every sprint ticket can be seen in it — not only the test cases' happy path. Ask `hosa-data-engineer`, in the same dispatch, for a line per criterion under the dataset's `## Couverture des critères` : `<ticket> CAn — <donnée qui le montre>` (an empty state, an error, a second sprint, a persona linked, a broken file…). A criterion with no data is added to the dataset, or named there with the reason it cannot be (`Non observable : <raison>`) — the recette then reports it `Non observé` instead of guessing. Measured on hosa-ui: recettes without this left about twenty criteria unverifiable.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints), before the sprint starts.
 
 ## Output
 

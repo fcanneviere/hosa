@@ -21,7 +21,7 @@ l'aller-retour, commandes, comptes, sauvegardes, documente
         ↓
 Met à jour l'entrée Infra avec le chemin des migrations
         ↓
-Propose d'enchaîner sur `architecture`
+Enchaîne sur `architecture`
 ```
 
 ## Trigger

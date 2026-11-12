@@ -25,36 +25,27 @@ Turns "what the application must do" (the stable cahier des charges) into Produc
 Exigences non fonctionnelles [nfr] → définition de terminé
 (kb/rules/design/definition-de-termine.md), vérifiée sur chaque ticket
         ↓
-Pour chaque autre Exigence stable de kb/cdc/ sans Ticket lié :
-découpe en tickets livrables (une tranche utilisable chacun),
-dépendances notées (depends_on)
+Exigences stables sans ticket lié, et tickets todo à préciser
         ↓
-Écrit la story et les critères d'acceptation Given/When/
-Then (rôle PO) dans un nouveau Ticket, state: todo
+Par lot de 8 tickets au plus, un graphe de 4 tâches :
+stories-<k> (hosa-product-owner) : découpe, depends_on, story,
+critères, note technique, placements architecture et interface
         ↓
-Ajoute une note technique (rôle senior dev), ou une ligne
-"pas encore évalué" si aucune Stack Decision n'existe
+securite-<k> (hosa-security) et juridique-<k> (hosa-legal),
+dispatchés ensemble : notes, cas d'abus et contraintes → critères
         ↓
-Ajoute un placement architecture (rôle architecte), ou une
-ligne "pas encore déterminé" si aucune doc d'architecture
-n'existe
+juge-<k> (hosa-juge) : chaque Non rouvre sa tâche, sur ses
+seuls tickets, avec les lignes exactes
         ↓
-Ajoute un placement interface (rôle UX/UI designer), ou une
-ligne "pas encore déterminé" si aucune doc d'interface n'existe
+Dernier lot jugé → ticket_check --regles : chaque RGn/CEn
+cité par un critère
         ↓
-hosa-security : note sécurité, chaque cas d'abus devient
-un critère d'acceptation — ou "pas encore faite" sans analyse
+Priorités (l'utilisateur valide l'ordre) et estimations
         ↓
-hosa-legal : note juridique, chaque contrainte juridique
-devient un critère d'acceptation — ou "pas encore faite"
+Log kb/tickets/log.md → checkpoint hosa-git : socle encore
+non commité, puis KB
         ↓
-Priorités : mécanismes de sécurité et de conformité d'abord
-        ↓
-Log kb/tickets/log.md
-        ↓
-Checkpoint hosa-git : socle encore non commité, puis KB
-        ↓
-Propose de lancer sprint
+Enchaîne sur `sprint`
 ```
 
 ## Trigger
@@ -152,9 +143,9 @@ Not a stage: no `start`, no `done` — the `backlog` stage stays as it is. Run o
 5. If the ticket was created during an `active` sprint, ask whether it joins that sprint now or waits for the next one; only write `sprint: <slug>` (and add it to the sprint's `## Tickets`) on an explicit yes — `sprint`'s readiness guard is what this mode just satisfied. Then run `qa-plan` for it: a ticket joins a sprint with its tests, like every other.
 6. Log every change to `kb/tickets/log.md` (and `kb/sprints/log.md` if Step 5 added it), then rerun the checker and report its line for this ticket.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit.
+None here but Step 8's `hosa-git` checkpoints (`using-hosa`, Git checkpoints).
 
 ## Output
 

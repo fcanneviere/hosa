@@ -27,7 +27,7 @@ Stack Decision, retourne "Documentation à produire"
 Dispatch hosa-documentation (Mode 1) avec les chemins que
 hosa-senior-dev rapporte
         ↓
-Propose d'enchaîner sur `infra`
+Enchaîne sur `infra`
 ```
 
 ## Trigger
@@ -40,10 +40,12 @@ Manual: `/stack`. Auto: immediately after a clean `contestation` sign-off, or "c
 
 Unless `kb/stack/orientation.md` already records it, ask first — it's a budget and dependency choice the user owns:
 
-"Q1. Pour la stack, tu préfères :
-1. Open source, auto-hébergeable, sans abonnement (recommandé)
-2. Services SaaS payants (hébergement géré, auth/BDD en service)
-3. Mixte — open source par défaut, SaaS là où ça fait gagner beaucoup de temps"
+```
+**Q1 — Pour la stack, tu préfères quel type de services ?** (bloquante)
+  a) Open source, auto-hébergeable, sans abonnement (recommandé)
+  b) Services SaaS payants — hébergement géré, authentification et base de données en service
+  c) Mixte — open source par défaut, SaaS là où ça fait gagner beaucoup de temps
+```
 
 Pass the answer to `hosa-senior-dev` with the dispatch below.
 

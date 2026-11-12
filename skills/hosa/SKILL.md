@@ -103,7 +103,7 @@ Then ask for personas one at a time: "Un persona à ajouter ? (nom + description
 The KB is on its branch (`using-hosa`, KB location): on a first run, `hosa-git` Mode 0 (Bootstrap) has created it with `kb_branch.py init`; otherwise `status` must say it's in place. Then:
 
 ```
-mkdir -p .hosa/kb/project/
+mkdir -p "<root>/.hosa/kb/project/"
 ```
 
 ```markdown
@@ -112,7 +112,7 @@ type: Project
 title: <nom>
 description: "<objectif>"
 tags: []
-status: stable
+status: draft   # stable once question 15 is answered
 generated: { by: human:<user>, at: <ISO8601> }
 ---
 ## Description
@@ -222,12 +222,6 @@ Personas already in `kb/personnas/` are not touched by the update flow — addin
 
 ---
 
-## App
-
-The app (`hosa/app/`) reads this data through the existing `GET /api/concepts?type=Project` and `GET /api/concepts?type=Persona` endpoints — this skill never touches app code. The home and personas pages already exist; running this skill just populates what they render.
-
----
-
 ## Free-form concept creation
 
 Use this when a request names a concept type this skill doesn't already have a dedicated flow for above, and no more specific pipeline skill owns it either — a one-off `Exigence`, `Stack Decision`, `Ticket`, `Design Rule`, or `Security Rule` mentioned in passing that would otherwise be lost. **Don't use this to shortcut a pipeline stage**: an `Exigence` that should go through `interview`/`redaction` for a whole feature, a `Ticket` that `backlog` would normally derive from one, or a `Stack Decision` `stack` would normally justify with trade-offs — those still go through their own skill. This flow is for the isolated, out-of-band case: a need surfacing mid-conversation, in another skill's session, or the user just wants to note something down.
@@ -238,6 +232,7 @@ Use this when a request names a concept type this skill doesn't already have a d
 | "Crée un ticket pour...", "Note ça pour plus tard" | Créer un `Ticket` dans `kb/tickets/`, `state: todo` |
 | "On a décidé d'utiliser X pour...", "Choix technique :" | Créer une `Stack Decision` dans `kb/stack/` |
 | "Retiens cette règle...", "À partir de maintenant on fait toujours X" | Créer une `Design Rule` dans `kb/rules/design/` |
+| "Règle de sécurité :", "Il faut toujours vérifier X avant Y" | Créer une `Security Rule` dans `kb/rules/security/` |
 
 Steps:
 1. Identify the concept type and bundle from the table above (or ask if the request is genuinely ambiguous between two).

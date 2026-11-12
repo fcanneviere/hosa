@@ -39,9 +39,9 @@ Dispatch `hosa-dba` (`agents/dba.md`) with the need, the mode and the environmen
 - **`## Open Questions` asking for a schema design change** → that's `hosa-data-engineer`'s: run `schema-db` for it, then redispatch `hosa-dba` to apply it.
 - **`## Documentation à produire`** → dispatch `hosa-documentation` (Mode 1) with its lines, as they are (paths, `retours` §4).
 
-## No Commits
+## Commits
 
-You don't commit. Report what changed and let the user decide.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints) when an agent wrote files.
 
 ## Output
 

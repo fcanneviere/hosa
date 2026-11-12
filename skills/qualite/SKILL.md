@@ -36,7 +36,7 @@ Manual: `/qualite`, `/qualite sprint <slug>` (the sprint's `audit` stage, chaine
 
 ## Step 1: Find the Managed Project and Scope
 
-Read `kb/infra/` for the managed project's root path (same as `stack` Step 1 — if missing, stop and say so, this skill has nothing to audit without it).
+Read the managed project's root path in `kb/infra/`. Missing → stop and say so: this skill has nothing to audit without it.
 
 Scope: from `livraison`, the file list it gives (the code changed since the last release); this audit is then the release gate, and a Bloquant stops it. From the sprint's `audit` stage (Sprint Audit below), the files the sprint changed; a Bloquant stops the QA and the merge. Even on a scoped audit, `hosa-senior-dev` checks **Duplication** against the whole codebase: code a ticket copied from an existing file is only visible from outside the diff. If invoked right after a ticket/sprint was implemented, default to the files touched this session. Otherwise ask the user: "Codebase entière ou fichiers récents ?" — don't guess (Core Rule: no guessing).
 
@@ -98,9 +98,9 @@ On a sprint audit, a **Bloquant** in the code of a sprint ticket is fixed by `de
 - **À corriger** → Step 5: `hosa-product-owner` creates the tickets; they go to the backlog, not this sprint.
 - **Mineur** → stays in the audit.
 
-## No Commits
+## Commits
 
-You don't commit. Report what changed in the KB and let the user decide.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints).
 
 ## Output
 

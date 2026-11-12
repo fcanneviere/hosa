@@ -33,7 +33,7 @@ Log kb/cdc/log.md → enchaîne sur `juridique`
 
 ## Trigger
 
-Manual: `/fondamentaux`. Auto: immediately after `redaction` (every time it writes new exigences), or "vérifie les fondamentaux du cahier des charges", "le cahier des charges couvre-t-il les basiques (admin, utilisateurs, logs, sauvegarde, import/export...)", "assure-toi qu'on n'a pas oublié l'administration/la sauvegarde/les exports". `contestation` also invokes it itself if `kb/cdc/fondamentaux.md` is missing.
+Manual: `/fondamentaux`. Auto: immediately after `redaction` in the pipeline — a `relecture` or `contestation` loop through `redaction` doesn't rerun it: `contestation` Step 0 checks it is still current —, or "vérifie les fondamentaux du cahier des charges", "le cahier des charges couvre-t-il les basiques (admin, utilisateurs, logs, sauvegarde, import/export...)", "assure-toi qu'on n'a pas oublié l'administration/la sauvegarde/les exports". `contestation` also invokes it itself if `kb/cdc/fondamentaux.md` is missing.
 
 ---
 

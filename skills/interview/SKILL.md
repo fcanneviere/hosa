@@ -113,7 +113,7 @@ Once every process is covered, ask the user, each as one numbered question with 
 ## Step 5: Write the Compte Rendu
 
 ```
-mkdir -p .hosa/kb/cdc/interviews/
+mkdir -p "<root>/.hosa/kb/cdc/interviews/"
 ```
 
 `.hosa/kb/cdc/interviews/<ISO-date>-interview.md` — one file per interview session, created at the end of Step 1 and filled process by process:

@@ -46,9 +46,9 @@ Dispatch `hosa-product-owner` (Responsibility 7, `agents/product-owner.md`) with
 
 Confirm `kb/sprints/log.md` was updated for the review, and `kb/tickets/log.md`/`kb/rules/design/log.md` for anything created — per `hosa-product-owner`'s own logging.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints).
 
 ## Output
 

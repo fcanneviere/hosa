@@ -45,6 +45,8 @@ Manual: `/qa <slug-sprint> [<slug-ticket> [technique]]` — a ticket given re-ru
 
 `avancement.py … start qa --sprint <slug>`: refused → it names the stage not done (`qa-plan`, `develop`…) — propose it and stop, don't partially execute. After a correction, `back qa develop` already reopened `qa`; a re-run of a `qa` already done, asked by the user → `start … --rouvre "<their request>"`. Then read `kb/sprints/<slug>.md` for its `## Tickets` list. Once the lots (Step 3) and the personas (Step 4) are known, list every dispatch: `avancement.py … task add qa lot-<k> --sprint <slug> --agent hosa-tester --objet "<tickets du lot>"`, `task add qa recette-<persona> --sprint <slug> --agent hosa-key-user --objet "<tickets>"`, `task add qa outillage --sprint <slug> --agent hosa-qa-lead`. Tasks already listed (a resumed session): keep them, dispatch the first `à faire` one. A ticket re-run alone after a correction re-adds its lot and the recettes it needs (`task add` on a known id resets it to `à faire`).
 
+## Step 2: Check the Environment and the Dataset
+
 Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. 
 
 The test dataset must exist with its documented `## Remise à zéro` (prepared by `qa-plan` before the sprint started) — `hosa-tester` and `hosa-key-user` reset to it at the start and end of every pass. No dataset, or no reset command → propose `qa-plan` first and stop: running tests against unknown data proves nothing.

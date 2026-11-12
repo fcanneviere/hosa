@@ -25,7 +25,7 @@ Manual: `/documentation`. Auto: "vérifie que la documentation est à jour".
 
 ## Step 1: Find the Managed Project
 
-Read `kb/infra/` for the managed project's root path (same as `stack`/`infra`/`qualite` Step 1). Missing → say so; `hosa-documentation` has nothing to check without a project to point at.
+Read the managed project's root path in `kb/infra/`. Missing → say so; `hosa-documentation` has nothing to check without a project to point at.
 
 ## Step 2: Dispatch the Cold Check
 

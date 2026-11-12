@@ -30,7 +30,7 @@ Suite : propose git Mode 2
 
 ## Trigger
 
-Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le ticket X" ; proposé en Suite de `develop` et de `qa` une fois le verdict propre.
+Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le ticket X" ; chained by `qa` once its verdict is clean.
 
 ---
 
@@ -60,9 +60,9 @@ Once every ticket of the sprint is `done` (the sprint audit ran before `qa` — 
 
 Confirm `kb/tickets/log.md` was updated (per `hosa-product-owner`'s own logging) — chronological, most recent date first, per OKF §9.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints).
 
 ## Output
 

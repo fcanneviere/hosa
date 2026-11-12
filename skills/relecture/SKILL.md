@@ -32,7 +32,7 @@ Mineures seules → redaction les corrige en une fois, sans boucle
         ↓
 `cdc assemble` régénère le document lisible
         ↓
-Propre → propose d'enchaîner sur `contestation`
+Propre → enchaîne sur `contestation`
 ```
 
 ## Trigger
@@ -102,7 +102,7 @@ For each anomaly: which exigence and which section (`redaction` fixes it without
 
 **Origin.** `texte` — the defect was there when the first pass read the passage; `correction` — a fix of an earlier anomaly made it (a copy left behind, a new contradiction); `regle-hosa` — the project is right and a Hosa rule or template doesn't fit it. A `regle-hosa` anomaly also gets its line in `kb/retours-hosa/journal.md` (`using-hosa`, auto-audit): Hosa is fixed, not each project.
 
-If no anomalies: report "Propre" and propose `contestation` as the next step.
+If no anomalies: report "Propre" and chain on `contestation` without asking.
 
 ## Step 5: Record the Report
 

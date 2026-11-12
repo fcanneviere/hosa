@@ -25,7 +25,7 @@ Trigger build for gap tasks only
         ↓
 Loop back to review
         ↓
-After 3 full review→build cycles with the same gap still present:
+After 2 review→build cycles with the same gap still present:
     Stop and escalate to user
 ```
 
@@ -76,9 +76,9 @@ After the gap build completes, automatically re-run the reviewer (return to Step
 
 **At the start of every review cycle, print the cycle header:**
 ```
-── Review cycle N of 3 ─────────────────────────
+── Review cycle N ─────────────────────────
 ```
-Replace N with the current cycle number (1, 2, 3). After the reviewer runs, also print:
+Replace N with the current cycle number (1, 2…). After the reviewer runs, also print:
 ```
 Result: [PASS / PASS-WITH-NOTES / FAIL — X gap(s) remaining]
 ```

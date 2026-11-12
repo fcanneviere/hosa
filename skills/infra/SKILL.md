@@ -20,7 +20,7 @@ Dispatch hosa-infra (Mode 1)
 Dispatch hosa-documentation (Mode 1) avec le
 "Documentation à produire" retourné
         ↓
-Propose d'enchaîner sur `donnees`
+Enchaîne sur `donnees`
 ```
 
 ## Trigger
@@ -58,9 +58,9 @@ Any other agent, when it needs a server/framework/dependency it can't provision 
 3. Once it confirms the piece is in place, dispatch `hosa-documentation` (Mode 1) with its `## Documentation à produire` lines, as they are.
 4. Redispatch the original requesting agent with the confirmation — it resumes the task that needed the installation.
 
-## No Commits
+## Commits
 
-You don't commit — neither in the managed project nor in Hosa's own KB. Report what changed and let the user decide when to commit each.
+None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git checkpoints).
 
 ## Output
 

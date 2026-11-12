@@ -27,7 +27,7 @@ kb_branch.py commit <root> -m "kb: <bundles touchés>"
 
 ## Trigger
 
-Manual: `/kb-commit`, `/kb-commit migrer`. Auto: never on natural language alone ("commit" is too ambiguous). Proposed as a Suite step by pipeline skills once a bundle write lands (`hosa`, `backlog`, `sprint`, `validation`, `bilan-sprint`, `qa`, `qualite`, `changement`) — run only when the user confirms.
+Manual: `/kb-commit`, `/kb-commit migrer`. Auto: never on natural language alone ("commit" is too ambiguous). Pipeline skills commit the KB through their `hosa-git` checkpoint (`using-hosa`, Git checkpoints); this skill commits what is left pending outside one (`status` reports it) — run it when the user asks.
 
 ---
 
@@ -57,7 +57,7 @@ Run `migrate <root>` without `--yes` and show the user its plan: create `hosa-kb
 
 ## Agent Memories (once per project)
 
-Agents used to keep their memory under `.claude/agent-memory/`, inside the code repository. `kb_branch.py memoire <root>` shows the plan, then with `--yes` moves the 12 agents that keep a memory to `.claude/agent-memory-local/` (ignored by git), archives the others' under `_archive/` (their facts are in the KB), and untracks the old folder if it was committed. Nothing is deleted.
+Agents used to keep their memory under `.claude/agent-memory/`, inside the code repository. `kb_branch.py memoire <root>` shows the plan, then with `--yes` moves the agents that keep a memory (`memory: local`) to `.claude/agent-memory-local/` (ignored by git), archives the others' under `_archive/` (their facts are in the KB), and untracks the old folder if it was committed. Nothing is deleted.
 
 ## No Other Commits
 

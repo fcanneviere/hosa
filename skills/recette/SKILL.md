@@ -48,7 +48,7 @@ If the agent enriched the persona, show the diff to the user and confirm before 
 ## Step 3: Write the Test Plan
 
 ```
-mkdir -p .hosa/kb/test/
+mkdir -p "<root>/.hosa/kb/test/"
 ```
 
 One file per recette session, `.hosa/kb/test/<slug-target>-<slug-persona>.md`:

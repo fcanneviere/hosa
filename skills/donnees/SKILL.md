@@ -23,7 +23,7 @@ purement technique
 Redispatch hosa-data-engineer (Phase 2) avec toutes les
 réponses → écrit les annotations
         ↓
-Propose d'enchaîner sur `schema-app`
+Enchaîne sur `schema-app`
 ```
 
 ## Trigger

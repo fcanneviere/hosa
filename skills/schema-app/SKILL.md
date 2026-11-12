@@ -20,7 +20,7 @@ Dispatch hosa-documentation (Mode 1) avec le
         ↓
 Met à jour l'entrée Infra avec le chemin confirmé
         ↓
-Propose d'enchaîner sur `schema-db`
+Enchaîne sur `schema-db`
 ```
 
 ## Trigger

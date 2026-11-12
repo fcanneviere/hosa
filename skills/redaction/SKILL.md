@@ -41,7 +41,7 @@ The notes are the comptes rendus of `kb/cdc/interviews/` — read from the KB, n
 ## Step 2: Write One `Exigence` Per Process
 
 ```
-mkdir -p .hosa/kb/cdc/
+mkdir -p "<root>/.hosa/kb/cdc/"
 ```
 
 For each process, `.hosa/kb/cdc/<slug-processus>.md` (slug = kebab-case of the process name):

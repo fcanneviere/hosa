@@ -54,6 +54,10 @@ Then read directly — no agent dispatch:
 
 **Qualité:** the most recent `kb/qualite/log.md` entry's file — read its `## Verdict`. No `kb/qualite/` yet → "jamais audité".
 
+**Sécurité:** `kb/securite/modele-menaces.md` present or not ("pas de modèle de menaces" once `architecture` is done is a gap to report), and the latest audit or release gate under `kb/securite/` with its verdict. No `kb/securite/` yet → "jamais audité".
+
+**Retours Hosa:** the number of entries under `## Ouverts` in `kb/retours-hosa/journal.md`, and the three with the highest `(×N)` — omit the line when the file is absent or empty.
+
 **KB committée:** `git -C .hosa/kb status --short`. Files listed → the KB holds work no checkpoint saved: say how many, and propose `/kb-commit`. A lost session would lose them.
 
 **Documentation:** the most recent `kb/documentation/log.md` entry's date, if it exists. Don't re-check drift here (that's `documentation`'s job, and requires a dispatch) — just report when it was last verified, and suggest running `documentation` if that's more than a few sessions old or absent entirely.
@@ -84,6 +88,15 @@ Then read directly — no agent dispatch:
 - Dernier audit : <Propre / N anomalie(s)> (<date>)
 [Si jamais audité : "Jamais audité."]
 
+### Sécurité
+- Modèle de menaces : <présent / absent>
+- Dernier audit ou porte de livraison : <verdict> (<date>)
+[Si aucun : "Jamais audité."]
+
+### Retours Hosa
+- Ouverts : <N> — les plus fréquents : <les trois plus hauts (×N)>
+[Ligne omise si le journal est absent ou vide]
+
 ### KB
 - Non committé : <N fichier(s) → `/kb-commit`, ou "rien">
 
@@ -108,10 +121,6 @@ Then read directly — no agent dispatch:
 - Which tasks have been committed (look for `feat:`, `fix:`, `test:` prefixes)
 - When the last commit happened
 - Whether there's uncommitted work in the working tree (`git status`)
-
-**Sécurité:** `kb/securite/modele-menaces.md` present or not ("pas de modèle de menaces" once `architecture` is done is a gap to report), and the latest audit or release gate under `kb/securite/` with its verdict. No `kb/securite/` yet → "jamais audité".
-
-**Retours Hosa:** the number of entries under `## Ouverts` in `kb/retours-hosa/journal.md`, and the three with the highest `(×N)` — omit the line when the file is absent or empty.
 
 **Tests:** check if a test runner exists and run it if possible. If tests were run recently, note the last known result. If you can't run them, say so — don't guess.
 
