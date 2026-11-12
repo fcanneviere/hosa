@@ -180,3 +180,26 @@ test('kill switch', () => {
   assert.equal(skill('qa', 's4'), null);
   delete process.env.HOSA_BUDGET;
 });
+
+test('a message after a pause longer than the cache, in a heavy session, is refused once and given back', () => {
+  const t = path.join(project, 'pause.jsonl');
+  const call = (n, minutesAgo) => JSON.stringify({ type: 'assistant', timestamp: new Date(Date.now() - minutesAgo * 60000).toISOString(),
+    message: { usage: { input_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: n } } }) + '\n';
+  const say = (prompt, session, extra = {}) => processPayload({ hook_event_name: 'UserPromptSubmit', session_id: session, cwd: project,
+    transcript_path: t, prompt, ...extra });
+  setPlan(3);
+  fs.writeFileSync(t, call(30000, 200) + call(150000, 130));
+  const out = say('développe le lot suivant', 'p1');
+  assert.equal(out.decision, 'block');
+  assert.match(out.reason, /Pause de 2 h 10 .* 150 k tokens .*\/clear, puis « reprends » .* 30 k .*« développe le lot suivant »/);
+  assert.equal(say('développe le lot suivant', 'p1'), null);          // sent again: the user chose to stay
+  assert.equal(say('/clear', 'p2'), null);                            // a command passes
+  fs.writeFileSync(t, call(30000, 200) + call(150000, 20));
+  assert.equal(say('la suite', 'p3'), null);                          // cache still alive
+  fs.writeFileSync(t, call(30000, 200) + call(40000, 130));
+  assert.equal(say('la suite', 'p4'), null);                          // light: a /clear saves nothing
+  fs.writeFileSync(t, call(30000, 200) + call(150000, 130));
+  assert.equal(say('la suite', 'p5', { cwd: os.tmpdir() }), null);    // no plan: not a Hosa pipeline session
+  process.env.HOSA_BUDGET = '0';
+  try { assert.equal(say('la suite', 'p6'), null); } finally { delete process.env.HOSA_BUDGET; }
+});

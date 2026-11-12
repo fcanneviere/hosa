@@ -26,6 +26,23 @@ test('returns the resume point and the stage in progress', () => {
   assert.match(ctx, /Prochaine étape du plan : `develop` \(Sprint s1\)/);
 });
 
+test('a stage detail older than its last task is not shown, nor the next action written with it', () => {
+  const plan = (taskAt) => [
+    '---', 'type: Plan d\'avancement', '---',
+    '## Point de reprise', '- En cours : `develop` (sprint s1) — revue à lancer', '- Prochaine action : lancer la revue', '',
+    '## Tâches', '| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |', '|---|---|---|---|---|---|---|---|',
+    `| t1.revue | \`develop\` (s1) | hosa-reviewer | t1 | fait | ${taskAt} | kb/tickets/t1.md |  |`, '',
+    '## Sprint s1', '| Étape | Statut | Mis à jour | Détail |', '|---|---|---|---|',
+    '| `develop` | en cours | 2026-11-12T09:00:00Z | revue à lancer |', '| `qa` | à faire |  |  |',
+  ].join('\n');
+  const late = resumeContext(kb(plan('2026-11-12T09:30:00Z')));
+  assert.doesNotMatch(late, /revue à lancer|lancer la revue/);
+  assert.match(late, /Sprint s1 : `develop` en cours — ses tâches ont avancé depuis son dernier détail : `reprendre`/);
+  const current = resumeContext(kb(plan('2026-11-12T08:30:00Z')));
+  assert.match(current, /`develop` en cours — revue à lancer/);
+  assert.match(current, /Prochaine action : lancer la revue/);
+});
+
 test('an open loop survives a later resume point, a closed one is not shown', () => {
   const root = kb([
     '---', 'type: Plan d\'avancement', '---',

@@ -13,6 +13,8 @@
 //   message would write it all again; a fresh dispatch with its `## Reprise` costs less.
 // - Agent, while a stage pipeline.json's `dispatch` declares is under way: more Hosa agents running than its
 //   `parallel`, or an agent type off its `model`, is refused.
+// - UserPromptSubmit, main session: a message sent after a pause longer than the prompt cache lives, in a heavy
+//   session, is refused once — it would write the whole context again; /clear then « reprends » writes 17 k.
 // SubagentStart records each agent's type, SubagentStop its end. Fail-open. Kill switch: HOSA_BUDGET=0.
 
 const fs = require('fs');
@@ -46,6 +48,10 @@ const AGENT_MAX = Number(process.env.HOSA_AGENT_CONTEXTE_MAX) || 120000;
 const IDLE = 5 * 60 * 1000;
 // An agent silent this long no longer counts as running (stopped by a limit, no SubagentStop).
 const SILENT = 15 * 60 * 1000;
+// The main session's prompt cache lives 1 h (rieki, 2026-11: every call writes `ephemeral_1h`). A message sent after
+// a longer pause writes the whole context again, at twice the price of plain input: on rieki 9 such messages wrote
+// 1.2 M tokens (up to 197 k at once), where the first call after a /clear writes 17 k.
+const PAUSE = (Number(process.env.HOSA_PAUSE_MIN) || 60) * 60 * 1000;
 // The one stage graph (avancement.py reads it too).
 function graph() {
   try {
@@ -88,8 +94,9 @@ function agentTranscript(p, id) {
   return path.join(path.dirname(t), path.basename(t, '.jsonl'), 'subagents', `agent-${id}.jsonl`);
 }
 
-// Context of the last call, from the tail of a transcript: the main session's lines, or a subagent's (sidechain).
-function contextTokens(transcript, sidechain = false) {
+// The last call, from the tail of a transcript — the main session's lines, or a subagent's (sidechain): its context
+// and its time.
+function lastCall(transcript, sidechain = false) {
   let fd;
   try {
     fd = fs.openSync(transcript, 'r');
@@ -103,12 +110,16 @@ function contextTokens(transcript, sidechain = false) {
       try {
         const e = JSON.parse(lines[i]);
         const u = e.type === 'assistant' && !!e.isSidechain === sidechain && e.message && e.message.usage;
-        if (u) return (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+        if (u) {
+          return { tokens: (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0),
+            at: Date.parse(e.timestamp) || 0 };
+        }
       } catch (e) {} // a line cut by the 512 KB window
     }
   } catch (e) {} finally { if (fd !== undefined) fs.closeSync(fd); }
-  return 0;
+  return { tokens: 0, at: 0 };
 }
+const contextTokens = (transcript, sidechain = false) => lastCall(transcript, sidechain).tokens;
 
 // Context of the session's first call, from the head of its transcript (the start after /clear).
 function startTokens(transcript) {
@@ -152,6 +163,27 @@ function ceilingGate(p, file, s, now, again, before = '') {
     `Stop here and tell the user, in one line: « Pour économiser les tokens : /clear, puis « reprends » — le plan d'avancement garde tout. » ` +
     `Before that, ${before}record where you are: \`avancement.py reprise "<next action>"\` (or \`progress\` inside a stage). ` +
     `Only if the user answers they want to go on in this session, ${again} again: it will pass.`);
+}
+
+// A message after a pause longer than the cache: refused once per pause, before the call that would pay for it.
+// The refusal erases the message: it is given back, to send again. A slash command passes (/clear, /compact).
+function pauseGate(p) {
+  const prompt = String(p.prompt || '').trim();
+  if (!prompt || prompt.startsWith('/') || planText(p.cwd || process.cwd()) == null) return null;
+  const { tokens, at } = lastCall(p.transcript_path);
+  const idle = Date.now() - at;
+  if (!at || idle < PAUSE) return null;
+  const file = stateFile(p.session_id);
+  const s = load(file);
+  const start = sessionStart(p, file, s);
+  if (tokens < start + HEAVY || s.pause === at) return null;
+  save(file, { ...load(file), pause: at });
+  const k = (n) => Math.round(n / 1000);
+  const h = idle >= 3600000 ? `${Math.floor(idle / 3600000)} h ${String(Math.round((idle % 3600000) / 60000)).padStart(2, '0')}` : `${Math.round(idle / 60000)} min`;
+  return { decision: 'block', reason: `[hosa budget] Pause de ${h} : le cache de cette session a expiré. Ce message ferait réécrire ` +
+    `tout son contexte, ${k(tokens)} k tokens au prix fort. Fais plutôt /clear, puis « reprends » : la session repart de ` +
+    `${k(start)} k et le plan d'avancement garde tout. Pour continuer ici quand même, renvoie ton message, il passera : ` +
+    `« ${prompt.length > 300 ? `${prompt.slice(0, 300)}…` : prompt} »` };
 }
 
 function stageGate(p) {
@@ -310,6 +342,7 @@ function takeDispatch(session, type) {
 
 function processPayload(p) {
   if (process.env.HOSA_BUDGET === '0' || !p || !p.session_id) return null;
+  if (p.hook_event_name === 'UserPromptSubmit') return p.agent_id ? null : pauseGate(p);
   if (p.hook_event_name === 'SubagentStart') {
     if (p.agent_id && p.agent_type) {
       let kb = null;

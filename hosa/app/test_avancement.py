@@ -839,7 +839,7 @@ class Reprendre(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("`develop` (Sprint s1) — en cours → skill `hosa:develop`", out)
         self.assertIn("branch `sprint/s1`, docker_project `p-s1`", out)
-        self.assertIn("Tâches faites (1) : `t1.tests` (1 fichier)", out)   # done: never re-read to check
+        self.assertIn("Tâches faites (1) : `t1` (tests)", out)             # done: never re-read to check
         self.assertIn("À faire : `t1.code` hosa-developer → t1", out)
         self.assertIn("puis dispatche la tâche `t1.code` (hosa-developer → t1) — `start` est déjà fait.", out)
         self.assertNotIn("Reste à prouver : tâche", out)                     # said once, by the task line
@@ -871,6 +871,114 @@ class Reprendre(unittest.TestCase):
             for name in ("budget-aaa-11111111.json", "budget-aaa-44444444.json"):  # silent 20 min: gone
                 os.utime(state / name, (time.time() - 20 * 60,) * 2)
             self.assertNotIn("Agent encore actif", run(self.k, "reprendre")[1])
+
+    def test_done_tasks_are_grouped_by_ticket(self):
+        for stage in ("sprint", "qa-plan", "git-demarrage"):
+            run(self.k, "done", stage, "--sprint", "s1", "--force")
+        run(self.k, "start", "develop", "--sprint", "s1")
+        for tid in ("un-ticket.plan", "un-ticket.tests", "un-ticket.lot-1", "autre.plan", "seule"):
+            run(self.k, "task", "add", "develop", tid, "--sprint", "s1", "--agent", "hosa-tester")
+            run(self.k, "task", "done", "develop", tid, "--sprint", "s1", "--sortie", str(self.k / "tickets" / "t1.md"), "--force")
+        out = run(self.k, "reprendre")[1]
+        self.assertIn("Tâches faites (5) : `un-ticket` (plan, tests, lot-1) ; `autre` (plan) ; `seule`", out)
+
+    def test_a_task_keeps_the_resume_point_and_a_stale_detail_is_flagged(self):
+        for stage in ("sprint", "qa-plan", "git-demarrage"):
+            run(self.k, "done", stage, "--sprint", "s1", "--force")
+        run(self.k, "start", "develop", "--sprint", "s1")
+        plan = self.k / "project" / "avancement.md"
+        old = lambda: plan.write_text(re.sub(r"\d{4}-\d\d-\d\dT[\d:]+Z", "2026-01-01T00:00:00Z", plan.read_text(encoding="utf-8")),
+                                      encoding="utf-8")
+        run(self.k, "progress", "develop", "--sprint", "s1", "--detail", "revue à lancer", "--reprise", "lancer la revue")
+        old()                                                               # the detail, then a task after it
+        run(self.k, "task", "add", "develop", "t1.revue", "--sprint", "s1", "--agent", "hosa-reviewer")
+        out = run(self.k, "reprendre")[1]
+        self.assertIn("Détail périmé", out)
+        self.assertIn("dernière : `t1.revue`", out)
+        old()
+        run(self.k, "task", "done", "develop", "t1.revue", "--sprint", "s1", "--sortie", str(self.k / "tickets" / "t1.md"),
+            "--force", "--reprise", "commit du lot, puis lot suivant")
+        text = plan.read_text(encoding="utf-8")
+        self.assertIn("- En cours : `develop` (sprint s1) — tâche `t1.revue` faite\n- Prochaine action : commit du lot, puis lot suivant", text)
+        self.assertNotIn("revue à lancer", text)
+        out = run(self.k, "reprendre")[1]
+        self.assertNotIn("Détail périmé", out)                               # one call kept both current
+        self.assertIn("Prochaine action : commit du lot, puis lot suivant", out)
+
+    def test_words_around_an_output_path_are_a_comment_not_a_missing_file(self):
+        (self.k / "qualite").mkdir()
+        (self.k / "qualite" / "audit.md").write_text(SPRINT, encoding="utf-8")
+        (self.k / "qualite" / "b.md").write_text(SPRINT, encoding="utf-8")
+        for stage in ("sprint", "qa-plan"):
+            run(self.k, "done", stage, "--sprint", "s1", "--force")
+        run(self.k, "start", "git-demarrage", "--sprint", "s1")
+        add = lambda tid: run(self.k, "task", "add", "git-demarrage", tid, "--sprint", "s1", "--agent", "hosa-git")  # noqa: E731
+        done = lambda tid, *s: run(self.k, "task", "done", "git-demarrage", tid, "--sprint", "s1", "--sortie", *s)  # noqa: E731
+        state = lambda tid: next(t for t in av.load_tasks(self.k / "project" / "avancement.md") if t["id"] == tid)  # noqa: E731
+        add("a")
+        self.assertEqual(done("a", "kb/qualite/audit.md : 0 Bloquant, 3 À corriger")[0], 0)
+        self.assertEqual((state("a")["sortie"], state("a")["detail"]), ("kb/qualite/audit.md", ": 0 Bloquant 3 À corriger"))
+        add("b")
+        self.assertEqual(done("b", "kb/qualite/audit.md kb/qualite/b.md")[0], 0)   # two paths in one argument
+        self.assertEqual(state("b")["sortie"], "kb/qualite/audit.md, kb/qualite/b.md")
+        add("c")
+        code, out = done("c", "baseline verte")                                     # no file at all: said, not counted
+        self.assertEqual(code, 1)
+        self.assertIn("« baseline verte » est un commentaire", out)
+        self.assertIn("kb/sprints/<sprint>.md", out)
+        self.assertEqual(state("c")["detail"], "")                                  # no round counted
+        code, out = done("c", "kb/qualite/absent.md : fait")                        # a missing path stays a refusal
+        self.assertEqual(code, 1)
+        self.assertIn("absente — kb/qualite/absent.md", out)
+        self.assertEqual(done("c", "kb/sprints/s1.md")[0], 0)
+
+    def test_a_proof_missing_on_several_tickets_is_said_once(self):
+        k = kb({"sprints/s1.md": "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/t-a.md)\n- [B](../tickets/t-b.md)\n",
+                "tickets/t-a.md": TICKET, "tickets/t-b.md": TICKET})
+        for stage in av.PIPELINES[0][1] + av.PIPELINES[1][1]:
+            run(k, "done", stage, "--force")
+        for stage in ("sprint", "qa-plan", "git-demarrage", "develop", "audit"):
+            run(k, "done", stage, "--sprint", "s1", "--force")
+        run(k, "start", "qa", "--sprint", "s1")
+        out = run(k, "reprendre")[1]
+        self.assertIn("- Reste à prouver : pas de `## Résultats techniques` (`qa`) — 2 tickets : t-a, t-b", out)
+        self.assertEqual(out.count("Résultats techniques"), 1)
+
+    def test_a_shortened_sprint_slug_names_its_sprint(self):
+        k = kb({"sprints/sprint-2-fiabilite.md": SPRINT.replace("type: Sprint", "type: Sprint\nworktree: /w/s2"),
+                "sprints/sprint-2-fiabilite-review.md": "x", "tickets/t1.md": TICKET})
+        for stage in av.PIPELINES[0][1] + av.PIPELINES[1][1]:
+            run(k, "done", stage, "--force")
+        run(k, "done", "sprint", "--sprint", "sprint-2", "--force")
+        plan = (k / "project" / "avancement.md").read_text(encoding="utf-8")
+        self.assertIn("## Sprint sprint-2-fiabilite\n", plan)
+        self.assertNotIn("## Sprint sprint-2\n", plan)                       # no second section for one sprint
+        out = run(k, "reprendre")[1]
+        self.assertIn("worktree `/w/s2`", out)
+        self.assertIn("start qa-plan --sprint sprint-2-fiabilite`", out)
+
+    def test_a_section_opened_under_a_shortened_slug_joins_its_sprint(self):
+        k = kb({"sprints/sprint-2-fiabilite.md": SPRINT, "tickets/t1.md": TICKET})
+        for stage in av.PIPELINES[0][1] + av.PIPELINES[1][1]:
+            run(k, "done", stage, "--force")
+        run(k, "done", "sprint", "--sprint", "sprint-2-fiabilite", "--force")
+        path = k / "project" / "avancement.md"
+        row = lambda s, st: f"| `{s}` | {st} | 2026-11-11T10:00:00Z |  |"
+        path.write_text(path.read_text(encoding="utf-8")
+                        + "\n## Sprint sprint-2\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n"
+                        + "\n".join([row("sprint", "non applicable"), row("qa-plan", "fait"), row("git-demarrage", "en cours")])
+                        + "\n\n## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n"
+                        "|---|---|---|---|---|---|---|---|\n| t1.x | `git-demarrage` (sprint-2) | hosa-git |  | à faire |  |  |  |\n",
+                        encoding="utf-8")
+        out = run(k, "reprendre")[1]
+        self.assertIn("`git-demarrage` (Sprint sprint-2-fiabilite) — en cours", out)
+        self.assertIn("À faire : `t1.x` hosa-git", out)                      # its task followed
+        run(k, "progress", "git-demarrage", "--sprint", "sprint-2", "--detail", "worktree créé")
+        plan = path.read_text(encoding="utf-8")
+        self.assertNotIn("## Sprint sprint-2\n", plan)
+        self.assertRegex(plan, r"`sprint` \| fait")                          # `fait` wins over `non applicable`
+        self.assertRegex(plan, r"`qa-plan` \| fait")
+        self.assertIn("| t1.x | `git-demarrage` (sprint-2-fiabilite) |", plan)
 
     def test_a_blocked_stage_shows_its_questions_and_stops(self):
         run(self.k, "block", "sprint", "--sprint", "s1", "--detail", "Q1 — capacité ? a) 5 tickets (recommandé) b) 8")

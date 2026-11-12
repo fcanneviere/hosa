@@ -73,7 +73,7 @@ function main(payload) {
     g.writeShim();
     const kb = kbRoot && path.join(kbRoot, '.hosa', 'kb').replace(/\\/g, '/');
     head = '## Hosa\n\n' +
-      (kb ? `- KB : \`${kb}\`. « reprends » → skill \`reprendre\` : \`<hosa> avancement "${kb}" reprendre\`, un seul appel, rien avant.\n` : '') +
+      (kb ? `- KB : \`${kb}\`. « reprends » → a \`## Fiche de reprise\` comes with that message: do its \`Action\`, nothing before it. None came → \`<hosa> avancement "${kb}" reprendre\`, one call.\n` : '') +
       `- \`<hosa>\` = \`${g.hosaCommand()}\` : \`<hosa> <script> [args]\` runs a Hosa script by name (\`avancement\`, \`kb_query\`, ` +
       '`kb_branch`, `okf_validate`, `ticket_check`, `docker_check`, `usage_report`, `graph`… — `<hosa> --list`), from any folder. ' +
       'A script `x.py` named in your instructions, a plan or the KB is `<hosa> x`: never look for it in the project, never install it, ' +

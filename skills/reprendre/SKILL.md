@@ -7,6 +7,7 @@ description: "Use to resume a Hosa project after a /clear, a limit or a new day:
 
 A resume used to cost 11 calls and about 530 k tokens of context before its first action (median, rieki, pilot2, hosa-ui): `ls`, `cat`, `show`, `next`, then 2 or 3 skills loaded. The resume card replaces all of that.
 
+0. **The card already came with the message** (`## Fiche de reprise` in this turn's context, from the hook `reprendre.js`): skip step 1, never ask for it again.
 1. **One call, nothing before it.** Run `<hosa> avancement "<kb>" reprendre`. The KB path is in the session context (`## Hosa`, its first lines); none there → walk up from the current folder to the first `.hosa/kb/`, skipping `.worktrees/`. No `ls`, `cat`, `git`, `show`, `next`, `sommaire.md` before it.
 2. **Do its `Action` line, in the same turn.** It names the skill to invoke, with `args: "reprise"`, and the first thing to do in it (start the stage, dispatch a task, close the stage).
 3. **The card is the skill's start-up.** In a skill invoked with `reprise`: the KB is resolved, the stage is started (never `start` again an `en cours` stage), the tasks marked done passed `task done` (never re-read their outputs to check them). Skip the skill's own preliminary reads and go to the step the card names. Read only the files that step needs.

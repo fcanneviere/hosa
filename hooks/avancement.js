@@ -41,9 +41,21 @@ function resumeContext(cwd) {
   let section = null;
   let next = null;
   const nextTask = new Set();
+  // The last task of each stage: a stage detail older than it tells a state the tasks have left (rieki: « revue
+  // à lancer » after the review was done) — the detail and the « Prochaine action » written with it are not shown.
+  const lastTask = {};
   for (const line of lines) {
     if (line.startsWith('## ')) { section = line.slice(3).trim(); continue; }
-    if (section === 'Point de reprise' && line.trim()) { out.push(line); continue; }
+    const c = section === 'Tâches' ? line.split('|').map((x) => x.trim()) : [];
+    const w = c.length > 8 && /^`([\w-]+)`(?:\s*\(([^)]*)\))?$/.exec(c[2]);
+    if (w && c[6] > (lastTask[`${w[1]}|${w[2] || ''}`] || '')) lastTask[`${w[1]}|${w[2] || ''}`] = c[6];
+  }
+  const resumeLines = [];
+  let stale = false;
+  section = null;
+  for (const line of lines) {
+    if (line.startsWith('## ')) { section = line.slice(3).trim(); continue; }
+    if (section === 'Point de reprise' && line.trim()) { resumeLines.push(line); out.push(line); continue; }
     if (section === 'Boucles') { // a loop still open survives a later resume point
       const l = /^\|\s*(`[\w-]+`\s*→\s*`[\w-]+`[^|]*?)\s*\|\s*(\d+\/\d+)\s*\|\s*ouverte\s*\|[^|]*\|[^|]*\|\s*([^|]*?)\s*\|$/.exec(line);
       if (l) out.push(`- Boucle ouverte : ${l[1]} — tour ${l[2]}${l[3] ? ` — ${l[3]}` : ''}`);
@@ -58,9 +70,15 @@ function resumeContext(cwd) {
       else if (!nextTask.has(where)) { nextTask.add(where); out.push(`- Prochaine tâche : ${name}`); }
       continue;
     }
-    const m = /^\|\s*`([\w-]+)`\s*\|\s*([^|]*?)\s*\|\s*[^|]*\|\s*([^|]*?)\s*\|$/.exec(line);
+    const m = /^\|\s*`([\w-]+)`\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|$/.exec(line);
     if (!m) continue;
-    const [, stage, status, detail] = m;
+    const [, stage, status, updated] = m;
+    let detail = m[4];
+    const last = lastTask[`${stage}|${section.startsWith('Sprint ') ? section.slice(7) : ''}`];
+    if (status === 'en cours' && detail && updated && last > updated) {
+      stale = true;
+      detail = 'ses tâches ont avancé depuis son dernier détail : `reprendre` donne l\'état exact';
+    }
     if (status === 'en cours' || status === 'bloqué') out.push(`- ${section} : \`${stage}\` ${status}${detail ? ` — ${detail}` : ''}`);
     if (!next && status !== 'fait' && status !== 'non applicable') next = `\`${stage}\` (${section}) — ${status}`;
   }
@@ -69,7 +87,8 @@ function resumeContext(cwd) {
   // names the stage and its status, comes later and wins — each line bounded.
   const seen = new Set();
   const kept = [];
-  for (const l of [...out].reverse()) {
+  const shown = stale ? out.filter((l) => !(resumeLines.includes(l) && /^- (En cours|Prochaine action) :/.test(l))) : out;
+  for (const l of [...shown].reverse()) {
     const detail = l.split(' — ').slice(1).join(' — ').trim();
     if (detail && seen.has(detail)) continue;
     if (detail) seen.add(detail);

@@ -24,11 +24,12 @@ the work stopped, in the right order.
   avancement.py <kb> back     changement changement --objet <exigence> [--cause C] --detail D [--force]
   avancement.py <kb> done     changement --objet <exigence> [--reprise R] [--force]
                                                                   (a loop inside a skill: its rounds, then its proof)
-  avancement.py <kb> task add   <stage> <id> [--sprint S] --agent A [--objet O] [--detail D]
-  avancement.py <kb> task done  <stage> <id> [--sprint S] --sortie P[,P…] [--detail D] [--force]
+  avancement.py <kb> task add   <stage> <id> [--sprint S] --agent A [--objet O] [--detail D] [--reprise R]
+  avancement.py <kb> task done  <stage> <id> [--sprint S] --sortie P[,P…] [--detail D] [--reprise R] [--force]
   avancement.py <kb> task block <stage> <id> [--sprint S] --detail D
   avancement.py <kb> task skip  <stage> <id> [--sprint S] --detail D
-                                                                  (the agents' tasks of a stage, under `## Tâches`)
+                                                                  (the agents' tasks of a stage, under `## Tâches`;
+                                                                   --reprise R: the resume point too, in this call)
   avancement.py <kb> juge <stage> <id> [--sprint S] [--tickets T[,T…]] [--force]
                                                                   (`hosa-juge`'s questions for a task, its verdict path and,
                                                                    with --tickets, the file of numbered lines to judge them on)
@@ -220,6 +221,45 @@ def save(path: Path, sections: dict, resume: str, loops: list[dict] | None = Non
         out.append("")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(out), encoding="utf-8")
+
+
+RANK = {SKIPPED: 1, BLOCKED: 2, DOING: 2, DONE: 3}
+
+
+def sprint_slug(kb: Path, sprint: str | None) -> str | None:
+    """The sprint's slug as its file names it. `--sprint sprint-2` for `sprints/sprint-2-fiabilite.md` opened a
+    second section (rieki, 0.1.87: no worktree on the resume card, 3 to 10 calls to find the sprint at each
+    resume, `develop` closed by `--force` because its proofs read a file that isn't)."""
+    if not sprint or (kb / "sprints" / f"{sprint}.md").is_file():
+        return sprint
+    found = [p.stem for p in (kb / "sprints").glob(f"{sprint}-*.md") if not p.stem.endswith("-review")]
+    return found[0] if len(found) == 1 else sprint
+
+
+def merge_sprints(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[dict]) -> str:
+    """A section opened under a shortened slug joins its sprint's: per stage the most advanced status wins,
+    then the latest. Its tasks, its loops and the resume point follow. Returns the resume point."""
+    for title in [t for t in sections if t.startswith("Sprint ")]:
+        short = title[len("Sprint "):]
+        real = sprint_slug(kb, short)
+        if real == short:
+            continue
+        mine = sections.setdefault(f"Sprint {real}", [[s, TODO, "", ""] for s in SPRINT])
+        for r in sections.pop(title):
+            m = next((x for x in mine if x[0] == r[0]), None)
+            if m is None:
+                mine.append(r)
+            elif (RANK.get(r[1], 0), r[2]) > (RANK.get(m[1], 0), m[2]):
+                m[1:] = r[1:]
+        for t in tasks:
+            if t["scope"] == short:
+                t["scope"] = real
+        for lp in loops:
+            head, sep, rest = lp["scope"].partition(", ")
+            if head == short:
+                lp["scope"] = real + sep + rest
+        resume = resume.replace(f"(sprint {short})", f"(sprint {real})")
+    return resume
 
 
 def locate(sections: dict, stage: str, sprint: str | None) -> tuple[str, list[list[str]]]:
@@ -624,7 +664,7 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
     if not found:
         out += [f"- Étape : {next_open(sections)}", "- Action : invoque `hosa:sprint`."]
         return "\n".join(out + [r for r in (resume or "").splitlines() if r.strip() and r.strip() != "- Rien en cours."])
-    title, (stage, status, _, detail) = found
+    title, (stage, status, updated, detail) = found
     sprint = title[len("Sprint "):] if title.startswith("Sprint ") else ""
     skill = SKILL.get(stage, stage)
     flag = f" --sprint {sprint}" if sprint else ""
@@ -634,20 +674,41 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
         facts = [f"{k} `{v}`" for k in ("branch", "base", "worktree", "docker_project") if (v := field(text, k))]
         out.append(f"- Sprint `{sprint}` : " + (", ".join(facts) if facts else f"`kb/sprints/{sprint}.md`"))
     mine = [t for t in tasks if t["stage"] == stage and t["scope"] == sprint]
+    # tasks recorded after the stage's detail: it, and the « Prochaine action » written with it, tell an older state
+    late = [t for t in mine if updated and t["at"] > updated] if status == DOING else []
+    if late and (detail or "Prochaine action" in (resume or "")):
+        out.append(f"- Détail périmé : le détail ci-dessus et la « Prochaine action » datent d'avant {len(late)} tâche(s) "
+                   f"(dernière : `{max(late, key=lambda t: t['at'])['id']}`, {max(t['at'] for t in late)}) — "
+                   "les tâches ci-dessous font foi.")
     closed = [t for t in mine if t["statut"] in CLOSED]
-    if closed:  # their outputs passed `task done`: never re-read to check them; the paths stay in `show`
-        out.append(f"- Tâches faites ({len(closed)}) : " + ", ".join(
-            f"`{t['id']}`" + (f" ({n} fichier{'s' * (n > 1)})" if (n := len([x for x in t["sortie"].split(",") if x.strip()])) else "")
-            for t in closed))
+    if closed:  # their outputs passed `task done`: never re-read to check them; the paths stay in the plan
+        # one entry per ticket, its steps after it: 45 ids in full were 3.5 KB of a 4 KB card (rieki, sprint-2)
+        steps: dict[str, list[str]] = {}
+        for t in closed:
+            head, _, step = t["id"].rpartition(".")
+            steps.setdefault(head or t["id"], []).append(step if head else "")
+        out.append(f"- Tâches faites ({len(closed)}) : " + " ; ".join(
+            f"`{h}`" + (f" ({', '.join(x)})" if any(x) else "") for h, x in steps.items()))
     out += [f"- À faire : {task_name(t)}" + (f" — {t['detail']}" if t["detail"] else "") for t in mine if t["statut"] == TODO]
     out += [f"- Bloquée : {task_name(t)} — {t['detail']}" for t in mine if t["statut"] == BLOCKED]
     gaps = check(kb, stage, sprint or None) if status == DOING else []
-    out += [f"- Reste à prouver : {clip(g)}" for g in gaps if not g.startswith("tâche `")]  # the task lines say it
+    # one line per missing proof, its tickets after it: 8 tickets × 2 proofs were 16 lines, 2.3 KB (rieki, `qa`)
+    same: dict[str, list[str]] = {}
+    for g in gaps:
+        if g.startswith("tâche `"):  # the task lines say it
+            continue
+        slug, sep, why = g.partition(" : ")
+        if sep and re.fullmatch(r"[\w-]+", slug):
+            same.setdefault(why.replace(slug, "<ticket>"), []).append(slug)
+        else:
+            same.setdefault(g, [])
+    out += [f"- Reste à prouver : {clip(why)}" + (f" — {len(s)} ticket{'s' * (len(s) > 1)} : {', '.join(s)}" if s else "")
+            for why, s in same.items()]
     out += [x for x in open_loops(loops)]
     said = "\n".join(out)  # the resume point repeats the stage's detail: keep only what it adds
     out += [line for line in (resume or "").splitlines()
             if line.strip() and line.strip() != "- Rien en cours." and re.sub(r"^- [^:]+ : (`[\w-]+`( \([^)]*\))? — )?", "", line).strip() not in said
-            and not re.match(r"^- (En cours|Bloqué) : `[\w-]+`$", line.strip())]
+            and not re.match(r"^- (En cours|Bloqué) : `[\w-]+`( \(sprint [^)]*\))?$", line.strip())]
     agents = running_agents(kb)
     out += [f"- Agent encore actif : `{a['type']}`" + (f" — « {a['what']} »" if a["what"] else "")
             + (f" (lancé il y a {a['minutes']} min" if a["minutes"] is not None else " (")
@@ -663,6 +724,9 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
                  f"(tâche bloquée : ajoute `--agent <son agent>` et `Qn <choix> — <la question>`), puis {go}."
     elif status == TODO:
         action = f"`<hosa> avancement \"{kbs}\" start {stage}{flag}`, puis {go}."
+    elif todo and agents:  # the agent still running is most likely at a task listed `à faire`: never a second dispatch
+        action = f"{go} : à chaque rapport, `task done` de sa tâche ; ne dispatche une tâche à faire que si aucun agent " \
+                 "encore actif ne la fait — `start` est déjà fait."
     elif todo:
         action = f"{go}, puis dispatche la tâche `{todo['id']}` ({todo['agent']}" + \
                  (f" → {todo['objet']}" if todo["objet"] else "") + ")" +                  (", comme son détail le dit" if todo["detail"] else "") + " — `start` est déjà fait."
@@ -693,6 +757,26 @@ def kb_rel(kb: Path, f: Path) -> str | None:
         return f.resolve().relative_to(kb.resolve()).as_posix()
     except ValueError:
         return None
+
+
+def outputs(kb: Path, sortie: str, sprint: str = "") -> tuple[list[str], list[str]]:
+    """`--sortie` as the sessions write it: paths, and words around them. (paths, comment). rieki: 7 refusals, two
+    tasks blocked and forced on the user's word, for `kb/x.md : 0 Bloquant`, `a.md b.md` in one argument or
+    « baseline verte ». A word that names no file and has no path's shape is a comment; a missing path stays one."""
+    paths, notes = [], []
+    for item in (x.strip() for x in sortie.split(",")):
+        if not item:
+            continue
+        if resolve(kb, item, sprint):  # a path may hold a space
+            paths.append(item)
+            continue
+        for w in item.split():
+            w = w.strip("`\"'()[];")
+            if w and (resolve(kb, w, sprint) or re.fullmatch(r"[\w.~:\\/-]*[\\/][\w.~\\/-]+|[\w-]+\.[A-Za-z]\w{0,7}", w)):
+                paths.append(w)
+            elif w:
+                notes.append(w)
+    return list(dict.fromkeys(paths)), notes
 
 
 def ctl_sortie(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
@@ -1129,6 +1213,7 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
             return 2, f"error: task {op} {stage} <id> — l'id manque ; {hint}"
     if not TASK_ID.match(tid):
         return 2, f"error: task id `{tid}` — letters, digits, `.`, `_`, `-` only"
+    a.task_id = tid
     title, rows = locate(sections, stage, a.sprint)
     row = next(r for r in rows if r[0] == stage)
     scope = a.sprint if stage in SPRINT else ""
@@ -1158,10 +1243,15 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
     if op in ("block", "skip") and not a.detail:
         return 2, f"error: task {op} needs --detail"
     if op == "done":
-        paths = [p.strip() for p in a.sortie.split(",") if p.strip()]
+        paths, notes = outputs(kb, a.sortie, scope)
         if not paths and not a.force:
-            return 1, (f"✗ tâche `{tid}` ({where}) pas faite : aucune sortie "
-                       "(--sortie : les chemins que l'agent a écrits)")
+            return 1, (f"✗ tâche `{tid}` ({where}) pas faite : aucune sortie n'est un fichier"
+                       + (f" (« {' '.join(notes)} » est un commentaire : `--detail`)" if notes else "")
+                       + ". `--sortie` attend les chemins que l'agent a écrits ; un agent qui n'écrit pas de fichier "
+                       "(branche, worktree, tests donnés à l'utilisateur) → le fichier de la KB qu'il a mis à jour "
+                       "(`kb/sprints/<sprint>.md`, `kb/tickets/<ticket>.md`…). Ce refus ne compte pas de tour.")
+        if notes and not a.detail:
+            a.detail = cell(" ".join(notes))
         files = [(p, resolve(kb, p, scope)) for p in paths]
         if "juge" in task_controls(stage, tid):  # the judge's output is its verdict; it judges the batch's tickets
             files += [x for x in lot_tickets(kb, tasks, t) if all(x[1] != f for _, f in files)]
@@ -1191,6 +1281,20 @@ def task(kb: Path, sections: dict, tasks: list[dict], a) -> tuple[int, str]:
     else:
         t.update(statut=BLOCKED if op == "block" else SKIPPED, at=now(), detail=a.detail.strip().splitlines()[0])
     return 0, ""
+
+
+def task_resume(sections: dict, resume: str, a) -> str:
+    """`task … --reprise "<next action>"`: the stage's detail and the resume point, in the task's own call. A second
+    call (`progress`) was forgotten at the end of a session, and the next one resumed on a stale detail (rieki:
+    « revue à lancer » after the review was done). A stage blocked on questions keeps them."""
+    _, rows = locate(sections, a.to, a.sprint)
+    row = next(r for r in rows if r[0] == a.to)
+    if row[1] != DOING:
+        return resume
+    scope = a.sprint if a.to in SPRINT else ""
+    what = f"tâche `{a.task_id}` " + {"add": "à lancer", "done": "faite", "block": "bloquée", "skip": "non applicable"}[a.stage]
+    row[2:] = [now(), what]
+    return f"- En cours : `{a.to}`" + (f" (sprint {scope})" if scope else "") + f" — {what}\n- Prochaine action : {a.reprise}"
 
 
 def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
@@ -1283,9 +1387,11 @@ def main(argv: list[str]) -> int:
         print(f"error: {a.kb} is not a directory", file=sys.stderr)
         return 2
     path = a.kb / "project" / "avancement.md"
+    a.sprint = sprint_slug(a.kb, a.sprint)
     sections, resume = load(path)
     loops = load_loops(path)
     tasks = load_tasks(path)
+    resume = merge_sprints(a.kb, sections, resume, loops, tasks)
 
     if a.action == "show":
         print(show(sections, resume, loops, tasks))
@@ -1297,6 +1403,8 @@ def main(argv: list[str]) -> int:
         if code:
             print(out, file=sys.stderr if code == 2 else sys.stdout)
             return code
+        if a.reprise:
+            resume = task_resume(sections, resume, a)
         save(path, sections, resume, loops, tasks)
         print((out + "\n" if out else "") + show(*load(path), loops, tasks))
         return 0
