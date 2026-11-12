@@ -158,7 +158,8 @@ def walk(root, unreadable=None):
     if not root.is_dir():
         return out
     for p in sorted(root.rglob("*.md")):
-        if p.name in RESERVED_FILENAMES:
+        # a hidden folder (`.claude/agent-memory*` of an agent working in the KB) holds no concept
+        if p.name in RESERVED_FILENAMES or any(part.startswith(".") for part in p.relative_to(root).parts[:-1]):
             continue
         text = _read(p)
         try:

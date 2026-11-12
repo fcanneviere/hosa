@@ -13,4 +13,5 @@
 * [skills/interface/vendor/oil-ui/tests](skills-interface-vendor-oil-ui-tests.md) - Observable builder contracts. Run with Python's unittest discovery.
 * [skills/kb-commit/scripts](skills-kb-commit-scripts.md) - !/usr/bin/env python3
 * [skills/okf/scripts](skills-okf-scripts.md) - !/usr/bin/env python3
+* [skills/redaction/scripts](skills-redaction-scripts.md) - !/usr/bin/env python3
 * [skills/status/scripts](skills-status-scripts.md) - !/usr/bin/env python3

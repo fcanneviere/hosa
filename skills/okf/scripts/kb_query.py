@@ -34,21 +34,54 @@ import sys
 from pathlib import Path
 
 SKIP_FILES = {"log.md", "index.md", "sommaire.md"}
+FLOW_ITEM = re.compile(r'"(?:[^"\\]|\\.)*"|\'(?:[^\']|\'\')*\'|[^,]+')
 
 
-def split(text: str) -> tuple[dict[str, str], str]:
+def concept_files(kb: Path):
+    """The KB's concept files: no reserved file, no generated `code/`, nothing under a hidden folder
+    (`.claude/agent-memory*` written by an agent whose working folder was the KB)."""
+    for f in sorted(kb.rglob("*.md")):
+        rel = f.relative_to(kb)
+        if f.name in SKIP_FILES or rel.parts[0] == "code" or any(p.startswith(".") for p in rel.parts[:-1]):
+            continue
+        yield f, rel
+
+
+def scalar(v: str) -> str:
+    v = v.strip()
+    if len(v) >= 2 and v[0] == v[-1] == '"':
+        return re.sub(r'\\(.)', r"\1", v[1:-1])
+    if len(v) >= 2 and v[0] == v[-1] == "'":
+        return v[1:-1].replace("''", "'")
+    return v
+
+
+def value(v: str) -> str | list[str]:
+    """A YAML flow list `[a, "b"]` → ['a', 'b']; a quoted scalar unquoted; else the text."""
+    v = v.strip()
+    if v.startswith("[") and v.endswith("]"):
+        return [scalar(x) for x in FLOW_ITEM.findall(v[1:-1]) if x.strip()]
+    return scalar(v)
+
+
+def text_of(v) -> str:
+    return ", ".join(v) if isinstance(v, list) else v
+
+
+def split(text: str) -> tuple[dict[str, str | list[str]], str]:
+    """Tolerant frontmatter reader (stdlib only): scalars, flow lists and block lists."""
     m = re.match(r"^﻿?---\s*\n(.*?)\n---\s*(?:\n|$)(.*)$", text, re.S)
     if not m:
         return {}, text
-    fm: dict[str, str] = {}
+    fm: dict[str, str | list[str]] = {}
     key = None
     for line in m.group(1).splitlines():
         kv = re.match(r"^([A-Za-z_][\w-]*):\s*(.*?)\s*$", line)
         if kv:
             key = kv.group(1)
-            fm[key] = kv.group(2).strip("'\"")
-        elif key and re.match(r"^\s+-\s+", line):  # block list item
-            fm[key] = (fm[key] + ", " if fm[key] else "") + re.sub(r"^\s+-\s+", "", line).strip("'\"")
+            fm[key] = value(kv.group(2))
+        elif key and re.match(r"^\s*-\s+", line) and (fm[key] == "" or isinstance(fm[key], list)):  # block list item
+            fm[key] = [*(fm[key] or []), scalar(re.sub(r"^\s*-\s+", "", line))]
     return fm, m.group(2)
 
 
@@ -75,11 +108,13 @@ def matches(fm: dict[str, str], body: str, path: Path, kb: Path, a) -> bool:
     for cond in a.where or []:
         if "~" in cond and ("=" not in cond or cond.index("~") < cond.index("=")):
             k, v = cond.split("~", 1)
-            if v.lower() not in fm.get(k, "").lower():
+            if v.lower() not in text_of(fm.get(k, "")).lower():
                 return False
         elif "=" in cond:
             k, v = cond.split("=", 1)
-            if fm.get(k, "") not in [x.strip() for x in v.split(",")]:
+            got = fm.get(k, "")
+            # a list field (`espace: [front-office, back-office]`) matches when one of its items does
+            if not {x.strip() for x in v.split(",")} & set(got if isinstance(got, list) else [got]):
                 return False
         else:
             raise SystemExit(f"error: --where needs key=value or key~text, got `{cond}`")
@@ -106,10 +141,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     hits = []
-    for f in sorted(a.kb.rglob("*.md")):
-        rel = f.relative_to(a.kb)
-        if f.name in SKIP_FILES or (rel.parts and rel.parts[0] == "code"):
-            continue
+    for f, rel in concept_files(a.kb):
         try:
             fm, body = split(f.read_text(encoding="utf-8"))
         except (UnicodeDecodeError, OSError):
@@ -132,7 +164,7 @@ def main(argv: list[str]) -> int:
     for rel, fm, body in hits:
         state = fm.get("status") or fm.get("state", "")
         head = f"### {rel.as_posix()} — {fm.get('title') or rel.stem} ({fm.get('type', '?')}{' · ' + state if state else ''})"
-        lines = [head] + [f"- {k}: {fm.get(k, '—')}" for k in fields]
+        lines = [head] + [f"- {k}: {text_of(fm.get(k, '—'))}" for k in fields]
         if a.full:
             lines.append(body.strip())
         elif wanted:

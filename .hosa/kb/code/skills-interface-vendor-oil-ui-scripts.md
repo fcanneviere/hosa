@@ -4,7 +4,7 @@ title: skills/interface/vendor/oil-ui/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/vendor/oil-ui/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
+generated: {by: 'process:hosa-graph', at: '2026-10-19T17:10:14Z'}
 ---
 
 ## Fichiers
@@ -44,7 +44,7 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 - `card_html` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:174`
 - `first_font` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:150`
 - `load` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:77`
-- `main` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:303`
+- `main` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:304`
 - `need` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:61`
 - `sketch` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:154` — Esquisse de mise en page : des aplats seulement, disposés selon le gabarit choisi.
 - `text_list` — `skills/interface/vendor/oil-ui/scripts/build_style_cards.py:71`

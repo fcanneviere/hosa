@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T18:14:13Z'}
 ---
 
 ## Fichiers
@@ -21,93 +21,207 @@ generated: {by: 'process:hosa-graph', at: '2026-10-17T17:02:29Z'}
 | `hooks/gate.test.js` |  |
 | `hooks/graph.js` |  |
 | `hooks/graph.test.js` |  |
+| `hooks/launch.js` |  |
+| `hooks/launch.test.js` |  |
 | `hooks/read-guard.js` |  |
 | `hooks/read-guard.test.js` |  |
+| `hooks/register-plan.test.js` |  |
 | `hooks/register.mjs` | Hosa — mod (Claude Code ≥ 2.1.290; older versions ignore it, the classic hooks still run). |
 | `hooks/register.test.ts` |  |
+| `hooks/reprendre.js` |  |
+| `hooks/reprendre.test.js` |  |
+| `hooks/reprise.js` | Hosa — the session just cleared, at /clear. The progress plan knows the stage, not the task |
+| `hooks/reprise.test.js` |  |
 | `hooks/session-start.js` |  |
+| `hooks/session-start.test.js` |  |
+| `hooks/stop.js` |  |
+| `hooks/stop.test.js` |  |
 | `hooks/subagent-start.js` |  |
 | `hooks/subagent-start.test.js` |  |
 
 ## Symboles publics
 
-- `kbLayoutNote` — `hooks/avancement.js:13` — tracked in the code branches (to migrate). Fast, read-only, never blocks.
-- `kbLayoutNote.run` — `hooks/avancement.js:18`
-- `resumeContext` — `hooks/avancement.js:29`
-- `g` — `hooks/avancement.test.js:50`
+- `kbLayoutNote` — `hooks/avancement.js:11` — tracked in the code branches (to migrate). Fast, read-only, never blocks.
+- `kbLayoutNote.run` — `hooks/avancement.js:16`
+- `resumeContext` — `hooks/avancement.js:27`
+- `g` — `hooks/avancement.test.js:115`
 - `kb` — `hooks/avancement.test.js:9`
-- `agentGate` — `hooks/budget.js:81`
-- `closedStages` — `hooks/budget.js:33` — Stages done or ruled out in the managed project's plan (a worktree's copy is stale: findKbRoot skips it).
-- `contextTokens` — `hooks/budget.js:43` — Context of the main session's last call, from the tail of its transcript.
-- `deny` — `hooks/budget.js:29`
-- `hash` — `hooks/budget.js:25`
-- `load` — `hooks/budget.js:27`
-- `processPayload` — `hooks/budget.js:94`
-- `save` — `hooks/budget.js:28`
-- `stageGate` — `hooks/budget.js:64`
-- `stateDir` — `hooks/budget.js:24`
-- `stateFile` — `hooks/budget.js:26`
-- `call` — `hooks/budget.test.js:41`
+- `plan` — `hooks/avancement.test.js:30`
+- `agentGate` — `hooks/budget.js:239`
+- `agentTranscript` — `hooks/budget.js:89` — A subagent's transcript: given by the hook, or `<session>/subagents/agent-<id>.jsonl` beside the main one.
+- `canWrite` — `hooks/budget.js:216` — (hosa-challenger, hosa-reviewer, hosa-tech-lead).
+- `ceilingGate` — `hooks/budget.js:157` — Past start + CEILING, refused once, then again every STEP more: `again` is what passes on the retry.
+- `closedStages` — `hooks/budget.js:83` — Stages done or ruled out in the plan.
+- `contextTokens` — `hooks/budget.js:122`
+- `deny` — `hooks/budget.js:72`
+- `dispatchGate` — `hooks/budget.js:280` — The main session dispatches: the ceiling, then an old agent's resume, then the stage's `dispatch` rules.
+- `graph` — `hooks/budget.js:56` — The one stage graph (avancement.py reads it too).
+- `hash` — `hooks/budget.js:68`
+- `lastCall` — `hooks/budget.js:99` — and its time.
+- `load` — `hooks/budget.js:70`
+- `pauseGate` — `hooks/budget.js:170` — The refusal erases the message: it is given back, to send again. A slash command passes (/clear, /compact).
+- `pauseGate.k` — `hooks/budget.js:181`
+- `pendingFile` — `hooks/budget.js:324`
+- `planText` — `hooks/budget.js:76` — The managed project's plan (a worktree's copy is stale: findKbRoot skips it).
+- `processPayload` — `hooks/budget.js:345`
+- `recordDispatch` — `hooks/budget.js:327`
+- `reportGate` — `hooks/budget.js:225` — longer than REPORT_MAX besides `## Open Questions` and `## Reprise` (kept whole), it is refused once.
+- `running` — `hooks/budget.js:265` — Hosa agents of this session still running: started, not stopped, active within SILENT.
+- `save` — `hooks/budget.js:71`
+- `sessionStart` — `hooks/budget.js:148` — The session's start, read once and kept in its state.
+- `short` — `hooks/budget.js:325`
+- `stageGate` — `hooks/budget.js:189`
+- `startTokens` — `hooks/budget.js:125` — Context of the session's first call, from the head of its transcript (the start after /clear).
+- `stateDir` — `hooks/budget.js:67`
+- `stateFile` — `hooks/budget.js:69`
+- `takeDispatch` — `hooks/budget.js:336`
+- `agentFile` — `hooks/budget.test.js:97`
+- `back` — `hooks/budget.test.js:136`
+- `call` — `hooks/budget.test.js:195`
 - `denied` — `hooks/budget.test.js:10`
-- `setContext` — `hooks/budget.test.js:17`
+- `po` — `hooks/budget.test.js:175`
+- `pre` — `hooks/budget.test.js:105`
+- `report` — `hooks/budget.test.js:135`
+- `say` — `hooks/budget.test.js:197`
+- `setAgentContext` — `hooks/budget.test.js:98`
+- `setContext` — `hooks/budget.test.js:20`
 - `setPlan` — `hooks/budget.test.js:14`
-- `skill` — `hooks/budget.test.js:19`
-- `clip` — `hooks/compress-output.js:23`
-- `dedup` — `hooks/compress-output.js:66` — Same-session only: a fresh session's context doesn't hold the earlier copy.
-- `elide` — `hooks/compress-output.js:100`
-- `extractText` — `hooks/compress-output.js:25`
-- `processPayload` — `hooks/compress-output.js:122` — Hook payload → replacement tool_response, or null to leave it untouched.
-- `rebuild` — `hooks/compress-output.js:38` — returns {stdout, stderr, ...}, so hand back that shape or skip entirely.
-- `scrub` — `hooks/compress-output.js:52`
-- `spill` — `hooks/compress-output.js:87` — Full text goes to disk first so the elided middle is grep-able, not re-run.
-- `stateDir` — `hooks/compress-output.js:22`
-- `transform` — `hooks/compress-output.js:114`
-- `call` — `hooks/compress-output.test.js:41`
-- `commitGate` — `hooks/gate.js:67`
-- `gitCalls` — `hooks/gate.js:37` — Each git call: its directory (cd and -C applied), subcommand and arguments.
-- `mergeGate` — `hooks/gate.js:91`
-- `native` — `hooks/gate.js:19`
-- `processPayload` — `hooks/gate.js:107`
-- `read` — `hooks/gate.js:54`
-- `section` — `hooks/gate.js:57` — Body of the last `## <heading>` section (up to the next level-2 heading).
-- `segments` — `hooks/gate.js:22` — Shell words grouped by command (split on && || ; | newline); quotes kept together.
+- `skill` — `hooks/budget.test.js:22`
+- `start` — `hooks/budget.test.js:173`
+- `usage` — `hooks/budget.test.js:17`
+- `clip` — `hooks/compress-output.js:28`
+- `condense` — `hooks/compress-output.js:262`
+- `dedup` — `hooks/compress-output.js:308` — Same-session only: a fresh session's context doesn't hold the earlier copy.
+- `dropLines` — `hooks/compress-output.js:103` — Lines matching `res` go, unless they look like an error; the count goes in the footer.
+- `extractText` — `hooks/compress-output.js:30`
+- `fitBlocks` — `hooks/compress-output.js:279` — Grep and path lists: whole groups up to the budget, then every remaining group by name.
+- `fitLines` — `hooks/compress-output.js:292` — Anything else: head and tail, the hidden line range by number, its error lines with theirs.
+- `gitDiff` — `hooks/compress-output.js:123` — One block per file (or commit header), so a diff too big keeps whole files.
+- `gitDiff.count` — `hooks/compress-output.js:137`
+- `gitLog` — `hooks/compress-output.js:144` — `git log` medium format → one header line per commit; `-p` diffs go through gitDiff.
+- `gitStatus` — `hooks/compress-output.js:115`
+- `grepGroup` — `hooks/compress-output.js:204` — `path:12:text` (and `path-12-text` context lines) → the path once, its lines under it. Lossless.
+- `kindOf` — `hooks/compress-output.js:87`
+- `pathGroup` — `hooks/compress-output.js:227` — A list of paths → one line per directory. Lossless.
+- `processPayload` — `hooks/compress-output.js:366` — Hook payload → replacement tool_response, or null to leave it untouched.
+- `program` — `hooks/compress-output.js:76` — without env assignments or a runner prefix (rtk, npx, uv run, python -m…).
+- `rebuild` — `hooks/compress-output.js:43` — returns {stdout, stderr, ...}, so hand back that shape or skip entirely.
+- `scrub` — `hooks/compress-output.js:58` — Lossless: colours, carriage-return progress (last state kept), trailing blanks, exact repeats.
+- `similar` — `hooks/compress-output.js:243` — Runs where only the numbers change (counters, timings, ids) → first two, last one, a count.
+- `similar.tpl` — `hooks/compress-output.js:244`
+- `spill` — `hooks/compress-output.js:329` — Full text goes to disk so whatever was dropped is read back, not re-run.
+- `stateDir` — `hooks/compress-output.js:27`
+- `tapPasses` — `hooks/compress-output.js:175` — `not ok` keeps its block (it holds the error).
+- `transform` — `hooks/compress-output.js:342`
+- `bash` — `hooks/compress-output.test.js:10`
+- `call` — `hooks/compress-output.test.js:157`
+- `file` — `hooks/compress-output.test.js:106`
+- `ok` — `hooks/compress-output.test.js:63`
+- `pad` — `hooks/compress-output.test.js:12`
+- `spillOf` — `hooks/compress-output.test.js:11`
+- `cdGate` — `hooks/gate.js:119` — (`.claude/agent-memory-local/`) inside the KB, and later git commands hit `hosa-kb`.
+- `commitGate` — `hooks/gate.js:72`
+- `composeGate` — `hooks/gate.js:130`
+- `failRun` — `hooks/gate.js:188`
+- `gitCalls` — `hooks/gate.js:42` — Each git call: its directory (cd and -C applied), subcommand and arguments.
+- `mergeGate` — `hooks/gate.js:101`
+- `native` — `hooks/gate.js:24`
+- `processPayload` — `hooks/gate.js:221`
+- `processPayload.deny` — `hooks/gate.js:223`
+- `read` — `hooks/gate.js:59`
+- `reviewLoopGate` — `hooks/gate.js:198`
+- `scriptGate` — `hooks/gate.js:167`
+- `section` — `hooks/gate.js:62` — Body of the last `## <heading>` section (up to the next level-2 heading).
+- `segments` — `hooks/gate.js:27` — Shell words grouped by command (split on && \|\| ; \| newline); quotes kept together.
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
 - `denied` — `hooks/gate.test.js:19`
+- `dev` — `hooks/gate.test.js:151`
 - `lot` — `hooks/gate.test.js:45`
 - `project` — `hooks/gate.test.js:9`
-- `sprint` — `hooks/gate.test.js:62`
+- `sprint` — `hooks/gate.test.js:70`
 - `ticket` — `hooks/gate.test.js:21`
 - `wt` — `hooks/gate.test.js:33`
-- `broadIdentGrep` — `hooks/graph.js:71`
-- `commandLine` — `hooks/graph.js:53`
-- `findKbRoot` — `hooks/graph.js:42` — committed copy of `.hosa/kb` — skip it and keep walking up to the project root.
-- `findUp` — `hooks/graph.js:33` — Closest ancestor of `dir` containing `marker` (a relative path), or null.
-- `guardGrep` — `hooks/graph.js:77`
-- `mtime` — `hooks/graph.js:107`
-- `processPayload` — `hooks/graph.js:110` — Hook payload → hook output object, or null.
-- `python` — `hooks/graph.js:27`
-- `queryGraph` — `hooks/graph.js:60` — `graph.py find` output, or '' on failure/no hit. Stays under the 5 s hook timeout.
-- `refreshSummary` — `hooks/graph.js:19` — Rewrites `.hosa/kb/sommaire.md` (one line per KB concept) in the background.
-- `runGraph` — `hooks/graph.js:55`
-- `sessionStart` — `hooks/graph.js:96` — (a full first build can exceed the hook timeout). Returns the context line, or ''.
+- `broadIdentGrep` — `hooks/graph.js:111`
+- `checkHeader` — `hooks/graph.js:66`
+- `commandLine` — `hooks/graph.js:93`
+- `findKbRoot` — `hooks/graph.js:51` — committed copy of `.hosa/kb` — skip it and keep walking up to the project root.
+- `findUp` — `hooks/graph.js:42` — Closest ancestor of `dir` containing `marker` (a relative path), or null.
+- `guardGrep` — `hooks/graph.js:117`
+- `hosaCommand` — `hooks/graph.js:92`
+- `mtime` — `hooks/graph.js:147`
+- `processPayload` — `hooks/graph.js:150` — Hook payload → hook output object, or null.
+- `python` — `hooks/graph.js:28`
+- `pythonBackground` — `hooks/graph.js:35` — opens a window. pythonw.exe never does; its stdout is None, which is fine for stdio: 'ignore'.
+- `queryGraph` — `hooks/graph.js:100` — `graph.py find` output, or '' on failure/no hit. Stays under the 5 s hook timeout.
+- `refreshSummary` — `hooks/graph.js:20` — Rewrites `.hosa/kb/sommaire.md` (one line per KB concept) in the background.
+- `runGraph` — `hooks/graph.js:95`
+- `sessionStart` — `hooks/graph.js:136` — (a full first build can exceed the hook timeout). Returns the context line, or ''.
+- `shimText` — `hooks/graph.js:78`
+- `writeShim` — `hooks/graph.js:87`
 - `deny` — `hooks/graph.test.js:57`
 - `hit` — `hooks/graph.test.js:56`
+- `ok` — `hooks/graph.test.js:97`
 - `project` — `hooks/graph.test.js:9`
-- `processPayload` — `hooks/read-guard.js:19`
-- `stateDir` — `hooks/read-guard.js:15`
-- `stateFile` — `hooks/read-guard.js:16`
+- `processPayload` — `hooks/launch.js:13`
+- `launched` — `hooks/launch.test.js:12`
+- `on` — `hooks/launch.test.js:17`
+- `deny` — `hooks/read-guard.js:24`
+- `processPayload` — `hooks/read-guard.js:27`
+- `processPayload.save` — `hooks/read-guard.js:43`
+- `stateDir` — `hooks/read-guard.js:18`
+- `stateFile` — `hooks/read-guard.js:19`
 - `denied` — `hooks/read-guard.test.js:13`
 - `read` — `hooks/read-guard.test.js:12`
-- `readPlan` — `hooks/register.mjs:23` — Same reading as skills/status/scripts/avancement.py: `| \`stage\` | statut | … |` rows.
-- `refresh` — `hooks/register.mjs:40` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
-- `register` — `hooks/register.mjs:57`
-- `showStatus` — `hooks/register.mjs:51`
-- `project` — `hooks/register.test.ts:10` — Plan text per call, so a test can close a stage between turns.
+- `readBig` — `hooks/read-guard.test.js:30`
+- `bare` — `hooks/register.mjs:44`
+- `pane` — `hooks/register.mjs:111` — Everything the user needs, from the plan alone: what waits for them first, then where the project is.
+- `pane.group` — `hooks/register.mjs:114`
+- `pane.mark` — `hooks/register.mjs:115`
+- `pane.para` — `hooks/register.mjs:113`
+- `pane.row` — `hooks/register.mjs:112`
+- `readPlan` — `hooks/register.mjs:25` — the rows above the first `## Sprint` heading are the upstream stages, no list to keep in step here.
+- `readView` — `hooks/register.mjs:45`
+- `redraw` — `hooks/register.mjs:104` — Fail-open: a pane that cannot be drawn again never stops a hook.
+- `refresh` — `hooks/register.mjs:84` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
+- `register` — `hooks/register.mjs:178`
+- `showStatus` — `hooks/register.mjs:173`
+- `project` — `hooks/register.test.ts:11`
 - `row` — `hooks/register.test.ts:3`
-- `spawn` — `hooks/register.test.ts:69`
-- `step` — `hooks/register.test.ts:24`
-- `processPayload` — `hooks/subagent-start.js:11`
+- `spawn` — `hooks/register.test.ts:73`
+- `step` — `hooks/register.test.ts:28`
+- `card` — `hooks/reprendre.js:15`
+- `processPayload` — `hooks/reprendre.js:23`
+- `project` — `hooks/reprendre.test.js:9`
+- `cut` — `hooks/reprise.js:12`
+- `gitState` — `hooks/reprise.js:82`
+- `gitState.run` — `hooks/reprise.js:84`
+- `oneLine` — `hooks/reprise.js:13`
+- `previousSession` — `hooks/reprise.js:99` — Hook payload (source, session_id, transcript_path, cwd) → context block, or ''.
+- `previousSession.rel` — `hooks/reprise.js:106`
+- `previousTranscript` — `hooks/reprise.js:16` — The most recent other transcript of the same project folder: the session /clear just closed.
+- `readSession` — `hooks/reprise.js:57`
+- `requestText` — `hooks/reprise.js:44` — a slash command kept as `/name args`.
+- `tailLines` — `hooks/reprise.js:29`
+- `assistant` — `hooks/reprise.test.js:10`
+- `project` — `hooks/reprise.test.js:13` — A project folder of transcripts: the cleared session, written first, and the new one.
+- `user` — `hooks/reprise.test.js:9`
+- `bytes` — `hooks/session-start.js:16`
+- `compose` — `hooks/session-start.js:34` — the plan shortened past 60 % of the room, then the cleared session's recap.
+- `compose.parts` — `hooks/session-start.js:35`
+- `main` — `hooks/session-start.js:57`
+- `rules` — `hooks/session-start.js:47` — `using-hosa`, the second hook: whole, without its frontmatter; without the project rules where no KB is.
+- `shorten` — `hooks/session-start.js:19` — Cut `text` to `max` bytes at a line end, saying so.
+- `bytes` — `hooks/session-start.test.js:8`
+- `processPayload` — `hooks/stop.js:28`
+- `stagesInProgress` — `hooks/stop.js:16` — `\| \`stage\` \| en cours \| … \|` rows of avancement.md, with the section they sit in (a sprint, a pipeline).
+- `stateDir` — `hooks/stop.js:12`
+- `stateFile` — `hooks/stop.js:13`
+- `setPlan` — `hooks/stop.test.js:13`
+- `stop` — `hooks/stop.test.js:15`
+- `processPayload` — `hooks/subagent-start.js:58`
+- `pythonLine` — `hooks/subagent-start.js:47` — a path under the plugin cache breaks at the next update.
+- `ctx` — `hooks/subagent-start.test.js:38`
 
 ## Tickets et exigences
 

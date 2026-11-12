@@ -8,7 +8,10 @@ bundles.
 
 Each line: [title](path) — type · status/state · priority · sprint — description,
 cut at DESC_MAX characters: the summary is read first by every agent. Generated bundles (`code/`), `log.md`, `index.md` and the summary itself are
-left out. Stdlib only; the frontmatter is read with a tolerant line parser.
+left out, and so is anything under a hidden folder. Past BUDGET bytes, closed concepts (`done`,
+`deprecated`) become one count line per bundle, then the bundles with the most description text lose
+their descriptions; each cut line names the `kb_query` command that gives it back. Stdlib only; the
+frontmatter is read with kb_query's tolerant line parser.
 """
 from __future__ import annotations
 
@@ -17,54 +20,102 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-SKIP_DIRS = {"code"}
-SKIP_FILES = {"log.md", "index.md", "sommaire.md"}
-FIELDS = ("type", "title", "description", "status", "state", "priority", "sprint", "espace")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from kb_query import concept_files, split, text_of  # noqa: E402 — one frontmatter reader for both scripts
+
 DESC_MAX = 160
+# The summary is read whole by every agent (read-guard lets it through): past this size, closed concepts
+# become one count line, then the biggest bundles lose their descriptions — each time with the kb_query
+# command that gives them back. ~13 k tokens, half of what one Read takes. A bundle whose descriptions weigh
+# under a twentieth of it keeps them: cutting them saves little and loses the most useful lines (cdc, rules).
+# Still over: the bundle with the most line text becomes one count line per state, until it fits.
+BUDGET = 48_000
+CLOSED = {"done", "deprecated"}
+ACTIVE = {"doing", "blocked"}  # a folded bundle still lists them: the sprint in progress
 
 
-def frontmatter(text: str) -> dict[str, str]:
-    m = re.match(r"^﻿?---\s*\n(.*?)\n---\s*(?:\n|$)", text, re.S)
-    out: dict[str, str] = {}
-    if not m:
-        return out
-    for line in m.group(1).splitlines():
-        kv = re.match(r"^([A-Za-z_]+):\s*(.*?)\s*$", line)
-        if kv and kv.group(1) in FIELDS:
-            out[kv.group(1)] = kv.group(2).strip("'\"")
-    return out
+def frontmatter(text: str) -> dict:
+    return split(text)[0]
 
 
-def build(kb: Path) -> str:
-    bundles: dict[str, list[str]] = {}
-    for f in sorted(kb.rglob("*.md")):
-        rel = f.relative_to(kb)
-        if f.name in SKIP_FILES or (rel.parts and rel.parts[0] in SKIP_DIRS):
-            continue
+def _entries(kb: Path) -> dict[str, list[dict]]:
+    bundles: dict[str, list[dict]] = {}
+    for f, rel in concept_files(kb):
         try:
-            fm = frontmatter(f.read_text(encoding="utf-8"))
+            fm = {k: text_of(v) for k, v in frontmatter(f.read_text(encoding="utf-8")).items()}
         except (UnicodeDecodeError, OSError):
             continue
+        state = fm.get("status") or fm.get("state", "")
         meta = " · ".join(x for x in (
-            fm.get("type", "?"), fm.get("status") or fm.get("state", ""),
+            fm.get("type", "?"), state,
             f"priorité {fm['priority']}" if fm.get("priority") else "",
             f"sprint {fm['sprint']}" if fm.get("sprint") else "",
             f"espace {fm['espace']}" if fm.get("espace") else "") if x)
         desc = fm.get("description", "")
         if len(desc) > DESC_MAX:
             desc = desc[:DESC_MAX - 1].rstrip() + "…"
-        line = f"- [{fm.get('title') or rel.stem}]({rel.as_posix()}) — {meta}" + (f" — {desc}" if desc else "")
-        bundles.setdefault(rel.parts[0] if len(rel.parts) > 1 else ".", []).append(line)
-    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    out = ["---", "type: Sommaire", "title: Sommaire de la KB",
-           "description: Une ligne par concept — lire ceci d'abord, puis seulement les fichiers utiles",
-           "tags: [pilotage]", f"generated: {{ by: process:hosa-kb-index, at: {stamp} }}", "---"]
-    total = sum(len(v) for v in bundles.values())
-    out.append(f"{total} concepts. Extraire une partie précise : `kb_query.py <kb> --type … --where … --sections …`. Code : `graph.py map` (bundle `code/`, non listé ici).\n")
+        bundles.setdefault(rel.parts[0] if len(rel.parts) > 1 else ".", []).append(
+            {"head": f"- [{fm.get('title') or rel.stem}]({rel.as_posix()}) — {meta}", "desc": desc,
+             "closed": state in CLOSED, "state": state, "field": "status" if fm.get("status") else "state"})
+    return bundles
+
+
+def _counts(items, sel) -> list[str]:
+    """One line per state for these concepts, with the kb_query command that lists them."""
+    counts: dict[tuple[str, str], int] = {}
+    for e in items:
+        counts[(e["field"], e["state"])] = counts.get((e["field"], e["state"]), 0) + 1
+    return [f"- {n} concept(s) `{s}` non listés : `kb_query <kb> {sel} --where {f}={s}`" if s
+            else f"- {n} concept(s) sans état non listés : `kb_query <kb> {sel}`" for (f, s), n in sorted(counts.items())]
+
+
+def _render(bundles, collapse=False, bare=(), folded=()) -> list[str]:
+    out = []
     for name in sorted(bundles, key=lambda b: (b == ".", b)):
-        out.append(f"## {name if name != '.' else 'racine'} ({len(bundles[name])})")
-        out += bundles[name] + [""]
-    return "\n".join(out)
+        items, sel = bundles[name], f"--bundle {name}" if name != "." else ""
+        note = f" — descriptions : `kb_query <kb> {sel} --fields description`" if name in bare and name not in folded else ""
+        out.append(f"## {name if name != '.' else 'racine'} ({len(items)}){note}")
+        if name in folded:
+            out += [e["head"] for e in items if e["state"] in ACTIVE]
+            out += _counts([e for e in items if e["state"] not in ACTIVE], sel)
+        else:
+            shown = [e for e in items if not (collapse and e["closed"])]
+            out += [e["head"] + (f" — {e['desc']}" if e["desc"] and name not in bare else "") for e in shown]
+            if collapse:
+                out += _counts([e for e in items if e["closed"]], sel)
+        out.append("")
+    return out
+
+
+def build(kb: Path, budget: int = BUDGET) -> str:
+    bundles = _entries(kb)
+    total = sum(len(v) for v in bundles.values())
+    collapse, bare, folded = False, [], []
+    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    head = ["---", "type: Sommaire", "title: Sommaire de la KB",
+            "description: Une ligne par concept — lire ceci d'abord, puis seulement les fichiers utiles",
+            "tags: [pilotage]", f"generated: {{ by: process:hosa-kb-index, at: {stamp} }}", "---",
+            f"{total} concepts. Extraire une partie précise : `kb_query.py <kb> --type … --where … --sections …`. "
+            "Code : `graph.py map` (bundle `code/`, non listé ici).\n"]
+    body = _render(bundles)
+    size = lambda lines: len("\n".join(head + lines).encode("utf-8"))
+    if size(body) > budget:
+        collapse = True
+        body = _render(bundles, collapse)
+    while size(body) > budget:
+        weight = {b: sum(len(e["desc"].encode("utf-8")) for e in bundles[b]) for b in bundles if b not in bare}
+        left = [b for b, w in weight.items() if w >= budget // 20]
+        if not left:
+            break
+        bare.append(max(left, key=weight.get))
+        body = _render(bundles, collapse, bare)
+    while size(body) > budget:  # last tier, always fits: the biggest bundle becomes its count lines
+        weight = {b: sum(len(e["head"].encode("utf-8")) for e in bundles[b]) for b in bundles if b not in folded}
+        if not weight:
+            break
+        folded.append(max(weight, key=weight.get))
+        body = _render(bundles, collapse, bare, folded)
+    return "\n".join(head + body)
 
 
 def main(argv: list[str]) -> int:

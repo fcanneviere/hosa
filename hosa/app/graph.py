@@ -165,14 +165,18 @@ def _resolve_import(src, target, files, by_stem, by_dir):
 def _mention_target(m, nodes, by_base, by_name):
     """Nœud désigné par un `code` cité dans la KB : chemin exact, fin de chemin unique (`_ui/Badge.tsx`),
     ou symbole au nom unique (`creerListe()`, `Liste.ajouter`). Sinon None : un mot quelconque ne crée pas de lien."""
-    m = m.strip().rstrip(",.;:").removesuffix("()").removeprefix("./")
+    m = m.strip().rstrip(",.;:").removeprefix("./")
+    called, m = m.endswith("()"), m.removesuffix("()")
     if m in nodes:
         return m
     if "/" in m or "." in m.rsplit("/", 1)[-1]:
         hits = [f for f in by_base.get(posixpath.basename(m), []) if f.endswith("/" + m.lstrip("/"))]
         if len(hits) == 1:
             return hits[0]
-    hits = {i for i in by_name.get(m.rsplit(".", 1)[-1], []) if nodes[i]["label"].endswith(m)}
+    word = re.fullmatch(r"[a-zà-ÿ]+", m) and not called  # `format`, `calcul` : peut-être un mot de la prose
+    # un nom nu ne désigne pas une fonction imbriquée, ni une méthode quand c'est un simple mot : `Classe.format` le peut
+    hits = {i for i in by_name.get(m.rsplit(".", 1)[-1], []) if nodes[i]["label"].endswith(m)
+            and ("." in m or "." not in nodes[i]["label"] or nodes[i]["kind"] == "method" and not word)}
     # ponytail: nom unique d'au moins 4 caractères ; un nom partagé (actorFor dans 4 tests) n'est pas relié
     return hits.pop() if len(hits) == 1 and len(m) >= 4 else None
 
@@ -276,9 +280,20 @@ CDC_LINK = re.compile(r"\]\((?:[^)]*/)?cdc/([\w-]+)\.md\)")
 BACKTICK = re.compile(r"`([^`\s]+)`")
 
 
+def kb_checkout(root):
+    """Checkout dont la KB fait foi. Un worktree de sprint (`.worktrees/…`) n'a pas de KB, ou une copie périmée :
+    la sienne est celle de la racine du projet (règle « KB : celle de la racine »)."""
+    common = _linked_worktree(root)
+    main = common.parent if common and common.name == ".git" else None
+    return main if main and (main / ".hosa" / "kb").is_dir() else Path(root)
+
+
 def kb_items(root):
-    """Tickets et exigences de la KB du checkout, avec leurs liens vers les exigences et les chemins cités."""
-    kb_root = Path(root) / ".hosa" / "kb"
+    """Tickets et exigences de la KB du projet, avec leurs liens vers les exigences et les chemins cités."""
+    base = kb_checkout(root)
+    kb_root = base / ".hosa" / "kb"
+    # depuis un worktree, le chemin du fichier KB est absolu : `.hosa/kb/…` n'existe pas dans le worktree
+    prefix = ".hosa/kb/" if base == Path(root) else kb_root.resolve().as_posix() + "/"
     out = []
     for c in kb.walk(kb_root):
         kind = KB_KINDS.get(c["frontmatter"].get("type"))
@@ -287,7 +302,7 @@ def kb_items(root):
         slug = Path(c["path"]).stem
         fm = c["frontmatter"]
         item = {"id": f"{kind}:{slug}", "kind": kind, "label": fm.get("title") or slug,
-                "file": f".hosa/kb/{c['path']}", "kb": c["path"],
+                "file": prefix + c["path"], "kb": c["path"],
                 "mentions": sorted({m.split(":")[0].removeprefix("./") for m in BACKTICK.findall(c["body"])})}
         if kind == "ticket":
             item["state"] = fm.get("state", "todo")
@@ -332,6 +347,15 @@ def ticket_touches(root):
 
 # --- Carte OKF (kb/code/) ------------------------------------------------------
 
+MD_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+
+
+def _cell(text):
+    """Une docstring dans la carte : ses liens markdown deviennent leur texte (un lien d'exemple `x.md` serait un
+    lien cassé de la KB), et `|` est échappé (il couperait la ligne du tableau)."""
+    return MD_LINK.sub(r"\1", text or "").replace("|", "\\|")
+
+
 def _module_slug(d):
     return re.sub(r"[^a-z0-9]+", "-", d.lower()).strip("-") or "racine"
 
@@ -358,13 +382,13 @@ def _module_concepts(graph):
         syms = [n for n in graph["nodes"] if n["kind"] in ("class", "function")
                 and posixpath.dirname(n["file"]) == d and not n["label"].split(".")[-1].startswith("_")]
         body = ["", "## Fichiers", "", "| Fichier | Rôle |", "|---|---|"]
-        body += [f"| `{f['id']}` | {f['doc'] or ''} |" for f in files]
+        body += [f"| `{f['id']}` | {_cell(f['doc'])} |" for f in files]
         body += ["", "## Symboles publics", ""]
-        body += [f"- `{n['label']}` — `{n['file']}:{n['line']}`" + (f" — {n['doc']}" if n["doc"] else "") for n in syms] or ["Aucun."]
+        body += [f"- `{n['label']}` — `{n['file']}:{n['line']}`" + (f" — {_cell(n['doc'])}" if n["doc"] else "") for n in syms] or ["Aucun."]
         refs = sorted(linked.get(d, set()), key=lambda i: (KIND_ORDER[by_id[i]["kind"]], i))
         body += ["", "## Tickets et exigences", ""]
         body += [f"- [{by_id[i]['label']}](../{by_id[i]['kb']})" for i in refs] or ["Aucun."]
-        fm = {"type": "Module", "title": d or ".", "description": main["doc"] or f"Code de `{d or '.'}`.",
+        fm = {"type": "Module", "title": d or ".", "description": MD_LINK.sub(r"\1", main["doc"] or "") or f"Code de `{d or '.'}`.",
               "resource": d or ".", "tags": ["code"]}
         out[_module_slug(d)] = (fm, "\n".join(body) + "\n")
     return out

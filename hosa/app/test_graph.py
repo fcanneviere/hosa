@@ -177,6 +177,37 @@ class GraphTest(unittest.TestCase):
         r = subprocess.run([sys.executable, str(VALIDATOR), str(self.root / ".hosa/kb")], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_bare_words_do_not_link_nested_functions_or_methods(self):
+        self.touch("app/jobs.py", "def run_twice():\n    def calcul():\n        pass\n\nclass Fmt:\n"
+                                  "    def format(self):\n        pass\n    def toCsvLine(self):\n        pass\n")
+        (self.root / ".hosa/kb/tickets/export-csv.md").write_text(
+            FILES[".hosa/kb/tickets/export-csv.md"] + "Le `calcul` et le `format` ; `toCsvLine`, `run_twice`.\n",
+            encoding="utf-8")
+        self.g = graph.refresh(self.root)
+        mentions = {d for s, d in self.edges("mentions")}
+        self.assertNotIn("app/jobs.py::run_twice.calcul", mentions)  # fonction imbriquée : nom qualifié seul
+        self.assertNotIn("app/jobs.py::Fmt.format", mentions)  # méthode au nom de mot simple : `Fmt.format` seul la relie
+        self.assertIn("app/jobs.py::Fmt.toCsvLine", mentions)  # méthode au nom de code
+        self.assertIn("app/jobs.py::run_twice", mentions)
+
+    def test_sprint_worktree_sees_the_root_kb(self):
+        wt = Path(self.tmp.name) / "wt"
+        git(self.root, "worktree", "add", "-q", str(wt))
+        (self.root / ".hosa/kb/tickets/nouveau.md").write_text(
+            "---\ntype: Ticket\ntitle: Nouveau\nstate: todo\n---\n[exigence](../cdc/facturation.md)\n", encoding="utf-8")
+        ix = graph.Index(graph.refresh(wt))
+        node = ix.nodes["ticket:nouveau"]  # écrit à la racine seulement : la KB du worktree est celle de la racine
+        self.assertTrue(Path(node["file"]).is_file())
+        self.assertIn(("ticket:nouveau", "exigence:facturation"),
+                      {(e["src"], e["dst"]) for e in graph.refresh(wt)["edges"] if e["rel"] == "implements"})
+
+    def test_code_map_docstrings_stay_text(self):
+        self.touch("app/links.py", '"""Lit `a | b` et [exigence](x.md)."""\n')
+        graph.refresh(self.root)
+        body = (self.root / ".hosa/kb/code/app.md").read_text(encoding="utf-8")
+        self.assertIn("| `app/links.py` | Lit `a \\| b` et exigence. |", body)
+        self.assertNotIn("(x.md)", body)
+
     def test_vanished_module_is_deprecated(self):
         (self.root / "lib/other.py").unlink()
         graph.refresh(self.root)

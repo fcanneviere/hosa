@@ -80,6 +80,12 @@ class AppTest(unittest.TestCase):
         self.assertEqual(t["frontmatter"]["generated"]["at"], "2026-09-23T00:00:00Z")
         self.assertEqual(t["trustTier"], "unverified")
 
+    def test_walk_skips_hidden_folders(self):
+        mem = self.root / ".claude" / "agent-memory" / "hosa-dev" / "note.md"
+        mem.parent.mkdir(parents=True)
+        mem.write_text("---\ntype: Ticket\n---\nmémoire d'agent\n", encoding="utf-8")
+        self.assertNotIn(".claude/agent-memory/hosa-dev/note.md", {c["path"] for c in kb.walk(self.root)})
+
     def test_patch_state_rewrites_file_and_logs(self):
         status, c = self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": {"state": "doing"}})
         self.assertEqual((status, c["frontmatter"]["state"]), (200, "doing"))

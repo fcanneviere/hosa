@@ -73,8 +73,8 @@ Then refresh the KB summary — one line per concept, the file every agent reads
 <hosa> kb_index <project>/.hosa/kb
 ```
 
-The hooks also refresh it after each Edit/Write in the KB and at session start; running it here covers writes made by scripts.
+The hooks also refresh it after each Edit/Write in the KB and at session start; running it here covers writes made by scripts. Past about 48 KB the summary shortens itself: closed concepts (`done`, `deprecated`) become one count line, then the bundles with the most description text lose their descriptions. Each cut line gives the `kb_query` command that returns what it cut.
 
-To **read** precise parts of the KB without opening whole files, use `<hosa> kb_query`: filter by `--type`, `--bundle`, `--where key=value` / `key~text`, `--slug`, `--grep`, then show `--fields`, `--sections "<heading prefix>"`, `--full` or `--count`. Exact text, no summary. `--grep` misses long free-text fields: for those, select by `--type` or `--slug`, then `--sections`.
+To **read** precise parts of the KB without opening whole files, use `<hosa> kb_query`: filter by `--type`, `--bundle`, `--where key=value` / `key~text`, `--slug`, `--grep`, then show `--fields`, `--sections "<heading prefix>"`, `--full` or `--count`. Exact text, no summary. On a list field (`espace: [front-office, back-office]`), `key=value` matches one of its items. `--grep` misses long free-text fields: for those, select by `--type` or `--slug`, then `--sections`.
 
-`<hosa>` (given at session start) runs the validator with Hosa's own Python, which has PyYAML. Exit code `0` = conformant; `1` = errors listed (fix them, rerun); `2` = bad invocation. Warnings are not blocking but mention them in your report. `--json` gives machine-readable output.
+`<hosa>` (given at session start) runs the validator with Hosa's own Python, which has PyYAML. Exit code `0` = conformant; `1` = errors listed (fix them, rerun); `2` = bad invocation. Warnings are not blocking: mention those on the files you wrote in your report. They are listed in full for files with uncommitted changes. The other warnings are grouped by kind, with a count and two files; `--all` lists each one. Files under a hidden folder (`.claude/…`) are not concepts and are skipped. `--json` gives machine-readable output.

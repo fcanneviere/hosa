@@ -55,7 +55,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -110,6 +112,15 @@ OKF_VERSION_LINE = re.compile(r"^(okf_version:[ \t]*)[\"']?0\.1[\"']?[ \t]*$", r
 # content before `generated` existed is not recoverable, and inventing a `human:`
 # actor would fake a review that never happened.
 MIGRATE_ACTOR = "process:okf-migrate"
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+EXAMPLES = 2  # per kind of warning on files the session did not change (--all lists them all)
+
+
+def bundle_files(bundle: Path) -> list[Path]:
+    """Every `.md` of the bundle, except under a hidden folder: `.claude/agent-memory*` (an agent whose
+    working folder was the KB) or `.git` are not concepts, and must not fail the bundle."""
+    return sorted(p for p in bundle.rglob("*.md") if p.is_file()
+                  and not any(part.startswith(".") for part in p.relative_to(bundle).parts[:-1]))
 
 
 @dataclass
@@ -426,8 +437,12 @@ def check_links(bundle: Path, md_files: list[Path], report: Report) -> None:
             if t.startswith("/"):
                 resolved = t.lstrip("/")
             else:
-                resolved = (path.parent / t).resolve().relative_to(bundle.resolve()).as_posix() \
-                    if (path.parent / t).resolve().is_relative_to(bundle.resolve()) else t
+                target_path = (path.parent / t).resolve()
+                if not target_path.is_relative_to(bundle.resolve()):
+                    if not target_path.exists():  # outside the bundle (`../../../docs/…`): the disk decides
+                        report.warn(rel, f"cross-link target not found: `{target}` (tolerated under §6.1)")
+                    continue
+                resolved = target_path.relative_to(bundle.resolve()).as_posix()
             if resolved not in existing:
                 report.warn(rel, f"cross-link target not found: `{target}` (tolerated under §6.1)")
 
@@ -486,7 +501,7 @@ def migrate_text(text: str, is_root_index: bool) -> str | None:
 def migrate(bundle: Path) -> list[str]:
     """Migrate a bundle in place. Returns the relative paths actually rewritten."""
     changed = []
-    for path in sorted(p for p in bundle.rglob("*.md") if p.is_file()):
+    for path in bundle_files(bundle):
         rel = path.relative_to(bundle).as_posix()
         if path.name == "log.md":
             continue
@@ -511,7 +526,7 @@ def migrate(bundle: Path) -> list[str]:
 
 def validate(bundle: Path) -> Report:
     report = Report()
-    md_files = sorted(p for p in bundle.rglob("*.md") if p.is_file())
+    md_files = bundle_files(bundle)
     for path in md_files:
         rel = path.relative_to(bundle).as_posix()
         name = path.name
@@ -523,6 +538,42 @@ def validate(bundle: Path) -> Report:
             check_concept(path, rel, bundle, report)
     check_links(bundle, md_files, report)
     return report
+
+
+def changed_files(bundle: Path) -> set[str] | None:
+    """Bundle-relative paths with uncommitted changes (this session's writes), or None outside git."""
+    def run(*a):
+        return subprocess.run(["git", "-C", str(bundle), "-c", "core.quotePath=false", *a],
+                              capture_output=True, check=True, **NO_WINDOW).stdout.decode("utf-8", "replace")
+    try:
+        if subprocess.run(["git", "-C", str(bundle), "check-ignore", "-q", "."], **NO_WINDOW).returncode == 0:
+            return None  # an ignored KB never shows as changed: list every warning rather than hide the writer's
+        prefix = run("rev-parse", "--show-prefix").strip()
+        out = run("status", "--porcelain", "-z", "--untracked-files=all", "--", ".")
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return {r[3:].removeprefix(prefix) for r in out.split("\0") if len(r) > 3}
+
+
+def warning_lines(warnings: list[str], changed: set[str] | None, show_all: bool) -> list[str]:
+    """Warnings on changed files in full; the others grouped by kind, with a count and EXAMPLES files.
+    Hundreds of old warnings, printed at every KB write, cost every agent thousands of tokens."""
+    if show_all or changed is None:
+        return [f"  \033[33m! warn \033[0m  {w}" for w in warnings]
+    out, groups = [], {}
+    for w in warnings:
+        rel, _, msg = w.partition(": ")
+        if rel in changed:
+            out.append(f"  \033[33m! warn \033[0m  {w}")
+        else:
+            groups.setdefault(re.sub(r"`[^`]*`", "`…`", msg), []).append(rel)
+    for kind, rels in sorted(groups.items(), key=lambda g: (-len(g[1]), g[0])):
+        files = sorted(set(rels))
+        more = f" (+{len(files) - EXAMPLES})" if len(files) > EXAMPLES else ""
+        out.append(f"  \033[33m! {len(rels)} ×\033[0m  {kind} — {', '.join(files[:EXAMPLES])}{more}")
+    if groups:
+        out.append("  (warnings on unchanged files are grouped: --all lists each one)")
+    return out
 
 
 def _force_utf8_stdio() -> None:
@@ -552,6 +603,8 @@ def main() -> int:
     ap.add_argument("--migrate", action="store_true",
                     help="rewrite v0.1 constructs to v0.2 in place, then validate")
     ap.add_argument("--json", action="store_true", help="emit a JSON report")
+    ap.add_argument("--all", action="store_true",
+                    help="list every warning; by default those on files without uncommitted changes are grouped")
     args = ap.parse_args()
 
     if not args.bundle.is_dir():
@@ -591,8 +644,8 @@ def main() -> int:
     print(f"  concepts: {r.concepts}   index.md: {r.indexes}   log.md: {r.logs}")
     for e in r.errors:
         print(f"  \033[31m✗ ERROR\033[0m  {e}")
-    for w in r.warnings:
-        print(f"  \033[33m! warn \033[0m  {w}")
+    for line in warning_lines(r.warnings, changed_files(args.bundle), args.all):
+        print(line)
     if conformant and not r.warnings:
         print("  \033[32m✓ conformant — no issues\033[0m")
     elif conformant:
