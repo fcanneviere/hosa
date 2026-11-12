@@ -5,7 +5,7 @@ description: "Use to propose (2-3 options) and record the managed project's tech
 
 # Stack
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start stack`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block stack --detail "<question>"`. Once the stage's output is written and committed: `done stack`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start stack`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block stack --detail "<question>"`. Once the stage's output is written and committed: `done stack`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
 **Tâches.** Before each dispatch that writes, `avancement.py task add stack <id> --agent <agent>`; on its return, `task done stack <id> --sortie <the paths it wrote>`: `decision` (`hosa-senior-dev`, Step 4) → `kb/stack/<slug>.md`…; `adr` (`hosa-documentation`, Step 5) → the ADRs. The options pass (Step 2) writes nothing: no task. Stopped on an Open Question → `task block stack <id> --detail "<la question>"`, and `task add` the same id again once answered.
 

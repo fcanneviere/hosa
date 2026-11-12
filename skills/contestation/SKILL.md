@@ -5,17 +5,17 @@ description: "Use for the final challenge of the cahier des charges (PO re-quest
 
 # Contestation
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start contestation`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block contestation --detail "<question>"`. Once the stage's output is written and committed: `done contestation`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start contestation`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block contestation --detail "<question>"`. Once the stage's output is written and committed: `done contestation`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
-**Tâches.** Before each dispatch, `avancement.py task add contestation <id> --agent <agent>`; on its return, `task done contestation <id> --sortie <the paths>`: `persona-<slug>-c<k>` (`hosa-key-user`, Step 1) and `challenger-c<k>` (`hosa-challenger`, Step 2) → `kb/cdc/relecture.md` once their findings are written there (Step 3), plus a persona file the agent changed; `documentation` (`hosa-documentation`, Step 4) → the documentation paths. Stopped on an Open Question → `task block contestation <id> --detail "<la question>"`, and `task add` the same id again once answered. Inside `changement`'s loop (no `avancement.py` call for this stage): no task.
+**Tâches.** Before each dispatch, `avancement.py task add contestation <id> --agent <agent>`; on its return, `task done contestation <id> --sortie <the paths>`: `po-c<k>` (`hosa-product-owner`, Step 1), `persona-<slug>-c<k>` (`hosa-key-user`, Step 1) and `challenger-c<k>` (`hosa-challenger`, Step 2) → `kb/cdc/relecture.md` once their findings are written there (Step 3), plus a persona file the agent changed; `documentation` (`hosa-documentation`, Step 4) → the documentation paths. Stopped on an Open Question → `task block contestation <id> --detail "<la question>"`, and `task add` the same id again once answered. Inside `changement`'s loop (no `avancement.py` call for this stage): no task.
 
 The last line of defense before the cahier des charges is considered done: two independent challenges, not one self-check.
 
 ## Flow
 
 ```
-Passe 1 — PO re-questionne les personas concernés (via
-hosa-key-user) sur les points faibles connus
+Passe 1 — hosa-product-owner liste les besoins fragiles,
+hosa-key-user re-questionne les personas concernés
         ↓
 Passe 2 — hosa-challenger audite l'ensemble de kb/cdc/ +
 kb/personnas/, indépendamment
@@ -30,8 +30,8 @@ Mineures seules → redaction les corrige en une fois, sans boucle
 Aucune bloquante sur les deux passes → demande validation finale
 à l'utilisateur
         ↓ oui
-PO passe les exigences concernées en status: stable +
-verified: human:<user> → log kb/cdc/log.md
+Les exigences concernées passent en status: stable +
+verified: human:<user> (sur sa parole) → log kb/cdc/log.md
 ```
 
 ## Trigger
@@ -48,11 +48,11 @@ Run this gate at the stage's first entry only: when `avancement.py … show` lis
 
 ## Step 1: PO → Personas Challenge
 
-The PO always does its own quick pass over `kb/cdc/` first, looking for any need that reads as under-justified — `relecture` checks precision and completeness, not whether a stated need actually holds up, so a clean `relecture` report is not a reason to skip this. If `relecture` just ran, fold its findings in as additional candidates rather than replacing this pass. For the weak points tied to a persona, dispatch `hosa-key-user` (process-interview mode) once per persona, with all that persona's questions in the one dispatch (a dispatch per question reloads the persona each time), each with the PO's sharper question — "pourquoi ce besoin précisément", "qu'est-ce qui se passe si on ne le fait pas" — until the answer is either solid or the need turns out not to hold. An answer the agent marks `[à confirmer]` is its deduction, not the persona's word (`interview`, « Who knows what »): it settles nothing until the user confirms it — ask it as a numbered question. If the need doesn't hold, flag the exigence for rewrite in Step 3.
+Dispatch `hosa-product-owner` (Responsibility 10) first, always — `relecture` checks precision and completeness, not whether a stated need actually holds up, so a clean `relecture` report is not a reason to skip this. It reads `kb/cdc/` and `kb/cdc/relecture.md` and returns the sharper questions per persona (`## Questions aux personas`). Its task: `po-c<k>`, `--sortie kb/cdc/relecture.md` once its findings are written there (Step 3). For the weak points tied to a persona, dispatch `hosa-key-user` (process-interview mode) once per persona, with all that persona's questions in the one dispatch (a dispatch per question reloads the persona each time), each with the PO's sharper question — "pourquoi ce besoin précisément", "qu'est-ce qui se passe si on ne le fait pas" — until the answer is either solid or the need turns out not to hold. An answer the agent marks `[à confirmer]` is its deduction, not the persona's word (`interview`, « Who knows what »): it settles nothing until the user confirms it — ask it as a numbered question. If the need doesn't hold, flag the exigence for rewrite in Step 3.
 
 ## Step 2: `hosa-challenger` Independent Audit
 
-Dispatch `hosa-challenger` with the full content of `.hosa/kb/cdc/` (`fondamentaux.md`, `juridique.md`, `securite.md`, `modele-metier.md`, `decisions.md` and `relecture.md` included — what `relecture` found is not found again), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists — never `kb/project/cahier-des-charges.md`, which repeats the fiches. On a loop coming back from Step 3, give it only the exigences changed since its last report (files of `kb/cdc/` modified after its `generated.at`, plus `git log` on `hosa-kb`) and that report: it re-audits those and the exigences linked to them, and says what it did not re-read. Take its verdict and findings as-is — don't pre-filter them before showing the user.
+Dispatch `hosa-challenger` with the paths — never the content — of `.hosa/kb/cdc/` (`fondamentaux.md`, `juridique.md`, `securite.md`, `modele-metier.md`, `decisions.md` and `relecture.md` included — what `relecture` found is not found again), `.hosa/kb/personnas/`, and `kb/project/identity.md` if it exists — never `kb/project/cahier-des-charges.md`, which repeats the fiches. It reads them itself. On a loop coming back from Step 3, give it only the exigences changed since its last report (files of `kb/cdc/` modified after its `generated.at`, plus `git log` on `hosa-kb`) and that report: it re-audits those and the exigences linked to them, and says what it did not re-read. Take its verdict and findings as-is — don't pre-filter them before showing the user.
 
 ## Step 3: Route Anomalies
 
@@ -92,7 +92,7 @@ This skill doesn't commit. Report what changed (including any `status`/`verified
 - [If none reviewed: "Aucune — relecture n'avait rien signalé"]
 
 ## Passe hosa-challenger
-[Its full report]
+- Verdict : [son verdict] — [N bloquante(s), N mineure(s)], écrites dans `kb/cdc/relecture.md`
 
 ## Anomalies à router
 - [A-number] [c<k>, gravité, origine] [Exigence] → [redaction / interview / utilisateur (hors objectifs)] — [pourquoi]

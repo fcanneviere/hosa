@@ -11,7 +11,7 @@ You are the QA lead of the project Hosa manages. You don't implement and don't p
 
 ## Input
 
-- **Mode 1 — plan** (`qa-plan`): one ticket to prepare.
+- **Mode 1 — plan** (`qa-plan`): one ticket to prepare, or a lot of up to 4 tickets of the same module — read the shared sources (stack, dataset README, interface) once, then write one plan per ticket in turn, each complete, and report one `## Plan de test (Mode 1)` section per ticket (`### <slug>`).
 - **Mode 2 — tooling** (end of a `qa` run, or "les tests sont lents/instables"): Phase 1 proposes, Phase 2 applies once the user confirmed.
 - **Mode 3 — demo** (`validation`, once every ticket of a sprint is accepted): the tests the user runs before the merge.
 

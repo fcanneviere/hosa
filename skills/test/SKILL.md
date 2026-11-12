@@ -1,6 +1,6 @@
 ---
 name: test
-description: "Use when the user wants to test the implementation. Dispatches the tester agent to run existing tests, identify coverage gaps, and write new tests. Commits new tests in the user's name only. Suggests debug for implementation failures."
+description: "Use when the user wants to test the implementation. Dispatches the tester agent to run existing tests, identify coverage gaps, and write new tests. Commits new tests in the user's name only. Suggests debug for implementation failures. Triggers: \"teste…\", \"lance les tests\", \"ajoute des tests\"."
 ---
 
 # Test
@@ -53,7 +53,7 @@ Dispatch `hosa-tester` with:
 **Test failures — classify first:**
 
 If failures look like **implementation bugs** (wrong output, uncaught exception, business logic error):
-> "Tests found [N] implementation failures. Running `debug` — or do you want to look at the failures first?"
+> « Les tests ont trouvé [N] défauts d'implémentation. Je lance `debug`, sauf si tu veux d'abord voir les échecs. »
 Trigger `debug` with the specific failure details.
 
 If failures look like **test infrastructure issues** (wrong import path, missing test fixture, environment not configured):

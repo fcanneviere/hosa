@@ -5,7 +5,7 @@ description: "Use to derive entities from qualified exigences and write the appl
 
 # Schema App
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start schema-app`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block schema-app --detail "<question>"`. Once the stage's output is written and committed: `done schema-app`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start schema-app`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block schema-app --detail "<question>"`. Once the stage's output is written and committed: `done schema-app`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
 **Tâches.** Before each dispatch, `avancement.py task add schema-app <id> --agent <agent>`; on its return, `task done schema-app <id> --sortie <the paths it wrote>`: `structures` (`hosa-data-engineer`, Step 1) → the structures; `documentation` (`hosa-documentation`, Step 2) → the data dictionary. Stopped on an Open Question → `task block schema-app <id> --detail "<la question>"`, and `task add` the same id again once answered.
 

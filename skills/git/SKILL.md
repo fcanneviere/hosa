@@ -59,5 +59,13 @@ This skill dispatches the one Hosa agent allowed to commit (`hosa-git`, Mode 2/3
 ## Output
 
 ```
-[hosa-git's Output Format for whichever mode ran]
+## Git — <mode>
+- [Mode 1 : branche `sprint/<slug>`, worktree `<chemin>`, environnement `<docker_project>` vérifié]
+- [Mode 2 : fusion `<merge_commit>` dans <base> — ou bloquée : <la raison exacte de hosa-git>]
+- [Mode 3 : le résultat de la requête]
+
+## Open Questions
+[Celles de hosa-git, renumérotées Q1… — ou « None »]
 ```
+
+Keep from `hosa-git`'s report only what this template asks: its paths, its result, its questions — never the whole report.

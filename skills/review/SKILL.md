@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Use when the user wants to check if the implementation matches the spec and requirements. Finds gaps, triggers a build cycle for missing pieces, and loops until all requirements are satisfied. All commits in the user's name only."
+description: "Use when the user wants to check if the implementation matches the spec and requirements. Finds gaps, triggers a build cycle for missing pieces, and loops until all requirements are satisfied. All commits in the user's name only. Triggers: \"vérifie que ça respecte la spec\", \"il manque quoi ?\"."
 ---
 
 # Review
@@ -48,8 +48,8 @@ If `.hosa/kb/` is populated beyond its example files, don't review against `docs
 ## Step 2: Invoke Reviewer
 
 Dispatch `hosa-reviewer` with:
-- The full spec file content
-- The implementation files to review
+- The spec file's path (it reads the file itself)
+- The paths of the implementation files to review
 
 The reviewer returns one of three verdicts:
 - **PASS**: every requirement satisfied — done
@@ -86,7 +86,10 @@ Result: [PASS / PASS-WITH-NOTES / FAIL — X gap(s) remaining]
 This keeps the user informed of progress without requiring them to ask.
 
 **Loop limit:** if the same gap appears in the reviewer output for **2 consecutive cycles** without being resolved, stop the loop and escalate — the same bound as every Hosa loop (`develop`, `qa`, `interface`, `contestation`):
-> "After 2 build attempts, `[gap description]` is still not resolved. This may indicate a conflict between the spec and the implementation approach, or the spec requirement may be unclear. Here's what was attempted: [summary]. How would you like to proceed?"
+> **Q1 — Après 2 tours, `[manque]` n'est toujours pas résolu. La spec et l'approche se contredisent peut-être, ou l'exigence est floue. Ce qui a été tenté : [résumé]. Que fait-on ?** (bloquante)
+>   a) Préciser l'exigence dans la spec, puis un tour de plus. (recommandé)
+>   b) Un tour de plus sans rien changer.
+>   c) Accepter le manque et s'arrêter là.
 
 Wait for user direction before continuing.
 
@@ -95,6 +98,6 @@ Wait for user direction before continuing.
 ## Completion
 
 When the reviewer returns PASS or PASS-WITH-NOTES:
-> "All requirements from the spec are satisfied. Implementation is complete."
+> « Toutes les exigences de la spec sont satisfaites. L'implémentation est terminée. »
 
 List what was verified — give the user a clear record of what was checked.

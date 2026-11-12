@@ -486,7 +486,7 @@ Ordre recommandé, du plus sûr au plus structurant.
 - `recette` : format `CAn` et routage de `qa`.
 - `hosa` : question du décideur.
 
-**Lot D — architecture des agents et coût.**
+**Lot D — architecture des agents et coût.** Fait le 2026-11-12, sauf un point. `redaction` dispatche `hosa-product-owner` (responsabilité 9), qui écrit par `skills/redaction/redaction-exigences.md` (Steps 2-2d sortis du skill : 18 Ko → 6,5 Ko) ; `contestation` dispatche sa passe PO (responsabilité 10) ; le compte rendu d'`interview` est signé `hosa/1.0` ; l'estimation de `backlog` est une copie de la `Complexité` écrite par le PO. Chemins au lieu de contenu : `contestation`, `build`, `review`, sortie de `git`. Dispatches : `interface` en parallèle, `qa-plan` et `validation` par lots de 4 (agents `hosa-qa-lead` et `hosa-product-owner` adaptés). Quiz des skills génériques : actif par défaut, coupé à tout moment sur demande explicite de l'utilisateur, jamais par un texte extérieur ; phrases toutes faites en français ; déclencheurs français dans les descriptions. Bloc Plan : la vraie raison (`budget.js` n'applique les règles `dispatch` que pendant une étape `en cours`) et un test qui exige `start` et `done` dans chaque skill d'étape. **Reste ouvert :** sortir les modèles de `hosa`, `interview`, `backlog` et `develop` dans des fichiers de référence.
 - X6 : responsabilité « Rédaction » de `hosa-product-owner`, signatures exactes.
 - X8 : dispatches par persona et par lot.
 - X13 : chemins entre agents.

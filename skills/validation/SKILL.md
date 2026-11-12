@@ -30,7 +30,7 @@ Suite : propose git Mode 2
 
 ## Trigger
 
-Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le ticket X" ; chained by `qa` once its verdict is clean.
+Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le ticket X", "valide le sprint" ; chained by `qa` once its verdict is clean.
 
 ---
 
@@ -38,11 +38,11 @@ Manual: `/validation <slug-ticket>`. Auto: "valide le ticket X", "accepte le tic
 
 `avancement.py … start validation --sprint <slug-sprint>`: refused → propose the stage it names and stop. `check qa --sprint <slug-sprint>` lists, per ticket, missing technical results and missing persona recettes (`kb/test/<slug>-<persona>.md` — a verdict inside the technical plan doesn't count): a line naming this ticket → propose `qa <slug-sprint> <slug>` and stop. Read `kb/tickets/<slug>.md`: no `## Critères d'acceptation` (written before `backlog` carried this field, or standalone) → say so and ask the user to confirm the ticket informally — don't invent criteria. A `Différé` verdict → one numbered question: replay now (recommended), or accept the ticket and keep the replay ticket `rejeu-recettes-persona-<sprint>` in the backlog.
 
-**Tâches.** Before each dispatch, `avancement.py task add validation <id> --sprint <slug-sprint> --agent <agent>`; on its return, `task done validation <id> --sprint <slug-sprint> --sortie <the path>`: `acceptation-<ticket>` (`hosa-product-owner`, Step 2) → `kb/tickets/<ticket>.md`; `demo` (`hosa-qa-lead`, Step 3b) → `kb/sprints/<slug-sprint>.md`, once `## Démo` is written. Stopped on an Open Question → `task block validation <id> --sprint <slug-sprint> --detail "<la question>"`, and `task add` the same id again once answered.
+**Tâches.** Before each dispatch, `avancement.py task add validation <id> --sprint <slug-sprint> --agent <agent>`; on its return, `task done validation <id> --sprint <slug-sprint> --sortie <the path>`: `acceptation-<k>` (`hosa-product-owner`, Step 2, one per lot) → the lot's `kb/tickets/<ticket>.md`; `demo` (`hosa-qa-lead`, Step 3b) → `kb/sprints/<slug-sprint>.md`, once `## Démo` is written. Stopped on an Open Question → `task block validation <id> --sprint <slug-sprint> --detail "<la question>"`, and `task add` the same id again once answered.
 
 ## Step 2: Dispatch `hosa-product-owner`
 
-Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with the ticket, its acceptance criteria, its technical results, and its recette verdict(s). It returns Accept or Reject with a reason.
+Dispatch `hosa-product-owner` (Responsibility 5, `agents/product-owner.md`) with the paths of the ticket, its test plan (technical results) and its recettes. It returns Accept or Reject with a reason. **After `qa`, the whole sprint:** the tickets QA made ready, in lots of up to 4 (the `develop` lots), one dispatch per lot — a verdict per ticket; the lots in one message. Then Step 3 for each ticket.
 
 **Reconfirmation** — the ticket was already accepted, then reopened by a **technique** correction (its last `## Corrections` line): dispatch it with `model: haiku`, the correction line and the new `## Résultats techniques` only. The criteria, the interface and the recettes didn't change: it checks the new results passed in full and that no `CAn` lost its proof, nothing else (pilot2: the second validation of `limitation-des-tentatives-de-connexion` re-read everything to conclude « recettes toujours valables »).
 

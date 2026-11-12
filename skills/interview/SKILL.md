@@ -5,7 +5,7 @@ description: "Use to gather the cahier des charges: business processes, who does
 
 # Interview
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interview`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block interview --detail "<question>"`. Once the stage's output is written and committed: `done interview`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interview`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block interview --detail "<question>"`. Once the stage's output is written and committed: `done interview`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
 **Tâches.** One task per dispatch (Step 2): `avancement.py task add interview <persona-slug>-<k> --agent hosa-key-user --objet "<persona> : <processus>"`, all added before the first dispatch. When its answers are confirmed (Step 3) and written in the compte rendu: `task done interview <id> --sortie kb/cdc/interviews/<fichier>`. After a `/clear`, resume at the first open task and the first process not ticked in the compte rendu; never ask again what a ticked process holds.
 
@@ -28,7 +28,7 @@ Un dispatch hosa-key-user par persona (ses processus, 4 au plus),
 tous dans un seul message
         ↓
 L'utilisateur confirme ou corrige ce que le persona a déduit ou
-ne sait pas ; PO relance une fois toute réponse vague
+ne sait pas ; relance une fois toute réponse vague
         ↓
 Écrit chaque processus dans le compte rendu dès qu'il est
 recueilli (coche la liste)
@@ -126,7 +126,7 @@ title: Interview cahier des charges — <date>
 description: "<une ligne : processus couverts>"
 tags: [interview]
 status: draft
-generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
+generated: { by: hosa/1.0, at: <ISO8601> }   # this session's synthesis — no agent writes it
 ---
 ### Processus à couvrir
 - [x] <Processus> — <personas>

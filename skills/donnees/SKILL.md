@@ -5,7 +5,7 @@ description: "Use to qualify each data item's origin (générée/fournie/saisie)
 
 # Données
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start donnees`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block donnees --detail "<question>"`. Once the stage's output is written and committed: `done donnees`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start donnees`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block donnees --detail "<question>"`. Once the stage's output is written and committed: `done donnees`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
 **Tâches.** Before Step 3, `avancement.py task add donnees annotations --agent hosa-data-engineer`; on its return, `task done donnees annotations --sortie <the exigences it annotated>`. Phase 1 and the persona questions write nothing: no task. Stopped on an Open Question → `task block donnees annotations --detail "<la question>"`, and `task add` it again once answered.
 

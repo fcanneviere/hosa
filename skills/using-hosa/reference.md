@@ -21,7 +21,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | `hosa` | Initialize/update the Hosa project's identity and personas in the KB (`.hosa/kb/`), from a markdown brief if given (`/hosa brief.md`) |
 | `recette` | Business/functional acceptance testing of a feature or ticket, from a specific persona's point of view |
 | `interview` | Gather cahier des charges input from processes, personas, and the user — CDC pipeline stage 1 |
-| `redaction` | Turn interview notes into structured `Exigence` concepts in `kb/cdc/` (domain, priority, lot, objectives, trigger), the business model and the decision log, then assemble the readable `kb/project/cahier-des-charges.md` (`cdc assemble`) — CDC pipeline stage 2 |
+| `redaction` | `hosa-product-owner` turns interview notes into structured `Exigence` concepts in `kb/cdc/` (domain, priority, lot, objectives, trigger), the business model and the decision log, then assemble the readable `kb/project/cahier-des-charges.md` (`cdc assemble`) — CDC pipeline stage 2 |
 | `relecture` | Check the cahier des charges for precision, completeness, and consistency — completeness matrices (`cdc check`) and persona coverage included — CDC pipeline stage 6 |
 | `contestation` | Final independent challenge pass on the cahier des charges — CDC pipeline stage 7; won't sign off until `fondamentaux`, `juridique` and `securite` have run and `cdc check` finds no hole |
 | `fondamentaux` | Make sure the cahier des charges contains every basic software function personas never ask for (administration, user management, rights, audit/error logs, change history, backup, import/export, settings, notifications) and the core NFRs — `hosa-product-owner` includes every missing one by default, the user strikes out what doesn't apply; accounts come from the standard socle comptes (3 variants, parameters with defaults) — CDC pipeline stage 3, mandatory |
@@ -91,7 +91,7 @@ Use the `Skill` tool to invoke any of these. The skill loads its full instructio
 | "Démarre le sprint X", "Commence le sprint X" | `git` (Mode 1) |
 | "Termine le sprint X", "Fusionne le sprint X", "Merge le sprint X" | `git` (Mode 2) |
 | "Développe le ticket X", "Implémente le ticket X", "Développe le sprint", "Développe le lot" | `develop` |
-| "Valide le ticket X", "Accepte le ticket X" | `validation` |
+| "Valide le ticket X", "Accepte le ticket X", "Valide le sprint" | `validation` |
 | "Fais le bilan du sprint X", "Rétro du sprint X" | `bilan-sprint` |
 | "Audite la qualité du code", "Vérifie les bonnes pratiques" | `qualite` |
 | "Fais une revue de sécurité", "Audite la sécurité du code", "Modèle de menaces", "Est-ce que c'est sécurisé ?" | `securite` |

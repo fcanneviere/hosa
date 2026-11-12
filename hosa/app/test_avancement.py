@@ -1144,6 +1144,14 @@ class Init(unittest.TestCase):
 class Docs(unittest.TestCase):
     """The pipelines written in prose (using-hosa, README) follow pipeline.json."""
 
+    def test_each_stage_skill_starts_and_closes_its_stage(self):
+        # `qa`, `validation` and `bilan-sprint` once called `start` and never `done` (audit 2026-11, X2)
+        stages = [s for _, ss in av.PIPELINES for s in ss] + list(av.SPRINT)
+        for s in stages:
+            text = (SCRIPT.parents[2] / av.SKILL.get(s, s) / "SKILL.md").read_text(encoding="utf-8")
+            named = s == av.SKILL.get(s, s) or f"`{s}`" in text
+            self.assertTrue(named and re.search(r"\bstart\b", text) and re.search(r"\bdone\b", text), s)
+
     def test_each_stage_skill_lists_its_dispatches_as_tasks(self):
         # a dispatch with no `task add` leaves no `fait` task and skips `task done`'s controls (audit 2026-11, X1)
         no_agent = {"redaction"}   # writes in the session itself: no dispatch to list

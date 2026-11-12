@@ -5,7 +5,7 @@ description: "Use to design and scaffold a complete, navigable interface: style 
 
 # Interface
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interface`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block interface --detail "<question>"`. Once the stage's output is written and committed: `done interface`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start interface`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block interface --detail "<question>"`. Once the stage's output is written and committed: `done interface`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
 **Tâches.** Once Phase 1 (Step 1) has named the personas, list the dispatches in order: `task add interface interview-<persona> --agent hosa-key-user --objet <persona>` (one per persona), then `manche-styles`, `manche-directions`, `manche-page`, `3a`, `3b`, `3c`, `revue` (`--agent hosa-ux-designer`), `documentation` (`--agent hosa-documentation`). Each return → `task done interface <id> --sortie <the paths it wrote>`: an interview → write the persona's answer as is to `<root>/.hosa/design/besoins-<persona>.md` first (Phase 2 needs it after a `/clear`), and give that path; a round → its comparison page; 3a–3c, `revue`, `documentation` → the files they wrote. Identity kept → `task skip interface manche-styles --detail "identité conservée"`. A gap redispatch (Step 4b) or a review below 8 re-adds the sub-phase it goes to (`task add` resets it to `à faire`); `3c` and `revue` keep their refusals, so the bound holds across rounds.
 
@@ -18,8 +18,8 @@ Dispatch hosa-ux-designer (Phase 1: gather inputs, identify
 personas to interview)
         ↓ Open Questions (missing Infra/CDC/stack/personas/project) → relay to user, stop
         ↓ Personas à interviewer
-Dispatch hosa-key-user (UI-interview) pour chaque persona,
-un à la fois
+Dispatch hosa-key-user (UI-interview), un par persona,
+tous dans un seul message
         ↓
 Redispatch hosa-ux-designer (Phase 2), trois manches :
 styles (cartes de style) → directions (navigation, lexique,
@@ -63,7 +63,7 @@ If it returns an Open Question (no `Infra`/architecture doc, no `stable` `Exigen
 
 ## Step 2: Interview Each Persona
 
-For each persona under `## Personas à interviewer`, dispatch `hosa-key-user` as a UI-interview request: what this persona needs to see, in what order, which information is priority, what usage constraints apply (mobile, accessibility, autonomy...). One persona at a time — don't batch multiple personas into a single dispatch.
+For each persona under `## Personas à interviewer`, dispatch `hosa-key-user` as a UI-interview request: what this persona needs to see, in what order, which information is priority, what usage constraints apply (mobile, accessibility, autonomy...). One dispatch per persona — never two personas in one dispatch — and all the dispatches in one message: the personas are independent.
 
 ## Step 3: Dispatch for Proposals, Round by Round
 

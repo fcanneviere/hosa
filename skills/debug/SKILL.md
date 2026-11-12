@@ -1,6 +1,6 @@
 ---
 name: debug
-description: "Use when something is broken, not working as expected, or throwing errors. Root cause before fix, always. Can dispatch multiple debugger agents in parallel when the problem spans multiple areas. Commits fix in the user's name only."
+description: "Use when something is broken, not working as expected, or throwing errors. Root cause before fix, always. Can dispatch multiple debugger agents in parallel when the problem spans multiple areas. Commits fix in the user's name only. Triggers: \"ça plante\", \"ça ne marche pas\", \"j'ai une erreur\", \"bug\"."
 ---
 
 # Debug
@@ -62,7 +62,7 @@ Provide each agent with: the symptom, reproduction steps, your hypotheses, and w
 **Secondary issue found outside scope** (the investigation surfaces a real bug or gap unrelated to the reported symptom): don't fold it into this fix and don't just mention it in passing — if `.hosa/kb/` exists for this project, dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`) for it so it's tracked instead of lost, then run `backlog`'s Single-Ticket Mode on it so it's complete; otherwise note it plainly in the final report for the user to act on.
 
 **Ambiguous root cause (two equally likely causes, no distinguishing evidence from static analysis):** present both hypotheses to the user with your evidence for each:
-> "I've narrowed it down to two equally likely root causes: [A] because [evidence], and [B] because [evidence]. Can you tell me more about [specific question that would distinguish them]?"
+> « Il reste deux causes aussi probables : [A], parce que [preuve], et [B], parce que [preuve]. [La question qui les départage] ? »
 
 Wait for user input before proceeding.
 
@@ -71,14 +71,17 @@ Wait for user input before proceeding.
 ## Step 4: Confirm Root Cause
 
 Present the root cause and evidence to the user before applying any fix:
-> "Root cause: [description]. Evidence: [specific file:line or log output]. Proposed fix: [what to change]. Shall I apply it?"
+> « Cause : [description]. Preuve : [fichier:ligne ou sortie de log]. Correction proposée : [ce qui change]. Je l'applique ? »
 
 Wait for the user to confirm or redirect. Do not apply the fix without confirmation.
 
 **Auto mode (invoked by `develop`'s correction mode, on a sprint ticket):** skip this confirmation when there is one clear root cause in the user's code — go straight to Step 5 with the proposed fix, and report the root cause and evidence in the final output instead. The dependency and ambiguous cases below still stop: return them to `develop`, which escalates to the user.
 
 **If the root cause is in a third-party dependency:** do not apply a workaround without user approval:
-> "The root cause is in `[dependency]` version [X], specifically [behavior]. This is outside your code. Options: [A — upgrade to version Y which has a fix], [B — apply this workaround in your code], [C — open an issue upstream]. Which do you want?"
+> **Q1 — La cause est dans `[dépendance]` version [X] : [comportement]. Ce n'est pas ton code. Que fait-on ?** (bloquante)
+>   a) Passer à la version Y, qui corrige le défaut. (recommandé, quand elle existe)
+>   b) Contourner dans ton code : [le contournement].
+>   c) Ouvrir un ticket chez le mainteneur, sans rien changer ici.
 
 ---
 

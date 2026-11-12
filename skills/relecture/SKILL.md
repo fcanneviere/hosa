@@ -5,7 +5,7 @@ description: "Use to check every exigence for precision, completeness and consis
 
 # Relecture
 
-**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start relecture`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block relecture --detail "<question>"`. Once the stage's output is written and committed: `done relecture`. Never skip these calls: without them a cut session can't resume (« reprends ») and the session stays on the wrong model.
+**Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start relecture`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block relecture --detail "<question>"`. Once the stage's output is written and committed: `done relecture`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
 **Tâches.** Before the challenger's dispatch, `avancement.py task add relecture p<n> --agent hosa-challenger --objet "<the scope>"`; once its anomalies and coverage table are written (Step 5), `task done relecture p<n> --sortie kb/cdc/relecture.md`. Inside `changement`'s loop (no `avancement.py` call for this stage): no task.
 
