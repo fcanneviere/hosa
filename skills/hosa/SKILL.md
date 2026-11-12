@@ -91,7 +91,7 @@ Ask one question at a time, in order, waiting for an answer before moving on. Th
 11. Contraintes (techniques, réglementaires, business — "aucune" accepté)
 12. Hypothèses, dépendances et risques (ce qu'on tient pour vrai, ce dont le projet dépend, ce qui peut le faire échouer — "aucun" accepté)
 13. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
-14. Échéances et budget (date de livraison visée, jalons, enveloppe — "aucun" accepté)
+14. Échéances, budget et décideur (date de livraison visée, jalons, enveloppe — "aucun" accepté ; et qui signe le cahier des charges et arbitre le périmètre : toi, ou une autre personne — un client, un sponsor — à nommer avec son rôle)
 15. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
 
 `Taille : petit` → questions 10 to 14 in one message, each with its proposed answer ("Q10 a, Q11 a…" accepted): five quick checks, not five turns.
@@ -154,6 +154,7 @@ Neuf | Existant
 ## Échéances et budget
 - <échéance, jalon ou enveloppe>
 [Ou "Aucun."]
+- Décideur : <l'utilisateur | nom et rôle de la personne qui signe le cahier des charges et arbitre le périmètre>
 
 ## Langue
 - Documentation : <langue>

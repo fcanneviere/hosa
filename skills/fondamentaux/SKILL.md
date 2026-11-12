@@ -47,10 +47,13 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 - **Interface d'administration** : back-office pour gérer contenus, données de référence, paramètres
 - **Socle comptes** : invitation ou inscription, connexion avec limitation des tentatives et double authentification, session et déconnexion, mot de passe et mot de passe oublié, changement d'email, administration des comptes, rôles et droits, suppression, journal de sécurité — exigences standard déjà rédigées dans `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md`, jamais réécrites projet par projet (voir Step 1b)
 - **Paramétrage / configuration** : réglages modifiables sans redéploiement
+- **Quotas et limites d'usage** : ce qu'un utilisateur ou un compte peut créer, envoyer ou stocker au plus, et ce qu'il voit à la limite
 - **Notifications** : email/in-app sur les événements clés, préférences de notification
 
 **Fonctionnel — données**
+- **Reprise des données existantes** : ce qui vient de l'outil actuel au démarrage, volume, nettoyage, qui valide la reprise, ce qui se passe pour les données rejetées
 - **Import de données** : formats, contrôle et rapport d'erreurs d'import
+- **Fichiers et pièces jointes** : types et taille acceptés, stockage, analyse antivirus, qui les voit, quand ils sont supprimés
 - **Export de données** : formats, périmètre, qui peut exporter
 - **Sauvegarde et restauration** : fréquence, rétention, procédure de restauration testée
 - **Archivage et purge** : ce qui est archivé/supprimé, quand, par qui
@@ -65,11 +68,11 @@ The standard list `hosa-product-owner` checks against — pass it as is. Don't d
 **Fonctionnel — utilisateur final**
 - **Messages d'erreur compréhensibles** : l'utilisateur sait ce qui s'est passé et quoi faire
 - **Aide et documentation utilisateur** : aide en ligne, guide, contact support
+- **Langues et fuseaux horaires** : langues de l'interface, format des dates, des nombres et des montants, fuseau de référence des dates affichées et des échéances
 
-**Non fonctionnel (NFR)** — contraintes chiffrées, `tags: [nfr]` (le juridique et la sécurité ont leur propre étape juste après : `juridique`, puis `securite`) :
+**Non fonctionnel (NFR)** — contraintes chiffrées, `tags: [nfr]` (le juridique et la sécurité ont leur propre étape juste après : `juridique`, puis `securite`. La protection des données personnelles — base légale, durée de conservation, droits d'accès et d'effacement — est décidée par `juridique` seul : jamais une exigence ici, pour ne pas avoir deux exigences sur le même sujet) :
 - **Performance** : temps de réponse cible, volumétrie attendue
 - **Disponibilité** : SLA visé, tolérance à l'indisponibilité, objectifs de reprise (RPO/RTO)
-- **Protection des données (RGPD ou équivalent)** : base légale, durée de rétention, droit d'accès et à l'effacement
 - **Accessibilité** : niveau visé (RGAA/WCAG), publics concernés
 - **Compatibilité** : navigateurs, appareils, OS à supporter
 

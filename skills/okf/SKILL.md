@@ -33,7 +33,7 @@ Lié à : [exigence](../cdc/facturation.md)
 
 - `generated: { by: <actor>, at: <ISO8601> }` — who wrote the current content. Actor shapes: `human:<name>` (a person), `<agent>/<version>` (an agent, e.g. `hosa-architect/1.0`), `process:<tool>` (a deterministic tool, e.g. `process:hosa-graph`). Exact lowercase prefixes — trust tiers are keyed off them.
 - `verified: { by: <actor>, at: <ISO8601> }` — who checked it. **Never write `verified: { by: human:… }` unless a human actually reviewed this exact content in this session.** An agent may only write `verified` with its own `<agent>/<version>` actor.
-- Rewriting a concept's content resets trust: update `generated`, drop a `verified` that no longer covers the new content.
+- Rewriting a concept's content resets trust: update `generated`, drop a `verified` that no longer covers the new content. One exception, named here: `donnees` appends ` — origine : …` to a data line of a signed exigence. It adds a qualification the user answered and saw in `donnees`' report, and changes no word they signed: `verified` stays, and the bundle's log names the agent.
 
 ## Links
 

@@ -48,7 +48,9 @@ Read `kb/cdc/<slug>.md`. If `status` isn't `stable`, say so and redirect to `red
 
 ## Step 2: Impact — Backlog
 
-Read every `Ticket` in `kb/tickets/` with a markdown link back to this Exigence, at any `state`. List them, split `state: todo` (nothing built yet, no further impact analysis needed — it'll just be re-derived) from `doing`/`done`/`blocked` (something may already exist against the old wording).
+Read every `Ticket` in `kb/tickets/` with a markdown link back to this Exigence, at any `state`. List them, split `state: todo` (nothing built yet: no impact analysis, but their story and criteria still carry the old wording — Step 7 rewrites them; `backlog` never does, it skips an exigence that already has tickets) from `doing`/`done`/`blocked` (something may already exist against the old wording).
+
+A ticket `doing` in the `active` sprint → one numbered question, asked with Step 4: a) fix it in this sprint once the loop is clean — `develop <ticket> correction` with the new wording as the defect (recommended: it isn't merged yet); b) finish it on the old wording, and a follow-up ticket (Step 7) reworks it.
 
 ## Step 3: Impact — What's Already Built
 
@@ -96,6 +98,8 @@ The loop is `changement`'s own, declared in `pipeline.json` and counted by the p
 ## Step 7: Follow-Up Tickets
 
 Dispatch `hosa-product-owner` to create one `Ticket` per confirmed impact from Step 3 (`state: todo`, tagged `changement`, linked to the Exigence and to whichever ticket/entity/screen/doc it reworks) — don't leave a confirmed impact as only a line in this session's report. Then run `backlog`'s Single-Ticket Mode on each, so they're complete before you report them.
+
+**The `todo` tickets of Step 2** carry the old wording: in the same dispatch, `hosa-product-owner` rewrites their story and criteria to the new one (Responsibility 2, « A changed exigence »). Then dispatch together `hosa-security` (Mode 5) and `hosa-legal` (Mode 3, notes de tickets), `model: sonnet`, on those tickets only, each told to update its existing note and the criteria it linked (`→ CAn`), never to add a second note. Then run `<hosa> ticket_check .hosa/kb <their paths>` and `<hosa> ticket_check .hosa/kb --regles`: a gap goes back to the agent that owns it, with its exact lines.
 
 ## Step 8: Log
 

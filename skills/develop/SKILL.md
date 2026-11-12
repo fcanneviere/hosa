@@ -77,7 +77,7 @@ The `Hosa-Ticket:` trailer links the ticket to the commit's files in the project
 
 The default when the sprint has several tickets to do: a ticket alone pays each time for starting four agents, re-reading the same files and one confirmation; a lot pays them once. Measured on hosa-ui's sprint 1 (8 tickets, one by one): 60 % of the cost in the orchestrating session, 37 dispatches.
 
-**Compose the lot.** Take the sprint's `todo`/`doing` tickets in priority order and group the consecutive ones that touch the same module (`## Placement architecture`): at most 4 tickets and 8 points, no ticket above 3 points (a big ticket stays alone, normal flow), no dependency (`depends_on`) on a ticket outside the lot or later in the lot. Announce the lot (slugs, points) and launch it, without a quiz.
+**Compose the lot.** Take the sprint's `todo`/`doing` tickets in priority order and group the consecutive ones that touch the same module (`## Placement architecture`): at most 4 tickets and 8 points (the tickets' `estimate`), no ticket above 3 points (a big ticket stays alone, normal flow), no dependency (`depends_on`) on a ticket outside the lot or later in the lot. Announce the lot (slugs, points) and launch it, without a quiz.
 
 **Run it.** The steps of the normal flow, once for the lot:
 1. Steps 1-2 for each ticket (`state: doing`), then Brief Once (3a) for all: one read of the sections, passed to every dispatch.

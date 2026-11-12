@@ -476,7 +476,7 @@ Ordre recommandé, du plus sûr au plus structurant.
 - X1 : lignes **Tâches** dans les 16 skills, puis le refus dans `budget.js` avec son interrupteur et son test.
 - X5 : périmètres lus dans la KB.
 
-**Lot C — logique métier.**
+**Lot C — logique métier.** Fait le 2026-11-12. `changement` réécrit les tickets `todo` liés (PO, puis notes sécurité et juridique mises à jour en place, puis `ticket_check`), et pose une question pour un ticket `doing` du sprint actif. `donnees` : l'origine reste en fin de ligne dans l'exigence, mais `okf` nomme cette exception, l'agent ne change aucun autre mot, le rapport montre chaque annotation à l'utilisateur, et un dispatch par persona remplace un dispatch par donnée (choix plus court que le déplacement hors de l'exigence, qui aurait changé la preuve de `done donnees`, `schema-app` et les tests). Estimation : une seule unité, les points 1/2/3, dans `backlog`, `hosa-sprint-planner`, `develop` et l'app (`S`/`M`/`L` d'avant = 1/2/3). Capacité : moyenne des `Vélocité` des 2 derniers bilans. Cahier des charges : intégrations et reprise des données (`interview`), reprise, fichiers, quotas, langues et fuseaux (`fondamentaux`), protection des données laissée à `juridique` seul ; décideur (`hosa` Q14, `contestation`). Rétro : une question à l'utilisateur, gardée telle quelle dans le bilan. Juge : une question sur le moyen technique de chaque critère qui demande une capacité de la plateforme. `recette` : format `CAn` de `qa` et routage dans le sprint actif.
 - `changement` : réécrire les tickets `todo` liés.
 - `donnees` : annotation hors du texte signé.
 - `sprint` + `bilan-sprint` : vitesse mesurée ; `backlog` + `sprint-planner` + `develop` : une seule unité d'estimation.

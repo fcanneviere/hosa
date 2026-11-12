@@ -15,7 +15,7 @@ Identify persona (ask if ambiguous) + target (ticket/spec/feature, ask if missin
 hosa-key-user: load persona → enrich if thin → embody → run recette
         ↓
 Persona enriched?
-    Yes → confirm the enrichment with the user before writing kb/personnas/<slug>.md
+    Yes → show the user what it added to kb/personnas/<slug>.md
     No  → skip
         ↓
 Write recette result as a Test Plan concept in kb/test/
@@ -24,7 +24,8 @@ Log to kb/test/log.md (and kb/personnas/log.md if enriched)
         ↓
 Report: verdict, scénarios, pain points, quick wins
         ↓ Échoué scenarios found
-Suggest debug (implementation gap) or hosa-product-owner (ticket needs rework)
+Active sprint ticket → develop <ticket> correction ; otherwise a
+ticket (hosa-product-owner), then debug or rework
 ```
 
 ## Trigger
@@ -43,7 +44,7 @@ Manual: `/recette`. Auto: "fais une recette de...", "valide ça avec [persona]",
 
 Dispatch with the persona file path and the target content. Let it enrich the persona first if its entry is too thin to embody — that's the agent's job, not this skill's.
 
-If the agent enriched the persona, show the diff to the user and confirm before treating `kb/personnas/<slug>.md` as written (the agent already wrote it — this is a courtesy readback, not a blocking gate, since KB writes here follow the same non-blocking convention as the `hosa` skill's init flow).
+If the agent enriched the persona, show the user what it added to `kb/personnas/<slug>.md`, in the report. The agent already wrote it: the user corrects it if needed, through `hosa` (persona update). The recette goes on without waiting.
 
 ## Step 3: Write the Test Plan
 
@@ -62,7 +63,7 @@ tags: [recette]
 status: stable
 generated: { by: hosa-key-user/1.0, at: <ISO8601> }
 ---
-<corps: scénarios, pain points, quick wins, verdict — from the agent's output>
+<the agent's `## Recette` and `## Verdict` as they are: each scenario Réussi / Échoué / Partiel / Différé, and each `CAn` of the ticket answered `Oui` / `Non` / `Non observé` (`agents/key-user.md`, Output) — the format `qa` writes and `validation` reads; then pain points and quick wins>
 
 Lié à : [persona](../personnas/<slug>.md), [ticket/spec](<path>)
 ```
@@ -75,7 +76,8 @@ Append to `kb/test/log.md` (create if missing, OKF §9 format). If the persona w
 
 Report the agent's verdict, scénarios, pain points, and quick wins in plain language, and its `## Ménage` — a recette that couldn't reset the environment leaves data the next one would trip on: say so, and propose `qa-plan` to have `hosa-data-engineer` add or fix the dataset's `## Remise à zéro`.
 
-- **Échoué scenarios that look like implementation bugs** → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the recette `Test Plan` and the target) with the exact gap, then suggest `debug` on it.
+- **A ticket of the `active` sprint** → no new ticket: route as `qa` Step 4 does. A `CAn` answered `Non` is a defect fixed in the sprint: `develop <ticket> correction`, then `qa <sprint> <ticket>`. A need the criteria never asked for → the backlog, as below.
+- **Otherwise, Échoué scenarios that look like implementation bugs** → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the recette `Test Plan` and the target) with the exact gap, then suggest `debug` on it.
 - **Échoué/Partiel scenarios that look like the ticket itself was wrong or incomplete** → dispatch `hosa-product-owner` to create a `Ticket` capturing what's missing, then suggest routing it back for rework.
 - **Quick wins surfaced by the persona** (small, clearly out of this recette's scope) → dispatch `hosa-product-owner` to create one `Ticket` per quick win, `state: todo`, tagged so they're easy to spot in the backlog later.
 - **Every ticket created above** → run `backlog`'s Single-Ticket Mode on it before reporting, so it's complete.

@@ -695,13 +695,13 @@ class BoardTest(unittest.TestCase):
 
     def test_points_totals(self):  # CA4
         got = self.by_slug()
-        self.assertEqual(sum(got[s]["points"] for s in self.col("doing")), 11)
+        self.assertEqual(sum(got[s]["points"] for s in self.col("doing")), 7)  # S/M/L on `backlog`'s scale: 1/2/3
         self.assertEqual([got[s]["points"] for s in ("recherche", "titre-hostile", "inscription", "etat-inconnu")],
                          [1, 2, 1, 0])
 
     def test_points_function(self):  # CA4
         self.assertTrue(hasattr(kb, "points"), "kb.points manquant")
-        cases = [("S", 1), ("M", 3), ("L", 5), ("m", 3), (2, 2), ("2", 2), (None, 0), ("à voir", 0), (True, 0), (-1, 0)]
+        cases = [("S", 1), ("M", 2), ("L", 3), ("m", 2), (2, 2), ("2", 2), (None, 0), ("à voir", 0), (True, 0), (-1, 0)]
         for value, want in cases:
             self.assertEqual(kb.points(value), want, repr(value))
 

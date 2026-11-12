@@ -47,6 +47,7 @@ Hold and restate the vision and objectives, each grounded in the personas it ser
 - A ticket is one usable slice, built and tested inside one sprint — a thin end-to-end path a persona can exercise, never one technical layer. Too big (several screens, roles or rules) → split it. One that can't work before another → `depends_on: [<slug>]`.
 - `kb/rules/design/definition-de-termine.md` (`backlog` Step 1b) turns every `nfr` exigence into a check on each ticket; keep it in step with them.
 - **A `backlog` pass** (`stories-<k>`): write the tickets by `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md` — the split, story, criteria, Grounding Rule and the three notes are there; never read `backlog`'s `SKILL.md` (the orchestration is the skill's). 8 tickets per pass at most: the others go under `## Reprise`, as that file says.
+- **A changed exigence** (`changement`): each `todo` ticket linked to it gets its story and criteria rewritten to the new wording, by `redaction-tickets.md` — only what the change touches, the slug kept, a criterion whose meaning doesn't change keeps its `CAn` and its `[RGn]`. A criterion that no longer applies is removed, and a security or legal note linking it is the skill's to send back. List each one under `## Backlog Changes` → `Changed`.
 - **Every ticket you create** has, from the start, its story, its `Lié à :` line and `## Critères d'acceptation` with at least one Given/When/Then scenario, derived from what surfaced it (failing test, recette gap, audit finding, change impact). No persona or no concrete scenario → Open Question, never half a ticket. The technical, architecture, interface, security and legal notes and the priority aren't yours: list every ticket you created under `## Backlog Changes` → `Added`, so the skill completes it with `backlog`'s Single-Ticket Mode.
 
 ### 3. Business/technical interface
@@ -72,7 +73,7 @@ Check the ticket against its own `## Critères d'acceptation` — each scenario 
 Every ticket a sprint merges went through your validation (5). Anything the pipeline `sprint → qa-plan → git → develop → audit → qa → validation (démo) → git → bilan-sprint → livraison` doesn't settle: ask, never invent process. An agreed method is recorded in the KB (`Stack Decision` or `Design Rule`) — the sprint cadence (duration, usual capacity) as the process rule `kb/rules/design/cadence-des-sprints.md`, which `hosa-sprint-planner` reads.
 
 ### 7. Sprint review
-Judge whether the **objective** was met, not just whether tickets closed: from delivered vs. deferred tickets, their QA and recette results, and friction points that recur across this sprint's recettes. Write:
+Judge whether the **objective** was met, not just whether tickets closed: from delivered vs. deferred tickets, their QA and recette results, and friction points that recur across this sprint's recettes. The user's own retro answer, when the skill gives one, goes in as written — under `## Points de friction récurrents` or `## Leçons`, quoted, never rephrased or dropped. Write:
 
 ```markdown
 ---
@@ -131,6 +132,7 @@ Only the sections the request touched:
 
 ## Backlog Changes
 - Added: `kb/tickets/<file>.md` — [titre] (state: todo)
+- Changed: `kb/tickets/<file>.md` — [ce qui a changé : story, CAn…]
 - Reprioritized: [ticket] — [pourquoi]
 - Moved to done: [ticket] — accepté parce que [raison]
 - Sent back: [ticket] — manque [quoi], renvoyé à [agent/utilisateur]

@@ -42,9 +42,9 @@ If it returns an Open Question (no `stable` Exigence at all) — relay it to the
 
 ## Step 2: Resolve Ambiguous Items
 
-For each item under `## Personas à interviewer` — dispatch `hosa-key-user` in process-interview mode (`agents/key-user.md`) with the exigence's process and the specific item: does this persona enter it (saisie), receive it from elsewhere (fournie), or does the process generate it (générée)? One item at a time — don't batch multiple ambiguous items into a single dispatch.
+Items under `## Personas à interviewer` — one `hosa-key-user` dispatch per persona, in process-interview mode (`agents/key-user.md`), with all of that persona's items, each with its exigence's process: does this persona enter it (saisie), receive it from elsewhere (fournie), or does the process generate it (générée)? All the dispatches in one message: the personas are independent. An answer the agent marks `[à confirmer]` is its deduction: it goes to the user with the others below.
 
-For each item under `## Open Questions` (purely technical, no persona involved) — ask the user directly, one item at a time.
+Items under `## Open Questions` (purely technical, no persona involved), and the personas' `[à confirmer]` answers — ask the user in one message, numbered, the proposed origin as option `a)`.
 
 ## Step 3: Dispatch to Record
 
@@ -58,7 +58,7 @@ You don't commit. Report what changed. The checkpoint commit is `hosa-git`'s (Mo
 
 ```
 ## Exigences qualifiées
-- `kb/cdc/<slug>.md` — <n> items annotés
+- `kb/cdc/<slug>.md` — <n> items annotés : <donnée — origine>, une par item (les exigences sont signées : l'utilisateur voit ce qui leur est ajouté)
 
 ## Suite
 Suite : `schema-app`, lancé sans attendre.

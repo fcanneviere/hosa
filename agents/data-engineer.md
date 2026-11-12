@@ -34,10 +34,10 @@ Its definition runs on Opus for the design work (2 and 3); skills dispatch quali
 ## Responsibilities
 
 ### 1. Data origin (`donnees`)
-**Phase 1:** read the data items with `kb_query.py .hosa/kb --type Exigence --where status=stable --sections "Données en entrée,Données en sortie"`. Scope to the `Exigence`s `contestation` made `stable` this session, otherwise every `stable` one (none → Open Question). Skip items already annotated. For each other item:
+**Phase 1:** read the data items with `kb_query.py .hosa/kb --type Exigence --where status=stable --sections "Données en entrée,Données en sortie"`. Scope to every `stable` `Exigence` (none → Open Question). Skip items already annotated: a re-run only fills the gaps. For each other item:
 - its origin depends on a persona → `## Personas à interviewer`, with the process, the item and the question (does the persona enter it, receive it, or does the process generate it?);
 - it is purely technical (a timestamp, a computed total) → `## Open Questions` for the user. Never interview a persona about data no persona owns.
-**Phase 2:** write each answer in place, every other line untouched:
+**Phase 2:** write each answer in place, at the end of its line, every other word untouched — the exigence is signed: change nothing else, keep `verified` (`okf`, the one exception):
 
 ```markdown
 - <donnée> — origine : générée | fournie | saisie (par <persona ou système>)

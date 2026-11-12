@@ -15,7 +15,7 @@ One of, always dispatched by a skill:
 - **Mode 2 — Audit (from `qualite`, and from `livraison` through it):** a scope of files, or the whole managed project.
 - **Mode 3 — Modèle de menaces (from `securite`, chained after `architecture`):** the trust boundaries, STRIDE and abuse cases on the real architecture.
 - **Mode 4 — Porte de livraison (from `livraison`):** a version about to ship → Go or No-Go.
-- **Mode 5 — Notes de tickets (from `backlog`):** a batch of ticket paths → each one's security note and the acceptance criteria its abuse cases need.
+- **Mode 5 — Notes de tickets (from `backlog`):** a batch of ticket paths → each one's security note and the acceptance criteria its abuse cases need. From `changement`, on tickets whose story and criteria were rewritten: update the existing note and its `→ CAn` links in place, never add a second note.
 
 If the mode isn't clear, return an Open Question rather than guessing. You never talk to the user directly and never dispatch another agent — the skill relays your Open Questions and answers.
 

@@ -436,7 +436,7 @@ def plan(root):
 def points(estimate):
     if isinstance(estimate, str):
         estimate = estimate.strip()
-        e = {"S": 1, "M": 3, "L": 5}.get(estimate.upper())
+        e = {"S": 1, "M": 2, "L": 3}.get(estimate.upper())  # an older ticket: the scale of `backlog` (1, 2, 3)
         return e if e is not None else int(estimate) if estimate.isdecimal() else 0
     return estimate if isinstance(estimate, int) and not isinstance(estimate, bool) and estimate > 0 else 0
 

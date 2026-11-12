@@ -14,6 +14,7 @@ Lit kb/sprints/<slug>.md (state: done attendu) et ses tickets
         ↓ pas encore fusionné (state != done) → propose git Mode 2
           d'abord, stoppe
 Mesure le sprint : usage_report.py --sprint --write → ## Mesures
+Rétro : une question à l'utilisateur (ce qui l'a gêné ou aidé)
 Dispatch hosa-product-owner (Responsibility 7)
         ↓
 Écrit kb/sprints/<slug>-review.md + tickets de suivi et/ou
@@ -40,9 +41,17 @@ Manual: `/bilan-sprint <slug-sprint>`. Auto: "fais le bilan du sprint X", "rétr
 
 `<hosa> usage_report <root> --sprint <slug> --write` writes `## Mesures` in `kb/sprints/<slug>.md`: cost per ticket, review verdicts, the corrections by type with their findings proved or not reproduced (the relevance of reviews, audits and recettes), `hosa-debugger` passes, the main session's largest context, the longest agent passes, compared with the earlier sprints — and `### Propositions` for what crossed a threshold (e.g. `HOSA_HAIKU=0` when reviews fail on Haiku). Never apply a proposition yourself. Then `avancement.py … reponse --sprint <slug>` gives the questions' measure of the sprint (recommendations followed per stage and asker, from `kb/questions/log.md`): pass it to `hosa-product-owner` with `## Mesures` and show it in the report — a group marked « candidate à la décision par défaut » is a stop that decided nothing.
 
+## Step 1c: The User's Retro
+
+The measures say what cost; only the user says what got in their way. Before the dispatch, ask one question — the merge was just their decision, they are here:
+
+**Q1 — Qu'est-ce qui t'a gêné ou aidé pendant ce sprint ?** Une ligne, ou « rien ».
+
+It has no recommended option: never log it with `reponse`, which measures the recommendations followed. Pass it to `hosa-product-owner` as is, with the measures: its review keeps it under `## Points de friction récurrents` or `## Leçons`, in the user's words. A problem with Hosa itself goes to `kb/retours-hosa/journal.md` too (`using-hosa`, Auto-audit). « rien » is a normal answer.
+
 ## Step 2: Dispatch `hosa-product-owner`
 
-Dispatch `hosa-product-owner` (Responsibility 7, `agents/product-owner.md`) with the sprint, its tickets' final states, every `kb/test/` result/recette verdict recorded for those tickets during `qa`, and the `## Mesures` section (cost is a friction like any other). It judges the objective, writes `kb/sprints/<slug>-review.md`, and creates any follow-up `Ticket`/`Design Rule` the review surfaces. Run `backlog`'s Single-Ticket Mode on each follow-up `Ticket` it lists, so the next sprint can plan it as is.
+Dispatch `hosa-product-owner` (Responsibility 7, `agents/product-owner.md`) with the sprint, its tickets' final states, every `kb/test/` result/recette verdict recorded for those tickets during `qa`, the `## Mesures` section (cost is a friction like any other), and the user's retro answer (Step 1c), in their words. It judges the objective, writes `kb/sprints/<slug>-review.md`, and creates any follow-up `Ticket`/`Design Rule` the review surfaces. Run `backlog`'s Single-Ticket Mode on each follow-up `Ticket` it lists, so the next sprint can plan it as is.
 
 ## Step 3: Log
 
