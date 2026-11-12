@@ -167,7 +167,10 @@ test('an agent idle past its cache with a heavy context is not resumed, once', (
 });
 
 test('during backlog: two Hosa agents at once, the security and legal notes on sonnet', () => {
-  fs.writeFileSync(plan, '## Structuration\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
+  fs.writeFileSync(plan, '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n' +
+    '|---|---|---|---|---|---|---|---|\n| stories-2 | `backlog` | hosa-product-owner |  | à faire |  |  |  |\n' +
+    '| securite-1 | `backlog` | hosa-security |  | à faire |  |  |  |\n\n' +
+    '## Structuration\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
     '| `interface` | fait |  |  |\n| `backlog` | en cours |  |  |\n');
   setContext(10000);
   const start = (id) => processPayload({ hook_event_name: 'SubagentStart', session_id: 's10', agent_id: id, agent_type: 'hosa:hosa-juge' });
@@ -182,6 +185,28 @@ test('during backlog: two Hosa agents at once, the security and legal notes on s
   assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security', model: 'sonnet' }), null);
   setPlan(3);                                                                    // backlog no longer under way
   assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security' }), null);
+});
+
+test('a dispatch during a stage with no task of its agent is refused once, with the command', () => {
+  const head = '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n|---|---|---|---|---|---|---|---|\n';
+  const stages = '## Structuration\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
+    '| `stack` | fait |  |  |\n| `infra` | en cours |  |  |\n';
+  setContext(10000);
+  const infra = (type, session = 's20') => pre('Agent', session, { subagent_type: `hosa:${type}` });
+  fs.writeFileSync(plan, head + '| environnement | `infra` | hosa-architect |  | fait |  |  |  |\n\n' + stages);
+  const out = infra('hosa-architect');
+  assert.ok(denied(out));                                                        // its only task is done
+  assert.match(out.hookSpecificOutput.permissionDecisionReason, /task add infra <id> --agent hosa-architect/);
+  assert.equal(infra('hosa-architect'), null);                                   // sent again: it writes nothing
+  assert.equal(infra('hosa-git'), null);                                         // checkpoints and relays: exempt
+  assert.equal(infra('hosa-key-user'), null);
+  fs.writeFileSync(plan, head + '| conception | `infra` | hosa-architect |  | à faire |  |  |  |\n\n' + stages);
+  assert.equal(infra('hosa-architect', 's21'), null);                            // its task is listed
+  process.env.HOSA_TASKS = '0';
+  assert.equal(infra('hosa-data-engineer', 's21'), null);                        // kill switch
+  delete process.env.HOSA_TASKS;
+  setPlan(3);                                                                    // no stage under way
+  assert.equal(infra('hosa-data-engineer', 's22'), null);
 });
 
 test('kill switch', () => {

@@ -276,7 +276,35 @@ function running(session) {
   return n;
 }
 
-// The main session dispatches: the ceiling, then an old agent's resume, then the stage's `dispatch` rules.
+// A dispatch during a stage with no `à faire` task of its agent leaves no `fait` task behind, and its outputs skip
+// `task done`'s controls (audit 2026-11, X1). Refused once per stage and agent type, with the command: a dispatch
+// that writes no file (options, questions) can't be a task, so the same dispatch sent again passes. Exempt: the
+// checkpoints and relays (`hosa-git`, `hosa-infra`, `hosa-documentation`) and the personas' answers
+// (`hosa-key-user`). Kill switch: HOSA_TASKS=0.
+const TASK_EXEMPT = new Set(['hosa-git', 'hosa-infra', 'hosa-documentation', 'hosa-key-user']);
+function taskGate(p, file, s, text, type) {
+  if (process.env.HOSA_TASKS === '0' || TASK_EXEMPT.has(type)) return null;
+  const doing = text.match(/^\|\s*`([\w-]+)`\s*\|\s*en cours\s*\|/m);
+  if (!doing) return null;
+  const stage = doing[1];
+  const tasks = (text.split(/^## Tâches\s*$/m)[1] || '').split(/^## /m)[0];
+  const todo = tasks.split('\n').some((l) => {
+    const c = l.split('|').map((x) => x.trim());
+    return c.length > 6 && c[2].startsWith(`\`${stage}\``) && c[3].split(':').pop() === type && c[5] === 'à faire';
+  });
+  if (todo) return null;
+  const key = `${stage}/${type}`;
+  const warned = s.taskWarned || {};
+  if (warned[key]) return null;
+  save(file, { ...s, taskWarned: { ...warned, [key]: true } });
+  return deny(`\`${stage}\` is en cours and \`${type}\` has no \`à faire\` task in the plan's \`## Tâches\`. ` +
+    `Before the dispatch: \`<hosa> avancement "<kb>" task add ${stage} <id> --agent ${type}\` (with \`--sprint <slug>\` ` +
+    'for a sprint stage), the id the skill names; on its return, `task done … --sortie <the paths it wrote>`. ' +
+    'A dispatch that writes no file needs no task: send it again, it will pass. HOSA_TASKS=0 turns this check off.');
+}
+
+// The main session dispatches: the ceiling, then an old agent's resume, a task for the dispatch, then the
+// stage's `dispatch` rules.
 function dispatchGate(p) {
   const text = planText(p.cwd || process.cwd());
   if (text == null) return null;
@@ -302,6 +330,8 @@ function dispatchGate(p) {
   }
   const type = String(input.subagent_type || '').split(':').pop();
   if (!/^hosa-/.test(type)) return null;
+  const untracked = taskGate(p, file, s, text, type);
+  if (untracked) return untracked;
   const stage = Object.keys(DISPATCH).find((st) =>
     new RegExp(`^\\|\\s*\`?${st}\`?\\s*\\|\\s*en cours\\s*\\|`, 'm').test(text));
   if (!stage) return null;
