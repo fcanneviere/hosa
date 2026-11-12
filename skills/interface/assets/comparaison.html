@@ -90,9 +90,9 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const k of kids) n.append(k);
   return n;
 };
-document.title = DATA.project + " — " + DATA.round;
-$("#title").textContent = DATA.project + " · " + DATA.round;
-$("#brief").textContent = DATA.brief;
+document.title = DATA.projet + " — " + DATA.manche;
+$("#title").textContent = DATA.projet + " · " + DATA.manche;
+$("#brief").textContent = DATA.intention;
 $("#hint").textContent = "Colle la réponse dans la conversation (" + DATA.question + ").";
 const main = $("#options");
 const frames = [];
@@ -115,36 +115,36 @@ function fit() {
 function render() {
   main.textContent = "";
   frames.length = 0;
-  DATA.candidates.forEach((c, i) => {
+  DATA.options.forEach((c, i) => {
     const stage = el("div", { class: "stage" });
     let frame = null;
-    if (c.kind === "image") {
-      stage.append(el("img", { src: c.content, alt: "Capture de l'option " + lettre(c) }));
+    if (c.genre === "image") {
+      stage.append(el("img", { src: c.contenu, alt: "Capture de l'option " + lettre(c) }));
     } else {
-      frame = el("iframe", { title: "Option " + lettre(c) + " : " + c.name, loading: "lazy",
-        sandbox: c.kind === "url" ? "allow-scripts allow-same-origin allow-forms" : c.interactive ? "allow-scripts allow-forms" : "" });
-      if (c.kind === "url") {
-        frame.src = c.content;
-        fetch(c.content, { mode: "no-cors" }).catch(() => {
-          const down = el("div", { class: "down" }, "Le serveur local ne répond pas : " + c.content);
-          if (DATA.serve) down.append(el("br"), el("button", { class: "choose", "data-copy-serve": "", onclick: () => copy(DATA.serve.command) }, "Copier la commande de démarrage"));
+      frame = el("iframe", { title: "Option " + lettre(c) + " : " + c.nom, loading: "lazy",
+        sandbox: c.genre === "adresse" ? "allow-scripts allow-same-origin allow-forms" : c.interactif ? "allow-scripts allow-forms" : "" });
+      if (c.genre === "adresse") {
+        frame.src = c.contenu;
+        fetch(c.contenu, { mode: "no-cors" }).catch(() => {
+          const down = el("div", { class: "down" }, "Le serveur local ne répond pas : " + c.contenu);
+          if (DATA.serveur) down.append(el("br"), el("button", { class: "choose", "data-copy-serve": "", onclick: () => copy(DATA.serveur.commande) }, "Copier la commande de démarrage"));
           stage.replaceChildren(down);
         });
-      } else frame.srcdoc = c.content;
+      } else frame.srcdoc = c.contenu;
       stage.append(frame);
     }
     frames.push({ stage, frame });
     const chosen = st.chosen === c.id;
     const head = el("div", { class: "head" },
-      el("span", { class: "letter" + (c.baseline ? " base" : "") }, lettre(c)),
-      el("h2", {}, c.name));
+      el("span", { class: "letter" + (c.actuel ? " base" : "") }, lettre(c)),
+      el("h2", {}, c.nom));
     if (c.id === DATA.recommande) head.append(el("span", { class: "badge" }, "Recommandée"));
-    if (!c.baseline) head.append(el("button", { class: "choose", "aria-pressed": String(chosen), onclick: () => choose(c.id) }, chosen ? "Choisie" : "Choisir " + lettre(c)));
-    const meta = el("div", { class: "meta" }, el("p", {}, c.concept),
+    if (!c.actuel) head.append(el("button", { class: "choose", "aria-pressed": String(chosen), onclick: () => choose(c.id) }, chosen ? "Choisie" : "Choisir " + lettre(c)));
+    const meta = el("div", { class: "meta" }, el("p", {}, c.intention),
       el("div", { class: "row" }, ...c.palette.map((p) => el("span", { class: "sw", style: "background:" + p, title: p })), ...c.traits.map((t) => el("span", { class: "trait" }, t))),
-      el("div", { class: "typo" }, c.typography));
+      el("div", { class: "typo" }, c.typographie));
     if (c.controles && c.controles.length) meta.append(el("ul", { class: "ctl", "aria-label": "Contrastes WCAG" }, ...c.controles.map((t) => el("li", { class: /✗/.test(t) ? "ko" : "ok" }, t))));
-    meta.append(el("div", { class: "src" }, c.sourceLabel + (c.interactive ? " · interactive" : "")));
+    meta.append(el("div", { class: "src" }, c.source + (c.interactif ? " · interactive" : "")));
     main.append(el("article", { class: (chosen ? "chosen " : "") + (i === (st.index || 0) ? "on" : ""), "data-id": c.id }, head, stage, meta));
   });
   main.classList.toggle("single", st.layout === "single");
@@ -159,14 +159,14 @@ function render() {
 function choose(id) { st.chosen = st.chosen === id ? null : id; save(); render(); }
 
 function reply() {
-  const c = DATA.candidates.find((x) => x.id === st.chosen);
+  const c = DATA.options.find((x) => x.id === st.chosen);
   if (!c) return "";
   const note = $("#note").value.trim();
   return DATA.question + " " + c.lettre + (note ? " — " + note : "");
 }
 function answer() {
-  const c = DATA.candidates.find((x) => x.id === st.chosen);
-  $("#answer").textContent = c ? "Ta réponse : " + DATA.question + " " + c.lettre + " — " + c.name : "Choisis une option";
+  const c = DATA.options.find((x) => x.id === st.chosen);
+  $("#answer").textContent = c ? "Ta réponse : " + DATA.question + " " + c.lettre + " — " + c.nom : "Choisis une option";
   $("#copy").disabled = !c;
 }
 async function copy(text) {
@@ -186,7 +186,7 @@ for (const b of document.querySelectorAll(".seg button")) b.addEventListener("cl
 });
 addEventListener("keydown", (e) => {
   if (e.target.closest("textarea") || st.layout !== "single") return;
-  const n = DATA.candidates.length;
+  const n = DATA.options.length;
   if (e.key === "ArrowRight") st.index = ((st.index || 0) + 1) % n;
   else if (e.key === "ArrowLeft") st.index = ((st.index || 0) - 1 + n) % n;
   else return;

@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:48Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T19:34:24Z'}
 ---
 
 ## Fichiers
@@ -54,40 +54,42 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:48Z'}
 - `closedStages` — `hooks/budget.js:83` — Stages done or ruled out in the plan.
 - `contextTokens` — `hooks/budget.js:122`
 - `deny` — `hooks/budget.js:72`
-- `dispatchGate` — `hooks/budget.js:280` — The main session dispatches: the ceiling, then an old agent's resume, then the stage's `dispatch` rules.
+- `dispatchGate` — `hooks/budget.js:308` — stage's `dispatch` rules.
 - `graph` — `hooks/budget.js:56` — The one stage graph (avancement.py reads it too).
 - `hash` — `hooks/budget.js:68`
 - `lastCall` — `hooks/budget.js:99` — and its time.
 - `load` — `hooks/budget.js:70`
 - `pauseGate` — `hooks/budget.js:170` — The refusal erases the message: it is given back, to send again. A slash command passes (/clear, /compact).
 - `pauseGate.k` — `hooks/budget.js:181`
-- `pendingFile` — `hooks/budget.js:324`
+- `pendingFile` — `hooks/budget.js:354`
 - `planText` — `hooks/budget.js:76` — The managed project's plan (a worktree's copy is stale: findKbRoot skips it).
-- `processPayload` — `hooks/budget.js:345`
-- `recordDispatch` — `hooks/budget.js:327`
+- `processPayload` — `hooks/budget.js:375`
+- `recordDispatch` — `hooks/budget.js:357`
 - `reportGate` — `hooks/budget.js:225` — longer than REPORT_MAX besides `## Open Questions` and `## Reprise` (kept whole), it is refused once.
 - `running` — `hooks/budget.js:265` — Hosa agents of this session still running: started, not stopped, active within SILENT.
 - `save` — `hooks/budget.js:71`
 - `sessionStart` — `hooks/budget.js:148` — The session's start, read once and kept in its state.
-- `short` — `hooks/budget.js:325`
+- `short` — `hooks/budget.js:355`
 - `stageGate` — `hooks/budget.js:189`
 - `startTokens` — `hooks/budget.js:125` — Context of the session's first call, from the head of its transcript (the start after /clear).
 - `stateDir` — `hooks/budget.js:67`
 - `stateFile` — `hooks/budget.js:69`
-- `takeDispatch` — `hooks/budget.js:336`
+- `takeDispatch` — `hooks/budget.js:366`
+- `taskGate` — `hooks/budget.js:285`
 - `agentFile` — `hooks/budget.test.js:97`
 - `back` — `hooks/budget.test.js:136`
-- `call` — `hooks/budget.test.js:195`
+- `call` — `hooks/budget.test.js:220`
 - `denied` — `hooks/budget.test.js:10`
-- `po` — `hooks/budget.test.js:175`
+- `infra` — `hooks/budget.test.js:195`
+- `po` — `hooks/budget.test.js:178`
 - `pre` — `hooks/budget.test.js:105`
 - `report` — `hooks/budget.test.js:135`
-- `say` — `hooks/budget.test.js:197`
+- `say` — `hooks/budget.test.js:222`
 - `setAgentContext` — `hooks/budget.test.js:98`
 - `setContext` — `hooks/budget.test.js:20`
 - `setPlan` — `hooks/budget.test.js:14`
 - `skill` — `hooks/budget.test.js:22`
-- `start` — `hooks/budget.test.js:173`
+- `start` — `hooks/budget.test.js:176`
 - `usage` — `hooks/budget.test.js:17`
 - `clip` — `hooks/compress-output.js:28`
 - `condense` — `hooks/compress-output.js:262`
@@ -133,7 +135,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:48Z'}
 - `reviewLoopGate` — `hooks/gate.js:199`
 - `scriptGate` — `hooks/gate.js:168`
 - `section` — `hooks/gate.js:63` — Body of the last `## <heading>` section (up to the next level-2 heading).
-- `segments` — `hooks/gate.js:28` — Shell words grouped by command (split on && || ; | newline); quotes kept together.
+- `segments` — `hooks/gate.js:28` — Shell words grouped by command (split on && \|\| ; \| newline); quotes kept together.
 - `agent` — `hooks/gate.test.js:152`
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
@@ -216,7 +218,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T18:27:48Z'}
 - `shorten` — `hooks/session-start.js:19` — Cut `text` to `max` bytes at a line end, saying so.
 - `bytes` — `hooks/session-start.test.js:8`
 - `processPayload` — `hooks/stop.js:28`
-- `stagesInProgress` — `hooks/stop.js:16` — `| \`stage\` | en cours | … |` rows of avancement.md, with the section they sit in (a sprint, a pipeline).
+- `stagesInProgress` — `hooks/stop.js:16` — `\| \`stage\` \| en cours \| … \|` rows of avancement.md, with the section they sit in (a sprint, a pipeline).
 - `stateDir` — `hooks/stop.js:12`
 - `stateFile` — `hooks/stop.js:13`
 - `setPlan` — `hooks/stop.test.js:13`

@@ -8,9 +8,6 @@
 * [skills/backlog/scripts](skills-backlog-scripts.md) - !/usr/bin/env python3
 * [skills/infra/scripts](skills-infra-scripts.md) - !/usr/bin/env python3
 * [skills/interface/scripts](skills-interface-scripts.md) - !/usr/bin/env python3
-* [skills/interface/vendor/oil-ui/assets/vendor](skills-interface-vendor-oil-ui-assets-vendor.md) - ! Alpine.js 3.17.4 | MIT License | https://github.com/alpinejs/alpine
-* [skills/interface/vendor/oil-ui/scripts](skills-interface-vendor-oil-ui-scripts.md) - !/usr/bin/env python3
-* [skills/interface/vendor/oil-ui/tests](skills-interface-vendor-oil-ui-tests.md) - Observable builder contracts. Run with Python's unittest discovery.
 * [skills/kb-commit/scripts](skills-kb-commit-scripts.md) - !/usr/bin/env python3
 * [skills/okf/scripts](skills-okf-scripts.md) - !/usr/bin/env python3
 * [skills/redaction/scripts](skills-redaction-scripts.md) - !/usr/bin/env python3

@@ -1,16 +1,49 @@
 # Log — kb/code
 
+## 2026-11-13
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+
 ## 2026-11-12
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-redaction-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `skills-status-scripts`
 - process:hosa-graph a mis à jour `skills-redaction-scripts`
-- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-assets-vendor`
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `skills-status-scripts`
 - process:hosa-graph a mis à jour `skills-redaction-scripts`
-- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-assets-vendor`
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `hosa-app`
@@ -405,7 +438,6 @@
 - process:hosa-graph a mis à jour `hosa-app-public`
 - process:hosa-graph a mis à jour `skills-status-scripts`
 - process:hosa-graph a mis à jour `skills-kb-commit-scripts`
-- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-scripts`
 - process:hosa-graph a mis à jour `skills-infra-scripts`
 - process:hosa-graph a mis à jour `hosa-app-public`
 - process:hosa-graph a mis à jour `hosa-app`
@@ -416,9 +448,6 @@
 - process:hosa-graph a mis à jour `skills-status-scripts`
 - process:hosa-graph a mis à jour `skills-okf-scripts`
 - process:hosa-graph a mis à jour `skills-kb-commit-scripts`
-- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-tests`
-- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-scripts`
-- process:hosa-graph a mis à jour `skills-interface-vendor-oil-ui-assets-vendor`
 - process:hosa-graph a mis à jour `skills-interface-scripts`
 - process:hosa-graph a mis à jour `skills-infra-scripts`
 - process:hosa-graph a mis à jour `skills-backlog-scripts`
@@ -443,9 +472,6 @@
 - process:hosa-graph a déprécié `skills-status-scripts` (dossier disparu)
 - process:hosa-graph a déprécié `skills-okf-scripts` (dossier disparu)
 - process:hosa-graph a déprécié `skills-kb-commit-scripts` (dossier disparu)
-- process:hosa-graph a déprécié `skills-interface-vendor-oil-ui-tests` (dossier disparu)
-- process:hosa-graph a déprécié `skills-interface-vendor-oil-ui-scripts` (dossier disparu)
-- process:hosa-graph a déprécié `skills-interface-vendor-oil-ui-assets-vendor` (dossier disparu)
 - process:hosa-graph a déprécié `skills-interface-scripts` (dossier disparu)
 - process:hosa-graph a déprécié `skills-infra-scripts` (dossier disparu)
 - process:hosa-graph a déprécié `skills-backlog-scripts` (dossier disparu)
@@ -504,9 +530,6 @@
 - process:hosa-graph a créé `skills-status-scripts`
 - process:hosa-graph a créé `skills-okf-scripts`
 - process:hosa-graph a créé `skills-kb-commit-scripts`
-- process:hosa-graph a créé `skills-interface-vendor-oil-ui-tests`
-- process:hosa-graph a créé `skills-interface-vendor-oil-ui-scripts`
-- process:hosa-graph a créé `skills-interface-vendor-oil-ui-assets-vendor`
 - process:hosa-graph a créé `skills-interface-scripts`
 - process:hosa-graph a créé `skills-infra-scripts`
 - process:hosa-graph a créé `skills-backlog-scripts`

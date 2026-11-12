@@ -142,7 +142,7 @@ Sur chaque page, l'option recommandée est la a), comme dans la question qui t'e
 
 L'interface construite est ensuite vérifiée sur des captures (ordinateur et mobile) : chaque route du plan de navigation, avec des contrôles d'accessibilité calculés (contraste, libellés, cibles tactiles). Puis une revue indépendante la note. Pour les captures, le poste a besoin de Node 22 et d'un Chrome, Chromium ou Edge. Sans eux, Hosa te donne des tests à faire toi-même.
 
-Les outils (`atelier`, `capture`) sont ceux de Hosa, dans `skills/interface/scripts/`. La méthode s'inspire d'[oil-ui](https://github.com/oil-oil/oil-ui) (licence MIT).
+Les outils (`atelier`, `capture`) sont ceux de Hosa, dans `skills/interface/scripts/`.
 
 ## Commandes utiles
 

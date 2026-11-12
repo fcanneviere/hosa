@@ -1,24 +1,24 @@
 {
-  "project": "Atelier Terre & Feu",
-  "lang": "fr",
-  "round": "Manche styles",
+  "version": 2,
+  "projet": "Atelier Terre & Feu",
+  "langue": "fr",
+  "manche": "Manche styles",
   "question": "Q1",
-  "recommande": "glaze",
-  "brief": "Réservation des cours d'un atelier de céramique : le site des élèves et l'outil de l'équipe. Même contenu, on compare couleurs, typographie, contrôles et premier écran.",
-  "content": {
-    "title": "Ce week-end, tournez votre propre bol.",
-    "body": "Deux heures de tournage, terre, émaillage et cuisson compris. Vous repartez avec votre pièce quatre semaines plus tard.",
-    "number": "45 €",
-    "number_label": "Cours d'initiation · cuisson comprise",
-    "primary": "Réserver un cours",
-    "secondary": "Voir les créations des élèves",
-    "tags": ["Places cette semaine", "Samedi : plus que 2 places"],
-    "input_label": "Date",
-    "input_value": "Samedi 12 octobre",
-    "screen": {
-      "nav": ["Réservations", "Cours", "Élèves", "Cuissons"],
-      "columns": ["Élève", "Cours", "Date", "Statut"],
-      "rows": [
+  "recommande": "email",
+  "intention": "Réservation des cours d'un atelier de céramique : le site des élèves et l'outil de l'équipe. Même contenu, on compare couleurs, typographie, contrôles et premier écran.",
+  "contenu": {
+    "titre": "Ce week-end, tournez votre propre bol.",
+    "texte": "Deux heures de tournage, terre, émaillage et cuisson compris. Vous repartez avec votre pièce quatre semaines plus tard.",
+    "chiffre": "45 €",
+    "legende": "Cours d'initiation · cuisson comprise",
+    "action": "Réserver un cours",
+    "action_secondaire": "Voir les créations des élèves",
+    "etiquettes": ["Places cette semaine", "Samedi : plus que 2 places"],
+    "champ": {"libelle": "Date", "valeur": "Samedi 12 octobre"},
+    "ecran": {
+      "menu": ["Réservations", "Cours", "Élèves", "Cuissons"],
+      "colonnes": ["Élève", "Cours", "Date", "Statut"],
+      "lignes": [
         ["Camille Roux", "Initiation tour", "sam. 12/10", "Payée"],
         ["Malik Benali", "Émaillage", "sam. 12/10", "À payer"],
         ["Léa Martin", "Initiation tour", "dim. 13/10", "Payée"],
@@ -27,34 +27,34 @@
       ]
     }
   },
-  "cards": [
+  "cartes": [
     {
-      "id": "glaze", "name": "Émail fait main", "concept": "Les couleurs de l'émail : un gris-vert profond en accent, le beige de la terre brute en fond.",
+      "id": "email", "nom": "Émail fait main", "intention": "Les couleurs de l'émail : un gris-vert profond en accent, le beige de la terre brute en fond.",
       "traits": ["Fond terre beige", "Accent émail gris-vert", "Boutons arrondis"],
-      "colors": {"bg": "#EFE7DA", "surface": "#F8F3EA", "text": "#3B302A", "muted": "#6B5F55", "accent": "#3F6560", "accent_text": "#FFFFFF", "line": "#DED3C2", "warn": "#9A4A22"},
-      "fonts": {"display": "Georgia, serif", "body": "\"Helvetica Neue\", Arial, sans-serif", "number": "Georgia, serif"},
-      "display_weight": 500, "radius": 14, "border": "none", "shadow": "soft", "density": "airy", "layout": "hero-split", "texture": "paper"
+      "couleurs": {"fond": "#EFE7DA", "surface": "#F8F3EA", "texte": "#3B302A", "secondaire": "#675B51", "accent": "#3F6560", "sur_accent": "#FFFFFF", "trait": "#DED3C2", "alerte": "#94451F"},
+      "polices": {"titres": "Georgia, serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "Georgia, serif"},
+      "graisses": {"titres": 500, "chiffres": 400}, "arrondi": 14, "relief": "ombre", "rythme": "ample", "ecran": "accueil"
     },
     {
-      "id": "gallery", "name": "Galerie de porcelaine", "concept": "Comme un cartel de musée : beaucoup de blanc, les pièces au premier plan, le texte en retrait.",
+      "id": "galerie", "nom": "Galerie de porcelaine", "intention": "Comme un cartel de musée : beaucoup de blanc, les pièces au premier plan, le texte en retrait.",
       "traits": ["Fond blanc froid", "Traits fins, angles droits", "Tableau dense"],
-      "colors": {"bg": "#F7F7F5", "surface": "#FFFFFF", "text": "#1E1E1C", "muted": "#5E5E5A", "accent": "#1E1E1C", "accent_text": "#FFFFFF", "line": "#E2E2DE", "warn": "#8A4F24"},
-      "fonts": {"display": "\"Helvetica Neue\", Arial, sans-serif", "body": "\"Helvetica Neue\", Arial, sans-serif", "number": "\"Helvetica Neue\", sans-serif"},
-      "display_weight": 400, "radius": 0, "border": "hairline", "shadow": "none", "density": "compact", "layout": "sidebar-table"
+      "couleurs": {"fond": "#F7F7F5", "surface": "#FFFFFF", "texte": "#1E1E1C", "secondaire": "#5E5E5A", "accent": "#1E1E1C", "sur_accent": "#FFFFFF", "trait": "#E2E2DE", "alerte": "#8A4F24"},
+      "polices": {"titres": "\"Helvetica Neue\", Arial, sans-serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "\"Helvetica Neue\", sans-serif"},
+      "graisses": {"titres": 400, "chiffres": 400}, "arrondi": 0, "relief": "trait", "rythme": "serre", "ecran": "tableau"
     },
     {
-      "id": "kiln", "name": "Cours du soir au four", "concept": "La salle des fours le soir : un charbon sombre sur tout l'écran, l'orange du feu réservé à l'essentiel.",
+      "id": "four", "nom": "Cours du soir au four", "intention": "La salle des fours le soir : un charbon sombre sur tout l'écran, l'orange du feu réservé à l'essentiel.",
       "traits": ["Charbon pleine page", "Orange du four", "Titres en gras"],
-      "colors": {"bg": "#2A2522", "surface": "#36302C", "text": "#F3E9DF", "muted": "#C9BBAF", "accent": "#F09A5E", "accent_text": "#1F1A17", "line": "#4A423C", "warn": "#EDC06A"},
-      "fonts": {"display": "\"Avenir Next\", \"Helvetica Neue\", sans-serif", "body": "\"Helvetica Neue\", Arial, sans-serif", "number": "\"Avenir Next\", sans-serif"},
-      "display_weight": 700, "radius": 6, "border": "solid", "shadow": "none", "density": "regular", "layout": "queue-detail"
+      "couleurs": {"fond": "#2A2522", "surface": "#36302C", "texte": "#F3E9DF", "secondaire": "#C9BBAF", "accent": "#F09A5E", "sur_accent": "#1F1A17", "trait": "#4A423C", "alerte": "#EDC06A"},
+      "polices": {"titres": "\"Avenir Next\", \"Helvetica Neue\", sans-serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "\"Avenir Next\", sans-serif"},
+      "graisses": {"titres": 700, "chiffres": 600}, "arrondi": 6, "relief": "contour", "rythme": "normal", "ecran": "liste-detail"
     },
     {
-      "id": "zine", "name": "Fanzine d'atelier", "concept": "Le petit journal imprimé par l'atelier : gros titres, texte en colonnes, le rouge seulement pour l'essentiel.",
-      "traits": ["Gris papier journal", "Gros titres en colonnes", "Annotations vermillon"],
-      "colors": {"bg": "#F1EFEA", "surface": "#FAF9F5", "text": "#22201D", "muted": "#5B5750", "accent": "#B0321F", "accent_text": "#FFFFFF", "line": "#D8D4CB", "warn": "#6E540E"},
-      "fonts": {"display": "Georgia, \"Times New Roman\", serif", "body": "Georgia, serif", "number": "Menlo, monospace"},
-      "display_weight": 900, "radius": 2, "border": "solid", "shadow": "none", "density": "compact", "layout": "topbar-cards"
+      "id": "journal", "nom": "Journal d'atelier", "intention": "Le petit journal imprimé par l'atelier : gros titres, fiches en tuiles, le rouge seulement pour l'essentiel.",
+      "traits": ["Gris papier journal", "Gros titres", "Annotations vermillon"],
+      "couleurs": {"fond": "#F1EFEA", "surface": "#FAF9F5", "texte": "#22201D", "secondaire": "#5B5750", "accent": "#A82E1C", "sur_accent": "#FFFFFF", "trait": "#D8D4CB", "alerte": "#6E540E"},
+      "polices": {"titres": "Georgia, \"Times New Roman\", serif", "texte": "Georgia, serif", "chiffres": "Menlo, monospace"},
+      "graisses": {"titres": 800, "chiffres": 500}, "arrondi": 2, "relief": "trait", "rythme": "serre", "ecran": "tuiles"
     }
   ]
 }

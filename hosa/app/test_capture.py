@@ -152,6 +152,44 @@ class Navigateur(unittest.TestCase):
         self.assertEqual(names, ["erreur-800x600-marque.png", "erreur-800x600.png", "planche-800x600.png",
                                  "vide-800x600-marque.png", "vide-800x600.png"])
 
+    def test_a_click_that_changes_page_waits_for_it_and_wait_takes_a_selector(self):
+        (self.d / "login.html").write_text('<!doctype html><html lang="fr"><body><h1>Connexion</h1>'
+                                           '<a id="go" href="/fini.html" onclick="localStorage.ok=1">Se connecter</a></body></html>',
+                                           encoding="utf-8")
+        (self.d / "fini.html").write_text('<!doctype html><html lang="fr"><body><h1>Fini</h1><script>'
+                                          'setTimeout(()=>document.body.insertAdjacentHTML("beforeend","<p id=tard>tard</p>"),300)'
+                                          '</script></body></html>', encoding="utf-8")
+        (self.d / "admin.html").write_text('<!doctype html><html lang="fr"><body><h1>Admin</h1><script>'
+                                           'if(!localStorage.ok)location.replace("/login.html")</script></body></html>',
+                                           encoding="utf-8")
+        # no "wait" after the click: the next page is awaited, then the late element
+        code, out, _ = self.run_capture(str(self.d / "login.html"), "--routes", "/admin.html", "--size", "800x600",
+                                        "--connexion", "click #go; wait #tard")
+        self.assertEqual(code, 0, out)
+        self.assertIn("Routes rendues : 1 / 1", out)
+        code, out, report = self.run_capture(str(self.d / "login.html"), "--size", "800x600", "--steps", "wait #jamais")
+        self.assertIn("élément absent", " ".join(report["captures"][0]["issues"]))
+
+    def test_mask_turns_text_into_bars_and_the_sheet_wraps_four_per_row(self):
+        (self.d / "s.html").write_text('<!doctype html><html lang="fr"><body><h1>Titre</h1><p>Texte</p></body></html>',
+                                       encoding="utf-8")
+        code, out, _ = self.run_capture(str(self.d / "s.html"), "--states", "a,b,c,d,e", "--sheet", "--mask",
+                                        "--size", "400x300")
+        self.assertEqual(code, 0, out)
+        names = {p.name for p in (self.d / "out").glob("*.png")}
+        self.assertIn("a-400x300-masque.png", names)
+        self.assertIn("planche-400x300-masque.png", names)
+        png = (self.d / "out" / "planche-400x300.png").read_bytes()
+        width, height = int.from_bytes(png[16:20], "big"), int.from_bytes(png[20:24], "big")
+        self.assertEqual(width, 4 * 400 + 3 * 20 + 56)  # five states: four on the first row
+        self.assertGreater(height, 2 * 300)
+
+    def test_a_folder_serves_its_index(self):
+        (self.d / "index.html").write_text('<!doctype html><html lang="fr"><body><p>Accueil</p></body></html>',
+                                           encoding="utf-8")
+        code, out, _ = self.run_capture(str(self.d), "--size", "800x600")
+        self.assertEqual(code, 0, out)
+
     def test_the_local_server_serves_nothing_outside_the_page_s_folder(self):
         sub = self.d / "site"
         sub.mkdir()
