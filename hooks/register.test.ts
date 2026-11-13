@@ -144,7 +144,8 @@ test('the pane button starts the dashboard on a free port when 3000 is taken, li
   await ui.press({ key: 'pilotage' })
   expect(runs.map((r) => r.env.PORT)).toEqual(['3000', '0'])
   expect(runs[0].argv[1]).toMatch(/run\.py$/)
-  expect(runs[0].cwd).toBe('/work')
+  expect(runs[0].cwd).not.toMatch(/^\/work/) // never the project's folder: a planted python.exe there would run
+  expect(runs[0].env.HOSA_KB_ROOT).toBe('/work/.hosa/kb')
   expect((await ui.find({ type: 'Link' }))?.props?.href).toBe('http://localhost:5123')
   await ui.press({ key: 'pilotage-arreter' })
   await clock.advance(3_600_000)

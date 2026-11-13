@@ -131,7 +131,9 @@ export async function startDashboard($, port = '3000') {
     const env = { PORT: port, PYTHONUTF8: '1', HOSA_OPEN_BROWSER: '1', HOSA_KB_ROOT: `${project}/.hosa/kb`,
       ...(data ? { CLAUDE_PLUGIN_DATA: data } : {}) }
     const script = venv ? `${$.plugin.root}/hosa/app/server.py` : `${$.plugin.root}/run.py`
-    const child = $.process.spawn({ argv: [exe, script], cwd: project, env })
+    // cwd: the plugin's folder, never the project's — Windows looks up a bare `python` in the current folder first,
+    // and a project's tree is not ours to trust. The project reaches the server through HOSA_KB_ROOT alone.
+    const child = $.process.spawn({ argv: [exe, script], cwd: $.plugin.root, env })
     dash.child = child
     for await (const { text } of child) {
       const url = /http:\/\/127\.0\.0\.1:\d+/.exec(text)

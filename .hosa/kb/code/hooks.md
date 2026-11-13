@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T12:41:11Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T12:45:46Z'}
 ---
 
 ## Fichiers
@@ -179,23 +179,23 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:41:11Z'}
 - `read` — `hooks/read-guard.test.js:12`
 - `readBig` — `hooks/read-guard.test.js:30`
 - `bare` — `hooks/register.mjs:45`
-- `dashboard` — `hooks/register.mjs:231` — The dashboard's row: one button to open it, then its link and a button to stop it.
-- `dashboard.onPress` — `hooks/register.mjs:238`
-- `dashboard.start` — `hooks/register.mjs:232`
-- `pane` — `hooks/register.mjs:167` — Everything the user needs, from the plan alone: what waits for them first, then where the project is.
-- `pane.group` — `hooks/register.mjs:170`
-- `pane.mark` — `hooks/register.mjs:171`
-- `pane.para` — `hooks/register.mjs:169`
-- `pane.row` — `hooks/register.mjs:168`
+- `dashboard` — `hooks/register.mjs:238` — The dashboard's row: one button to open it, then its link and a button to stop it.
+- `dashboard.onPress` — `hooks/register.mjs:245`
+- `dashboard.start` — `hooks/register.mjs:239`
+- `pane` — `hooks/register.mjs:174` — Everything the user needs, from the plan alone: what waits for them first, then where the project is.
+- `pane.group` — `hooks/register.mjs:177`
+- `pane.mark` — `hooks/register.mjs:178`
+- `pane.para` — `hooks/register.mjs:176`
+- `pane.row` — `hooks/register.mjs:175`
 - `python` — `hooks/register.mjs:110` — (no console window opens); else the Python on the PATH, and run.py builds what it lacks.
 - `readPlan` — `hooks/register.mjs:26` — the rows above the first `## Sprint` heading are the upstream stages, no list to keep in step here.
 - `readView` — `hooks/register.mjs:46`
-- `redraw` — `hooks/register.mjs:160` — Fail-open: a pane that cannot be drawn again never stops a hook.
+- `redraw` — `hooks/register.mjs:167` — Fail-open: a pane that cannot be drawn again never stops a hook.
 - `refresh` — `hooks/register.mjs:88` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
-- `register` — `hooks/register.mjs:253`
-- `showStatus` — `hooks/register.mjs:248`
+- `register` — `hooks/register.mjs:260`
+- `showStatus` — `hooks/register.mjs:255`
 - `startDashboard` — `hooks/register.mjs:121` — The server lives for the session (the stream's loop is its life); 3000 taken → a free port. Fail-open.
-- `stopDashboard` — `hooks/register.mjs:151`
+- `stopDashboard` — `hooks/register.mjs:158`
 - `project` — `hooks/register.test.ts:11`
 - `row` — `hooks/register.test.ts:3`
 - `spawn` — `hooks/register.test.ts:74`

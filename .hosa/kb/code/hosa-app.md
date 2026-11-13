@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T12:11:01Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T12:44:29Z'}
 ---
 
 ## Fichiers
@@ -113,28 +113,28 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:11:01Z'}
 - `Revue` — `hosa/app/test_atelier.py:584`
 - `AuditStage` — `hosa/app/test_avancement.py:764`
 - `Block` — `hosa/app/test_avancement.py:231`
-- `Bounds` — `hosa/app/test_avancement.py:1196` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
-- `Bounds.test_one_writer_of_the_plan_at_a_time.second` — `hosa/app/test_avancement.py:1298`
+- `Bounds` — `hosa/app/test_avancement.py:1200` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
+- `Bounds.test_one_writer_of_the_plan_at_a_time.second` — `hosa/app/test_avancement.py:1302`
 - `Check` — `hosa/app/test_avancement.py:38`
 - `Coverage` — `hosa/app/test_avancement.py:157`
-- `Docs` — `hosa/app/test_avancement.py:1166` — The pipelines written in prose (using-hosa, README) follow pipeline.json.
+- `Docs` — `hosa/app/test_avancement.py:1170` — The pipelines written in prose (using-hosa, README) follow pipeline.json.
 - `Done` — `hosa/app/test_avancement.py:222`
-- `Graph` — `hosa/app/test_avancement.py:1012` — pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards.
-- `Init` — `hosa/app/test_avancement.py:1149`
-- `Loops` — `hosa/app/test_avancement.py:1056`
-- `LoopsClosed` — `hosa/app/test_avancement.py:1346` — The audit's five points left open, 2026-11-12: each one is now a refusal.
-- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1431`
-- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1422`
+- `Graph` — `hosa/app/test_avancement.py:1016` — pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards.
+- `Init` — `hosa/app/test_avancement.py:1153`
+- `Loops` — `hosa/app/test_avancement.py:1060`
+- `LoopsClosed` — `hosa/app/test_avancement.py:1350` — The audit's five points left open, 2026-11-12: each one is now a refusal.
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1435`
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1426`
 - `Next` — `hosa/app/test_avancement.py:787`
 - `Reponse` — `hosa/app/test_avancement.py:241` — `reponse`: the user's answers leave a blocked stage, and the journal says whether they took the recommendation.
 - `Reprendre` — `hosa/app/test_avancement.py:805` — `reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action.
 - `Tasks` — `hosa/app/test_avancement.py:332` — `task`: the agents' dispatches of an open stage — a proof of exit like the files its skill writes.
-- `batch` — `hosa/app/test_avancement.py:1038` — A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added.
-- `closed_until` — `hosa/app/test_avancement.py:1047` — Every upstream stage done up to <stage> included (forced: these tests are about the loops).
+- `batch` — `hosa/app/test_avancement.py:1042` — A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added.
+- `closed_until` — `hosa/app/test_avancement.py:1051` — Every upstream stage done up to <stage> included (forced: these tests are about the loops).
 - `cov` — `hosa/app/test_avancement.py:148` — `av.coverage`, or a clean test failure while it does not exist yet.
 - `kb` — `hosa/app/test_avancement.py:19`
 - `run` — `hosa/app/test_avancement.py:27`
-- `section_rows` — `hosa/app/test_avancement.py:1584`
+- `section_rows` — `hosa/app/test_avancement.py:1588`
 - `tk` — `hosa/app/test_avancement.py:154`
 - `Navigateur` — `hosa/app/test_capture.py:80`
 - `Routes` — `hosa/app/test_capture.py:43`
