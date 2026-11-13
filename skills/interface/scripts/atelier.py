@@ -521,7 +521,8 @@ INTERDITS = {"iframe": "pas de document imbriqué (iframe) : mets son contenu ou
              "object": "pas d'objet externe (object) : une image ou une capture",
              "embed": "pas d'objet externe (embed) : une image ou une capture",
              "portal": "pas de portail (portal)", "base": "pas de balise base : les chemins restent relatifs à la maquette"}
-ELEMENTS_TEXTE_BRUT = {"xmp", "noembed", "noframes", "plaintext", "listing"}
+# noscript : texte brut quand les scripts tournent (maquette interactive), balisage sinon — illisible pour le contrôle
+ELEMENTS_TEXTE_BRUT = {"xmp", "noembed", "noframes", "plaintext", "listing", "noscript"}
 ATTR_RESSOURCE = {"src", "poster", "data", "background", "xlink:href", "lowsrc", "ping", "manifest", "icon"}
 ATTR_SRCSET = {"srcset", "imagesrcset"}
 FONCTIONS_IMAGE = {"image-set", "-webkit-image-set", "image", "cross-fade", "-webkit-cross-fade", "src"}

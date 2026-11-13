@@ -261,6 +261,7 @@ class Comparer(Base):
         for body in ('<svg><style><img src="http://x/a.png"></style></svg>',
                      '<math><script>x</script></math>',
                      '<xmp><a title="</xmp><img src=http://x>">x</a></xmp>',
+                     '<noscript><a title="</noscript><img src=http://x>">x</a></noscript>',
                      '<!-- a --!><img src="http://x/a.png"> -->'):  # the comment ends at --!>, as in the browser
             with self.assertRaises(at.Refus, msg=body):
                 at.comparer(self.manifest([self.html("a.html", body)]), self.d / "p.html", force=True)
