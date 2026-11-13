@@ -33,7 +33,9 @@ routes, interface_check, captures)
         ↓ Installation nécessaire → hosa-infra, redispatch
         ↓ manques → redispatch avec la liste, jusqu'à complet
 Dispatch hosa-ux-designer (Review), sans le raisonnement :
-note /10 et problèmes → redispatch Phase 3 si < 8
+grille Oui/Non → atelier revue calcule la note
+        ↓ grille incomplète → même fichier à compléter
+        ↓ note < 8 → redispatch Phase 3 avec les R<n>
         ↓
 Dispatch hosa-documentation (Mode 1) avec le
 "Documentation à produire" retourné
@@ -106,7 +108,13 @@ The loop is bounded by code: `task done interface 3c` runs these same checkers (
 
 A gap on an exigence's missing `espace` isn't the designer's to fix, and the control leaves it out: `back interface fondamentaux --detail "espace manquant : <exigences>"`, then propose `fondamentaux`, where `hosa-product-owner` sets it with the user; `back` names the exigences in the plan, and `done fondamentaux` refuses while one lacks its `espace` or is still signed (it goes back to `draft` without `verified`); `relecture` and `contestation` then run again on them, and `done contestation` waits for the user's signature, then come back (`back` refused → a second round already: show the user the exigences still without `espace` and let them decide).
 
-Then dispatch a **fresh** `hosa-ux-designer` in **Review** mode, with only the screenshot paths from `## Vérification`, the identity, the design rules and each persona's main tasks — not the Phase 3 report: the review stays independent. Write its verdict as one line under `## Revue visuelle` of `kb/interface/navigation.md` (create the section, append, never rewrite older lines): `- <date> — note N/10 — <issues, numbered>`; a kept design checked on its own rules → `- <date> — sans note — <issues>`; no screenshots (no Node or Chrome) → `- <date> — sans captures — T-tests à la place`, and say so. Then `task done interface revue --sortie kb/interface/navigation.md`: control `score` refuses a note under 8 → redispatch Phase 3 with the numbered issues, then a fresh review, a new line, and `task done` again; same bound.
+Then dispatch a **fresh** `hosa-ux-designer` in **Review** mode, with only the screenshot paths from `## Vérification`, the identity, the design rules, each persona's main tasks and a new grid path, `<root>/.hosa/design/revue/grille-<n>.json` — not the Phase 3 report: the review stays independent. The agent answers the grid's closed questions (`pipeline.json`, task `revue`); it never gives the note. On its return, compute and record it yourself:
+
+```bash
+<hosa> atelier revue <root>/.hosa/kb <the grid path it returned>
+```
+
+A complete grid → it appends `- <date> — note N/10 — grille O/T (k non, b bloquant) — R<n> <où> : <constat> → <correction> ; …` under `## Revue visuelle` of `kb/interface/navigation.md`. The note is the floor of 10 × Oui / (Oui + Non), capped by the lowest `plafond` of the questions answered Non (7 for a blocking one or a default template). An incomplete grid (a Oui without the path of an existing capture, a Non without where, finding and fix, a Non applicable the question refuses) → it writes nothing. Either way, then `task done interface revue --sortie kb/interface/navigation.md <the grid path>`: control `grille` reads the grid with the same code and refuses its exact gaps, a line that isn't this grid's, or a note written by hand; control `score` refuses a note under 8. Each control counts its own refusals against the task's bound: a badly filled grid doesn't spend a design round. Grid gaps → redispatch the review with them and the same grid path, to complete that file; a low note → redispatch Phase 3 with the line's `R<n>` items as they are, then a fresh review on a new grid file. A kept design checked on its own rules → write `- <date> — sans note — <issues>` yourself; no screenshots (no Node or Chrome) → `- <date> — sans captures — T-tests à la place`, and say so; both pass without a grid.
 
 Don't move on to documentation with an incomplete or inconsistently named interface — a forbidden synonym in the code, a screen missing from the lexicon: an exigence with no screen, an orphan screen, a UX fundamental neither done nor justified as not applicable, or tokens edited by hand in the project's CSS (`interface_check` compares them with `kb/interface/choix.md`).
 

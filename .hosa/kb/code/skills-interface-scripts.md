@@ -4,7 +4,7 @@ title: skills/interface/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T23:52:08Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T07:17:11Z'}
 ---
 
 ## Fichiers
@@ -19,100 +19,109 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:52:08Z'}
 
 ## Symboles publics
 
-- `Maquette` — `skills/interface/scripts/atelier.py:692` — Réécrit une maquette en un document autonome, balise par balise : chaque ressource locale intégrée en data:,
-- `Refus` — `skills/interface/scripts/atelier.py:45` — Une entrée refusée : le message dit exactement quoi corriger.
-- `Source` — `skills/interface/scripts/atelier.py:533` — Un fichier de maquette et les règles d'intégration de ses ressources locales.
-- `acteur` — `skills/interface/scripts/atelier.py:1058`
-- `adresse_locale` — `skills/interface/scripts/atelier.py:866` — Une option en direct ne vise qu'un serveur de cette machine, sans identifiants, avec un port valide.
-- `bloc_css` — `skills/interface/scripts/atelier.py:1102`
-- `canaux` — `skills/interface/scripts/atelier.py:110`
-- `carte_html` — `skills/interface/scripts/atelier.py:356`
-- `cartes` — `skills/interface/scripts/atelier.py:457`
-- `chaine` — `skills/interface/scripts/atelier.py:64`
-- `chaines` — `skills/interface/scripts/atelier.py:71`
-- `charge_cartes` — `skills/interface/scripts/atelier.py:201`
-- `charge_manifest` — `skills/interface/scripts/atelier.py:889`
-- `choisir` — `skills/interface/scripts/atelier.py:1065`
-- `comparer` — `skills/interface/scripts/atelier.py:956`
-- `contraste` — `skills/interface/scripts/atelier.py:127`
-- `controles` — `skills/interface/scripts/atelier.py:162` — (une ligne par paire avec son rapport, un manque par paire sous son minimum avec une couleur proposée).
-- `courbe` — `skills/interface/scripts/atelier.py:305` — L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série.
-- `css` — `skills/interface/scripts/atelier.py:1110`
-- `data_url` — `skills/interface/scripts/atelier.py:529`
-- `ecarts` — `skills/interface/scripts/atelier.py:1134` — Les jetons de la KB sont-ils ceux du CSS du projet ? Rien à contrôler sans jetons (identité conservée).
-- `ecran_html` — `skills/interface/scripts/atelier.py:318` — Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes.
-- `ecrit_atomique` — `skills/interface/scripts/atelier.py:445`
-- `ecrit_choix` — `skills/interface/scripts/atelier.py:1023`
-- `entier` — `skills/interface/scripts/atelier.py:94`
-- `famille` — `skills/interface/scripts/atelier.py:279`
-- `jetons` — `skills/interface/scripts/atelier.py:283` — Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code.
-- `journal` — `skills/interface/scripts/atelier.py:1043` — Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9).
-- `lit_choix` — `skills/interface/scripts/atelier.py:1008` — {manches: {manche: (option, nom, demande, date)}, jetons: {nom: valeur}, css: chemin\|None} — la dernière
-- `lit_json` — `skills/interface/scripts/atelier.py:49`
-- `lit_srcset` — `skills/interface/scripts/atelier.py:670` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
-- `luminance` — `skills/interface/scripts/atelier.py:122`
-- `main` — `skills/interface/scripts/atelier.py:1154`
-- `maintenant` — `skills/interface/scripts/atelier.py:999`
-- `mix` — `skills/interface/scripts/atelier.py:117` — Le mélange sRGB que le navigateur calcule pour `color-mix(in srgb, a part_a, b)`.
-- `objet` — `skills/interface/scripts/atelier.py:80`
-- `ordonne` — `skills/interface/scripts/atelier.py:879` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
-- `paires` — `skills/interface/scripts/atelier.py:143` — Chaque paire de couleurs que la carte et l'interface montrent, avec son minimum WCAG AA :
-- `parmi` — `skills/interface/scripts/atelier.py:87`
-- `police` — `skills/interface/scripts/atelier.py:192` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
-- `prepare_html` — `skills/interface/scripts/atelier.py:842`
-- `prepare_image` — `skills/interface/scripts/atelier.py:853`
-- `proposition` — `skills/interface/scripts/atelier.py:132` — La couleur la plus proche de `avant`, même teinte, qui tient `mini` sur `arriere` : poussée vers le noir
-- `racine_de` — `skills/interface/scripts/atelier.py:1106`
-- `reecrit_css` — `skills/interface/scripts/atelier.py:608` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
-- `section` — `skills/interface/scripts/atelier.py:1003`
-- `ErreurDePage` — `skills/interface/scripts/capture.mjs:296`
-- `Tube` — `skills/interface/scripts/capture.mjs:177`
-- `Tube.attend.fin` — `skills/interface/scripts/capture.mjs:230`
-- `adresse` — `skills/interface/scripts/capture.mjs:612`
+- `Maquette` — `skills/interface/scripts/atelier.py:738` — Réécrit une maquette en un document autonome, balise par balise : chaque ressource locale intégrée en data:,
+- `Refus` — `skills/interface/scripts/atelier.py:52` — Une entrée refusée : le message dit exactement quoi corriger.
+- `Source` — `skills/interface/scripts/atelier.py:579` — Un fichier de maquette et les règles d'intégration de ses ressources locales.
+- `acteur` — `skills/interface/scripts/atelier.py:1125`
+- `adresse_locale` — `skills/interface/scripts/atelier.py:933` — Une option en direct ne vise qu'un serveur de cette machine, sans identifiants, avec un port valide.
+- `axes` — `skills/interface/scripts/atelier.py:292` — L'identité d'une carte sur des axes fermés : deux cartes qui ne diffèrent que d'une nuance n'en font qu'une.
+- `bloc_css` — `skills/interface/scripts/atelier.py:1169`
+- `canaux` — `skills/interface/scripts/atelier.py:117`
+- `carte_html` — `skills/interface/scripts/atelier.py:394`
+- `cartes` — `skills/interface/scripts/atelier.py:495`
+- `cartes_proches` — `skills/interface/scripts/atelier.py:305`
+- `chaine` — `skills/interface/scripts/atelier.py:71`
+- `chaines` — `skills/interface/scripts/atelier.py:78`
+- `charge_cartes` — `skills/interface/scripts/atelier.py:208`
+- `charge_manifest` — `skills/interface/scripts/atelier.py:956`
+- `choisir` — `skills/interface/scripts/atelier.py:1132`
+- `comparer` — `skills/interface/scripts/atelier.py:1023`
+- `contraste` — `skills/interface/scripts/atelier.py:134`
+- `controle_grille` — `skills/interface/scripts/atelier.py:1315` — Ce que `revue` écrit et ce que `avancement.py task done interface revue` relit : la même fonction.
+- `controles` — `skills/interface/scripts/atelier.py:169` — (une ligne par paire avec son rapport, un manque par paire sous son minimum avec une couleur proposée).
+- `courbe` — `skills/interface/scripts/atelier.py:343` — L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série.
+- `css` — `skills/interface/scripts/atelier.py:1177`
+- `data_url` — `skills/interface/scripts/atelier.py:575`
+- `ecarts` — `skills/interface/scripts/atelier.py:1201` — Les jetons de la KB sont-ils ceux du CSS du projet ? Rien à contrôler sans jetons (identité conservée).
+- `ecran_html` — `skills/interface/scripts/atelier.py:356` — Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes.
+- `ecrit_atomique` — `skills/interface/scripts/atelier.py:483`
+- `ecrit_choix` — `skills/interface/scripts/atelier.py:1090`
+- `entier` — `skills/interface/scripts/atelier.py:101`
+- `famille` — `skills/interface/scripts/atelier.py:317`
+- `grille` — `skills/interface/scripts/atelier.py:1239` — Le modèle que `hosa-ux-designer` remplit en revue : une réponse par question, avec sa preuve.
+- `jetons` — `skills/interface/scripts/atelier.py:321` — Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code.
+- `journal` — `skills/interface/scripts/atelier.py:1110` — Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9).
+- `lit_choix` — `skills/interface/scripts/atelier.py:1075` — {manches: {manche: (option, nom, demande, date)}, jetons: {nom: valeur}, css: chemin\|None} — la dernière
+- `lit_json` — `skills/interface/scripts/atelier.py:56`
+- `lit_srcset` — `skills/interface/scripts/atelier.py:716` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
+- `luminance` — `skills/interface/scripts/atelier.py:129`
+- `main` — `skills/interface/scripts/atelier.py:1351`
+- `maintenant` — `skills/interface/scripts/atelier.py:1066`
+- `mix` — `skills/interface/scripts/atelier.py:124` — Le mélange sRGB que le navigateur calcule pour `color-mix(in srgb, a part_a, b)`.
+- `note_grille` — `skills/interface/scripts/atelier.py:1271` — {note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
+- `objet` — `skills/interface/scripts/atelier.py:87`
+- `ordonne` — `skills/interface/scripts/atelier.py:946` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
+- `paires` — `skills/interface/scripts/atelier.py:150` — Chaque paire de couleurs que la carte et l'interface montrent, avec son minimum WCAG AA :
+- `parmi` — `skills/interface/scripts/atelier.py:94`
+- `plafond` — `skills/interface/scripts/atelier.py:1235`
+- `police` — `skills/interface/scripts/atelier.py:199` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
+- `prepare_html` — `skills/interface/scripts/atelier.py:909`
+- `prepare_image` — `skills/interface/scripts/atelier.py:920`
+- `preuve_valide` — `skills/interface/scripts/atelier.py:1256` — Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet.
+- `proposition` — `skills/interface/scripts/atelier.py:139` — La couleur la plus proche de `avant`, même teinte, qui tient `mini` sur `arriere` : poussée vers le noir
+- `questions_grille` — `skills/interface/scripts/atelier.py:1226` — Les questions fermées de la revue, déclarées dans pipeline.json (la seule définition).
+- `racine_de` — `skills/interface/scripts/atelier.py:1173`
+- `reecrit_css` — `skills/interface/scripts/atelier.py:654` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
+- `revue` — `skills/interface/scripts/atelier.py:1324` — Calcule la note de la grille remplie et ajoute sa ligne sous `## Revue visuelle` de `navigation.md`.
+- `section` — `skills/interface/scripts/atelier.py:1070`
+- `ErreurDePage` — `skills/interface/scripts/capture.mjs:297`
+- `Tube` — `skills/interface/scripts/capture.mjs:178`
+- `Tube.attend.fin` — `skills/interface/scripts/capture.mjs:231`
+- `adresse` — `skills/interface/scripts/capture.mjs:639`
 - `adresseDeBase` — `skills/interface/scripts/capture.mjs:120`
 - `adresseDeBase.absent` — `skills/interface/scripts/capture.mjs:128`
 - `arret` — `skills/interface/scripts/capture.mjs:46`
-- `centre` — `skills/interface/scripts/capture.mjs:546`
-- `chargee` — `skills/interface/scripts/capture.mjs:316`
-- `clique` — `skills/interface/scripts/capture.mjs:559`
-- `controlesDeLaPage` — `skills/interface/scripts/capture.mjs:348` — Chaque problème nomme l'élément par un sélecteur court, et son texte quand il en a un.
-- `controlesDeLaPage.cite` — `skills/interface/scripts/capture.mjs:355`
-- `controlesDeLaPage.couleur` — `skills/interface/scripts/capture.mjs:373`
-- `controlesDeLaPage.fondDe` — `skills/interface/scripts/capture.mjs:383`
-- `controlesDeLaPage.hexa` — `skills/interface/scripts/capture.mjs:399`
-- `controlesDeLaPage.lum` — `skills/interface/scripts/capture.mjs:394`
-- `controlesDeLaPage.nom` — `skills/interface/scripts/capture.mjs:351`
-- `controlesDeLaPage.nomme` — `skills/interface/scripts/capture.mjs:422`
-- `controlesDeLaPage.rapport` — `skills/interface/scripts/capture.mjs:398`
-- `controlesDeLaPage.sur` — `skills/interface/scripts/capture.mjs:381`
-- `controlesDeLaPage.visible` — `skills/interface/scripts/capture.mjs:359`
-- `dansLaPage` — `skills/interface/scripts/capture.mjs:299` — (page d'erreur du navigateur) perd son contexte un instant : on réessaie.
-- `dePage` — `skills/interface/scripts/capture.mjs:275`
+- `centre` — `skills/interface/scripts/capture.mjs:573`
+- `chargee` — `skills/interface/scripts/capture.mjs:317`
+- `clique` — `skills/interface/scripts/capture.mjs:586`
+- `controlesDeLaPage` — `skills/interface/scripts/capture.mjs:349` — Chaque problème nomme l'élément par un sélecteur court, et son texte quand il en a un.
+- `controlesDeLaPage.cite` — `skills/interface/scripts/capture.mjs:356`
+- `controlesDeLaPage.couleur` — `skills/interface/scripts/capture.mjs:400`
+- `controlesDeLaPage.fondDe` — `skills/interface/scripts/capture.mjs:410`
+- `controlesDeLaPage.hexa` — `skills/interface/scripts/capture.mjs:426`
+- `controlesDeLaPage.lum` — `skills/interface/scripts/capture.mjs:421`
+- `controlesDeLaPage.nom` — `skills/interface/scripts/capture.mjs:352`
+- `controlesDeLaPage.nomme` — `skills/interface/scripts/capture.mjs:449`
+- `controlesDeLaPage.rapport` — `skills/interface/scripts/capture.mjs:425`
+- `controlesDeLaPage.sur` — `skills/interface/scripts/capture.mjs:408`
+- `controlesDeLaPage.visible` — `skills/interface/scripts/capture.mjs:360`
+- `dansLaPage` — `skills/interface/scripts/capture.mjs:300` — (page d'erreur du navigateur) perd son contexte un instant : on réessaie.
+- `dePage` — `skills/interface/scripts/capture.mjs:276`
 - `empreinte` — `skills/interface/scripts/capture.mjs:97`
-- `fenetre` — `skills/interface/scripts/capture.mjs:328`
-- `joue` — `skills/interface/scripts/capture.mjs:580`
-- `joue.tour` — `skills/interface/scripts/capture.mjs:590`
-- `joue.unSeul` — `skills/interface/scripts/capture.mjs:583`
+- `fenetre` — `skills/interface/scripts/capture.mjs:329`
+- `joue` — `skills/interface/scripts/capture.mjs:607`
+- `joue.tour` — `skills/interface/scripts/capture.mjs:617`
+- `joue.unSeul` — `skills/interface/scripts/capture.mjs:610`
 - `liste` — `skills/interface/scripts/capture.mjs:76`
-- `mots` — `skills/interface/scripts/capture.mjs:537` — ---------- Actions : se connecter, ouvrir un menu, remplir un champ… ----------
-- `nettoie` — `skills/interface/scripts/capture.mjs:250`
+- `mots` — `skills/interface/scripts/capture.mjs:564` — ---------- Actions : se connecter, ouvrir un menu, remplir un champ… ----------
+- `nettoie` — `skills/interface/scripts/capture.mjs:251`
 - `nomRoute` — `skills/interface/scripts/capture.mjs:99`
 - `nomSur` — `skills/interface/scripts/capture.mjs:98`
-- `ouvre` — `skills/interface/scripts/capture.mjs:318`
-- `page` — `skills/interface/scripts/capture.mjs:274`
+- `ouvre` — `skills/interface/scripts/capture.mjs:319`
+- `page` — `skills/interface/scripts/capture.mjs:275`
 - `pause` — `skills/interface/scripts/capture.mjs:103`
-- `photo` — `skills/interface/scripts/capture.mjs:334`
-- `planche` — `skills/interface/scripts/capture.mjs:518` — ---------- Planche : les captures d'une taille, quatre par ligne ----------
-- `planche.echappe` — `skills/interface/scripts/capture.mjs:521`
-- `poseMasque` — `skills/interface/scripts/capture.mjs:474`
-- `poseReperes` — `skills/interface/scripts/capture.mjs:440` — ---------- Repères, masque : un calque SVG posé sur la page, retiré après la capture ----------
-- `poseReperes.forme` — `skills/interface/scripts/capture.mjs:448`
+- `photo` — `skills/interface/scripts/capture.mjs:335`
+- `planche` — `skills/interface/scripts/capture.mjs:545` — ---------- Planche : les captures d'une taille, quatre par ligne ----------
+- `planche.echappe` — `skills/interface/scripts/capture.mjs:548`
+- `poseMasque` — `skills/interface/scripts/capture.mjs:501`
+- `poseReperes` — `skills/interface/scripts/capture.mjs:467` — ---------- Repères, masque : un calque SVG posé sur la page, retiré après la capture ----------
+- `poseReperes.forme` — `skills/interface/scripts/capture.mjs:475`
 - `prive` — `skills/interface/scripts/capture.mjs:116`
-- `retireCalques` — `skills/interface/scripts/capture.mjs:512`
-- `sansBarre` — `skills/interface/scripts/capture.mjs:648`
-- `souris` — `skills/interface/scripts/capture.mjs:557`
-- `touche` — `skills/interface/scripts/capture.mjs:571`
-- `trouveNavigateur` — `skills/interface/scripts/capture.mjs:152` — ---------- Navigateur : invisible, profil jetable, piloté sur un tube ----------
+- `retireCalques` — `skills/interface/scripts/capture.mjs:539`
+- `sansBarre` — `skills/interface/scripts/capture.mjs:675`
+- `souris` — `skills/interface/scripts/capture.mjs:584`
+- `touche` — `skills/interface/scripts/capture.mjs:598`
+- `trouveNavigateur` — `skills/interface/scripts/capture.mjs:153` — ---------- Navigateur : invisible, profil jetable, piloté sur un tube ----------
 - `lignes_ecrans` — `skills/interface/scripts/capture.py:39`
 - `main` — `skills/interface/scripts/capture.py:82`
 - `node` — `skills/interface/scripts/capture.py:70`

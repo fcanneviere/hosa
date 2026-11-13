@@ -94,14 +94,20 @@ class Navigateur(unittest.TestCase):
 
     def test_a_clean_page_passes_and_a_flawed_one_lists_each_issue(self):
         ok = self.d / "ok.html"
-        ok.write_text('<!doctype html><html lang="fr"><body><main><h1>Commandes</h1>'
+        ok.write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><main><h1>Commandes</h1>'
                       '<label for="q">Recherche</label><input id="q"><button>Exporter</button></main></body></html>',
                       encoding="utf-8")
         code, out, _ = self.run_capture(str(ok), "--size", "1280x900")
         self.assertEqual(code, 0, out)
+        envoi = self.d / "envoi.html"  # a small submit button is no text field: no zoom on it
+        envoi.write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Envoi</h1>'
+                         '<input type="submit" value="Envoyer" style="font-size:13px;min-height:44px"></body></html>',
+                         encoding="utf-8")
+        code, out, _ = self.run_capture(str(envoi), "--size", "390x844")
+        self.assertEqual(code, 0, out)
         self.assertIn("Verdict : OK", out)
         ko = self.d / "ko.html"
-        ko.write_text('<!doctype html><html><body style="background:#fff"><p style="color:#bbb">Gris pâle</p>'
+        ko.write_text('<!doctype html><html><head><meta name="viewport" content="width=device-width, maximum-scale=1"></head><body style="background:#fff"><h2>Section</h2><h4>Sous-section</h4><p style="color:#bbb">Gris pâle</p><label>Ville <input style="font-size:13px"></label>'
                       '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw="><input name="nom"><button></button>'
                       '<a href="#x" style="display:inline-block;width:10px;height:10px;background:#000"></a>'
                       '<div style="width:3000px">large</div><script>throw new Error("boum")</script></body></html>',
@@ -110,27 +116,32 @@ class Navigateur(unittest.TestCase):
         self.assertEqual(code, 1, out)
         issues = " | ".join(report["captures"][0]["issues"])
         for want in ("langue de la page absente", "contraste", "image sans alt", "champ sans libellé : input [name=nom]",
-                     "bouton sans nom accessible", "cible tactile", "débordement horizontal", "erreur de script"):
+                     "bouton sans nom accessible", "cible tactile", "débordement horizontal", "erreur de script",
+                     "titre de page absent", "zoom bloqué", "aucun titre h1 visible",
+                     "niveau de titre sauté : h4 après un h2", "champ en 13 px < 16 px sur mobile"):
             self.assertIn(want, issues)
         self.assertRegex(out, r"Verdict : \d+ problème")
 
     def test_routes_rendered_are_counted_like_the_verification_line(self):
-        page = '<!doctype html><html lang="fr"><body><h1>{}</h1></body></html>'
+        page = '<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>{}</h1></body></html>'
         (self.d / "a.html").write_text(page.format("A"), encoding="utf-8")
-        (self.d / "vide.html").write_text('<!doctype html><html lang="fr"><body></body></html>', encoding="utf-8")
-        code, out, report = self.run_capture(str(self.d / "a.html"), "--routes", "/a.html,/absente.html,/vide.html",
-                                             "--size", "1280x900")
+        (self.d / "vide.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body></body></html>', encoding="utf-8")
+        (self.d / "sans-titre.html").write_text('<!doctype html><html lang="fr"><body><h1>B</h1></body></html>', encoding="utf-8")
+        code, out, report = self.run_capture(str(self.d / "a.html"), "--routes",
+                                             "/a.html,/absente.html,/vide.html,/sans-titre.html", "--size", "1280x900")
         self.assertEqual(code, 1, out)
-        self.assertIn("Routes rendues : 1 / 3", out)
-        self.assertEqual(report["routes"]["rendues"], 1)
+        # an accessibility issue is fixed in 3c, but the route rendered: it is not a gap of the verification line
+        self.assertIn("Routes rendues : 2 / 4", out)
+        self.assertEqual(report["routes"]["rendues"], 2)
+        self.assertIn("titre de page absent", " ".join(c["issues"][0] for c in report["captures"] if c["issues"]))
         self.assertIn("HTTP 404", report["routes"]["echecs"]["/absente.html"])
         self.assertIn("page vide", report["routes"]["echecs"]["/vide.html"])
 
     def test_a_login_played_once_lets_the_role_s_routes_render(self):
-        (self.d / "login.html").write_text('<!doctype html><html lang="fr"><body><h1>Connexion</h1>'
+        (self.d / "login.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Connexion</h1>'
                                            '<button id="go" onclick="localStorage.ok=1">Se connecter</button></body></html>',
                                            encoding="utf-8")
-        (self.d / "admin.html").write_text('<!doctype html><html lang="fr"><body><h1>Administration</h1><script>'
+        (self.d / "admin.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Administration</h1><script>'
                                            'if(!localStorage.ok)location.replace("/login.html")</script></body></html>',
                                            encoding="utf-8")
         code, out, _ = self.run_capture(str(self.d / "login.html"), "--routes", "/admin.html", "--size", "1280x900")
@@ -142,7 +153,7 @@ class Navigateur(unittest.TestCase):
         self.assertIn("Routes rendues : 1 / 1", out)
 
     def test_states_sheet_and_marks(self):
-        (self.d / "s.html").write_text('<!doctype html><html lang="fr"><body><h1 id="t">x</h1><script>'
+        (self.d / "s.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1 id="t">x</h1><script>'
                                        'document.getElementById("t").textContent=new URLSearchParams(location.search).get("state")'
                                        '</script></body></html>', encoding="utf-8")
         code, out, _ = self.run_capture(str(self.d / "s.html"), "--states", "vide,erreur", "--sheet",
@@ -153,13 +164,13 @@ class Navigateur(unittest.TestCase):
                                  "vide-800x600-marque.png", "vide-800x600.png"])
 
     def test_a_click_that_changes_page_waits_for_it_and_wait_takes_a_selector(self):
-        (self.d / "login.html").write_text('<!doctype html><html lang="fr"><body><h1>Connexion</h1>'
+        (self.d / "login.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Connexion</h1>'
                                            '<a id="go" href="/fini.html" onclick="localStorage.ok=1">Se connecter</a></body></html>',
                                            encoding="utf-8")
-        (self.d / "fini.html").write_text('<!doctype html><html lang="fr"><body><h1>Fini</h1><script>'
+        (self.d / "fini.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Fini</h1><script>'
                                           'setTimeout(()=>document.body.insertAdjacentHTML("beforeend","<p id=tard>tard</p>"),300)'
                                           '</script></body></html>', encoding="utf-8")
-        (self.d / "admin.html").write_text('<!doctype html><html lang="fr"><body><h1>Admin</h1><script>'
+        (self.d / "admin.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Admin</h1><script>'
                                            'if(!localStorage.ok)location.replace("/login.html")</script></body></html>',
                                            encoding="utf-8")
         # no "wait" after the click: the next page is awaited, then the late element
@@ -171,7 +182,7 @@ class Navigateur(unittest.TestCase):
         self.assertIn("élément absent", " ".join(report["captures"][0]["issues"]))
 
     def test_mask_turns_text_into_bars_and_the_sheet_wraps_four_per_row(self):
-        (self.d / "s.html").write_text('<!doctype html><html lang="fr"><body><h1>Titre</h1><p>Texte</p></body></html>',
+        (self.d / "s.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>Titre</h1><p>Texte</p></body></html>',
                                        encoding="utf-8")
         code, out, _ = self.run_capture(str(self.d / "s.html"), "--states", "a,b,c,d,e", "--sheet", "--mask",
                                         "--size", "400x300")
@@ -185,7 +196,7 @@ class Navigateur(unittest.TestCase):
         self.assertGreater(height, 2 * 300)
 
     def test_a_folder_serves_its_index(self):
-        (self.d / "index.html").write_text('<!doctype html><html lang="fr"><body><p>Accueil</p></body></html>',
+        (self.d / "index.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><p>Accueil</p></body></html>',
                                            encoding="utf-8")
         code, out, _ = self.run_capture(str(self.d), "--size", "800x600")
         self.assertEqual(code, 0, out)
@@ -195,7 +206,7 @@ class Navigateur(unittest.TestCase):
         sub.mkdir()
         (self.d / "secret.html").write_text("<p>secret</p>", encoding="utf-8")
         (sub / ".env.html").write_text("<p>secret</p>", encoding="utf-8")
-        (sub / "i.html").write_text('<!doctype html><html lang="fr"><body><p>i</p></body></html>', encoding="utf-8")
+        (sub / "i.html").write_text('<!doctype html><html lang="fr"><head><title>T</title></head><body><p>i</p></body></html>', encoding="utf-8")
         _, out, report = self.run_capture(str(sub / "i.html"), "--routes", "/../secret.html,/.env.html,/ENV~1.HTM,/i.html",
                                           "--size", "800x600", "--sans-a11y")
         self.assertEqual(report["routes"]["rendues"], 1, out)

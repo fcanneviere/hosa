@@ -1012,6 +1012,45 @@ def verification_gaps(kb: Path, t: dict) -> list[str]:
 
 
 REVIEW_LINE = re.compile(r"^-\s*.*?—\s*(?:note\s*(\d+)\s*/\s*10|(sans note|sans captures))\b(.*)$", re.I)
+GRID_MARK = re.compile(r"^\s*—\s*grille\s+\d+\s*/\s*\d+\b")  # written by `atelier revue`, right after the note
+
+
+@functools.cache
+def atelier():
+    """The interface tools' module: the review's grid is checked by the code that computes its note."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "atelier", Path(__file__).resolve().parents[2] / "interface" / "scripts" / "atelier.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def review_lines(kb: Path) -> list[re.Match]:
+    return [m for m in map(REVIEW_LINE.match, (section(read(kb / "interface" / "navigation.md"), "Revue visuelle")
+                                               or "").splitlines()) if m]
+
+
+def ctl_grille(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`interface` revue: the filled grid given in `--sortie` passes the code that computes its note
+    (`atelier.controle_grille`), and the last `note N/10` line is the one `atelier revue` wrote from it.
+    Its own cause: a badly filled grid doesn't spend the design rounds a low note counts."""
+    lines, grids = review_lines(kb), [f for _, f in files if f and f.suffix == ".json"]
+    r = atelier().controle_grille(kb, grids[-1]) if grids else None
+    if r and r["manques"]:
+        return [f"grille `{grids[-1].name}` : {m}" for m in r["manques"]]
+    if not lines or lines[-1][2]:
+        return []  # no line: `score` says so; `sans note`, `sans captures`: no grid
+    last = lines[-1]
+    if not GRID_MARK.search(last[3]):
+        return ["note écrite à la main : remplis la grille (`<hosa> atelier grille`), puis "
+                "`<hosa> atelier revue <kb> <grille.json>` calcule la note et écrit la ligne"]
+    if r is None:
+        return ["la grille remplie manque en sortie : `--sortie kb/interface/navigation.md <grille.json>`"]
+    if r["note"] != int(last[1]):
+        return [f"la dernière ligne (note {last[1]}/10) n'est pas celle de `{grids[-1].name}` "
+                f"(note {r['note']}/10) : lance `<hosa> atelier revue <kb> {grids[-1].name}`"]
+    return []
 
 
 def ctl_score(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
@@ -1019,11 +1058,10 @@ def ctl_score(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[s
     least the control's `score`, or `sans note` (a design kept, checked on its own rules) or `sans captures`
     (no Node or Chrome: the T-tests replace the review)."""
     need = control_value(t["stage"], t["id"], "score") or 8
-    lines = [m for m in map(REVIEW_LINE.match, (section(read(kb / "interface" / "navigation.md"), "Revue visuelle")
-                                                 or "").splitlines()) if m]
+    lines = review_lines(kb)
     if not lines:
-        return ["pas de ligne `- <date> — note N/10 — <problèmes>` sous `## Revue visuelle` de "
-                "`kb/interface/navigation.md` (ou `— sans note —`, `— sans captures —`)"]
+        return ["pas de ligne `- <date> — note N/10 — grille O/T — <problèmes>` (`<hosa> atelier revue`) sous "
+                "`## Revue visuelle` de `kb/interface/navigation.md` (ou `— sans note —`, `— sans captures —`)"]
     last = lines[-1]
     if last[2] or int(last[1]) >= need:
         return []
@@ -1351,7 +1389,7 @@ def juge_groups(kb: Path, slugs: list[str]) -> list[list[str]]:
 # the controls a task's outputs pass at `task done`, in order: `sortie` and `okf` always, then the ones
 # pipeline.json's `tasks.controls` declares for the task; the first that fails is the round's cause
 CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
-            "interface": ctl_interface, "score": ctl_score, "choix": ctl_choix}
+            "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix}
 # `refus 2/2 (okf ; sortie 1) — …`: the last refusal's cause and count, then the other causes' counts
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)((?: ; [\w-]+ \d+)*)\)(?: — )?")
 

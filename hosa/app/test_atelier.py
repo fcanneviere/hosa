@@ -414,6 +414,101 @@ class Choix(Base):
         self.assertTrue(any("non appliqués" in g for g in ic.gaps(k)))
 
 
+class Diversite(Base):
+    def jumelles(self) -> Path:
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        jumelle = copy.deepcopy(data["cartes"][0])
+        jumelle.update(id="jumelle", nom="Jumelle", ecran="tuiles")  # another screen is content, not style
+        jumelle["couleurs"]["fond"] = "#F2EADD"
+        return self.cfg(cartes=data["cartes"][:3] + [jumelle])
+
+    def test_cards_that_differ_by_a_shade_are_refused_with_their_axes(self):
+        with self.assertRaises(at.Refus) as e:
+            at.cartes(self.jumelles(), self.d / "o", False)
+        self.assertIn("email et jumelle : 0 axe(s) différent(s)", str(e.exception))
+        self.assertFalse((self.d / "o" / "comparaison.html").exists())
+        self.assertEqual(at.cartes_proches(at.charge_cartes(self.cfg())["cartes"]), [])  # the example passes
+
+    def test_a_refinement_round_and_the_user_s_choice_are_not_refused(self):
+        p = self.jumelles()
+        k = self.d / ".hosa" / "kb"
+        (k / "interface").mkdir(parents=True)
+        self.assertEqual(at.choisir(k, "styles", "jumelle", p, "Fabien", None, False)["option"], "jumelle")
+        data = json.loads(p.read_text(encoding="utf-8"))
+        data["affinage"] = "a avec le fond de d"
+        p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        self.assertEqual(at.cartes(p, self.d / "o", False)["affinage"], "a avec le fond de d")  # the skill sees it
+
+
+class Revue(Base):
+    NAV = "---\ntype: Plan de navigation\ntitle: N\ndescription: d\ntags: [ux]\n---\n## Écrans\n- a\n\n## Fondamentaux UX\n- x\n"
+    SHOT = ".hosa/design/shots/routes-admin/accueil-1280x900.png"
+
+    def kb(self) -> Path:
+        k = self.d / ".hosa" / "kb"
+        (k / "interface").mkdir(parents=True)
+        (k / "interface" / "navigation.md").write_text(self.NAV, encoding="utf-8")
+        (self.d / self.SHOT).parent.mkdir(parents=True)
+        (self.d / self.SHOT).write_bytes(b"png")
+        return k
+
+    def remplie(self, **change) -> Path:
+        g = {"version": 2, "questions": [{"id": q["id"], "reponse": "oui", "preuve": self.SHOT}
+                                         for q in at.questions_grille()]}
+        for qid, rep in change.items():
+            next(r for r in g["questions"] if r["id"] == qid).update(rep)
+        p = self.d / f"grille-{len(list(self.d.glob('grille-*')))}.json"
+        p.write_text(json.dumps(g, ensure_ascii=False), encoding="utf-8")
+        return p
+
+    def test_the_grid_comes_from_the_pipeline_and_its_template_is_written_once(self):
+        qs = at.questions_grille()
+        self.assertEqual((qs[0]["id"], at.plafond(qs[0]), at.plafond(qs[3])), ("R1", 7, 10))
+        out = self.d / ".hosa" / "design" / "revue" / "grille-1.json"  # its folder does not exist yet
+        self.assertEqual(at.grille(out)["questions"], len(qs))
+        self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["questions"][1]["reponse"], "")
+        with self.assertRaises(at.Refus):
+            at.grille(out)
+
+    def test_the_note_is_computed_and_a_capped_no_holds_it_at_7(self):
+        k = self.kb()
+        non = {"ou": "Accueil", "constat": "deux boutons principaux", "correction": "un seul"}
+        r = at.revue(k, self.remplie(R4={"reponse": "non", **non}, R13={"reponse": "na", "constat": "pas de back office"}))
+        self.assertEqual((r["note"], r["grille"]), (9, "14/15"))
+        self.assertEqual(at.revue(k, self.remplie(R8={"reponse": "non", **non}))["note"], 7)  # a default template
+        r = at.revue(k, self.remplie(R1={"reponse": "non", **non}))
+        self.assertEqual(r["note"], 7)
+        nav = (k / "interface" / "navigation.md").read_text(encoding="utf-8")
+        lignes = [l for l in nav.split("## Revue visuelle")[1].splitlines() if l.startswith("- ")]
+        self.assertEqual(len(lignes), 3)  # appended, never rewritten
+        self.assertRegex(lignes[2], r"— note 7/10 — grille 15/16 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
+        self.assertIn("## Fondamentaux UX", nav)
+        sys.path.insert(0, str(ROOT / "skills" / "status" / "scripts"))
+        import avancement as av
+        m = av.REVIEW_LINE.match(lignes[2])
+        self.assertEqual((m[1], bool(av.GRID_MARK.search(m[3]))), ("7", True))  # the control reads what it writes
+
+    def test_an_unproven_or_incomplete_grid_writes_nothing(self):
+        k = self.kb()
+        (self.d / ".hosa" / "design" / "shots" / "notes.txt").write_text("x", encoding="utf-8")
+        avant = (k / "interface" / "navigation.md").read_text(encoding="utf-8")
+        for change, attendu in (({"R3": {"preuve": "absente.png"}}, "R3 : oui sans preuve"),
+                                ({"R3": {"preuve": "accueil-1280x900.png"}}, "R3 : oui sans preuve"),  # a bare name
+                                ({"R3": {"preuve": "*.png"}}, "R3 : oui sans preuve"),
+                                ({"R3": {"preuve": ".hosa/design/shots"}}, "R3 : oui sans preuve"),
+                                ({"R3": {"preuve": ".hosa/design/shots/notes.txt"}}, "R3 : oui sans preuve"),
+                                ({"R3": {"preuve": "."}}, "R3 : oui sans preuve"),
+                                ({"R5": {"reponse": "non", "ou": "Menu"}}, "R5 : non sans constat, correction"),
+                                ({"R2": {"reponse": "na", "constat": "x"}}, "R2 : ne peut pas être non applicable"),
+                                ({"R9": {"reponse": "na", "constat": "x"}}, "R9 : ne peut pas être non applicable"),
+                                ({"R6": {"reponse": "peut-être"}}, "R6 : `reponse` vaut oui, non ou na"),
+                                ({"R14": {"reponse": "na"}}, "R14 : non applicable sans raison")):
+            with self.assertRaises(at.Refus) as e:
+                at.revue(k, self.remplie(**change))
+            self.assertIn(attendu, str(e.exception))
+        self.assertEqual((k / "interface" / "navigation.md").read_text(encoding="utf-8"), avant)
+
+
 class Cli(Base):
     def test_exit_codes_and_one_json_line(self):
         import io

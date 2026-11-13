@@ -1389,24 +1389,72 @@ class LoopsClosed(unittest.TestCase):
         run(k, "task", "add", "interface", "3a", "--agent", "hosa-ux-designer", "--force")
         self.assertEqual(done()[0], 0)
 
-    def test_the_review_closes_on_a_written_note_of_8_or_its_two_exits(self):
+    def test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits(self):
         nav = "---\ntype: Plan de navigation\ntitle: N\ndescription: d\ntags: [x]\n---\n## Écrans\n- a\n## Revue visuelle\n"
-        k = kb({"interface/navigation.md": nav})
+        shot = ".hosa/design/shots/accueil-1280x900.png"
+        root = kb({".hosa/kb/interface/navigation.md": nav, shot: "png"})
+        k = root / ".hosa" / "kb"
+        at = av.atelier()
+        non = {"reponse": "non", "ou": "Accueil", "constat": "deux actions principales", "correction": "une seule"}
+
+        def grid(name: str, **change) -> Path:
+            g = {"version": 2, "questions": [{"id": q["id"], "reponse": "oui", "preuve": shot} for q in at.questions_grille()]}
+            for qid, rep in change.items():
+                next(r for r in g["questions"] if r["id"] == qid).update(rep)
+            p = root / ".hosa" / "design" / "revue" / name
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(g, ensure_ascii=False), encoding="utf-8")
+            return p
+
+        def done(*grids: Path) -> tuple[int, str]:
+            run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer", "--force")
+            return run(k, "task", "done", "interface", "revue", "--sortie", "kb/interface/navigation.md", *map(str, grids))
+
         run(k, "start", "interface", "--force")
-        run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer")
-        done = lambda: run(k, "task", "done", "interface", "revue", "--sortie", "kb/interface/navigation.md")  # noqa: E731
         code, out = done()
         self.assertEqual((code, "refusée par `score`" in out), (1, True))
-        for line, ok in (("- 2026-11-12 — note 7/10 — 1. le menu masque l'action", False),
-                         ("- 2026-11-12 — note 8/10 — 1. un libellé", True),
-                         ("- 2026-11-12 — sans captures — T-tests à la place", True),
-                         ("- 2026-11-12 — sans note — design conservé", True)):
+        # an incomplete grid is a refusal of the task, counted by its bound, not a redispatch in prose
+        code, out = done(grid("g1.json", R5={"reponse": "non", "ou": "Menu"}))
+        self.assertEqual(code, 1)
+        self.assertIn("grille `g1.json` : R5 : non sans constat, correction", out)
+        low = grid("g2.json", R8=non)  # a default template caps the note at 7
+        at.revue(k, low)
+        code, out = done(low)
+        self.assertEqual(code, 1)
+        self.assertIn("note 7/10, 8 attendu — grille 15/16", out)
+        good = grid("g3.json", R4=non)
+        at.revue(k, good)
+        self.assertIn("n'est pas celle de `g2.json`", done(low)[1])  # the line proves this grid, no other
+        self.assertIn("la grille remplie manque en sortie", done()[1])
+        self.assertEqual(done(good)[0], 0)
+        with open(k / "interface" / "navigation.md", "a", encoding="utf-8") as f:
+            f.write("- 2026-11-12 — note 9/10 — écrite à la main, sans grille\n")
+        self.assertIn("note écrite à la main", done(good)[1])
+        for line in ("- 2026-11-12 — sans captures — T-tests à la place", "- 2026-11-12 — sans note — design conservé"):
             (k / "interface" / "navigation.md").write_text(nav + line + "\n", encoding="utf-8")
-            run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer", "--force")
-            code, out = done()
-            self.assertEqual(code == 0, ok, (line, out))
-            if not ok:
-                self.assertIn("note 7/10, 8 attendu — 1. le menu masque l'action", out)
+            self.assertEqual(done()[0], 0, line)
+
+    def test_a_badly_filled_grid_and_a_low_note_keep_their_own_counts(self):
+        nav = "---\ntype: Plan de navigation\ntitle: N\ndescription: d\ntags: [x]\n---\n## Écrans\n- a\n## Revue visuelle\n"
+        shot = ".hosa/design/shots/a.png"
+        root = kb({".hosa/kb/interface/navigation.md": nav, shot: "png"})
+        k, at = root / ".hosa" / "kb", av.atelier()
+        bad = root / ".hosa" / "design" / "revue" / "g1.json"
+        bad.parent.mkdir(parents=True)
+        bad.write_text('{"version": 2, "questions": [{"id": "R1", "reponse": "peut-être"}]}', encoding="utf-8")
+        q = [{"id": x["id"], "reponse": "oui", "preuve": shot} for x in at.questions_grille()]
+        q[7].update(reponse="non", ou="Accueil", constat="gabarit", correction="refaire")  # R8: capped at 7
+        low = bad.with_name("g2.json")
+        low.write_text(json.dumps({"version": 2, "questions": q}, ensure_ascii=False), encoding="utf-8")
+        at.revue(k, low)
+        run(k, "start", "interface", "--force")
+        run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer")  # no --force from here on
+        done = lambda g: run(k, "task", "done", "interface", "revue", "--sortie", "kb/interface/navigation.md", g)  # noqa: E731
+        self.assertIn("refusée par `grille` (refus 1/2)", done(bad)[1])
+        self.assertIn("refusée par `score` (refus 1/2)", done(low)[1])  # another cause: its own count
+        self.assertIn("refusée par `score` (refus 2/2)", done(low)[1])
+        done(low)  # past the bound: `bloqué`
+        self.assertEqual(run(k, "task", "add", "interface", "revue", "--agent", "hosa-ux-designer")[0], 1)  # the user decides
 
     def test_a_correction_after_the_audit_needs_a_new_audit(self):
         k = kb({"sprints/s1.md": SPRINT + "## Audit\n- 2026-11-01T10:00Z — a.py — abc — Bloquant : 0\n",

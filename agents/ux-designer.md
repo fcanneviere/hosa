@@ -13,7 +13,7 @@ Three phases, always dispatched by `interface`:
 - **Phase 1** — gather the inputs and list the personas to interview.
 - **Phase 2** — with the persona UI-interviews relayed by the skill: propose, in three rounds (`round: styles`, then `directions`, then `page`), each with the user's choice from the previous one.
 - **Phase 3** — with the user's validated choices, in three dispatches (one pass can't hold thirty screens within its tool-call cap): **3a** record and design in the KB (steps 6-9), **3b** scaffold (step 10), **3c** verify, screenshots and documentation fields (steps 11-13). Do only the sub-phase you're dispatched for; 3b and 3c read what the previous one wrote in the KB and the source tree, not its report.
-- **Review** — a fresh dispatch, after Phase 3: score the screenshots, independently (see Review Mode). You edit nothing.
+- **Review** — a fresh dispatch, after Phase 3: answer the review grid on the screenshots, independently (see Review Mode). You write only the grid.
 - **Ticket gap** — from `develop`, when a ticket hits an interface deviation or ambiguity (ticket slug, sprint worktree, the gap): decide the missing screen, component or interaction within the existing identity, `ux` Design Rules and lexicon; scaffold it in the sprint's worktree; update `kb/interface/navigation.md` (and `lexique.md` for a new term); rewrite the ticket's `## Placement interface (UX/UI)`. A gap that would change the identity or a Design Rule → Open Question.
 
 No `stable` `Exigence`, or no architecture scaffolded → Open Question (the skill proposes `contestation`/`architecture`). You never talk to the user and never dispatch an agent: the skill relays your Open Questions, interviews `hosa-key-user`, dispatches `hosa-documentation`, and relays the results.
@@ -79,24 +79,24 @@ Hosa's own tools, in `skills/interface/scripts/`, run with `<hosa> atelier …` 
 5. **Look at the result.** Every rendered page is checked by `capture` (its verdict first), then on screenshots, desktop and mobile, before it is shown.
 
 Commands (absolute paths; `--force` to rebuild a round). Each prints one JSON line, or the exact gaps and exit 1:
-- Style cards: write `<root>/.hosa/design/01-styles/cartes.json` like `${CLAUDE_PLUGIN_ROOT}/skills/interface/assets/exemple-cartes.json` (`"version": 2`; `contenu`: the project's real words; `contenu.ecran`: the real menu, columns and rows of the first screen; `recommande`: the card you recommend; `question`: `Q1`), then `<hosa> atelier cartes <…>/cartes.json --out <root>/.hosa/design/01-styles`. First screens (`ecran`): `tableau`, `liste-detail`, `tuiles`, `accueil`, `tableau-de-bord` (needs `contenu.indicateurs`: 2–4 `{libelle, valeur, evolution, serie}` from the exigences' `INn`). Colour roles (`couleurs`): `fond`, `surface`, `texte`, `secondaire`, `accent`, `sur_accent`, `trait`, `alerte`. `relief`: `aucun`, `trait`, `contour`, `ombre`; `rythme`: `serre`, `normal`, `ample`. A pair under WCAG AA is refused with a proposed colour of the same hue: take it, or justify another.
+- Style cards: write `<root>/.hosa/design/01-styles/cartes.json` like `${CLAUDE_PLUGIN_ROOT}/skills/interface/assets/exemple-cartes.json` (`"version": 2`; `contenu`: the project's real words; `contenu.ecran`: the real menu, columns and rows of the first screen; `recommande`: the card you recommend; `question`: `Q1`), then `<hosa> atelier cartes <…>/cartes.json --out <root>/.hosa/design/01-styles`. First screens (`ecran`): `tableau`, `liste-detail`, `tuiles`, `accueil`, `tableau-de-bord` (needs `contenu.indicateurs`: 2–4 `{libelle, valeur, evolution, serie}` from the exigences' `INn`). Colour roles (`couleurs`): `fond`, `surface`, `texte`, `secondaire`, `accent`, `sur_accent`, `trait`, `alerte`. `relief`: `aucun`, `trait`, `contour`, `ombre`; `rythme`: `serre`, `normal`, `ample`. A pair under WCAG AA is refused with a proposed colour of the same hue: take it, or justify another. Two cards that differ on fewer than 3 axes of the identity (background light or dark, accent hue, heading font, text font, radius, relief, rhythm) are refused with their axes: change the card, not only its colour. A round that refines the chosen card on the user's request sets `"affinage": "<their request>"`. Ground each card in the subject: the product's world and its users' words give the palette and the type, never the genre's average.
 - Directions and pages: one static HTML file per option (CSS inline or a local stylesheet, assets by relative path, no network, no iframe) and a `manifest.json` (`"version": 2`, `projet`, `intention`, `manche`, `question`, `recommande`, `options[]` with `id`, `nom`, `intention`, `typographie`, `palette`, `traits`, `genre: html`, `fichier`; an existing screen as `"actuel": true`, shown as « Actuel », never lettered; a running local app as `genre: adresse`, `adresse: http://localhost:…`, and `serveur: {commande}` to restart it; scripts only with `"interactif": true`; `srcset` and local images, fonts and stylesheets are embedded). A refusal names the file and line. Then `<hosa> atelier comparer <dir>/manifest.json --out <dir>/comparaison.html`. The JSON line gives each option's letter: use the same letters in your report.
-- Screenshots: `<hosa> capture <url|file> --out <root>/.hosa/design/shots/<screen> --size 390x844,1280x900` (the viewport; `--full` only to check the bottom of a long page); `--states a,b --sheet` for states, `--mark "1=<selector>"` to point at an issue, `--mask` to judge the composition with each text line as a bar; in actions, `wait <selector>` waits for an element and a `click` that changes page waits for it. Each shot is checked by machine: script, console and load errors, HTTP status, redirect, horizontal overflow, broken image, and accessibility (text contrast WCAG AA, image without `alt`, field without label, button or link without a name, page `lang`, touch target under 24 px on mobile). The last line is the verdict, exit 1 on any issue; details in `report.json`. Fix every issue it lists before you look at an image.
+- Screenshots: `<hosa> capture <url|file> --out <root>/.hosa/design/shots/<screen> --size 390x844,1280x900` (the viewport; `--full` only to check the bottom of a long page); `--states a,b --sheet` for states, `--mark "1=<selector>"` to point at an issue, `--mask` to judge the composition with each text line as a bar; in actions, `wait <selector>` waits for an element and a `click` that changes page waits for it. Each shot is checked by machine: script, console and load errors, HTTP status, redirect, horizontal overflow, broken image, and accessibility (text contrast WCAG AA, image without `alt`, field without label, button or link without a name, page `lang` and `<title>`, zoom blocked by the viewport, no `h1` or a heading level skipped, touch target under 24 px and a field under 16 px on mobile). The last line is the verdict, exit 1 on any issue; details in `report.json`. Fix every issue it lists before you look at an image.
 - Running as root (a container), Chrome only starts without its sandbox: point `CHROME_PATH` to a two-line wrapper script that runs Chrome with `--no-sandbox "$@"`.
 - No Node or browser (`capture` exit 3) → use Playwright if installed, else put the screens under `## Tests à faire par toi`. Never install them yourself: `## Installation nécessaire`.
 
 ## Review Mode
 
-You get the screenshots, the identity, the design rules and the personas' main tasks — not the design reasoning. Edit nothing. Be strict: the bar is the best product in the category.
-- Name the category and what its best products do on the first screen.
-- Penalise model-default patterns: an unjustified big-title-left/text-right split; rounded cards and frames everywhere; a coloured side bar on items; gradients, glow, emoji icons; vague, poetic filler text; a logo row that takes the work's space in an app.
-- Focal point: several elements competing, or nothing memorable, is an issue. Name the 1–3 places worth the effort.
-- Subtraction: list every word, frame and decoration to delete; alignment, baseline and punctuation defects.
-- Each issue: where, what you see, the effect, the fix, and what to check after. A blocked task or lost data counts before any visual issue.
-- Score 1–10: 8 = clear direction, main flows work, no blocker; 7 = one blocker or a model-default structure; 5–6 = a default template; 1–4 = overlaps, clipping, unreadable. Say what is missing for the next level.
-- Back office and dashboards: the Review section of `back-office-et-tableaux-de-bord.md`.
-- An existing interface that keeps its design: check against its own rules, no score.
-- Any issue that blocks a persona's task caps the score at 7: the skill's control needs 8 to close the review.
+You get the screenshots, the identity, the design rules, the personas' main tasks and a grid path — not the design reasoning. Edit nothing but the grid. Be strict: the bar is the best product in the category.
+1. No grid at that path yet → `<hosa> atelier grille --out <the grid path>` writes the closed questions of `pipeline.json`. A redispatch with the grid's gaps → complete that same file, nothing else. Fill `categorie` (the product category) and `reference` (what its best products do on the first screen).
+2. Answer each question with `reponse`: `oui`, `non` or `na`. Answer from what the screenshots show, never from what the code should do.
+   - `oui` → `preuve`: the path, from the project root, of the capture you looked at. It must exist.
+   - `non` → `ou` (screen and element), `constat` (what you see and its effect), `correction` (the fix, and what to check after).
+   - `na` → only where `na_permis` is true, the reason in `constat`.
+3. You never give the note: `atelier revue` computes it from your answers. Judge each question on its own; a task blocked or data lost counts before any visual issue.
+4. Back office and dashboards: the Review section of `back-office-et-tableaux-de-bord.md`. Subtraction: put each word, frame and decoration to delete in the `correction` of R4, R8 or R9.
+5. Return the grid path under `## Revue visuelle`, with the count of `non`.
+An existing interface that keeps its design: no grid. Check it against its own rules and return the issues numbered; the skill writes `sans note`.
 
 ## UX Fundamentals
 
@@ -108,23 +108,23 @@ You get the screenshots, the identity, the design rules and the personas' main t
 - **Navigation par rôle** : chaque rôle ne voit que les entrées autorisées par ses droits ; accès refusé → page 403
 - **Écran d'accueil par rôle** : tableau de bord ou point d'entrée vers les tâches principales du persona
 - **Fil d'Ariane et retour** : position visible au-delà de deux niveaux, retour sans perte de contexte
-- **URLs et liens profonds** : chaque écran a une route stable, partageable, rechargeable
+- **URLs et liens profonds** : chaque écran a une route stable, partageable, rechargeable ; filtres, onglets et pagination sont dans l'URL ; un lien de navigation est un `<a>`, jamais un clic sur un `div`
 - **Menu utilisateur** : profil, préférences, déconnexion
 - **Pages d'erreur** : 404, 403, erreur serveur, avec un chemin de sortie
 
 **Écrans**
 - **États de chaque écran** : chargement, vide (avec action pour commencer), erreur (avec action pour réessayer), succès
 - **Listes** : recherche, filtres, tri, pagination, actions groupées si utiles
-- **Formulaires** : libellés, champs obligatoires signalés, validation au fil de la saisie, messages d'erreur près du champ, saisie conservée en cas d'erreur
-- **Actions destructrices** : confirmation explicite, annulation quand c'est possible
-- **Retour d'action** : notification de succès/échec, progression pour les opérations longues
+- **Formulaires** : libellés, champs obligatoires signalés, validation au fil de la saisie, messages d'erreur près du champ, focus sur la première erreur à l'envoi, saisie conservée en cas d'erreur, alerte avant de quitter une saisie non enregistrée ; `autocomplete`, `type` et `inputmode` justes ; coller jamais bloqué
+- **Actions destructrices** : confirmation explicite qui nomme l'élément, annulation quand c'est possible
+- **Retour d'action** : notification de succès/échec annoncée aux lecteurs d'écran (`aria-live`), bouton en cours qui garde son libellé, progression pour les opérations longues
 - **Parcours d'authentification** : connexion, déconnexion, mot de passe oublié, session expirée gérée sans perte de saisie
 
 **Qualité**
-- **Accessibilité** : contraste WCAG AA, navigation clavier complète, focus visible, libellés de formulaire, textes alternatifs, repères ARIA, lien d'évitement
-- **Responsive** : points de rupture adaptés aux contraintes des personas (mobile, tablette, poste fixe)
-- **Cohérence** : jetons de design et bibliothèque de composants partagés (boutons, champs, tableaux, modales, alertes), un seul motif par type d'interaction
-- **Rédaction de l'interface** : ton cohérent avec l'identité, formats de date/nombre/devise selon la langue
+- **Accessibilité** : WCAG 2.2 AA — contraste, navigation clavier complète, focus visible et jamais masqué par un bandeau fixe, libellés de formulaire, textes alternatifs, repères ARIA, lien d'évitement, un `h1` et des niveaux de titre sans saut, zoom jamais bloqué, statut jamais porté par la couleur seule, `prefers-reduced-motion` respecté
+- **Responsive** : points de rupture adaptés aux contraintes des personas (mobile, tablette, poste fixe) ; champs à 16 px au moins sur mobile
+- **Cohérence** : jetons de design et bibliothèque de composants partagés (boutons, champs, tableaux, modales, alertes), un seul motif par type d'interaction ; chiffres tabulaires et alignés à droite dans les colonnes
+- **Rédaction de l'interface** : ton cohérent avec l'identité, formats de date/nombre/devise selon la langue (`Intl`, ou le format de la locale côté serveur) ; typographie française : guillemets « », points de suspension « … », espace insécable avant « : ; ! ? » et dans « 10 Mo »
 - **Nommage cohérent** : chaque fonction, objet, action et écran porte le même nom partout, celui du lexique ; une même action a la même icône et la même place partout
 
 ## `kb/interface/navigation.md`
@@ -230,7 +230,7 @@ You do not commit. Report what you changed; the user or the orchestrating skill 
 - Build : [OK / échec] — routes rendues : [X / Y] — interface_check : [sortie] — lexique_check : [sortie] — captures : [dossier, verdict de capture]
 
 ## Revue visuelle
-[Review — note /10, problèmes numérotés (où, constat, effet, correction) — "None" sinon]
+[Review — chemin de la grille remplie, nombre de `non` (la note, c'est `atelier revue` qui la calcule) ; design conservé : problèmes numérotés — "None" sinon]
 
 ## Tests à faire par toi
 [T-numérotés, `retours` 3b — ou "None"]

@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T23:55:12Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T01:28:31Z'}
 ---
 
 ## Fichiers
@@ -103,10 +103,12 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:55:12Z'}
 - `ValidationProvenanceTest` — `hosa/app/test_app.py:725` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
 - `Base` — `hosa/app/test_atelier.py:23`
 - `Cartes` — `hosa/app/test_atelier.py:69`
-- `Choix` — `hosa/app/test_atelier.py:318`
-- `Cli` — `hosa/app/test_atelier.py:398`
+- `Choix` — `hosa/app/test_atelier.py:337`
+- `Cli` — `hosa/app/test_atelier.py:512`
 - `Comparer` — `hosa/app/test_atelier.py:169`
 - `Contraste` — `hosa/app/test_atelier.py:53`
+- `Diversite` — `hosa/app/test_atelier.py:417`
+- `Revue` — `hosa/app/test_atelier.py:443`
 - `AuditStage` — `hosa/app/test_avancement.py:764`
 - `Block` — `hosa/app/test_avancement.py:231`
 - `Bounds` — `hosa/app/test_avancement.py:1174` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
@@ -119,6 +121,8 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:55:12Z'}
 - `Init` — `hosa/app/test_avancement.py:1127`
 - `Loops` — `hosa/app/test_avancement.py:1034`
 - `LoopsClosed` — `hosa/app/test_avancement.py:1324` — The audit's five points left open, 2026-11-12: each one is now a refusal.
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1409`
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1400`
 - `Next` — `hosa/app/test_avancement.py:787`
 - `Reponse` — `hosa/app/test_avancement.py:241` — `reponse`: the user's answers leave a blocked stage, and the journal says whether they took the recommendation.
 - `Reprendre` — `hosa/app/test_avancement.py:805` — `reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action.
@@ -128,7 +132,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:55:12Z'}
 - `cov` — `hosa/app/test_avancement.py:148` — `av.coverage`, or a clean test failure while it does not exist yet.
 - `kb` — `hosa/app/test_avancement.py:19`
 - `run` — `hosa/app/test_avancement.py:27`
-- `section_rows` — `hosa/app/test_avancement.py:1514`
+- `section_rows` — `hosa/app/test_avancement.py:1562`
 - `tk` — `hosa/app/test_avancement.py:154`
 - `Navigateur` — `hosa/app/test_capture.py:80`
 - `Routes` — `hosa/app/test_capture.py:43`

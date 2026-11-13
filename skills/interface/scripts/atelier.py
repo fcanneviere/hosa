@@ -3,7 +3,8 @@
 
   atelier.py cartes   <cartes.json> --out <dossier> [--force]
       Valide les cartes (contraste WCAG AA calculé pour chaque paire de couleurs affichée, avec une couleur proposée
-      pour chaque paire refusée), dessine une carte par identité sur le même contenu réel, et la page `comparaison.html`.
+      pour chaque paire refusée), refuse deux cartes qui diffèrent sur moins de 3 axes de l'identité, dessine une
+      carte par identité sur le même contenu réel, et la page `comparaison.html`.
   atelier.py comparer <manifest.json> --out <page.html> [--force]
       Assemble des maquettes locales (html, image, adresse locale) en une page de comparaison autonome, sans réseau.
   atelier.py choisir  <kb> <manche> <id> --depuis <cartes.json|manifest.json> --par <utilisateur> [--note "…"]
@@ -14,6 +15,12 @@
       Écrit les jetons de `kb/interface/choix.md` en variables CSS (bloc marqué) et note le fichier dans la KB.
   atelier.py ecart    <kb>
       Contrôle que le fichier CSS du projet porte toujours les jetons de la KB.
+  atelier.py grille   [--out <grille.json>]
+      Le modèle de la revue visuelle : les questions fermées de `pipeline.json` (tâche interface/revue), à remplir.
+  atelier.py revue    <kb> <grille.json>
+      Calcule la note de la grille remplie (plancher de 10 × oui / (oui + non), 7 au plus sur un non bloquant),
+      refuse un oui sans capture existante ou un non sans où, constat et correction, et ajoute la ligne sous
+      `## Revue visuelle` de `kb/interface/navigation.md`.
 
 Formats d'entrée : `version: 2` ; l'exemple complet est `assets/exemple-cartes.json`.
 Sortie : une ligne JSON (succès) ou les manques exacts, un par ligne. Code : 0 réussi, 1 refusé, 2 mauvais appel.
@@ -273,7 +280,38 @@ def charge_cartes(chemin: Path) -> dict:
         manques +=[f"{ou} — {m}" for m in controles(col)[1]]
     if manques:
         raise Refus("contraste WCAG AA insuffisant, corrige ces couleurs :\n" + "\n".join(manques))
+    if "affinage" in cfg:
+        cfg["affinage"] = chaine(cfg, "affinage", "cartes")
     return cfg
+
+
+AXES = ("fond", "teinte de l'accent", "police des titres", "police du texte", "arrondi", "relief", "rythme")
+DIFFERENCE = 3
+
+
+def axes(carte: dict) -> tuple:
+    """L'identité d'une carte sur des axes fermés : deux cartes qui ne diffèrent que d'une nuance n'en font qu'une.
+    Le premier écran n'en est pas : c'est le contenu, pas le style."""
+    import colorsys
+    c = carte["couleurs"]
+    t, l, s = colorsys.rgb_to_hls(*(x / 255 for x in canaux(c["accent"])))
+    teinte = "neutre" if s < 0.15 or l < 0.08 or l > 0.92 else int(t * 360 // 30)
+    a = carte["arrondi"]
+    return ("sombre" if luminance(c["fond"]) < 0.18 else "clair", teinte, famille(carte["polices"]["titres"]).lower(),
+            famille(carte["polices"]["texte"]).lower(), "droit" if a <= 2 else "doux" if a <= 8 else "rond",
+            carte["relief"], carte["rythme"])
+
+
+def cartes_proches(cartes: list[dict]) -> list[str]:
+    vus = [(c["id"], axes(c)) for c in cartes]
+    out = []
+    for i, (a, x) in enumerate(vus):
+        for b, y in vus[i + 1:]:
+            autres = [AXES[k] for k in range(len(AXES)) if x[k] != y[k]]
+            if len(autres) < DIFFERENCE:
+                out.append(f"{a} et {b} : {len(autres)} axe(s) différent(s)"
+                           + (f" ({', '.join(autres)})" if autres else ""))
+    return out
 
 
 def famille(pile: str) -> str:
@@ -461,6 +499,11 @@ def cartes(cfg_chemin: Path, sortie: Path, force: bool) -> dict:
     if sortie.exists() and not sortie.is_dir():
         raise Refus(f"la sortie doit être un dossier : {sortie}")
     cfg = charge_cartes(cfg_chemin)
+    proches = [] if cfg.get("affinage") else cartes_proches(cfg["cartes"])
+    if proches:  # une exploration, pas un choix : `choisir` relit les cartes sans ce contrôle
+        raise Refus(f"des cartes trop proches : chaque paire diffère sur au moins {DIFFERENCE} axes de l'identité "
+                    f"({', '.join(AXES)}) — change-les, pas seulement la couleur ; une manche qui affine la carte "
+                    "choisie porte `affinage` (la demande de l'utilisateur) :\n" + "\n".join(proches))
     page = sortie / "comparaison.html"
     if page.exists() and not force:
         raise Refus(f"la page existe déjà : {page} ; --force pour la refaire")
@@ -493,7 +536,8 @@ def cartes(cfg_chemin: Path, sortie: Path, force: bool) -> dict:
         comparer(etape / "manifest.json", etape / page.name, force=False)
         for n in noms:
             (etape / n).replace(sortie / n)
-    return {"page": str(page), "cartes": len(cfg["cartes"]), "manifest": str(sortie / "manifest.json")}
+    return {"page": str(page), "cartes": len(cfg["cartes"]), "manifest": str(sortie / "manifest.json"),
+            **({"affinage": cfg["affinage"]} if cfg.get("affinage") else {})}
 
 
 # ---------------------------------------------------------------- maquettes : un document autonome, sans réseau
@@ -1063,12 +1107,12 @@ def ecrit_choix(kb: Path, etat: dict, par: str) -> Path:
     return f
 
 
-def journal(kb: Path, acteur: str, verbe: str) -> None:
+def journal(kb: Path, acteur: str, verbe: str, fichier: str = "choix") -> None:
     """Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9)."""
     log = kb / "interface" / "log.md"
     jour = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     t = log.read_text(encoding="utf-8") if log.is_file() else "# Log — kb/interface\n"
-    ligne = f"- {acteur} a {verbe} `choix`"
+    ligne = f"- {acteur} a {verbe} `{fichier}`"
     if f"\n## {jour}\n" in t:
         t = t.replace(f"\n## {jour}\n", f"\n## {jour}\n{ligne}\n", 1)
     else:  # le jour le plus récent en premier, juste sous le titre
@@ -1172,6 +1216,136 @@ def ecarts(kb: Path) -> list[str]:
     return []
 
 
+# ---------------------------------------------------------------- revue visuelle : une grille, une note calculée
+
+PIPELINE = SKILL.parent / "status" / "scripts" / "pipeline.json"
+REPONSES = ("oui", "non", "na")
+IMAGES = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def questions_grille() -> list[dict]:
+    """Les questions fermées de la revue, déclarées dans pipeline.json (la seule définition)."""
+    graphe = json.loads(PIPELINE.read_text(encoding="utf-8"))
+    ctl = next((x for x in graphe["tasks"]["controls"] if x["stage"] == "interface" and x["id"] == "revue"), {})
+    if not ctl.get("grille"):
+        raise Refus(f"pas de `grille` pour la tâche interface/revue dans {PIPELINE}")
+    return ctl["grille"]
+
+
+def plafond(q: dict) -> int:
+    return int(q.get("plafond", 7 if q.get("bloquant") else 10))
+
+
+def grille(sortie: Path | None) -> dict:
+    """Le modèle que `hosa-ux-designer` remplit en revue : une réponse par question, avec sa preuve."""
+    modele = {"version": VERSION, "categorie": "", "reference": "",
+              "questions": [{"id": q["id"], "q": q["q"], "na_permis": bool(q.get("na")),
+                             "reponse": "", "preuve": "", "ou": "", "constat": "", "correction": ""}
+                            for q in questions_grille()]}
+    texte = json.dumps(modele, ensure_ascii=False, indent=2) + "\n"
+    if sortie is None:
+        sys.stdout.write(texte)
+        return {"questions": len(modele["questions"])}
+    if sortie.exists():
+        raise Refus(f"{sortie} existe déjà : une grille par revue, un nouveau fichier pour la suivante")
+    sortie.parent.mkdir(parents=True, exist_ok=True)
+    ecrit_atomique(sortie, texte)
+    return {"grille": str(sortie), "questions": len(modele["questions"])}
+
+
+def preuve_valide(racine: Path, preuve: str) -> bool:
+    """Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet."""
+    chemins = [x.strip() for x in preuve.split(",") if x.strip()]
+    if not chemins:
+        return False
+    for c in chemins:
+        try:
+            f = (racine / c).resolve()
+        except (OSError, ValueError):
+            return False
+        if not (f.is_relative_to(racine.resolve()) and f.suffix.lower() in IMAGES and f.is_file()):
+            return False
+    return True
+
+
+def note_grille(g: dict, racine: Path) -> dict:
+    """{note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
+    10 × oui / (oui + non), puis le plus bas `plafond` des questions répondues non (7 pour une question bloquante)."""
+    reponses = g.get("questions")
+    if not isinstance(reponses, list):
+        return {"manques": ["grille : `questions`, la liste remplie depuis `atelier grille`"]}
+    questions = questions_grille()
+    par_id = {r.get("id"): r for r in reponses if isinstance(r, dict)}
+    manques, non, oui, cap, bloquants = [], [], 0, 10, 0
+    for q in questions:
+        r = par_id.get(q["id"])
+        if r is None:
+            manques.append(f"{q['id']} : question sans réponse")
+            continue
+        champ = lambda k: " ".join(str(r.get(k, "") or "").split()).replace("|", "/")  # noqa: E731
+        rep = champ("reponse").lower()
+        if rep not in REPONSES:
+            manques.append(f"{q['id']} : `reponse` vaut oui, non ou na — pas « {rep} »")
+        elif rep == "oui":
+            if not preuve_valide(racine, champ("preuve")):
+                manques.append(f"{q['id']} : oui sans preuve — `preuve` : le chemin, depuis la racine du projet, "
+                               "d'une capture qui existe (.png, .jpg, .webp)")
+            oui += 1
+        elif rep == "na":
+            if not q.get("na"):
+                manques.append(f"{q['id']} : ne peut pas être non applicable — réponds oui ou non")
+            elif not champ("constat"):
+                manques.append(f"{q['id']} : non applicable sans raison — mets-la dans `constat`")
+        else:
+            vides = [k for k in ("ou", "constat", "correction") if not champ(k)]
+            if vides:
+                manques.append(f"{q['id']} : non sans {', '.join(vides)}")
+            cap = min(cap, plafond(q))
+            bloquants += bool(q.get("bloquant"))
+            non.append(f"{q['id']} {champ('ou')} : {champ('constat')} → {champ('correction')}")
+    connus = {q["id"] for q in questions}
+    manques += [f"{i} : question inconnue de la grille" for i in par_id if i not in connus]
+    comptes = oui + len(non)
+    if not comptes and not manques:
+        manques.append("aucune question répondue oui ou non : rien à noter")
+    note = min((10 * oui) // comptes, cap) if comptes else 0
+    return {"note": note, "oui": oui, "comptes": comptes, "non": non, "bloquants": bloquants, "manques": manques}
+
+
+def controle_grille(kb: Path, fichier: Path) -> dict:
+    """Ce que `revue` écrit et ce que `avancement.py task done interface revue` relit : la même fonction."""
+    try:
+        g = lit_json(fichier, "grille")
+    except Refus as exc:
+        return {"manques": [str(exc)]}
+    return note_grille(g, racine_de(kb))
+
+
+def revue(kb: Path, fichier: Path) -> dict:
+    """Calcule la note de la grille remplie et ajoute sa ligne sous `## Revue visuelle` de `navigation.md`."""
+    nav = kb / "interface" / "navigation.md"
+    if not nav.is_file():
+        raise Refus(f"{nav} introuvable : la revue suit la Phase 3")
+    r = controle_grille(kb, fichier)
+    if r["manques"]:
+        raise Refus("grille incomplète, rien n'est écrit :\n" + "\n".join(r["manques"]))
+    b = r["bloquants"]
+    detail = " ; ".join(r["non"]) if r["non"] else "aucun problème"
+    ligne = (f"- {maintenant()} — note {r['note']}/10 — grille {r['oui']}/{r['comptes']} "
+             f"({len(r['non'])} non, {b} bloquant{'s' if b > 1 else ''}) — {detail}")
+    t = nav.read_text(encoding="utf-8")
+    m = re.search(r"^## Revue visuelle\s*$", t, re.M)
+    if m is None:
+        t = t.rstrip("\n") + "\n\n## Revue visuelle\n" + ligne + "\n"
+    else:
+        fin = re.search(r"^## ", t[m.end():], re.M)
+        coupe = m.end() + fin.start() if fin else len(t)
+        t = t[:coupe].rstrip("\n") + "\n" + ligne + "\n" + ("\n" + t[coupe:] if fin else "")
+    ecrit_atomique(nav, t)
+    journal(kb, "process:hosa-atelier", "noté la revue visuelle dans", "navigation")
+    return {"navigation": str(nav), "note": r["note"], "grille": f"{r['oui']}/{r['comptes']}", "non": r["non"]}
+
+
 # ---------------------------------------------------------------- ligne de commande
 
 def main(argv: list[str]) -> int:
@@ -1198,6 +1372,11 @@ def main(argv: list[str]) -> int:
     a.add_argument("--out", type=Path, required=True)
     a = sous.add_parser("ecart", help="le CSS du projet porte-t-il les jetons de la KB ?")
     a.add_argument("kb", type=Path)
+    a = sous.add_parser("grille", help="la grille de la revue visuelle, à remplir")
+    a.add_argument("--out", type=Path)
+    a = sous.add_parser("revue", help="calculer la note d'une grille remplie et l'écrire dans la KB")
+    a.add_argument("kb", type=Path)
+    a.add_argument("grille", type=Path)
     x = p.parse_args(argv)
     try:
         if x.cmd == "cartes":
@@ -1208,6 +1387,12 @@ def main(argv: list[str]) -> int:
             r = choisir(x.kb, x.manche, x.option, x.depuis, x.par, x.note, x.conserve)
         elif x.cmd == "css":
             r = css(x.kb, x.out)
+        elif x.cmd == "grille":
+            r = grille(x.out)
+            if x.out is None:
+                return 0
+        elif x.cmd == "revue":
+            r = revue(x.kb, x.grille)
         else:
             manques = ecarts(x.kb)
             for m in manques:

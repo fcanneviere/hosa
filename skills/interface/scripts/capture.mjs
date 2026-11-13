@@ -369,6 +369,32 @@ function controlesDeLaPage(accessibilite, mobile) {
   if (!accessibilite) return trouves;
 
   if (!racine.lang) trouves.push("langue de la page absente (<html lang>)");
+  if (!document.title.trim()) trouves.push("titre de page absent (<title>)");
+  // Zoom bloqué : l'utilisateur doit pouvoir agrandir à 200 % (WCAG 1.4.4).
+  for (const m of document.querySelectorAll('meta[name="viewport" i]')) {
+    const v = (m.getAttribute("content") || "").toLowerCase();
+    const maxi = /maximum-scale\s*=\s*([\d.]+)/.exec(v);
+    if (/user-scalable\s*=\s*(no|0)\b/.test(v) || (maxi && Number(maxi[1]) < 2)) trouves.push(`zoom bloqué : <meta viewport> « ${v.slice(0, 80)} »`);
+  }
+  // Titres : un h1, et aucun niveau sauté en descendant (h2 puis h4).
+  const titres = [...document.querySelectorAll("h1,h2,h3,h4,h5,h6")].filter(visible);
+  if (titres.length && !titres.some((h) => h.tagName === "H1")) trouves.push("aucun titre h1 visible");
+  let niveau = 0, sauts = 0;
+  for (const h of titres) {
+    const n = Number(h.tagName[1]);
+    if (niveau && n > niveau + 1 && sauts++ < 3) trouves.push(`niveau de titre sauté : ${h.tagName.toLowerCase()} après un h${niveau} : ${nom(h)}${cite(h)}`);
+    niveau = n;
+  }
+  // Mobile : un champ sous 16 px fait zoomer la page à la saisie (iOS).
+  if (mobile) {
+    let petits = 0;
+    const saisies = "input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])"
+      + ":not([type=submit]):not([type=button]):not([type=reset]):not([type=file]):not([type=image]),select,textarea";
+    for (const el of document.querySelectorAll(saisies)) {
+      const t = parseFloat(getComputedStyle(el).fontSize);
+      if (visible(el) && t < 16 && petits++ < 3) trouves.push(`champ en ${Math.round(t * 10) / 10} px < 16 px sur mobile (la page zoome à la saisie) : ${nom(el)}`);
+    }
+  }
   // Le navigateur ramène toute couleur CSS à des octets RGBA sur une toile d'un pixel.
   const toile = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
   const couleur = (css) => {
