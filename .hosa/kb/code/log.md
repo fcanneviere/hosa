@@ -1,6 +1,28 @@
 # Log — kb/code
 
 ## 2026-11-13
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hosa-app-public`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app-public`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app-public`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `skills-interface-scripts`

@@ -5,7 +5,7 @@ description: "Use when the user wants to see the project in the browser — the 
 
 # Pilotage
 
-Opens the Hosa dashboard on the managed project's `.hosa/kb/`. It only reads and edits the KB files: it never calls Claude.
+Opens the Hosa dashboard on the managed project's `.hosa/kb/`: follow the project, read and edit the KB, validate, write remarks for Claude. It only reads and edits the KB files: it never calls Claude.
 
 From the managed project's root, run in the background (`run_in_background: true`), never in the foreground — the server keeps running:
 
@@ -15,6 +15,8 @@ CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}" python "${CLAUDE_PLUGIN_ROOT}/run.py"
 
 (`python3` where `python` doesn't exist.) It builds the dependencies on first launch if the session start hasn't yet (`${CLAUDE_PLUGIN_DATA}/venv`, a minute), then opens http://127.0.0.1:3000. `PORT=<n>` changes the port when 3000 is busy.
 
-Then answer in two lines: the link, and what to look at first — **Steering** shows the progress plan (stage in progress, missing proofs, next skill to run).
+Then answer in two lines: the link, and what to look at first — the **Vue d'ensemble** shows the next step and its command, and the button « Remarque pour Claude » sends feedback on any screen. Remarks are files of `kb/remarques/`: the resume card lists the open ones; close each with `<hosa> avancement "<kb>" remarque <chemin> --detail "<réponse>"`.
+
+The Hosa pane (`/hosa-panneau`) has the same thing as a button, « Ouvrir le tableau de bord »: suggest it when the pane is open.
 
 Fails with "Pas de .hosa/kb" → the project isn't initialised: propose `hosa`.

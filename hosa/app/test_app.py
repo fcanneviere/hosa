@@ -202,6 +202,42 @@ class AppTest(unittest.TestCase):
         self.assertEqual((menaces["status"], menaces["detail"]), ("non applicable", "pas d'API"))
         self.assertTrue(plan["resume"][0].startswith("En cours : `sprint` (sprint s1)"))
 
+    def test_remark_round_trip_from_the_app_to_claude_and_back(self):
+        """Une remarque écrite dans l'app : fichier signé par l'humain, listée ouverte, fermée par avancement.py
+        avec la réponse que l'app affiche ensuite."""
+        code, r = self.call("POST", "/api/remarques", {"auteur": "fab", "texte": "Le CA2 est faux.\nVoir l'export.",
+                                                       "cible": "tickets/connexion.md", "nature": "correction"})
+        self.assertEqual(code, 201)
+        self.assertTrue(r["path"].startswith("remarques/") and r["path"].endswith("-connexion.md"))
+        self.assertEqual(r["frontmatter"]["generated"]["by"], "human:fab")
+        self.assertEqual((r["frontmatter"]["etat"], r["frontmatter"]["cible"]), ("ouverte", "tickets/connexion.md"))
+        self.assertIn("human:fab a écrit la remarque", (self.root / "remarques" / "log.md").read_text(encoding="utf-8"))
+        rem = self.call("GET", "/api/overview")[1]["remarques"]
+        self.assertEqual([(x["etat"], x["auteur"], x["texte"]) for x in rem], [("ouverte", "fab", "Le CA2 est faux.\nVoir l'export.")])
+        av = kb._avancement()
+        self.assertEqual(av.close_remark(self.root, r["path"], "")[0], 2)
+        self.assertEqual(av.close_remark(self.root, "tickets/connexion.md", "ok")[0], 2)
+        self.assertEqual(av.close_remark(self.root, r["path"], "CA2 corrigé.")[0], 0)
+        self.assertEqual(av.close_remark(self.root, r["path"], "encore")[0], 1)
+        rem = self.call("GET", "/api/overview")[1]["remarques"][0]
+        self.assertEqual((rem["etat"], rem["reponse"]), ("traitee", "CA2 corrigé."))
+        self.assertTrue(rem["traiteeAt"])
+        self.assertEqual(kb.parse((self.root / r["path"]).read_text(encoding="utf-8"))[0]["type"], "Remarque")
+
+    def test_remark_refusals(self):
+        for body in ({"auteur": "fab", "texte": "  "}, {"auteur": "Fab Nom", "texte": "x"},
+                     {"auteur": "fab", "texte": "x", "nature": "ordre"}, {"auteur": "fab", "texte": "x", "cible": "cdc/absent.md"},
+                     {"auteur": "fab", "texte": "x", "cible": "../../etc/passwd.md"}, {"auteur": "fab", "texte": "x" * 4001}):
+            self.assertEqual(self.call("POST", "/api/remarques", body)[0], 400, body)
+        self.assertEqual(self.call("POST", "/api/remarques", {"auteur": "fab", "texte": "x"}, ctype="text/plain")[0], 400)
+        self.assertFalse((self.root / "remarques").exists())
+        code, r = self.call("POST", "/api/remarques", {"auteur": "fab", "texte": "Une idée générale", "nature": "idee"})
+        self.assertEqual((code, r["frontmatter"]["cible"]), (201, None))
+        self.assertTrue(r["path"].endswith("-general.md"))
+        (self.root / "cdc" / "Mon Doc.md").write_text("---\ntype: Note\n---\n", encoding="utf-8")
+        r = self.call("POST", "/api/remarques", {"auteur": "fab", "texte": "x", "cible": "cdc/Mon Doc.md"})[1]
+        self.assertRegex(r["path"], r"^remarques/\d{8}-\d{6}-mon-doc\.md$")
+
     def test_spa_fallback(self):
         with urllib.request.urlopen(self.base + "/whatever") as r:
             self.assertIn(b"<title>Hosa", r.read())
@@ -496,6 +532,13 @@ class UsageApiTest(unittest.TestCase):
                 for f in ur.FIELDS:
                     self.assertEqual(r[f], table[r["name"]][f], (r["name"], f))
                 self.assertAlmostEqual(r["part"], 100 * table[r["name"]]["usd"] / total)
+        # le total de la période et celui de la période d'avant, de même durée : la comparaison des tuiles
+        self.assertEqual(body["total"], {f: sum(r[f] for r in by_model.values()) for f in ur.FIELDS})
+        prev = ur.scan(self.tr, (date.today() - timedelta(days=14)).isoformat(), None,
+                       until=(date.today() - timedelta(days=8)).isoformat())[1]
+        self.assertEqual(body["previous"], {f: sum(r[f] for r in prev.values()) for f in ur.FIELDS})
+        self.assertEqual(body["previous"]["calls"], 1)  # l'appel de J-8 : seul dans les 7 jours d'avant
+        self.assertEqual(body["days"], 7)
 
     def test_window_boundaries(self):  # CA1
         jeu.transcripts(self.tr)

@@ -1,71 +1,75 @@
 # Interface du tableau de bord Hosa
 
 ## Vue d'ensemble
-Page unique en HTML, CSS et JavaScript natifs. Pas de build, polices système, aucune ressource réseau.
+Page unique en HTML, CSS et JavaScript natifs. Pas de build, polices du système, aucune ressource réseau.
 Fichiers : `hosa/app/public/index.html` (coquille), `style.css`, `app.js` (vues, état, appels API).
 Routage par le hash de l'URL.
 
 Lancement : `python hosa/app/server.py` (port 3000). `HOSA_KB_ROOT=.hosa/kb` désigne la KB à lire.
-`server.py` et `kb.py` ne changent pas : voir `docs/architecture.md`.
+Recette locale : `python fixtures/jeu.py`, puis `HOSA_KB_ROOT="$TMP/hosa-ui-recette/.hosa/kb" python server.py`.
+
+## Ce que l'interface permet
+- **Suivre** : prochaine étape et commande à copier, plan d'avancement, sprints, tickets, recettes et audits, consommation.
+- **Lire** : cahier des charges, personas, toute la KB, traçabilité exigence → ticket → code, journal.
+- **Agir** : valider ce que Claude a écrit, modifier un document, déplacer un ticket, écrire une remarque pour Claude.
 
 ## Écrans
-Un seul utilisateur, un seul menu, aucun rôle ni droit distinct. Tous les écrans sont accessibles.
-Le menu est une barre haute qui défile horizontalement : Accueil, Plan d'avancement, Exigences, Tickets, Sprints, Recettes, Consommation, Traçabilité, Journal, Personas, puis Gestion ▾ (À valider, Concepts, Tickets).
+Un seul utilisateur, aucun rôle. Menu latéral en trois groupes (un tiroir sous 900 px).
 
-| Route | Écran |
-|---|---|
-| `/` | Accueil |
-| `/avancement` | Plan d'avancement |
-| `/exigences`, `/exigences/<slug>` | Exigences |
-| `/tickets`, `/tickets/<chemin>` | Tickets |
-| `/sprints`, `/sprints/<sprint>` | Sprints |
-| `/recettes` | Recettes |
-| `/consommation` | Consommation |
-| `/tracabilite` | Traçabilité (graphe construit automatiquement ; « Graphe absent » seulement hors d'un dépôt git) |
-| `/journal` | Journal |
-| `/personas` | Personas |
-| `/gestion/validation` | À valider |
-| `/gestion/concepts`, `/gestion/concepts/<chemin>` | Liste et éditeur de concepts |
-| `/gestion/tickets` | Liste de gestion des tickets |
+| Groupe | Route | Écran |
+|---|---|---|
+| Pilotage | `/` | Vue d'ensemble |
+| Pilotage | `/avancement` | Plan d'avancement |
+| Pilotage | `/sprints`, `/sprints/<sprint>` | Sprints |
+| Pilotage | `/tickets`, `/tickets/<chemin>` | Tickets (tableau à 4 colonnes) ; `/gestion/tickets` y mène aussi |
+| Pilotage | `/recettes` | Recettes et qualité |
+| Pilotage | `/consommation` | Consommation |
+| Produit | `/exigences`, `/exigences/<slug>` | Cahier des charges |
+| Produit | `/personas`, `/personas/<slug>` | Personas |
+| Produit | `/kb`, `/kb/<chemin>` | Base de connaissance (lecteur) |
+| Produit | `/tracabilite` | Traçabilité |
+| Vos actions | `/gestion/validation` | À valider (compteur dans le menu) |
+| Vos actions | `/remarques` | Remarques pour Claude (compteur des remarques en attente) |
+| Vos actions | `/journal` | Journal |
+| Vos actions | `/gestion/concepts`, `/gestion/concepts/<chemin>` | Concepts, éditeur |
 
-Page 404 « Écran introuvable ». Il n'y a pas de page 403.
+Page 404 « Écran introuvable ».
 
-## Accueil
-Dans l'ordre :
-1. bandeau d'état de la KB (sauvegarde) ;
-2. prochaine étape, avec le skill à copier (Copier) et le point de reprise ;
-3. « Peut-on livrer ? » et les points bloquants ;
-4. plan d'avancement et preuves manquantes ;
-5. « À valider », avec le bouton Valider ;
-6. tickets du sprint actif ;
-7. dernières recettes et les 2 premières lignes de consommation.
+## Vue d'ensemble
+Dans l'ordre : la question « Où en est <projet> ? » ; le bandeau de la prochaine étape (commande à copier, preuves manquantes) ;
+4 indicateurs (exigences validées, tickets faits, sprint actif, consommation de la période comparée à la période d'avant), chacun mène à son écran ;
+le plan d'avancement en frise ; « À vous » (documents à valider, remarques en attente, dernières réponses de Claude) ; « Peut-on livrer ? » ;
+le sprint en cours ; l'activité récente ; vos remarques.
 
-## Consommation
-Tableau Agent · Appels · Part (en %), pour la période choisie. Sans donnée : « Aucune donnée de consommation trouvée pour ce projet. »
+## Remarques pour Claude
+- Le bouton « Remarque pour Claude » est sur chaque écran. Sur un document (ticket, exigence, persona, page de la KB, éditeur), la remarque le vise ; sinon elle est générale.
+- Le tiroir : document visé, nature (À corriger, Question, Idée), texte (4 000 caractères), `Ctrl Entrée` envoie.
+- `POST /api/remarques` écrit `kb/remarques/<horodatage>-<document>.md`, type `Remarque`, signé `human:<nom>`, `etat: ouverte`.
+- L'app n'appelle jamais Claude. La fiche de reprise (`avancement.py reprendre`) liste les remarques ouvertes avant son `Action`.
+  Claude traite chacune par la méthode, puis la ferme : `avancement.py <kb> remarque <chemin> --detail "<réponse>"` (`etat: traitee`, section `## Réponse de Claude`).
+- L'écran montre l'état de chaque remarque (« en attente de Claude », « traitée par Claude ») et la réponse.
 
 ## Comportements
-- Nom : demandé une seule fois, à la première validation, puis retenu. Le bouton « Mon nom » (en haut à droite) le modifie. Il sert à la traçabilité, pas à l'authentification.
-- Filtres : pastilles que l'on retire d'un clic. Ils restent d'un écran à l'autre.
-- La touche `/` place le curseur dans la recherche.
-- Relire garde la position et les filtres.
-- Valider : écrit `status: stable` et `verified: human:<nom>`. Annuler la validation : demande confirmation et efface `verified`.
-- Éditeur de concept : onglet Aperçu, état de sauvegarde, confirmation avant de quitter avec des changements non enregistrés.
-- Erreurs : un assainisseur retire chemins, noms de fichiers, routes et codes. Un « Réessayer » est proposé.
-- Mobile : une seule colonne sous 700 px. Les entrées de Gestion rejoignent la barre de menu.
-- Couverture des critères (« 2/3 ») : calculée par le serveur (`GET /api/couverture`, `avancement.py coverage`). Un critère CAn compte s'il est cité `[CAn]` dans le plan technique, ou « CAn — Oui » dans une recette. Si la route échoue, l'écran affiche « Couverture indisponible ».
+- Nom : demandé une seule fois, à la première validation ou remarque, puis retenu (bas du menu, « Mon nom »). Il signe, il n'authentifie pas.
+- Recherche globale : `Ctrl K` ouvre la palette (écrans et documents) ; `/` place le curseur dans la recherche de l'écran, sinon ouvre la palette.
+- Filtres : pastilles que l'on retire d'un clic ; ils restent d'un écran à l'autre (stockage de session).
+- Tickets : glisser une carte vers une colonne, ou « Déplacer… » au clavier. Écrit `state` et une ligne de log.
+- Valider : écrit `verified: human:<nom>` (et `status: stable` pour une exigence). Annuler la validation demande confirmation.
+- Éditeur : en-tête YAML repliable, Markdown et aperçu côte à côte, barre d'enregistrement collante, confirmation avant de quitter avec des changements. Un fichier modifié par Claude entre-temps est refusé (409).
+- Erreurs : un assainisseur retire chemins, routes et codes. Un « Réessayer » est proposé.
+- Thème : système, clair ou sombre (bas du menu), retenu sur ce poste.
 
-## Identité visuelle
-« Papier calme » : papier `#F5F2EC`, bleu nuit `#23407A`, brique `#9A3B12`, vert `#1F6B3A`.
-Une seule densité, environ 15 px.
-Un statut s'affiche par un mot, un symbole et une couleur. Pas de mode sombre, pas d'animation.
-Les variables CSS sont dans `style.css`. Détail : `kb/project/identity.md`, section « Identité visuelle ».
+## Identité visuelle « Atelier »
+Papier chaud et encre ; pétrole `#1D5566` pour la navigation et les liens ; terre cuite `#A2481A` pour l'action (prochaine étape, remarques, compteurs).
+Titres en serif de labeur (Iowan Old Style, Palatino), texte en sans humaniste (Segoe UI Variable, Avenir), chiffres tabulaires.
+Mode sombre : ses propres teintes, pas une inversion. Un statut s'affiche toujours par un mot, un symbole et une couleur.
+Graphique : barres horizontales d'une seule série (coût par agent), valeurs écrites à côté et tableau exact dessous.
+Variables CSS dans `style.css`, sur `:root`, redéfinies pour le mode sombre.
 
 ## Vocabulaire
-Un seul vocabulaire, pensé pour un vibecoder. Résultat d'une recette : « réussi », « réussi avec remarques », « échoué ». Validation : « validé par vous », « contrôlé automatiquement », « à valider ».
-Lexique : `kb/interface/lexique.md`. Plan de navigation : `kb/interface/navigation.md`. Règles de conception : `kb/rules/design/*.md` (brouillon).
+Recette : « réussi », « réussi avec remarques », « échoué ». Validation : « validé par vous », « contrôlé automatiquement », « à valider ».
+Remarque : « en attente de Claude », « traitée par Claude ».
 
 ## Limites connues
-Ces données serveur manquent. Les écrans affichent un état lisible à la place.
-- `GET /api/kb-status` (`{git, changed}`) : alimente le bandeau de sauvegarde.
-- `GET /api/usage?days=N` (agents, skills, modèles, via `usage_report.py`) : alimente Consommation.
-- Recettes : lues dans `recettes` de `GET /api/overview` ; une recette est un concept de `kb/test/` dont le nom ne finit pas par `-technique.md`. Les tickets sont lus dans `kb/tickets/`.
+- La consommation compare à la période d'avant de même durée ; elle n'a pas de courbe par jour (`usage_report.scan` ne la donne pas).
+- Une remarque n'est lue par Claude qu'à la prochaine « reprends » (ou « traite mes remarques ») : l'app ne le réveille pas.

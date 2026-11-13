@@ -238,7 +238,7 @@ def save(path: Path, sections: dict, resume: str, loops: list[dict] | None = Non
             tmp.unlink()
 
 
-READS = {"show", "next", "reprendre", "check"}
+READS = {"show", "next", "reprendre", "check", "remarques"}
 LOCK_WAIT, LOCK_STALE = 15, 120  # seconds: `task done` runs checkers of up to 60 s
 
 
@@ -802,6 +802,72 @@ def running_agents(kb: Path) -> list[dict]:
     return sorted(out, key=lambda a: -(a["minutes"] or 0))
 
 
+REMARK_NATURES = ("correction", "question", "idee")
+REMARK_SHOWN = 8
+
+
+def open_remarks(kb: Path) -> list[dict]:
+    """The user's remarks written in the dashboard (`kb/remarques/`, type `Remarque`) not closed yet, oldest first.
+    The fiche carries only their path, nature and target, cleaned: the text is read in the file, as data."""
+    out = []
+    for f, text in concepts(kb, "remarques", "Remarque"):
+        head = front(text)
+        if field(head, "etat") == "traitee":
+            continue
+        nature = field(head, "nature") or ""
+        cible = (field(head, "cible") or "").strip("'\"")
+        out.append({"path": f"remarques/{f.name}", "nature": nature if nature in REMARK_NATURES else "remarque",
+                    "cible": cible if re.fullmatch(r"[\w./-]{1,160}", cible) and cible != "null" else ""})
+    return out
+
+
+def remark_lines(kb: Path, kbs: str) -> list[str]:
+    rem = open_remarks(kb)
+    if not rem:
+        return []
+    shown = " ; ".join(f"`{r['path']}` ({r['nature']}" + (f" sur `{r['cible']}`" if r["cible"] else "") + ")"
+                       for r in rem[:REMARK_SHOWN])
+    more = f" ; et {len(rem) - REMARK_SHOWN} autres : `<hosa> avancement \"{kbs}\" remarques`" if len(rem) > REMARK_SHOWN else ""
+    return [f"- Remarques de l'utilisateur, écrites dans le tableau de bord ({len(rem)}) : {shown}{more}",
+            "- Remarques : avant l'action, `Read` chacune ; traite-la comme une demande de l'utilisateur, par le pipeline "
+            "(exigence `stable` → `changement`, défaut d'un ticket → `develop <ticket> correction`, question → réponds) ; "
+            f"puis ferme-la : `<hosa> avancement \"{kbs}\" remarque <chemin> --detail \"<ta réponse, une phrase>\"`."]
+
+
+def close_remark(kb: Path, rel: str, reply: str) -> tuple[int, str]:
+    """`remarque <chemin> --detail`: the reply goes under `## Réponse de Claude`, `etat: traitee` in the frontmatter.
+    The dashboard shows it to the user; a remark closed without a reply is refused."""
+    rel = rel.strip().strip("`").replace("\\", "/").removeprefix("kb/").removeprefix(".hosa/kb/")
+    target = (kb / rel).resolve()
+    if (kb / "remarques").resolve() != target.parent or target.suffix != ".md":
+        return 2, f"error: `{rel}` n'est pas une remarque de `kb/remarques/`"
+    text = read(target) or ""
+    m = re.match(r"---\s*\n(.*?)\n---", text, re.S)
+    if not m or (field(m.group(1), "type") or "").strip("\"'") != "Remarque":
+        return 2, f"error: `{rel}` n'est pas une remarque lisible"
+    if not reply.strip():
+        return 2, "error: `--detail \"<ta réponse>\"` est requis : l'utilisateur la lit dans le tableau de bord"
+    head, body = m.group(1), text[m.end():]
+    if field(head, "etat") == "traitee":
+        return 1, f"✗ `{rel}` est déjà traitée"
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    head = re.sub(r"^etat:.*$", "etat: traitee", head, count=1, flags=re.M) if re.search(r"^etat:", head, re.M) \
+        else head + "\netat: traitee"
+    head += f"\ntraitee:\n  by: claude-code/hosa\n  at: {now}"
+    target.write_text(f"---\n{head}\n---{body.rstrip()}\n\n## Réponse de Claude\n\n{reply.strip()}\n", encoding="utf-8")
+    log = target.parent / "log.md"
+    day = f"## {now[:10]}"
+    old = read(log) or "# Log — kb/remarques\n"
+    line = f"- claude-code/hosa a traité la remarque `{target.stem}`"
+    if day in old:  # OKF §9, as kb.append_log: grouped by day, newest first
+        new = old.replace(day, f"{day}\n{line}", 1)
+    else:
+        first, _, rest = old.partition("\n")
+        new = f"{first}\n\n{day}\n{line}\n{rest}"
+    log.write_text(new, encoding="utf-8")
+    return 0, f"✓ `{rel}` traitée : l'utilisateur voit ta réponse dans le tableau de bord."
+
+
 def clip(text: str, n: int = 300) -> str:
     return text if len(text) <= n else text[:n].rstrip() + f"… (+{len(text) - n} caractères : `check`)"
 
@@ -813,7 +879,7 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
     out = ["## Fiche de reprise", f"- KB : `{kbs}`"]
     found = first_open(sections)
     if not found:
-        out += [f"- Étape : {next_open(sections)}", "- Action : invoque `hosa:sprint`."]
+        out += [f"- Étape : {next_open(sections)}", *remark_lines(kb, kbs), "- Action : invoque `hosa:sprint`."]
         return "\n".join(out + [r for r in (resume or "").splitlines() if r.strip() and r.strip() != "- Rien en cours."])
     title, (stage, status, updated, detail) = found
     sprint = title[len("Sprint "):] if title.startswith("Sprint ") else ""
@@ -886,6 +952,7 @@ def card(kb: Path, sections: dict, resume: str, loops: list[dict], tasks: list[d
                  "puis l'étape suivante."
     else:
         action = f"{go} et reprends sur ce qui reste à prouver ci-dessus — `start` est déjà fait."
+    out += remark_lines(kb, kbs)
     out.append(f"- Action : {action}")
     return "\n".join(out)
 
@@ -1675,7 +1742,7 @@ def run(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
     ap.add_argument("action", choices=["show", "next", "reprendre", "check", "start", "progress", "done", "block", "skip",
-                                       "reprise", "back", "init", "task", "juge", "reponse"])
+                                       "reprise", "back", "init", "task", "juge", "reponse", "remarques", "remarque"])
     ap.add_argument("stage", nargs="?")
     ap.add_argument("to", nargs="?")
     ap.add_argument("item", nargs="?")
@@ -1709,6 +1776,15 @@ def run(argv: list[str]) -> int:
     if a.action == "show":
         print(show(sections, resume, loops, tasks))
         return 0
+    if a.action == "remarques":  # the dashboard's open remarks, whole: needs no plan
+        rem = open_remarks(a.kb)
+        print("\n".join(f"- `{r['path']}` ({r['nature']}" + (f" sur `{r['cible']}`" if r["cible"] else "") + ")" for r in rem)
+              or "Aucune remarque ouverte.")
+        return 0
+    if a.action == "remarque":
+        code, out = close_remark(a.kb, a.stage or "", a.detail)
+        print(out, file=sys.stderr if code == 2 else sys.stdout)
+        return code
     if a.action == "task":
         code, out = task(a.kb, sections, tasks, a)
         if code == 1:  # a refused output counts its round
@@ -1774,7 +1850,8 @@ def run(argv: list[str]) -> int:
         return 0
     if a.action == "reprendre":
         if not path.exists():
-            print("Pas de plan d'avancement : invoque `hosa:status`, qui le crée depuis l'état de la KB.")
+            print("\n".join(["Pas de plan d'avancement : invoque `hosa:status`, qui le crée depuis l'état de la KB.",
+                             *remark_lines(a.kb, a.kb.resolve().as_posix())]))
             return 0
         print(card(a.kb, sections, resume, loops, tasks))
         return 0

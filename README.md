@@ -164,9 +164,11 @@ Les scripts de Hosa passent tous par une seule commande, `<hosa> <script>` (la s
 
 ## Le tableau de bord
 
-Une interface locale montre l'avancement du projet dans la méthode Hosa : le plan d'avancement (étape en cours, preuves manquantes, prochain skill à lancer), le tableau des tickets, les sprints, la KB, le graphe et le journal. Elle lit et modifie les fichiers de la KB, elle n'appelle jamais Claude.
+Une interface locale montre tout ce que Hosa produit sur le projet : la prochaine étape et la commande à copier, le plan d'avancement, les sprints, le tableau des tickets (glisser-déposer), les recettes et les audits, la consommation (coût estimé, comparé à la période d'avant), le cahier des charges, les personas, la KB, la traçabilité et le journal. Tu y valides ce que Claude a écrit, tu modifies un document, ou tu écris une **remarque pour Claude** sur n'importe quel écran. Mode clair et sombre, recherche globale avec `Ctrl K`.
 
-Dans Claude Code, demande « ouvre le tableau de bord » ou tape `/pilotage`. Elle s'ouvre sur http://127.0.0.1:3000.
+Elle lit et modifie les fichiers de la KB, elle n'appelle jamais Claude. Une remarque est un fichier de `kb/remarques/`. À la prochaine « reprends », la fiche de reprise la donne à Claude. Il la traite par la méthode, puis il la ferme avec sa réponse (`avancement.py remarque <chemin> --detail "…"`). La réponse s'affiche dans le tableau de bord.
+
+Dans Claude Code, demande « ouvre le tableau de bord », tape `/pilotage`, ou clique « Ouvrir le tableau de bord » dans le panneau Hosa (`/hosa-panneau`). Elle s'ouvre sur http://127.0.0.1:3000, ou sur un port libre si 3000 est pris. Le serveur lancé par le panneau vit le temps de la session ; « Arrêter » le coupe.
 
 Ses dépendances Python s'installent toutes seules, en arrière-plan, à la première session après l'installation du plugin, dans son dossier de données (`~/.claude/plugins/data/hosa-hosa/venv`) : elles survivent aux mises à jour, et ne sont réinstallées que si leurs versions changent. Rien n'est installé dans le Python du système. Variables optionnelles :
 - `PORT` : port d'écoute (défaut `3000`) ;

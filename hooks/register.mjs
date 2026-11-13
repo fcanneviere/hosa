@@ -10,6 +10,7 @@
 // D. A pane « Hosa » with what the user needs: the open stage, the questions waiting for them, the resume
 //    point, the open loops, the agents' tasks, each pipeline's progress. It reads the plan avancement.py
 //    writes, nothing else. /hosa-panneau opens it. Kill switch of the unasked opening: HOSA_PANNEAU=0.
+// E. In the pane, « Ouvrir le tableau de bord » starts run.py (the /hosa:pilotage server) for the session.
 
 const PLAN = '.hosa/kb/project/avancement.md'
 const CLOSED = ['fait', 'non applicable']
@@ -79,6 +80,9 @@ let plan = null // { phase, closed } of the managed project, null outside one
 let view = null // readView of the same file, for the pane
 let seen = null // the plan's text as last read: the pane is drawn again only when it changes
 let percent = null
+let project = null // the managed project's root, where `run.py` finds its `.hosa/kb`
+// The dashboard (E): off, starting, on (its url) or stopped with the reason; the server lives as long as `child`.
+let dash = { state: 'off' }
 
 // The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
 async function refresh($) {
@@ -87,6 +91,7 @@ async function refresh($) {
     const file = `${dir}/${PLAN}`
     if (await $.fs.exists(file)) {
       const text = await $.fs.read(file)
+      project = dir
       plan = readPlan(text)
       if (text !== seen) {
         view = readView((seen = text))
@@ -100,6 +105,62 @@ async function refresh($) {
   }
 }
 
+// Hosa's Python: the venv the SessionStart hook builds in the plugin's data folder, `pythonw` on Windows
+// (no console window opens); else the Python on the PATH, and run.py builds what it lacks.
+async function python($) {
+  const home = (await $.env.get('USERPROFILE')) || (await $.env.get('HOME')) || ''
+  const data = (await $.env.get('CLAUDE_PLUGIN_DATA')) || (home && `${home}/.claude/plugins/data/hosa-hosa`)
+  const win = /^[A-Za-z]:|\\/.test($.plugin.root)
+  const venv = data && `${data}/venv/${win ? 'Scripts/pythonw.exe' : 'bin/python'}`
+  if (venv && (await $.fs.exists(venv))) return { exe: venv, data, venv: true }
+  return { exe: win ? 'python' : 'python3', data: null, venv: false }
+}
+
+// E. The dashboard (/hosa:pilotage) from a button of the pane: run.py serves the project's KB and opens the browser.
+// The server lives for the session (the stream's loop is its life); 3000 taken → a free port. Fail-open.
+export async function startDashboard($, port = '3000') {
+  if (dash.state === 'starting' || dash.state === 'on' || !project) return
+  dash = { state: 'starting' }
+  redraw($)
+  let busy = false
+  let last = ''
+  try {
+    // With the venv, server.py itself: stopping the child stops the server (on Windows, stopping run.py would leave
+    // its server.py running on the port). Without it, run.py, which builds the venv first.
+    const { exe, data, venv } = await python($)
+    const env = { PORT: port, PYTHONUTF8: '1', HOSA_OPEN_BROWSER: '1', HOSA_KB_ROOT: `${project}/.hosa/kb`,
+      ...(data ? { CLAUDE_PLUGIN_DATA: data } : {}) }
+    const script = venv ? `${$.plugin.root}/hosa/app/server.py` : `${$.plugin.root}/run.py`
+    const child = $.process.spawn({ argv: [exe, script], cwd: project, env })
+    dash.child = child
+    for await (const { text } of child) {
+      const url = /http:\/\/127\.0\.0\.1:\d+/.exec(text)
+      if (url && dash.state === 'starting') {
+        // the desktop links http only on `localhost`; server.py accepts that host (its DNS-rebinding guard)
+        dash = { state: 'on', url: url[0].replace('127.0.0.1', 'localhost'), child }
+        redraw($)
+      }
+      if (/déjà utilisé/.test(text)) busy = true
+      else if (text.trim()) last = text.trim().split(/\r?\n/).pop()
+    }
+  } catch (err) {
+    last = String((err && err.message) || err)
+  }
+  const asked = dash.stopping
+  dash = { state: 'off' }
+  if (busy && port !== '0' && !asked) return startDashboard($, '0')
+  if (!asked) dash = { state: 'stopped', reason: busy ? 'aucun port libre' : last || 'le serveur s\'est arrêté' }
+  redraw($)
+}
+
+export function stopDashboard($) {
+  dash.stopping = true
+  try {
+    Promise.resolve(dash.child && dash.child.return && dash.child.return()).catch(() => {})
+  } catch {}
+  redraw($)
+}
+
 // Fail-open: a pane that cannot be drawn again never stops a hook.
 function redraw($) {
   try {
@@ -108,7 +169,7 @@ function redraw($) {
 }
 
 // Everything the user needs, from the plan alone: what waits for them first, then where the project is.
-function pane({ Box, Text }) {
+function pane($, { Box, Text, Button, Link }) {
   const row = (text, props) => h(Text, { wrap: 'truncate-end', ...props }, text)
   const para = (text, props) => h(Text, { wrap: 'wrap', ...props }, text)
   const group = (title, ...rows) => h(Box, { flexDirection: 'column' }, h(Text, { weight: 'bold' }, title), ...rows)
@@ -130,6 +191,7 @@ function pane({ Box, Text }) {
       : row(`Contexte ${percent} %`, { dimColor: true }))
   }
   out.push(h(Box, { flexDirection: 'column' }, ...head))
+  out.push(dashboard($, { Box, Text, Button, Link }, row, para))
 
   const blocked = [
     ...view.sections.flatMap((s) => s.rows.filter((r) => r.statut === 'bloqué').map((r) => [`${r.stage} (${s.title})`, r.detail])),
@@ -166,8 +228,26 @@ function pane({ Box, Text }) {
   out.push(group('Avancement', ...rows))
 
   out.push(group('Commandes', row('« reprends » : continuer où le plan s\'arrête', { dimColor: true }),
-    row('/hosa:status : le point complet', { dimColor: true }), row('/hosa:pilotage : le tableau de bord', { dimColor: true })))
+    row('/hosa:status : le point complet', { dimColor: true })))
   return h(Box, { flexDirection: 'column', gap: 1 }, ...out)
+}
+
+// The dashboard's row: one button to open it, then its link and a button to stop it.
+function dashboard($, { Box, Text, Button, Link }, row, para) {
+  const start = () => { void startDashboard($) }
+  const lines = [h(Text, { weight: 'bold' }, 'Tableau de bord')]
+  if (dash.state === 'on') {
+    lines.push(h(Text, {}, h(Link, { href: dash.url }, dash.url)),
+      para('Suivi, KB, validations, remarques pour Claude.', { dimColor: true }),
+      h(Box, { flexDirection: 'row', gap: 1 }, h(Button, { key: 'pilotage-ouvrir', onPress: (press) => $.ui.copy({ text: dash.url, surface: press.surface }) }, 'Copier l’adresse'),
+        h(Button, { key: 'pilotage-arreter', onPress: () => stopDashboard($) }, 'Arrêter')))
+  } else if (dash.state === 'starting') {
+    lines.push(row('Démarrage…', { dimColor: true }))
+  } else {
+    lines.push(h(Button, { key: 'pilotage', variant: 'primary', onPress: start }, 'Ouvrir le tableau de bord'))
+    if (dash.state === 'stopped') lines.push(para(`Arrêté : ${dash.reason}`, { color: 'warning' }))
+  }
+  return h(Box, { flexDirection: 'column' }, ...lines)
 }
 
 function showStatus($) {
@@ -198,7 +278,7 @@ export function register(on) {
     return { text: isPlaced ? 'Panneau Hosa ouvert.' : 'Cette interface n\'affiche pas de panneau : /hosa:status donne le même point.' }
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => pane($.ui.resolve(e)))
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => pane($, $.ui.resolve(e)))
 
   // The plan moves during a turn, at each `avancement` call: the pane follows it without waiting for the turn's end.
   on('tool.call', async ($, e, next) => {

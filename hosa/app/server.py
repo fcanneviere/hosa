@@ -112,6 +112,10 @@ def make_handler(root):
                 b = self._json_body()
                 return self._send(201, kb.create(root, str(b.get("bundle", "")), str(b.get("slug", "")),
                                                  str(b.get("type", "")), str(b.get("title", ""))))
+            if method == "POST" and route == "remarques":
+                b = self._json_body()
+                return self._send(201, kb.remark(root, str(b.get("auteur", "")), str(b.get("texte", "")),
+                                                 str(b.get("cible") or ""), str(b.get("nature") or "correction")))
             if method == "POST" and route == "render":
                 return self._send(200, {"html": kb.render(str(self._json_body().get("body", "")))})
             if method == "GET" and route in ("graph/find", "graph/node", "graph/trace"):

@@ -102,6 +102,9 @@ if __name__ == "__main__":
     if "--no-browser" not in sys.argv:
         env["HOSA_OPEN_BROWSER"] = "1"  # server.py opens it once the port is its own, never on another project's server
     try:
-        raise SystemExit(subprocess.call([str(PY), str(APP / "server.py")], env=env, **NO_WINDOW))
+        # The server's own lines (its address, a busy port) go to our streams: with NO_WINDOW alone, the child
+        # would write them to its hidden console (the pane's button reads them).
+        std = {"stdout": sys.stdout, "stderr": sys.stderr} if sys.stdout and sys.stderr else {}
+        raise SystemExit(subprocess.call([str(PY), str(APP / "server.py")], env=env, **std, **NO_WINDOW))
     except KeyboardInterrupt:
         pass

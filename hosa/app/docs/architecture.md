@@ -18,11 +18,13 @@ navigateur ── HTTP JSON ──► hosa/app/server.py ──► kb.py ──�
 - `hosa/app/public/` — interface : `index.html` (coquille), `app.js` (vues, état, appels API), `style.css`.
 
 ## API
-- `GET /api/overview` — projet, plan d'avancement, sections estimées, compteurs de tickets et d'exigences, sprints, dernier audit, activité récente, `recettes` (`path, ticket, titre, persona, at, verdict`).
+- `GET /api/overview` — projet, plan d'avancement, sections estimées, compteurs de tickets et d'exigences, sprints, dernier audit, activité récente, `recettes` (`path, ticket, titre, persona, at, verdict`), `remarques` (`path, title, nature, cible, etat, at, traiteeAt, auteur, texte, reponse`).
 - `GET /api/activity` — entrées des `log.md`.
 - `GET /api/couverture` — couverture des critères de chaque ticket (`criteres`, `couverts`, `total`, `plan`), calculée par `avancement.py coverage`.
 - `GET /api/concepts[?type=]`, `GET /api/concepts/<chemin>` — concepts.
 - `POST /api/concepts` — création ; `PATCH` (fusion du frontmatter) et `PUT` (remplacement) sur `/api/concepts/<chemin>`.
+- `POST /api/remarques` — `{auteur, texte, cible?, nature?}` : écrit une remarque pour Claude dans `kb/remarques/` (`kb.remark`). `overview.remarques` les liste ; `avancement.py remarque` les ferme.
+- `GET /api/usage?days=N` — par agent et par modèle, `total` de la période et `previous` (la période d'avant, même durée).
 - `POST /api/render` — rendu Markdown assaini.
 - `GET /api/graph/find?q=`, `/api/graph/node?id=`, `/api/graph/trace` — graphe.
 

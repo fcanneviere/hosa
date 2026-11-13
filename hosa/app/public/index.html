@@ -4,36 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hosa</title>
+<script>try { const t = localStorage.getItem('hosa.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <a class="skip" href="#main">Aller au contenu</a>
-<header class="top">
-  <a class="brand" href="#/" id="brand"><span class="logo" aria-hidden="true">H</span>Hosa</a>
-  <span class="project" id="project"></span>
-  <span class="phase" id="phase"></span>
-  <form class="gsearch" id="gsearch-form" role="search">
-    <label for="gsearch" class="vh">Rechercher dans la KB</label>
-    <input id="gsearch" type="search" placeholder="Rechercher un document, une exigence…" autocomplete="off">
-    <kbd aria-hidden="true">/</kbd>
-  </form>
-  <span class="sp"></span>
-  <button type="button" class="btn o" id="rename" title="Changer le nom enregistré lors d’une validation"><span id="user-label">Mon nom</span></button>
-</header>
-<div id="banner" role="status"></div>
-<div class="layout">
-  <nav id="nav" class="side" aria-label="Menu principal"></nav>
-  <main id="main" tabindex="-1"><div id="view"></div></main>
+<div class="app">
+  <aside class="side" id="side" aria-label="Menu principal">
+    <a class="brand" href="#/"><span class="logo" aria-hidden="true">H</span><b>Hosa</b></a>
+    <div class="proj" id="proj"></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <button type="button" class="btn ghost" id="rename" title="Nom enregistré avec vos validations et vos remarques"><span aria-hidden="true">◉</span> <span id="user-label">Mon nom</span></button>
+      <button type="button" class="btn ghost" id="theme"><span aria-hidden="true">◐</span> <span id="theme-label">Thème : système</span></button>
+    </div>
+  </aside>
+  <div>
+    <header class="top">
+      <button type="button" class="btn o menu-btn" id="menu" aria-controls="side" aria-expanded="false">☰ <span class="vh">Ouvrir le menu</span></button>
+      <button type="button" class="search-btn" id="open-palette"><span aria-hidden="true">⌕</span><span class="lbl">Rechercher un écran, un ticket, une exigence…</span><kbd>Ctrl K</kbd></button>
+      <span class="sp"></span>
+      <span class="fresh" id="freshness"></span>
+      <button type="button" class="btn o s" id="reload">Relire</button>
+    </header>
+    <div class="banner" id="banner" role="status"></div>
+    <main id="main" tabindex="-1"><div id="view" class="view"></div></main>
+  </div>
 </div>
-<footer class="foot"><span id="freshness"></span> <button type="button" id="reload" class="btn o">Relire</button></footer>
-<div id="toast" role="status" aria-live="polite"></div>
+<button type="button" class="btn act fab" id="fab">✎ Remarque pour Claude</button>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-labelledby="drawer-title" aria-hidden="true"></aside>
+<dialog id="palette" aria-label="Recherche">
+  <input id="palette-input" type="search" placeholder="Aller à…" autocomplete="off" aria-label="Rechercher" aria-controls="palette-list">
+  <ul id="palette-list" role="listbox"></ul>
+  <div class="foot">↑ ↓ pour choisir · Entrée pour ouvrir · Échap pour fermer</div>
+</dialog>
 <dialog id="name-dialog">
   <form method="dialog" id="name-form">
-    <label for="name-input">Votre nom (demandé une seule fois)</label>
-    <input id="name-input" required autocomplete="name">
-    <div><button class="btn" value="ok">Enregistrer</button></div>
+    <label class="f" for="name-input">Votre nom (demandé une seule fois)<input id="name-input" required autocomplete="name"></label>
+    <p class="hint">Il signe vos validations et vos remarques dans la KB. Ce n’est pas un compte.</p>
+    <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn o" value="cancel" formnovalidate>Annuler</button></div>
   </form>
 </dialog>
+<div id="toast" role="status" aria-live="polite"></div>
 <script src="/app.js"></script>
 </body>
 </html>

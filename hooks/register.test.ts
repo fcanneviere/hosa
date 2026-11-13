@@ -8,14 +8,15 @@ const sprints = [...UPSTREAM.map((s) => row(s, 'fait')), '## Sprint s1', row('sp
 
 // Plan text per call, so a test can close a stage between turns.
 let redrawn = 0 // the pane's redraws asked for, over the file
-function project(on: any, plans: string[], env: Record<string, string> = {}) {
+function project(on: any, plans: string[], env: Record<string, string> = {},
+  { redraws = false, exists = /work\/\.hosa\/kb\/project\/avancement\.md$/ } = {}) {
   mock.env(on, env)
   on('session.start', () => ({ cwd: '/work' }))
   on('session.cwd', () => ({ value: '/work/.worktrees/s1/src' }))
-  on('fs.exists', ($: any, e: any) => ({ value: e.path.replaceAll('\\', '/').endsWith('work/.hosa/kb/project/avancement.md') }))
+  on('fs.exists', ($: any, e: any) => ({ value: exists.test(e.path.replaceAll('\\', '/')) }))
   on('fs.read', () => ({ value: plans.length > 1 ? plans.shift() : plans[0] }))
   on('ui.status', () => ({ value: undefined }))
-  on('ui.invalidate', () => { redrawn++; return { value: undefined } })
+  if (!redraws) on('ui.invalidate', () => { redrawn++; return { value: undefined } }) // else the engine redraws the mounted pane
   on('command.register', () => ({ value: { command: 'hosa-panneau' } }))
   on('tool.call', () => ({ result: {} }))
   on('session.measure', ($: any, e: any) => ({ changed: e.changed }))
@@ -121,4 +122,66 @@ test('the pane opens at the start of a Hosa project on the desktop, and follows 
   const before = redrawn
   await $.tool.call({ tool: 'Bash', command: 'hosa avancement "/work/.hosa/kb" done sprint' })
   expect(redrawn).toBe(before + 1)
+})
+
+test('the pane button starts the dashboard on a free port when 3000 is taken, links it, and stops it', async ($, on) => {
+  project(on, [sprints], {}, { redraws: true })
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  const clock = mock.clock(on)
+  const runs: any[] = []
+  on('process.spawn', async function* ($: any, e: any) {
+    runs.push(e)
+    if (runs.length === 1) {
+      yield { stream: 'stderr', text: 'Port 3000 déjà utilisé (un autre tableau de bord ?)\n' }
+      return { value: { code: 1, signal: null } }
+    }
+    yield { stream: 'stderr', text: 'Hosa — http://127.0.0.1:5123  (KB : /work/.hosa/kb)\n' }
+    await clock.sleep(3_600_000) // the server runs until the test moves the clock
+    return { value: { code: 0, signal: null } }
+  })
+  await $.session.start({ surface: 'desktop', isInteractive: true, cwd: '/work' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'pilotage' })
+  expect(runs.map((r) => r.env.PORT)).toEqual(['3000', '0'])
+  expect(runs[0].argv[1]).toMatch(/run\.py$/)
+  expect(runs[0].cwd).toBe('/work')
+  expect((await ui.find({ type: 'Link' }))?.props?.href).toBe('http://localhost:5123')
+  await ui.press({ key: 'pilotage-arreter' })
+  await clock.advance(3_600_000)
+  expect(await ui.find({ type: 'Button', key: 'pilotage' })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /Arrêté/ })).toBeFalsy() // stopped on the user's word: no reason shown
+  await ui.unmount()
+})
+
+test('with Hosa\'s venv the button runs server.py itself, windowless, on the project\'s KB', async ($, on) => {
+  project(on, [sprints], { USERPROFILE: 'C:/Users/u', CLAUDE_PLUGIN_DATA: 'C:/data/hosa' },
+    { redraws: true, exists: /work\/\.hosa\/kb\/project\/avancement\.md$|venv\/(Scripts\/pythonw\.exe|bin\/python)$/ })
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  const runs: any[] = []
+  on('process.spawn', async function* ($: any, e: any) {
+    runs.push(e)
+    return { value: { code: 0, signal: null } }
+  })
+  await $.session.start({ surface: 'desktop', isInteractive: true, cwd: '/work' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'pilotage' })
+  expect(runs[0].argv[0]).toMatch(/^C:\/data\/hosa\/venv\/(Scripts\/pythonw\.exe|bin\/python)$/) // pythonw on Windows: no console
+  expect(runs[0].argv[1].replaceAll('\\', '/')).toMatch(/hosa\/app\/server\.py$/)
+  expect(runs[0].env.HOSA_KB_ROOT).toBe('/work/.hosa/kb')
+  expect(runs[0].env.HOSA_OPEN_BROWSER).toBe('1')
+  await ui.unmount()
+})
+
+test('a dashboard that cannot start says why, and the button stays', async ($, on) => {
+  project(on, [sprints], {}, { redraws: true })
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.spawn', async function* () {
+    yield { stream: 'stderr', text: 'Pas de .hosa/kb ici ni au-dessus : lance run.py depuis le projet géré par Hosa.\n' }
+    return { value: { code: 1, signal: null } }
+  })
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'pilotage' })
+  expect((await ui.find({ type: 'Text', text: /Arrêté/ }))?.text).toContain('Pas de .hosa/kb')
+  await ui.unmount()
 })

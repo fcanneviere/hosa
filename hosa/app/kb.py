@@ -299,6 +299,64 @@ def create(root, bundle, slug, ctype, title):
     return _full(root, target, fm, "\n")
 
 
+REMARK_NATURES = ("correction", "question", "idee")
+REMARK_MAX = 4000
+
+
+def remark(root, auteur, texte, cible="", nature="correction", now=None):
+    """Remarque de l'utilisateur pour Claude : un fichier de `kb/remarques/`, signé `human:<auteur>`.
+    L'app n'appelle jamais Claude : la fiche de reprise (`avancement.py reprendre`) liste les remarques ouvertes,
+    `avancement.py remarque <chemin> --detail` les ferme avec la réponse que l'app affiche."""
+    root = Path(root).resolve()
+    auteur = str(auteur or "").strip()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", auteur):
+        raise KbError("nom : minuscules, chiffres et tirets uniquement")
+    texte = str(texte or "").replace("\r\n", "\n").strip()
+    if not texte:
+        raise KbError("la remarque est vide")
+    if len(texte) > REMARK_MAX:
+        raise KbError(f"la remarque dépasse {REMARK_MAX} caractères")
+    if nature not in REMARK_NATURES:
+        raise KbError(f"nature doit valoir : {', '.join(REMARK_NATURES)}")
+    cible = str(cible or "").strip()
+    if cible:
+        _, t = _safe_target(root, cible)
+        if not t.is_file():
+            raise KbError("le document visé n'existe pas")
+        cible = _rel(root, t)
+    now = now or datetime.now(timezone.utc)
+    stem = re.sub(r"[^a-z0-9]+", "-", Path(cible).stem.lower()).strip("-")[:60] if cible else ""
+    base = now.strftime("%Y%m%d-%H%M%S-") + (stem or "general")
+    folder = root / "remarques"
+    slug, n = base, 2
+    while (folder / f"{slug}.md").exists():
+        slug, n = f"{base}-{n}", n + 1
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"{slug}.md"
+    fm = {"type": "Remarque", "title": texte.splitlines()[0][:80], "description": "", "tags": [], "status": "stable",
+          "nature": nature, "cible": cible or None, "etat": "ouverte",
+          "generated": {"by": f"human:{auteur}", "at": now.strftime("%Y-%m-%dT%H:%M:%SZ")}}
+    body = f"\n## Remarque\n\n{texte}\n"
+    target.write_text(serialize(fm, body), encoding="utf-8")
+    append_log(root, folder, f"human:{auteur} a écrit la remarque `{slug}`" + (f" sur `{Path(cible).stem}`" if cible else ""))
+    return _full(root, target, fm, body)
+
+
+def remarques(cs):
+    """Les remarques de l'utilisateur : ouvertes d'abord, puis de la plus récente à la plus ancienne."""
+    out = []
+    for c in _of(cs, "Remarque"):
+        fm, by = c["frontmatter"], str((c["frontmatter"].get("generated") or {}).get("by", ""))
+        out.append({"path": c["path"], "title": fm.get("title") or c["path"], "nature": fm.get("nature") or "correction",
+                    "cible": fm.get("cible") or None, "etat": "traitee" if fm.get("etat") == "traitee" else "ouverte",
+                    "at": _at(c), "traiteeAt": _at(c, "traitee"), "auteur": by.removeprefix("human:"),
+                    "texte": (av.section(c["body"], "Remarque") or "").strip(),
+                    "reponse": (av.section(c["body"], "Réponse de Claude") or "").strip() or None})
+    out.sort(key=lambda r: r["at"], reverse=True)
+    out.sort(key=lambda r: r["etat"] != "ouverte")
+    return out
+
+
 # --- Pilotage -------------------------------------------------------------
 
 def _of(cs, t):
@@ -381,13 +439,22 @@ def usage(checkout, days):
         raise UsageFailed(str(e)) from e
     if not by_actor:
         raise UsageError("Aucune donnée de consommation trouvée pour ce projet")
+    # la période d'avant, de même durée : la comparaison qui donne son sens au chiffre
+    before = (date.today() - timedelta(days=2 * days)).isoformat()
+    try:
+        prev = ur.scan(ur.project_dir(Path(checkout)), before, None,
+                       until=(date.today() - timedelta(days=days + 1)).isoformat())[1]
+    except Exception:
+        prev = None
 
     def rows(table):
         total = sum(r["usd"] for r in table.values()) or 1
         return [{"name": k, **{f: r[f] for f in ur.FIELDS}, "part": 100 * r["usd"] / total}
                 for k, r in sorted(table.items(), key=lambda kv: -kv[1]["usd"])]
 
-    return {"agents": rows(by_actor), "models": rows(by_model), "since": since}
+    total = lambda t: {f: sum(r[f] for r in t.values()) for f in ur.FIELDS}
+    return {"agents": rows(by_actor), "models": rows(by_model), "since": since, "days": days,
+            "total": total(by_model), "previous": total(prev) if prev is not None else None}
 
 
 def coverage_of(root, ticket_path):
@@ -555,6 +622,7 @@ def overview(root):
         "illisibles": illisibles,
         "activity": activity(root, 12, cs),
         "recettes": recettes(cs),
+        "remarques": remarques(cs),
     }
 
 

@@ -18,7 +18,7 @@ Anytime: `reprendre`, `status`, `recette`, `bdd`, `qualite`, `documentation`, `c
 ## Triggering
 
 - **Auto-trigger** the skill whose description matches, without asking; between two, the stronger signal; truly unclear, one question. Not sure → `skills/using-hosa/reference.md`.
-- **« reprends »**, « on reprend », « continue » in a Hosa project → a hook gives the `## Fiche de reprise` with the message: do its `Action` at once, no `reprendre` skill, no call before it. No card came → `reprendre`.
+- **« reprends »**, « on reprend », « continue » in a Hosa project → a hook gives the `## Fiche de reprise` with the message: do its `Action` at once (its `Remarques` lines first: the user's remarks from the dashboard), no `reprendre` skill, no other call before it. No card came → `reprendre`. « traite mes remarques » → `<hosa> avancement <kb> remarques`.
 - **Generic or Hosa variant** (`test`/`qa`, `build`/`develop`, `recette`/`qa`): the Hosa one only if `.hosa/kb/` exists and the sprint or ticket named resolves to a file; else the generic one; both possible and nothing named → ask. `dispatch` needs specific independent tasks.
 - **In a Hosa project** work goes through the pipeline: `understand` → `interview`/`redaction` (`changement` for a `stable` exigence); `build` → `develop` on its ticket (none → create it first); `iterate` → `changement` or a ticket from `hosa-product-owner`; `review` → `validation`/`qa`. A generic skill only when the user asks to work outside the pipeline, saying it won't be tracked.
 - **No `.hosa/kb/` yet:** `## Hosa project rules` is not injected; the skill that creates the KB reads it in this file before going on.
