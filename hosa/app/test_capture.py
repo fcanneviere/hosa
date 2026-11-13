@@ -139,6 +139,45 @@ class Navigateur(unittest.TestCase):
             code, out, _ = self.run_capture(str(self.d / "o" / f"carte-{carte}.html"), "--size", "1280x900", "--full")
             self.assertEqual(code, 0, out)
 
+    def test_each_scheme_is_captured_and_checked_and_a_mode_without_effect_is_refused(self):
+        tete = '<!doctype html><html lang="fr"><head><title>T</title><style>{}</style></head><body><h1>Modes</h1><p>Texte</p></body></html>'
+        bon = self.d / "bon.html"
+        bon.write_text(tete.format(":root{--bg:#fff;--fg:#222}@media (prefers-color-scheme:dark){:root{--bg:#1e1b18;--fg:#f2ebe3}}"
+                                   "body{background:var(--bg);color:var(--fg)}"), encoding="utf-8")
+        code, out, report = self.run_capture(str(bon), "--size", "1280x900", "--schemes", "light,dark", "--states", "a,b", "--sheet")
+        self.assertEqual(code, 0, out)
+        self.assertEqual([(c["state"], c["scheme"], c["file"]) for c in report["captures"]],
+                         [("a", "light", "a-1280x900-light.png"), ("a", "dark", "a-1280x900-dark.png"),
+                          ("b", "light", "b-1280x900-light.png"), ("b", "dark", "b-1280x900-dark.png")])
+        self.assertTrue((self.d / "out" / "planche-1280x900.png").is_file())
+        sombre = self.d / "sombre.html"  # the dark mode's contrast is checked like the light one
+        sombre.write_text(tete.format("@media (prefers-color-scheme:dark){body{background:#111;color:#333}}"), encoding="utf-8")
+        code, out, report = self.run_capture(str(sombre), "--size", "1280x900", "--schemes", "light,dark")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(report["captures"][0]["issues"], [])
+        self.assertIn("contraste", " ".join(report["captures"][1]["issues"]))
+        rien = self.d / "rien.html"
+        rien.write_text(tete.format("body{background:#fff;color:#222}"), encoding="utf-8")
+        code, out, report = self.run_capture(str(rien), "--size", "1280x900", "--schemes", "light,dark")
+        self.assertEqual(code, 1, out)
+        self.assertIn("mode sombre sans effet : même fond que le mode clair", " ".join(report["captures"][1]["issues"]))
+        code, out, _ = self.run_capture(str(rien), "--schemes", "dark,nuit")
+        self.assertEqual(code, 2, out)
+
+    def test_the_css_block_atelier_writes_turns_dark_in_the_browser(self):
+        spec = importlib.util.spec_from_file_location("atelier", SCRIPTS / "atelier.py")
+        at = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(at)
+        carte = at.charge_cartes(SCRIPTS.parent / "assets" / "exemple-cartes.json")["cartes"][0]
+        carte["variante"] = {"fond": "#1E1B18", "surface": "#2A2622", "texte": "#F2EBE3", "secondaire": "#BFB4A8",
+                             "accent": "#7FB3AB", "sur_accent": "#10201E", "trait": "#3E3832", "alerte": "#E8A37C"}
+        bloc = at.bloc_css(at.jetons(carte), {"mode": "sombre", "jetons": at.jetons_variante(carte)})
+        p = self.d / "p.html"
+        p.write_text(f'<!doctype html><html lang="fr"><head><title>T</title><style>{bloc}\nbody{{background:var(--color-bg);'
+                     'color:var(--color-text)}</style></head><body><h1>Projet</h1></body></html>', encoding="utf-8")
+        code, out, report = self.run_capture(str(p), "--size", "1280x900", "--schemes", "light,dark")
+        self.assertEqual(code, 0, out)  # dark differs from light, and both hold their contrasts
+
     def test_keyboard_focus_must_show_where_it_is(self):
         tete = '<!doctype html><html lang="fr"><head><title>T</title><style>{}</style></head><body><main><h1>Focus</h1>{}</main></body></html>'
         bon = self.d / "bon.html"  # a ring of its own, after a transition, replaces the outline

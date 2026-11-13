@@ -29,6 +29,7 @@ const AIDE = `Usage : capture <adresse ou fichier> [options]
   --mask                  capture où chaque ligne de texte devient une barre (lire la composition)
   --full                  page entière ; par défaut, la fenêtre seule
   --zoom <facteur>        densité de pixels, par défaut 1
+  --schemes <light,dark>  capture dans chaque mode (prefers-color-scheme) ; par défaut, le mode du système
   --wait <ms>             attente après le chargement, par défaut 400
   --sans-a11y             sans les contrôles d'accessibilité
 
@@ -36,12 +37,13 @@ Chaque capture est contrôlée : erreurs de script, de console et de chargement,
 chargement inachevé, débordement horizontal, images cassées, et accessibilité (contraste WCAG AA du texte,
 images sans alt, champs sans libellé, boutons et liens sans nom, langue et titre de la page, zoom bloqué,
 h1 absent, niveau de titre sauté ; en mobile, cibles tactiles de moins de 24 px et champs sous 16 px ;
-sur ordinateur, focus clavier visible sur les 15 premiers Tab). La dernière ligne est le verdict ; le détail est dans report.json.
+sur ordinateur, focus clavier visible sur les 15 premiers Tab). Avec --schemes light,dark : chaque capture
+dans chaque mode, contrôlée de même, et un mode dont le fond ne change pas est un problème. La dernière ligne est le verdict ; le détail est dans report.json.
 Code : 0 sans problème, 1 sinon, 2 mauvais appel, 3 pas de navigateur.`;
 
 // ---------- Arguments ----------
 const AVEC_VALEUR = { "--out": "captures", "--size": "390x844,1280x900", "--routes": "", "--connexion": "",
-  "--states": "", "--param": "state", "--steps": "", "--mark": "", "--zoom": "1", "--wait": "400" };
+  "--states": "", "--param": "state", "--steps": "", "--mark": "", "--zoom": "1", "--wait": "400", "--schemes": "" };
 const DRAPEAUX = ["--sheet", "--mask", "--full", "--sans-a11y"];
 
 function arret(message, code = 1) {
@@ -83,6 +85,10 @@ const tailles = liste(opt["--size"]).map((s) => {
 if (!tailles.length) arret("--size : au moins une taille", 2);
 const routes = opt["--routes"] ? liste(opt["--routes"]) : null;
 const etats = opt["--states"] ? liste(opt["--states"]) : [null];
+const SCHEMES = { light: "clair", dark: "sombre" };
+const schemes = opt["--schemes"] ? liste(opt["--schemes"]) : [null];
+for (const s of schemes) if (s !== null && !Object.hasOwn(SCHEMES, s)) arret(`--schemes : light, dark ou les deux : ${s}`, 2);
+if (new Set(schemes).size !== schemes.length) arret("--schemes : chaque mode une seule fois", 2);
 const zoom = Number(opt["--zoom"]);
 if (!(zoom > 0 && zoom <= 4)) arret("--zoom : un nombre de 0 à 4", 2);
 const attente = Number(opt["--wait"]);
@@ -719,8 +725,11 @@ try {
     for (const { l, h } of tailles) {
       const vues = [], masquees = [];
       for (const [ei, etat] of etats.entries()) {
+       const fonds = {};  // mode → fond de la page : un mode qui ne change rien est un problème
+       for (const scheme of schemes) {
         releve = [];
         await fenetre(l, h, zoom);
+        if (scheme) await page("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] });
         const voulue = adresse(route, etat);
         const problemes = [];
         try {
@@ -728,7 +737,8 @@ try {
           if (opt["--steps"]) await joue(opt["--steps"], base);
         } catch (e) { problemes.push(e.message); }
         const nom = [route === null ? "" : nomRoute(route, ri), etat ? nomSur(etat, "etat", ei) : "", `${l}x${h}`,
-          zoom === 1 ? "" : `@${zoom}x`].filter(Boolean).join("-");
+          zoom === 1 ? "" : `@${zoom}x`, scheme || ""].filter(Boolean).join("-");
+        const legende = [etat || route || "page", scheme ? SCHEMES[scheme] : ""].filter(Boolean).join(" · ");
         let fichier = null;
         try {  // une capture qui échoue est un problème de cette capture, jamais l'arrêt des suivantes
           if (statut >= 400) problemes.push(`HTTP ${statut}`);
@@ -745,19 +755,33 @@ try {
           }
           if (drapeaux.has("--mask")) {
             await dansLaPage(poseMasque);
-            masquees.push({ fichier: await photo(path.join(dossier, `${nom}-masque.png`), entiere), legende: etat || route || "page" });
+            masquees.push({ fichier: await photo(path.join(dossier, `${nom}-masque.png`), entiere), legende });
             await dansLaPage(retireCalques);
           }
           if (!drapeaux.has("--sans-a11y") && l >= 600) problemes.push(...await verifieFocus());
+          if (scheme) {
+            fonds[scheme] = await dansLaPage(() => {
+              const vide = (c) => !c || c === "transparent" || /^rgba\(.*,\s*0\)$/.test(c);
+              const b = document.body && getComputedStyle(document.body).backgroundColor;
+              return vide(b) ? getComputedStyle(document.documentElement).backgroundColor : b;
+            });
+            const autre = Object.keys(fonds).find((s) => s !== scheme);
+            if (autre && fonds[autre] === fonds[scheme]) {
+              problemes.push(`mode ${SCHEMES[scheme]} sans effet : même fond que le mode ${SCHEMES[autre]} (${fonds[scheme]}) — `
+                + "les jetons du mode ne sont pas appliqués (atelier css)");
+            }
+          }
         } catch (e) { problemes.push(`capture impossible : ${e.message}`); }
         const tous = [...new Set([...releve, ...problemes])];
         if (route !== null) {
           const raison = tous.find((x) => BLOQUANT.test(x)) || "";
           if (!rendues.has(route) || (raison && !rendues.get(route))) rendues.set(route, raison);
         }
-        rapport.push({ file: fichier && path.basename(fichier), route, state: etat, size: `${l}x${h}`, zoom, status: statut, issues: tous });
-        if (fichier) vues.push({ fichier, legende: etat || route || "page" });
+        rapport.push({ file: fichier && path.basename(fichier), route, state: etat, size: `${l}x${h}`, zoom,
+          ...(scheme && { scheme }), status: statut, issues: tous });
+        if (fichier) vues.push({ fichier, legende });
         lignes.push(`${fichier ? path.basename(fichier) : nom}${tous.length ? "  ⚠ " + tous.join(" ; ") : ""}`);
+       }
       }
       if (drapeaux.has("--sheet") && vues.length > 1) {
         const prefixe = route === null ? "" : nomRoute(route, ri) + "-";
