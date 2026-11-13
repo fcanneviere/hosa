@@ -122,6 +122,23 @@ class Navigateur(unittest.TestCase):
             self.assertIn(want, issues)
         self.assertRegex(out, r"Verdict : \d+ problème")
 
+    def test_a_generated_style_card_with_its_other_mode_passes_every_check(self):
+        cartes = json.loads((SCRIPTS.parent / "assets" / "exemple-cartes.json").read_text(encoding="utf-8"))
+        nuit = {"fond": "#1E1B18", "surface": "#2A2622", "texte": "#F2EBE3", "secondaire": "#BFB4A8",
+                "accent": "#7FB3AB", "sur_accent": "#10201E", "trait": "#3E3832", "alerte": "#E8A37C"}
+        jour = {"fond": "#F6F1EA", "surface": "#FFFFFF", "texte": "#2A2522", "secondaire": "#5E554E",
+                "accent": "#9A4A16", "sur_accent": "#FFFFFF", "trait": "#E3DACF", "alerte": "#8A5A00"}
+        for c in cartes["cartes"]:
+            c["variante"] = jour if c["id"] == "four" else nuit
+        cfg = self.d / "cartes.json"
+        cfg.write_text(json.dumps(cartes, ensure_ascii=False), encoding="utf-8")
+        r = subprocess.run([sys.executable, str(SCRIPTS / "atelier.py"), "cartes", str(cfg), "--out", str(self.d / "o")],
+                           capture_output=True, text=True, encoding="utf-8", timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for carte in ("email", "four"):  # light with a dark mode, dark with a light one
+            code, out, _ = self.run_capture(str(self.d / "o" / f"carte-{carte}.html"), "--size", "1280x900", "--full")
+            self.assertEqual(code, 0, out)
+
     def test_keyboard_focus_must_show_where_it_is(self):
         tete = '<!doctype html><html lang="fr"><head><title>T</title><style>{}</style></head><body><main><h1>Focus</h1>{}</main></body></html>'
         bon = self.d / "bon.html"  # a ring of its own, after a transition, replaces the outline

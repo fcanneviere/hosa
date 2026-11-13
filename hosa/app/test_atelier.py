@@ -404,6 +404,128 @@ class Choix(Base):
         with self.assertRaises(at.Refus):  # outside the project
             at.css(k, self.d / "ailleurs.css")
 
+    NUIT = {"fond": "#1E1B18", "surface": "#2A2622", "texte": "#F2EBE3", "secondaire": "#BFB4A8",
+            "accent": "#7FB3AB", "sur_accent": "#10201E", "trait": "#3E3832", "alerte": "#E8A37C"}
+    JOUR = {"fond": "#F6F1EA", "surface": "#FFFFFF", "texte": "#2A2522", "secondaire": "#5E554E",
+            "accent": "#9A4A16", "sur_accent": "#FFFFFF", "trait": "#E3DACF", "alerte": "#8A5A00"}
+
+    def test_a_dark_card_s_light_variant_goes_the_other_way(self):
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        data["cartes"][2]["variante"] = self.JOUR  # `four`, a dark card with relief contour
+        cfg = self.d / "jour.json"
+        cfg.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        k = self.kb()
+        self.assertEqual(at.choisir(k, "styles", "four", cfg, "u", None, False)["mode"], "clair")
+        self.assertIn("## Jetons du mode clair", (k / "interface" / "choix.md").read_text(encoding="utf-8"))
+        css = self.d / "proj" / "src" / "styles.css"
+        at.css(k, css)
+        text = css.read_text(encoding="utf-8")
+        for want in ("color-scheme: dark;", "@media (prefers-color-scheme: light) {", ':root:not([data-theme="dark"]) {',
+                     ':root[data-theme="light"] {', "  --border: 2px solid #2A2522;"):
+            self.assertIn(want, text)
+        self.assertEqual(at.ecarts(k), [])
+
+    def avec_nuit(self, **change) -> Path:
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        data["cartes"][0]["variante"] = {**self.NUIT, **change}  # `email`, a light card with relief ombre
+        p = self.d / "nuit.json"
+        p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        return p
+
+    def test_a_card_without_a_variant_keeps_its_css_block_to_the_character(self):
+        import hashlib  # pinned before the modes: a project's CSS must not look "edited by hand" after an upgrade
+        avant = {"email": "b9098d0f0f0685db082bf1533a7c4bd2357ab34abeaa165586a52bc24878faf0",
+                 "galerie": "f253eca07c79b3df870461327f1713988f7b0db6e7c864a2a21552df2d05cdf8",
+                 "four": "63f59c7c59545d6a2e1cdea2fef07f522ecb9f845b0f44e22c27964fe895c73b",
+                 "journal": "6f0c5f725c59db60c68a571fddf20ef8a56e7918a775988ccea3bb1dc82f9fb6"}
+        for c in at.charge_cartes(EXEMPLE)["cartes"]:
+            self.assertEqual(hashlib.sha256(at.bloc_css(at.jetons(c)).encode()).hexdigest(), avant[c["id"]], c["id"])
+
+    def test_a_variant_is_the_other_mode_and_holds_the_same_contrasts(self):
+        with self.assertRaises(at.Refus) as e:
+            at.charge_cartes(self.avec_nuit(fond="#FAFAFA"))
+        self.assertIn("le mode opposé à la carte (sombre)", str(e.exception))
+        with self.assertRaises(at.Refus) as e:
+            at.charge_cartes(self.avec_nuit(secondaire="#4A4540"))
+        self.assertIn("carte email — mode sombre — texte secondaire sur fond", str(e.exception))
+        carte = at.charge_cartes(self.avec_nuit())["cartes"][0]
+        self.assertEqual(at.jetons_variante(carte)["--border"], "1px solid #3E3832")  # no shadow seen on dark: a line
+        with self.assertRaises(at.Refus) as e:  # the mode asked for is not lost with the card chosen
+            at.cartes(self.avec_nuit(), self.d / "o", False)
+        self.assertIn("`variante` dans email, pas dans galerie, four, journal", str(e.exception))
+        data = json.loads(self.avec_nuit().read_text(encoding="utf-8"))
+        for c in data["cartes"][1:]:
+            c["variante"] = self.NUIT if at.mode(c["couleurs"]) == "clair" else self.JOUR
+        (self.d / "nuit.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        r = at.cartes(self.d / "nuit.json", self.d / "o", False)
+        page = (self.d / "o" / "carte-email.html").read_text(encoding="utf-8")
+        self.assertIn("Mode sombre · premier écran", page)
+        m = json.loads(Path(r["manifest"]).read_text(encoding="utf-8"))
+        self.assertTrue(any(x.startswith("mode sombre : ") for x in m["options"][0]["controles"]))
+
+    def test_the_variant_survives_every_rewrite_and_its_css_is_checked(self):
+        k = self.kb()
+        r = at.choisir(k, "styles", "email", self.avec_nuit(), "u", None, False)
+        self.assertEqual(r["mode"], "sombre")
+        at.choisir(k, "directions", "four", self.cfg(), "u", None, False)  # rewrites choix.md
+        css = self.d / "proj" / "src" / "styles.css"
+        at.css(k, css)  # rewrites it again, with the CSS path
+        etat = at.lit_choix(k)
+        self.assertEqual((etat["variante"]["mode"], etat["variante"]["jetons"]["--color-bg"]), ("sombre", "#1E1B18"))
+        text = css.read_text(encoding="utf-8")
+        for want in ("color-scheme: light;", "@media (prefers-color-scheme: dark) {",
+                     ':root:not([data-theme="light"]) {', ':root[data-theme="dark"] {', "    --color-bg: #1E1B18;"):
+            self.assertIn(want, text)
+        self.assertEqual(at.ecarts(k), [])
+        css.write_text(text.replace("#1E1B18", "#000000"), encoding="utf-8")
+        self.assertIn("édités à la main", at.ecarts(k)[0])
+        if OKF.is_file():
+            import subprocess
+            out = subprocess.run([sys.executable, str(OKF), str(k)], capture_output=True, text=True, encoding="utf-8")
+            self.assertNotIn("choix.md", "\n".join(l for l in out.stdout.splitlines() if "error" in l.lower()))
+        at.choisir(k, "styles", None, None, "u", "charte existante", True)
+        self.assertNotIn("## Jetons du mode", (k / "interface" / "choix.md").read_text(encoding="utf-8"))
+        self.assertIsNone(at.lit_choix(k)["variante"])
+
+    def test_dtcg_export_reads_every_relief_and_refuses_an_unknown_form(self):
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        data["cartes"][1]["relief"] = "aucun"  # galerie: the four reliefs are ombre, aucun, contour, trait
+        data["cartes"][0]["variante"] = self.NUIT
+        cfg = self.d / "reliefs.json"
+        cfg.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        attendu = {"email": (1, "transparent"), "galerie": (0, "transparent"), "four": (2, None), "journal": (1, None)}
+        for carte, (largeur, couleur) in attendu.items():
+            k = self.d / carte / ".hosa" / "kb"
+            (k / "interface").mkdir(parents=True)
+            at.choisir(k, "styles", carte, cfg, "u", None, False)
+            r = at.dtcg(k, self.d / carte / "jetons")
+            t = json.loads(Path(r["dtcg"][0]).read_text(encoding="utf-8"))
+            self.assertEqual(t["color"]["bg"]["$type"], "color")
+            self.assertEqual(set(t["color"]["bg"]["$value"]), {"colorSpace", "components", "hex"})
+            self.assertTrue(all(0 <= x <= 1 for x in t["color"]["bg"]["$value"]["components"]))
+            b = t["border"]["default"]["$value"]
+            self.assertEqual((b["width"], b["style"]), ({"value": largeur, "unit": "px"}, "solid"))
+            if couleur:
+                self.assertEqual(b["color"]["alpha"], 0)
+            self.assertIsInstance(t["font"]["family"]["body"]["$value"], list)
+            self.assertIsInstance(t["font"]["weight"]["display"]["$value"], int)
+            self.assertEqual(t["radius"]["$type"], "dimension")
+            if carte == "email":
+                self.assertEqual([s["color"]["alpha"] for s in t["shadow"]["$value"]], [0.06, 0.08])
+                nuit = json.loads(Path(r["dtcg"][1]).read_text(encoding="utf-8"))
+                self.assertTrue(r["dtcg"][1].endswith("identite.sombre.tokens.json"))
+                self.assertEqual(nuit["color"]["bg"]["$value"]["hex"], "#1e1b18")
+                self.assertNotIn("font", nuit)  # only what changes
+            else:
+                self.assertNotIn("shadow", t)  # no shadow: DTCG has no "none"
+                self.assertEqual(len(r["dtcg"]), 1)
+        f = self.d / "email" / ".hosa" / "kb" / "interface" / "choix.md"
+        f.write_text(f.read_text(encoding="utf-8").replace("`--radius` | `14px`", "`--radius` | `calc(1rem + 2px)`"),
+                     encoding="utf-8")
+        with self.assertRaises(at.Refus) as e:
+            at.dtcg(f.parents[1], self.d / "x")
+        self.assertIn("`--radius` : la valeur `calc(1rem + 2px)`", str(e.exception))
+
     def test_interface_check_reports_the_drift_in_a_real_kb(self):
         spec = importlib.util.spec_from_file_location("interface_check", SCRIPTS / "interface_check.py")
         ic = importlib.util.module_from_spec(spec)

@@ -4,7 +4,7 @@ title: skills/interface/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T07:17:11Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T07:48:56Z'}
 ---
 
 ## Fichiers
@@ -19,61 +19,71 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T07:17:11Z'}
 
 ## Symboles publics
 
-- `Maquette` — `skills/interface/scripts/atelier.py:738` — Réécrit une maquette en un document autonome, balise par balise : chaque ressource locale intégrée en data:,
-- `Refus` — `skills/interface/scripts/atelier.py:52` — Une entrée refusée : le message dit exactement quoi corriger.
-- `Source` — `skills/interface/scripts/atelier.py:579` — Un fichier de maquette et les règles d'intégration de ses ressources locales.
-- `acteur` — `skills/interface/scripts/atelier.py:1125`
-- `adresse_locale` — `skills/interface/scripts/atelier.py:933` — Une option en direct ne vise qu'un serveur de cette machine, sans identifiants, avec un port valide.
-- `axes` — `skills/interface/scripts/atelier.py:292` — L'identité d'une carte sur des axes fermés : deux cartes qui ne diffèrent que d'une nuance n'en font qu'une.
-- `bloc_css` — `skills/interface/scripts/atelier.py:1169`
-- `canaux` — `skills/interface/scripts/atelier.py:117`
-- `carte_html` — `skills/interface/scripts/atelier.py:394`
-- `cartes` — `skills/interface/scripts/atelier.py:495`
-- `cartes_proches` — `skills/interface/scripts/atelier.py:305`
-- `chaine` — `skills/interface/scripts/atelier.py:71`
-- `chaines` — `skills/interface/scripts/atelier.py:78`
-- `charge_cartes` — `skills/interface/scripts/atelier.py:208`
-- `charge_manifest` — `skills/interface/scripts/atelier.py:956`
-- `choisir` — `skills/interface/scripts/atelier.py:1132`
-- `comparer` — `skills/interface/scripts/atelier.py:1023`
-- `contraste` — `skills/interface/scripts/atelier.py:134`
-- `controle_grille` — `skills/interface/scripts/atelier.py:1315` — Ce que `revue` écrit et ce que `avancement.py task done interface revue` relit : la même fonction.
-- `controles` — `skills/interface/scripts/atelier.py:169` — (une ligne par paire avec son rapport, un manque par paire sous son minimum avec une couleur proposée).
-- `courbe` — `skills/interface/scripts/atelier.py:343` — L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série.
-- `css` — `skills/interface/scripts/atelier.py:1177`
-- `data_url` — `skills/interface/scripts/atelier.py:575`
-- `ecarts` — `skills/interface/scripts/atelier.py:1201` — Les jetons de la KB sont-ils ceux du CSS du projet ? Rien à contrôler sans jetons (identité conservée).
-- `ecran_html` — `skills/interface/scripts/atelier.py:356` — Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes.
-- `ecrit_atomique` — `skills/interface/scripts/atelier.py:483`
-- `ecrit_choix` — `skills/interface/scripts/atelier.py:1090`
-- `entier` — `skills/interface/scripts/atelier.py:101`
-- `famille` — `skills/interface/scripts/atelier.py:317`
-- `grille` — `skills/interface/scripts/atelier.py:1239` — Le modèle que `hosa-ux-designer` remplit en revue : une réponse par question, avec sa preuve.
-- `jetons` — `skills/interface/scripts/atelier.py:321` — Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code.
-- `journal` — `skills/interface/scripts/atelier.py:1110` — Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9).
-- `lit_choix` — `skills/interface/scripts/atelier.py:1075` — {manches: {manche: (option, nom, demande, date)}, jetons: {nom: valeur}, css: chemin\|None} — la dernière
-- `lit_json` — `skills/interface/scripts/atelier.py:56`
-- `lit_srcset` — `skills/interface/scripts/atelier.py:716` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
-- `luminance` — `skills/interface/scripts/atelier.py:129`
-- `main` — `skills/interface/scripts/atelier.py:1351`
-- `maintenant` — `skills/interface/scripts/atelier.py:1066`
-- `mix` — `skills/interface/scripts/atelier.py:124` — Le mélange sRGB que le navigateur calcule pour `color-mix(in srgb, a part_a, b)`.
-- `note_grille` — `skills/interface/scripts/atelier.py:1271` — {note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
-- `objet` — `skills/interface/scripts/atelier.py:87`
-- `ordonne` — `skills/interface/scripts/atelier.py:946` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
-- `paires` — `skills/interface/scripts/atelier.py:150` — Chaque paire de couleurs que la carte et l'interface montrent, avec son minimum WCAG AA :
-- `parmi` — `skills/interface/scripts/atelier.py:94`
-- `plafond` — `skills/interface/scripts/atelier.py:1235`
-- `police` — `skills/interface/scripts/atelier.py:199` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
-- `prepare_html` — `skills/interface/scripts/atelier.py:909`
-- `prepare_image` — `skills/interface/scripts/atelier.py:920`
-- `preuve_valide` — `skills/interface/scripts/atelier.py:1256` — Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet.
-- `proposition` — `skills/interface/scripts/atelier.py:139` — La couleur la plus proche de `avant`, même teinte, qui tient `mini` sur `arriere` : poussée vers le noir
-- `questions_grille` — `skills/interface/scripts/atelier.py:1226` — Les questions fermées de la revue, déclarées dans pipeline.json (la seule définition).
-- `racine_de` — `skills/interface/scripts/atelier.py:1173`
-- `reecrit_css` — `skills/interface/scripts/atelier.py:654` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
-- `revue` — `skills/interface/scripts/atelier.py:1324` — Calcule la note de la grille remplie et ajoute sa ligne sous `## Revue visuelle` de `navigation.md`.
-- `section` — `skills/interface/scripts/atelier.py:1070`
+- `Maquette` — `skills/interface/scripts/atelier.py:795` — Réécrit une maquette en un document autonome, balise par balise : chaque ressource locale intégrée en data:,
+- `Refus` — `skills/interface/scripts/atelier.py:57` — Une entrée refusée : le message dit exactement quoi corriger.
+- `Source` — `skills/interface/scripts/atelier.py:636` — Un fichier de maquette et les règles d'intégration de ses ressources locales.
+- `acteur` — `skills/interface/scripts/atelier.py:1192`
+- `adresse_locale` — `skills/interface/scripts/atelier.py:990` — Une option en direct ne vise qu'un serveur de cette machine, sans identifiants, avec un port valide.
+- `axes` — `skills/interface/scripts/atelier.py:307` — L'identité d'une carte sur des axes fermés : deux cartes qui ne diffèrent que d'une nuance n'en font qu'une.
+- `bloc_css` — `skills/interface/scripts/atelier.py:1239` — Le bloc des jetons. Sans variante, le bloc d'avant les modes, au caractère près : `ecart` le compare.
+- `bordure` — `skills/interface/scripts/atelier.py:340` — Le trait des cadres. Une ombre ne se voit pas sur un fond sombre : en mode sombre, la variante
+- `canaux` — `skills/interface/scripts/atelier.py:122`
+- `carte_html` — `skills/interface/scripts/atelier.py:433`
+- `cartes` — `skills/interface/scripts/atelier.py:544`
+- `cartes_proches` — `skills/interface/scripts/atelier.py:320`
+- `chaine` — `skills/interface/scripts/atelier.py:76`
+- `chaines` — `skills/interface/scripts/atelier.py:83`
+- `charge_cartes` — `skills/interface/scripts/atelier.py:213`
+- `charge_manifest` — `skills/interface/scripts/atelier.py:1013`
+- `choisir` — `skills/interface/scripts/atelier.py:1199`
+- `comparer` — `skills/interface/scripts/atelier.py:1080`
+- `contraste` — `skills/interface/scripts/atelier.py:139`
+- `controle_grille` — `skills/interface/scripts/atelier.py:1500` — Ce que `revue` écrit et ce que `avancement.py task done interface revue` relit : la même fonction.
+- `controle_revue` — `skills/interface/scripts/atelier.py:1401` — Le contrôle de la tâche interface/revue, déclaré dans pipeline.json (la seule définition).
+- `controles` — `skills/interface/scripts/atelier.py:174` — (une ligne par paire avec son rapport, un manque par paire sous son minimum avec une couleur proposée).
+- `courbe` — `skills/interface/scripts/atelier.py:382` — L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série.
+- `css` — `skills/interface/scripts/atelier.py:1257`
+- `data_url` — `skills/interface/scripts/atelier.py:632`
+- `dtcg` — `skills/interface/scripts/atelier.py:1376` — Les jetons de `kb/interface/choix.md` au format DTCG 2025.10 : un fichier dérivé, refait à la demande,
+- `dtcg_couleur` — `skills/interface/scripts/atelier.py:1322`
+- `dtcg_fichier` — `skills/interface/scripts/atelier.py:1361`
+- `dtcg_px` — `skills/interface/scripts/atelier.py:1332`
+- `dtcg_valeur` — `skills/interface/scripts/atelier.py:1337` — La valeur DTCG d'un jeton CSS, pour les seules formes que `jetons()` écrit ; toute autre forme est refusée.
+- `ecarts` — `skills/interface/scripts/atelier.py:1282` — Les jetons de la KB sont-ils ceux du CSS du projet ? Rien à contrôler sans jetons (identité conservée).
+- `ecran_html` — `skills/interface/scripts/atelier.py:395` — Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes.
+- `ecrit_atomique` — `skills/interface/scripts/atelier.py:532`
+- `ecrit_choix` — `skills/interface/scripts/atelier.py:1151`
+- `entier` — `skills/interface/scripts/atelier.py:106`
+- `famille` — `skills/interface/scripts/atelier.py:332`
+- `grille` — `skills/interface/scripts/atelier.py:1419` — Le modèle que `hosa-ux-designer` remplit en revue : une réponse par question, avec sa preuve.
+- `jetons` — `skills/interface/scripts/atelier.py:364` — Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code.
+- `jetons_couleurs` — `skills/interface/scripts/atelier.py:349`
+- `jetons_variante` — `skills/interface/scripts/atelier.py:355` — Les jetons qui changent dans le mode opposé : les couleurs, et ce qui les porte (trait, focus).
+- `journal` — `skills/interface/scripts/atelier.py:1177` — Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9).
+- `lit_choix` — `skills/interface/scripts/atelier.py:1134` — {manches: {manche: (option, nom, demande, date)}, jetons: {nom: valeur}, css: chemin\|None} — la dernière
+- `lit_json` — `skills/interface/scripts/atelier.py:61`
+- `lit_srcset` — `skills/interface/scripts/atelier.py:773` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
+- `luminance` — `skills/interface/scripts/atelier.py:134`
+- `main` — `skills/interface/scripts/atelier.py:1536`
+- `maintenant` — `skills/interface/scripts/atelier.py:1125`
+- `mix` — `skills/interface/scripts/atelier.py:129` — Le mélange sRGB que le navigateur calcule pour `color-mix(in srgb, a part_a, b)`.
+- `mode` — `skills/interface/scripts/atelier.py:336`
+- `note_grille` — `skills/interface/scripts/atelier.py:1451` — {note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
+- `objet` — `skills/interface/scripts/atelier.py:92`
+- `ordonne` — `skills/interface/scripts/atelier.py:1003` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
+- `paires` — `skills/interface/scripts/atelier.py:155` — Chaque paire de couleurs que la carte et l'interface montrent, avec son minimum WCAG AA :
+- `parmi` — `skills/interface/scripts/atelier.py:99`
+- `plafond` — `skills/interface/scripts/atelier.py:1415`
+- `police` — `skills/interface/scripts/atelier.py:204` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
+- `prepare_html` — `skills/interface/scripts/atelier.py:966`
+- `prepare_image` — `skills/interface/scripts/atelier.py:977`
+- `preuve_valide` — `skills/interface/scripts/atelier.py:1436` — Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet.
+- `proposition` — `skills/interface/scripts/atelier.py:144` — La couleur la plus proche de `avant`, même teinte, qui tient `mini` sur `arriere` : poussée vers le noir
+- `questions_grille` — `skills/interface/scripts/atelier.py:1410` — Les questions fermées de la revue.
+- `racine_de` — `skills/interface/scripts/atelier.py:1253`
+- `reecrit_css` — `skills/interface/scripts/atelier.py:711` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
+- `revue` — `skills/interface/scripts/atelier.py:1509` — Calcule la note de la grille remplie et ajoute sa ligne sous `## Revue visuelle` de `navigation.md`.
+- `section` — `skills/interface/scripts/atelier.py:1129`
 - `ErreurDePage` — `skills/interface/scripts/capture.mjs:297`
 - `Tube` — `skills/interface/scripts/capture.mjs:178`
 - `Tube.attend.fin` — `skills/interface/scripts/capture.mjs:231`

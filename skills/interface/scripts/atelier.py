@@ -13,6 +13,11 @@
       `--conserve` : l'utilisateur garde l'existant pour cette manche (interface à compléter, manches d'avant Hosa).
   atelier.py css      <kb> --out <fichier>
       Écrit les jetons de `kb/interface/choix.md` en variables CSS (bloc marqué) et note le fichier dans la KB.
+      Une carte à `variante` (le mode opposé, sombre ou clair) ajoute ses jetons sous `prefers-color-scheme`
+      et `[data-theme]`.
+  atelier.py dtcg     <kb> --out <dossier>
+      Exporte les jetons de la KB au format DTCG 2025.10 (`identite.tokens.json`, et `identite.<mode>.tokens.json`
+      pour la variante) : un fichier dérivé pour un outil de design, refait à la demande.
   atelier.py ecart    <kb>
       Contrôle que le fichier CSS du projet porte toujours les jetons de la KB.
   atelier.py grille   [--out <grille.json>]
@@ -278,6 +283,16 @@ def charge_cartes(chemin: Path) -> dict:
         if carte["ecran"] == "tableau-de-bord" and "indicateurs" not in c:
             raise Refus(f"{ou}.ecran : un tableau de bord montre de vrais indicateurs — ajoute `contenu.indicateurs`")
         manques +=[f"{ou} — {m}" for m in controles(col)[1]]
+        if "variante" in carte:  # le mode opposé, facultatif : un choix de l'utilisateur, jamais par défaut
+            var = objet(carte, "variante", ou)
+            for role in COULEURS:
+                v = chaine(var, role, f"{ou}.variante")
+                if not HEX.fullmatch(v):
+                    raise Refus(f"{ou}.variante.{role} : une couleur hexadécimale #RGB ou #RRGGBB : {v}")
+            if mode(var) == mode(col):
+                raise Refus(f"{ou}.variante : le mode opposé à la carte ({'clair' if mode(col) == 'sombre' else 'sombre'}) ; "
+                            f"son fond {var['fond']} est {mode(var)} comme celui de la carte")
+            manques += [f"{ou} — mode {mode(var)} — {m}" for m in controles(var)[1]]
     if manques:
         raise Refus("contraste WCAG AA insuffisant, corrige ces couleurs :\n" + "\n".join(manques))
     if "affinage" in cfg:
@@ -318,23 +333,47 @@ def famille(pile: str) -> str:
     return pile.split(",")[0].strip().strip("\"'")
 
 
+def mode(couleurs: dict) -> str:
+    return "sombre" if luminance(couleurs["fond"]) < 0.18 else "clair"
+
+
+def bordure(c: dict, relief: str, variante: bool = False) -> str:
+    """Le trait des cadres. Une ombre ne se voit pas sur un fond sombre : en mode sombre, la variante
+    d'une carte à ombre prend le trait de sa palette pour garder le bord des surfaces."""
+    if relief == "ombre" and variante and mode(c) == "sombre":
+        return f"1px solid {c['trait']}"
+    return {"aucun": "0 solid transparent", "trait": f"1px solid {c['trait']}",
+            "contour": f"2px solid {c['texte']}", "ombre": "1px solid transparent"}[relief]
+
+
+def jetons_couleurs(c: dict) -> dict[str, str]:
+    return {"--color-bg": c["fond"], "--color-surface": c["surface"], "--color-text": c["texte"],
+            "--color-muted": c["secondaire"], "--color-accent": c["accent"], "--color-on-accent": c["sur_accent"],
+            "--color-line": c["trait"], "--color-warn": c["alerte"]}
+
+
+def jetons_variante(carte: dict) -> dict[str, str]:
+    """Les jetons qui changent dans le mode opposé : les couleurs, et ce qui les porte (trait, focus)."""
+    v = carte.get("variante")
+    if not v:
+        return {}
+    return {**jetons_couleurs(v), "--border": bordure(v, carte.get("relief", "trait"), True),
+            "--focus-ring": f"2px solid {v['accent']}"}
+
+
 def jetons(carte: dict) -> dict[str, str]:
     """Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code."""
     c, p = carte["couleurs"], carte["polices"]
     espace, vy, vx, echelle = RYTHMES[carte.get("rythme", "normal")]
     relief = carte.get("relief", "trait")
-    bordure = {"aucun": "0 solid transparent", "trait": f"1px solid {c['trait']}",
-               "contour": f"2px solid {c['texte']}", "ombre": "1px solid transparent"}[relief]
     ombre = "0 1px 2px rgb(0 0 0 / .06), 0 4px 16px rgb(0 0 0 / .08)" if relief == "ombre" else "none"
     g = carte.get("graisses", {})
     return {
-        "--color-bg": c["fond"], "--color-surface": c["surface"], "--color-text": c["texte"],
-        "--color-muted": c["secondaire"], "--color-accent": c["accent"], "--color-on-accent": c["sur_accent"],
-        "--color-line": c["trait"], "--color-warn": c["alerte"],
+        **jetons_couleurs(c),
         "--font-display": p["titres"], "--font-body": p["texte"], "--font-number": p["chiffres"],
         "--weight-display": str(g.get("titres", 600)), "--weight-number": str(g.get("chiffres", 500)),
         "--font-size-base": f"{round(15 * echelle)}px", "--radius": f"{carte.get('arrondi', 6)}px",
-        "--border": bordure, "--shadow": ombre,
+        "--border": bordure(c, relief), "--shadow": ombre,
         "--space-gap": f"{espace}px", "--space-y": f"{vy}px", "--space-x": f"{vx}px",
         "--focus-ring": f"2px solid {c['accent']}",
     }
@@ -406,6 +445,13 @@ def carte_html(cfg: dict, carte: dict, lettre: str) -> str:
              if c.get("champ") else "")
     traits = "".join(f"<li>{e(t)}</li>" for t in carte.get("traits", []))
     contr = "".join(f"<li>{e(x)}</li>" for x in lignes)
+    variante = ""
+    if carte.get("variante"):
+        v = carte["variante"]
+        style = ";".join(f"{n}:{x}" for n, x in jetons_variante(carte).items())
+        lv = "".join(f"<li>{e(x)}</li>" for x in controles(v)[0])
+        variante = (f'<section class="variante" style="{e(style)}"><h2 class="rub">Mode {mode(v)} · premier écran</h2>'
+                    f'<div class="cadre">{ecran_html(carte, c)}</div><ul class="contrastes">{lv}</ul></section>')
     return f"""<!doctype html>
 <html lang="{cfg['langue']}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(carte['nom'])}</title><style>
@@ -466,15 +512,18 @@ dl{{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}} dt{{colo
 .e-ind{{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:var(--border);border-radius:var(--radius);background:var(--color-bg)}}
 .e-ind small{{color:var(--color-muted)}} .e-ind b{{font:var(--weight-number) 22px/1.1 var(--font-number);font-variant-numeric:tabular-nums}}
 .e-courbe{{width:100%;height:20px;margin-top:4px}}
-@media (max-width:760px){{.carte{{padding:20px 16px}}.duo{{grid-template-columns:1fr}}.champ{{margin-left:0}}}}
+.variante{{margin:0 -36px;padding:20px 36px;background:var(--color-bg);color:var(--color-text)}}
+.variante .rub,.variante .contrastes{{color:var(--color-muted)}}
+@media (max-width:760px){{.variante{{margin:0 -16px;padding:16px}}.carte{{padding:20px 16px}}.duo{{grid-template-columns:1fr}}.champ{{margin-left:0}}}}
 </style></head><body><main class="carte">
 <header class="entete"><strong>{e(cfg['projet'])}</strong><span>{e(lettre)} · {e(carte['nom'])}</span></header>
 <section><h2 class="rub">Premier écran · {e(ECRANS[carte['ecran']])}</h2><div class="cadre">{ecran_html(carte, c)}</div></section>
+{variante}
 <section class="duo"><div><h2 class="rub">Typographie et chiffres</h2><h1 class="titre">{e(c['titre'])}</h1><p class="texte">{e(c['texte'])}</p>
 <div class="chiffre">{e(c['chiffre'])}</div><span class="legende">{e(c['legende'])}</span><ul class="polices">{polices}</ul></div>
 <div><h2 class="rub">Couleurs et contrastes</h2><div class="nuancier">{nuancier}</div><ul class="contrastes">{contr}</ul></div></section>
 <section><h2 class="rub">Contrôles</h2><div class="controles"><button class="btn btn-principal">{e(c['action'])}</button>
-<button class="btn">{e(c['action_secondaire'])}</button><button class="btn btn-focus">Focus clavier</button>{etiquettes}{champ}</div></section>
+<button class="btn">{e(c['action_secondaire'])}</button><button class="btn btn-focus" tabindex="-1">Focus clavier</button>{etiquettes}{champ}</div></section>
 <section class="intention"><h2 class="rub">Intention</h2><p>{e(carte['intention'])}</p><ul class="traits">{traits}</ul></section>
 </main></body></html>
 """
@@ -504,6 +553,11 @@ def cartes(cfg_chemin: Path, sortie: Path, force: bool) -> dict:
         raise Refus(f"des cartes trop proches : chaque paire diffère sur au moins {DIFFERENCE} axes de l'identité "
                     f"({', '.join(AXES)}) — change-les, pas seulement la couleur ; une manche qui affine la carte "
                     "choisie porte `affinage` (la demande de l'utilisateur) :\n" + "\n".join(proches))
+    avec = [c["id"] for c in cfg["cartes"] if c.get("variante")]
+    if avec and len(avec) != len(cfg["cartes"]):  # le mode demandé ne se perd pas avec la carte choisie
+        raise Refus("le mode opposé est dans toutes les cartes ou dans aucune : "
+                    f"`variante` dans {', '.join(avec)}, pas dans "
+                    + ", ".join(c["id"] for c in cfg["cartes"] if not c.get("variante")))
     page = sortie / "comparaison.html"
     if page.exists() and not force:
         raise Refus(f"la page existe déjà : {page} ; --force pour la refaire")
@@ -518,7 +572,10 @@ def cartes(cfg_chemin: Path, sortie: Path, force: bool) -> dict:
         "typographie": " · ".join(f"{n} {famille(carte['polices'][r])}" for r, n in POLICES.items()),
         "palette": [carte["couleurs"][r] for r in ("fond", "surface", "texte", "accent", "alerte")],
         "traits": carte.get("traits") or [ECRANS[carte["ecran"]]], "genre": "html",
-        "fichier": f"carte-{carte['id']}.html", "controles": controles(carte["couleurs"])[0],
+        "fichier": f"carte-{carte['id']}.html",
+        "controles": controles(carte["couleurs"])[0] + [f"mode {mode(carte['variante'])} : {x}"
+                                                         for x in controles(carte.get("variante") or {})[0]
+                                                         ] if carte.get("variante") else controles(carte["couleurs"])[0],
     } for carte in cfg["cartes"]]
     manifest = {"version": VERSION, "langue": cfg["langue"], "projet": cfg["projet"], "intention": cfg["intention"],
                 "manche": cfg["manche"], "options": options}
@@ -1059,6 +1116,8 @@ def comparer(manifest: Path, sortie: Path, *, force: bool = False) -> dict:
 CHOIX = Path("interface") / "choix.md"
 LIGNE_CHOIX = re.compile(r"^\|\s*(styles|directions|page)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$", re.M)
 JETON = re.compile(r"^\|\s*`(--[\w-]+)`\s*\|\s*`([^`]*)`\s*\|\s*$", re.M)
+MODES = ("sombre", "clair")
+CSS_MODE = {"sombre": "dark", "clair": "light"}
 DEBUT, FIN = "/* hosa:jetons:debut — généré depuis .hosa/kb/interface/choix.md par `atelier css`, ne pas éditer */", \
     "/* hosa:jetons:fin */"
 
@@ -1081,10 +1140,12 @@ def lit_choix(kb: Path) -> dict:
     for m in LIGNE_CHOIX.finditer(section(t, "Manches") or ""):
         manches[m[1]] = (m[2], m[3], m[4], m[5])
     jet = dict(JETON.findall(section(t, "Jetons") or ""))
+    variante = next(({"mode": m, "jetons": dict(JETON.findall(section(t, f"Jetons du mode {m}")))}
+                     for m in MODES if section(t, f"Jetons du mode {m}") is not None), None)
     css = re.search(r"`([^`]+)`", section(t, "Fichier CSS") or "")
     par = re.search(r"^generated:\s*\{\s*by:\s*([^,}]+)", t, re.M)
-    return {"manches": manches, "jetons": jet, "css": css[1] if css else None, "existe": f.is_file(),
-            "par": par[1].strip() if par else None}
+    return {"manches": manches, "jetons": jet, "variante": variante, "css": css[1] if css else None,
+            "existe": f.is_file(), "par": par[1].strip() if par else None}
 
 
 def ecrit_choix(kb: Path, etat: dict, par: str) -> Path:
@@ -1100,6 +1161,12 @@ def ecrit_choix(kb: Path, etat: dict, par: str) -> Path:
     if jet:
         corps += ("\n## Jetons\nLa seule définition de l'identité : `atelier css` les écrit dans le CSS du projet.\n\n"
                   "| Jeton | Valeur |\n|---|---|\n" + jet + "\n")
+    var = etat.get("variante")
+    if jet and var:
+        corps += (f"\n## Jetons du mode {var['mode']}\nCe qui change quand l'utilisateur ou son système choisit le mode "
+                  f"{var['mode']} : `atelier css` les écrit sous `prefers-color-scheme` et `[data-theme]`.\n\n"
+                  "| Jeton | Valeur |\n|---|---|\n"
+                  + "\n".join(f"| `{k}` | `{v}` |" for k, v in var["jetons"].items()) + "\n")
     if etat["css"]:
         corps += f"\n## Fichier CSS\n`{etat['css']}`\n"
     f = kb / CHOIX
@@ -1142,7 +1209,7 @@ def choisir(kb: Path, manche: str, option: str | None, depuis: Path | None, par:
             raise Refus("--conserve garde l'existant : pas d'option à nommer")
         etat["manches"][manche] = ("conservée", "existant gardé", note or "", maintenant())
         if manche == "styles":  # l'identité existante n'a pas de jetons Hosa : rien à comparer au CSS
-            etat["jetons"] = {}
+            etat["jetons"], etat["variante"] = {}, None
     else:
         if not option or depuis is None:
             raise Refus("il faut l'id de l'option et --depuis <cartes.json|manifest.json> de la manche")
@@ -1160,14 +1227,27 @@ def choisir(kb: Path, manche: str, option: str | None, depuis: Path | None, par:
             valide = charge_cartes(depuis)  # la carte retenue passe les mêmes contrôles, contraste compris
             trouve = next(c for c in valide["cartes"] if c["id"] == option)
             etat["jetons"] = jetons(trouve)
+            vj = jetons_variante(trouve)
+            etat["variante"] = {"mode": mode(trouve["variante"]), "jetons": vj} if vj else None
         etat["manches"][manche] = (option, str(trouve.get("nom", option)), note or "", maintenant())
     f = ecrit_choix(kb, etat, qui)
     journal(kb, qui, f"noté la manche {manche} dans")
-    return {"choix": str(f), "manche": manche, "option": etat["manches"][manche][0], "jetons": len(etat["jetons"])}
+    return {"choix": str(f), "manche": manche, "option": etat["manches"][manche][0], "jetons": len(etat["jetons"]),
+            **({"mode": etat["variante"]["mode"]} if etat.get("variante") else {})}
 
 
-def bloc_css(jet: dict[str, str]) -> str:
-    return DEBUT + "\n:root {\n" + "".join(f"  {k}: {v};\n" for k, v in jet.items()) + "}\n" + FIN
+def bloc_css(jet: dict[str, str], variante: dict | None = None) -> str:
+    """Le bloc des jetons. Sans variante, le bloc d'avant les modes, au caractère près : `ecart` le compare."""
+    decl = lambda d, pas="  ": "".join(f"{pas}{k}: {v};\n" for k, v in d.items())  # noqa: E731
+    if not variante:
+        return DEBUT + "\n:root {\n" + decl(jet) + "}\n" + FIN
+    autre = CSS_MODE[variante["mode"]]
+    base = CSS_MODE["clair" if variante["mode"] == "sombre" else "sombre"]
+    var = {**variante["jetons"], "color-scheme": autre}
+    return (DEBUT + "\n:root {\n" + decl({**jet, "color-scheme": base}) + "}\n"
+            f"@media (prefers-color-scheme: {autre}) {{\n  :root:not([data-theme=\"{base}\"]) {{\n"
+            + decl(var, "    ") + "  }\n}\n"
+            f":root[data-theme=\"{autre}\"] {{\n" + decl(var) + "}\n" + FIN)
 
 
 def racine_de(kb: Path) -> Path:
@@ -1182,7 +1262,7 @@ def css(kb: Path, sortie: Path) -> dict:
     racine, sortie = racine_de(kb), sortie.resolve()
     if not sortie.is_relative_to(racine):
         raise Refus(f"le fichier CSS doit être dans le projet : {racine}")
-    bloc = bloc_css(etat["jetons"])
+    bloc = bloc_css(etat["jetons"], etat["variante"])
     actuel = sortie.read_text(encoding="utf-8") if sortie.is_file() else ""
     if DEBUT in actuel and FIN in actuel:
         avant, reste = actuel.split(DEBUT, 1)
@@ -1195,7 +1275,8 @@ def css(kb: Path, sortie: Path) -> dict:
         etat["css"] = rel
         ecrit_choix(kb, etat, etat["par"] or "process:hosa-atelier")  # le choix reste celui de l'utilisateur
         journal(kb, "process:hosa-atelier", "noté le fichier CSS dans")
-    return {"css": str(sortie), "jetons": len(etat["jetons"])}
+    return {"css": str(sortie), "jetons": len(etat["jetons"]),
+            **({"mode": etat["variante"]["mode"]} if etat["variante"] else {})}
 
 
 def ecarts(kb: Path) -> list[str]:
@@ -1210,10 +1291,104 @@ def ecarts(kb: Path) -> list[str]:
     if DEBUT not in t or FIN not in t:
         return [f"`{etat['css']}` ne porte plus le bloc des jetons : relance `<hosa> atelier css`"]
     present = DEBUT + t.split(DEBUT, 1)[1].split(FIN, 1)[0] + FIN
-    if present != bloc_css(etat["jetons"]):
+    if present != bloc_css(etat["jetons"], etat["variante"]):
         return [f"`{etat['css']}` : les jetons ont été édités à la main ; change l'identité dans la KB "
                 "(atelier choisir), puis relance `<hosa> atelier css`"]
     return []
+
+
+# ---------------------------------------------------------------- export DTCG (format 2025.10), dérivé de la KB
+
+# jeton CSS → (chemin dans le fichier DTCG, $type). Un jeton absent d'ici est refusé, jamais deviné.
+DTCG = {
+    "--color-bg": (("color", "bg"), "color"), "--color-surface": (("color", "surface"), "color"),
+    "--color-text": (("color", "text"), "color"), "--color-muted": (("color", "muted"), "color"),
+    "--color-accent": (("color", "accent"), "color"), "--color-on-accent": (("color", "on-accent"), "color"),
+    "--color-line": (("color", "line"), "color"), "--color-warn": (("color", "warn"), "color"),
+    "--font-display": (("font", "family", "display"), "fontFamily"), "--font-body": (("font", "family", "body"), "fontFamily"),
+    "--font-number": (("font", "family", "number"), "fontFamily"),
+    "--weight-display": (("font", "weight", "display"), "fontWeight"), "--weight-number": (("font", "weight", "number"), "fontWeight"),
+    "--font-size-base": (("font", "size", "base"), "dimension"), "--radius": (("radius",), "dimension"),
+    "--border": (("border", "default"), "border"), "--focus-ring": (("border", "focus-ring"), "border"),
+    "--shadow": (("shadow",), "shadow"),
+    "--space-gap": (("space", "gap"), "dimension"), "--space-y": (("space", "y"), "dimension"),
+    "--space-x": (("space", "x"), "dimension"),
+}
+PX = re.compile(r"(-?\d+(?:\.\d+)?)(?:px)?")
+TRAIT = re.compile(r"(\d+(?:\.\d+)?)(?:px)? solid (#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|transparent)")
+COUCHE = re.compile(r"(-?\d+)(?:px)? (-?\d+)(?:px)? (\d+)(?:px)? rgb\((\d+) (\d+) (\d+) / (\d*\.?\d+)\)")
+
+
+def dtcg_couleur(v: str, alpha: float = 1.0) -> dict:
+    if v == "transparent":
+        return {"colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0, "hex": "#000000"}
+    r, g, b = canaux(v)
+    out = {"colorSpace": "srgb", "components": [round(x / 255, 4) for x in (r, g, b)], "hex": f"#{r:02x}{g:02x}{b:02x}"}
+    if alpha != 1.0:
+        out["alpha"] = alpha
+    return out
+
+
+def dtcg_px(v: str) -> dict:
+    n = float(v)
+    return {"value": int(n) if n.is_integer() else n, "unit": "px"}
+
+
+def dtcg_valeur(nom: str, v: str, typ: str):
+    """La valeur DTCG d'un jeton CSS, pour les seules formes que `jetons()` écrit ; toute autre forme est refusée."""
+    if typ == "color" and HEX.fullmatch(v):
+        return dtcg_couleur(v)
+    if typ == "fontFamily":
+        familles = [f.strip().strip("\"'") for f in v.split(",")]
+        if all(familles):
+            return familles
+    if typ == "fontWeight" and v.isdigit() and 1 <= int(v) <= 1000:
+        return int(v)
+    if typ == "dimension" and (m := PX.fullmatch(v)) and (v.endswith("px") or float(m[1]) == 0):
+        return dtcg_px(m[1])
+    if typ == "border" and (m := TRAIT.fullmatch(v)):
+        return {"color": dtcg_couleur(m[2]), "width": dtcg_px(m[1]), "style": "solid"}
+    if typ == "shadow":
+        couches = [COUCHE.fullmatch(x.strip()) for x in v.split(",")]
+        if all(couches):
+            return [{"color": dtcg_couleur("#{:02x}{:02x}{:02x}".format(*(int(m[i]) for i in (4, 5, 6))), float(m[7])),
+                     "offsetX": dtcg_px(m[1]), "offsetY": dtcg_px(m[2]), "blur": dtcg_px(m[3]),
+                     "spread": dtcg_px("0")} for m in couches]
+    raise Refus(f"`{nom}` : la valeur `{v}` n'est pas une forme que l'export DTCG sait lire ({typ}) ; "
+                "change l'identité dans la KB (atelier choisir), jamais à la main")
+
+
+def dtcg_fichier(jet: dict[str, str], description: str) -> dict:
+    racine: dict = {"$description": description}
+    for nom, v in jet.items():
+        if nom not in DTCG:
+            raise Refus(f"`{nom}` : jeton inconnu de l'export DTCG")
+        chemin, typ = DTCG[nom]
+        if typ == "shadow" and v == "none":
+            continue  # pas d'ombre : DTCG n'a pas de valeur « aucune »
+        noeud = racine
+        for cle in chemin[:-1]:
+            noeud = noeud.setdefault(cle, {})
+        noeud[chemin[-1]] = {"$type": typ, "$value": dtcg_valeur(nom, v, typ)}
+    return racine
+
+
+def dtcg(kb: Path, sortie: Path) -> dict:
+    """Les jetons de `kb/interface/choix.md` au format DTCG 2025.10 : un fichier dérivé, refait à la demande,
+    pour un outil de design ; la KB reste la seule définition."""
+    etat = lit_choix(kb)
+    if not etat["jetons"]:
+        raise Refus("pas de `## Jetons` dans kb/interface/choix.md : la manche styles n'a pas été choisie "
+                    "(atelier choisir … styles), ou l'identité est conservée")
+    source = "Généré depuis .hosa/kb/interface/choix.md par `atelier dtcg` : ne pas éditer, refaire."
+    fichiers = {sortie / "identite.tokens.json": dtcg_fichier(etat["jetons"], source)}
+    var = etat["variante"]
+    if var:
+        fichiers[sortie / f"identite.{var['mode']}.tokens.json"] = dtcg_fichier(
+            var["jetons"], f"Mode {var['mode']} : remplace ces jetons de identite.tokens.json. " + source)
+    for f, contenu in fichiers.items():
+        ecrit_atomique(f, json.dumps(contenu, ensure_ascii=False, indent=2) + "\n")
+    return {"dtcg": [str(f) for f in fichiers], **({"mode": var["mode"]} if var else {})}
 
 
 # ---------------------------------------------------------------- revue visuelle : une grille, une note calculée
@@ -1380,6 +1555,9 @@ def main(argv: list[str]) -> int:
     a = sous.add_parser("css", help="écrire les jetons dans le CSS du projet")
     a.add_argument("kb", type=Path)
     a.add_argument("--out", type=Path, required=True)
+    a = sous.add_parser("dtcg", help="exporter les jetons de la KB au format DTCG 2025.10")
+    a.add_argument("kb", type=Path)
+    a.add_argument("--out", type=Path, required=True)
     a = sous.add_parser("ecart", help="le CSS du projet porte-t-il les jetons de la KB ?")
     a.add_argument("kb", type=Path)
     a = sous.add_parser("grille", help="la grille de la revue visuelle, à remplir")
@@ -1397,6 +1575,8 @@ def main(argv: list[str]) -> int:
             r = choisir(x.kb, x.manche, x.option, x.depuis, x.par, x.note, x.conserve)
         elif x.cmd == "css":
             r = css(x.kb, x.out)
+        elif x.cmd == "dtcg":
+            r = dtcg(x.kb, x.out)
         elif x.cmd == "grille":
             r = grille(x.out)
             if x.out is None:

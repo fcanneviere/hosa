@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T01:28:31Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T07:49:01Z'}
 ---
 
 ## Fichiers
@@ -104,11 +104,11 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T01:28:31Z'}
 - `Base` — `hosa/app/test_atelier.py:23`
 - `Cartes` — `hosa/app/test_atelier.py:69`
 - `Choix` — `hosa/app/test_atelier.py:337`
-- `Cli` — `hosa/app/test_atelier.py:512`
+- `Cli` — `hosa/app/test_atelier.py:637`
 - `Comparer` — `hosa/app/test_atelier.py:169`
 - `Contraste` — `hosa/app/test_atelier.py:53`
-- `Diversite` — `hosa/app/test_atelier.py:417`
-- `Revue` — `hosa/app/test_atelier.py:443`
+- `Diversite` — `hosa/app/test_atelier.py:539`
+- `Revue` — `hosa/app/test_atelier.py:565`
 - `AuditStage` — `hosa/app/test_avancement.py:764`
 - `Block` — `hosa/app/test_avancement.py:231`
 - `Bounds` — `hosa/app/test_avancement.py:1174` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
