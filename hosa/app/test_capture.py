@@ -196,7 +196,7 @@ class Navigateur(unittest.TestCase):
         (self.d / "secret.html").write_text("<p>secret</p>", encoding="utf-8")
         (sub / ".env.html").write_text("<p>secret</p>", encoding="utf-8")
         (sub / "i.html").write_text('<!doctype html><html lang="fr"><body><p>i</p></body></html>', encoding="utf-8")
-        _, out, report = self.run_capture(str(sub / "i.html"), "--routes", "/../secret.html,/.env.html,/i.html",
+        _, out, report = self.run_capture(str(sub / "i.html"), "--routes", "/../secret.html,/.env.html,/ENV~1.HTM,/i.html",
                                           "--size", "800x600", "--sans-a11y")
         self.assertEqual(report["routes"]["rendues"], 1, out)
 

@@ -129,10 +129,11 @@ async function adresseDeBase(t) {
     try {
       if ((req.method !== "GET" && req.method !== "HEAD") || req.headers.host !== hote) return absent();
       const segments = decodeURIComponent(new URL(req.url, "http://local").pathname).split(/[\\/]+/).filter(Boolean);
-      if (segments.some((s) => s === ".." || prive(s))) return absent();
+      if (segments.some((s) => s === ".." || prive(s) || /~\d/.test(s))) return absent();
       let fichier = path.join(racine, ...segments);
       if (fs.statSync(fichier).isDirectory()) fichier = path.join(fichier, "index.html");
-      const reel = fs.realpathSync(fichier);
+      // `.native` rend le nom long sous Windows : un nom court (ENVHTM~1.HTM) ne contourne pas le filtre des fichiers privés
+      const reel = fs.realpathSync.native(fichier);
       const relatif = path.relative(racine, reel);
       if (relatif.startsWith("..") || path.isAbsolute(relatif) || relatif.split(path.sep).some(prive)) return absent();
       const type = TYPES[path.extname(reel).toLowerCase()];

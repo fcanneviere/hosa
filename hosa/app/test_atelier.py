@@ -219,7 +219,8 @@ class Comparer(Base):
         data = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',
                                     (self.d / "p.html").read_text(encoding="utf-8"), re.S)[1])
         content = data["options"][0]["contenu"]
-        self.assertLess(content.index("<head>", 10), content.index("Content-Security-Policy"))
+        self.assertNotIn("<!--", content)  # the comment is dropped: only the real head remains
+        self.assertLess(content.index("<head>"), content.index("Content-Security-Policy"))
 
     def test_metadata_cannot_close_the_data_script(self):
         c = self.html("a.html", "x")
@@ -255,6 +256,23 @@ class Comparer(Base):
         self.assertEqual((self.d / "p.html").read_text(encoding="utf-8"), before)
         with self.assertRaises(at.Refus):  # the output never overwrites an input
             at.comparer(self.manifest([self.html("a.html", "a")]), self.d / "m" / "a.html", force=True)
+
+    def test_markup_the_browser_and_the_check_would_read_differently_is_refused_or_dropped(self):
+        for body in ('<svg><style><img src="http://x/a.png"></style></svg>',
+                     '<math><script>x</script></math>',
+                     '<xmp><a title="</xmp><img src=http://x>">x</a></xmp>',
+                     '<!-- a --!><img src="http://x/a.png"> -->'):  # the comment ends at --!>, as in the browser
+            with self.assertRaises(at.Refus, msg=body):
+                at.comparer(self.manifest([self.html("a.html", body)]), self.d / "p.html", force=True)
+        c = self.html("a.html", '<!-- <img src="http://x/a.png"> --><p>ok</p><![CDATA[<img src=http://y>]]>'
+                                '<svg><title>Logo</title></svg><textarea>texte</textarea>')
+        at.comparer(self.manifest([c]), self.d / "p.html", force=True)
+        data = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',
+                                    (self.d / "p.html").read_text(encoding="utf-8"), re.S)[1])
+        contenu = data["options"][0]["contenu"]
+        self.assertNotIn("<!--", contenu)
+        self.assertNotIn("http://", contenu)
+        self.assertIn("<p>ok</p>", contenu)
 
     def test_a_refusal_names_the_file_and_line(self):
         c = self.html("a.html", '<p>ok</p>\n<p>ok</p>\n<img alt="" src="https://cdn/x.png">')

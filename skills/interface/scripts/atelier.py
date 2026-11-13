@@ -521,6 +521,7 @@ INTERDITS = {"iframe": "pas de document imbriqué (iframe) : mets son contenu ou
              "object": "pas d'objet externe (object) : une image ou une capture",
              "embed": "pas d'objet externe (embed) : une image ou une capture",
              "portal": "pas de portail (portal)", "base": "pas de balise base : les chemins restent relatifs à la maquette"}
+ELEMENTS_TEXTE_BRUT = {"xmp", "noembed", "noframes", "plaintext", "listing"}
 ATTR_RESSOURCE = {"src", "poster", "data", "background", "xlink:href", "lowsrc", "ping", "manifest", "icon"}
 ATTR_SRCSET = {"srcset", "imagesrcset"}
 FONCTIONS_IMAGE = {"image-set", "-webkit-image-set", "image", "cross-fade", "-webkit-cross-fade", "src"}
@@ -700,6 +701,8 @@ class Maquette(HTMLParser):
         self.fichier, self.interactif = fichier, interactif
         self.morceaux, self.differes = [], []
         self.tete_posee, self.dans = False, None  # dans : "style", "script", "ignore" (script retiré)
+        self.etranger = 0  # profondeur dans <svg> ou <math>, où le navigateur ne lit plus style ni script en texte brut
+        self.texte_seul = None  # <title> ou <textarea> ouvert : le navigateur n'y lit que du texte
 
     def refus(self, quoi: str):
         raise Refus(f"{self.fichier.name}, ligne {self.getpos()[0]} : {quoi}")
@@ -717,6 +720,18 @@ class Maquette(HTMLParser):
     def balise(self, tag: str, attrs: list[tuple[str, str | None]], fermee: bool) -> None:
         if tag in INTERDITS:
             self.refus(INTERDITS[tag])
+        # Là où Python et le navigateur ne découpent pas le document pareil, une balise vue comme du texte d'un côté
+        # serait un élément de l'autre : refusée, plutôt que de laisser passer ce que le contrôle n'a pas vu.
+        if self.texte_seul:
+            self.refus(f"pas de balise dans <{self.texte_seul}> : le navigateur n'y lit que du texte")
+        if tag in ELEMENTS_TEXTE_BRUT:
+            self.refus(f"pas de <{tag}> : un élément périmé dont le navigateur lit le contenu comme du texte brut")
+        if self.etranger and tag in ("style", "script"):
+            self.refus(f"pas de <{tag}> dans un svg ou un math : mets-le dans le head")
+        if tag in ("svg", "math") and not fermee:
+            self.etranger += 1
+        if tag in ("title", "textarea") and not fermee and not self.etranger:
+            self.texte_seul = tag
         a = {k: v for k, v in attrs}
         if tag == "meta" and (a.get("http-equiv") or "").strip().lower() == "refresh":
             self.refus("pas de redirection automatique (meta refresh)")
@@ -793,6 +808,10 @@ class Maquette(HTMLParser):
         self.balise(tag, attrs, True)
 
     def handle_endtag(self, tag):
+        if tag in ("svg", "math") and self.etranger:
+            self.etranger -= 1
+        if tag == self.texte_seul:
+            self.texte_seul = None
         if tag == "script" and self.dans == "ignore":
             self.dans = None
             return
@@ -812,17 +831,20 @@ class Maquette(HTMLParser):
             self.pose_tete()
         self.morceaux.append(data)
 
+    # Commentaires, instructions et sections CDATA ne servent pas à une maquette, et les règles qui les ferment
+    # diffèrent d'un analyseur à l'autre : ils sont retirés. Seul le doctype reste.
     def handle_comment(self, data):
-        self.morceaux.append(f"<!--{data}-->")
+        pass
 
     def handle_decl(self, decl):
-        self.morceaux.append(f"<!{decl}>")
+        if re.fullmatch(r"doctype\s+html", decl.strip(), re.I):
+            self.morceaux.append("<!doctype html>")
 
     def handle_pi(self, data):
-        self.morceaux.append(f"<?{data}>")
+        pass
 
     def unknown_decl(self, data):
-        self.morceaux.append(f"<![{data}]>")
+        pass
 
     def handle_entityref(self, name):
         self.morceaux.append(f"&{name};")
