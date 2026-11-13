@@ -59,6 +59,15 @@ class AppTest(unittest.TestCase):
         # Two servers on one port: the browser would reach either project's KB.
         with self.assertRaises(OSError):
             server.serve(self.root, self.srv.server_port).server_close()
+        # A port asked for stays refused; none asked and the default taken: a free port, never the other's.
+        with self.assertRaises(OSError):
+            server.listen(self.root, str(self.srv.server_port)).server_close()
+        with patch.object(server, "DEFAULT_PORT", self.srv.server_port):
+            other = server.listen(self.root)
+            try:
+                self.assertNotEqual(other.server_port, self.srv.server_port)
+            finally:
+                other.server_close()
 
     def call(self, method, path, body=None, ctype="application/json", host=None):
         req = urllib.request.Request(self.base + path, method=method,

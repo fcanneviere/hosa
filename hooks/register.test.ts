@@ -142,7 +142,7 @@ test('the pane button starts the dashboard on a free port when 3000 is taken, li
   await $.session.start({ surface: 'desktop', isInteractive: true, cwd: '/work' })
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'pilotage' })
-  expect(runs.map((r) => r.env.PORT)).toEqual(['3000', '0'])
+  expect(runs.map((r) => r.env.PORT)).toEqual(['', '0'])
   expect(runs[0].argv[1]).toMatch(/run\.py$/)
   expect(runs[0].cwd).not.toMatch(/^\/work/) // never the project's folder: a planted python.exe there would run
   expect(runs[0].env.HOSA_KB_ROOT).toBe('/work/.hosa/kb')

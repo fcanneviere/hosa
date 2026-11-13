@@ -117,8 +117,9 @@ async function python($) {
 }
 
 // E. The dashboard (/hosa:pilotage) from a button of the pane: run.py serves the project's KB and opens the browser.
-// The server lives for the session (the stream's loop is its life); 3000 taken → a free port. Fail-open.
-export async function startDashboard($, port = '3000') {
+// The server lives for the session (the stream's loop is its life); PORT left empty: server.py takes 3000, or a free
+// port when 3000 is taken, and opens the browser on its own address. Fail-open.
+export async function startDashboard($, port = '') {
   if (dash.state === 'starting' || dash.state === 'on' || !project) return
   dash = { state: 'starting' }
   redraw($)

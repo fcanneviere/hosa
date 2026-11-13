@@ -191,13 +191,28 @@ def serve(root, port=0):
     return Server(("127.0.0.1", port), make_handler(Path(root).resolve()))
 
 
+DEFAULT_PORT = 3000
+
+
+def listen(root, port=None):
+    """A port asked for (PORT) is that port or an OSError. None asked: 3000, or a free port when 3000 is taken —
+    another project's dashboard there must never be mistaken for this one (rieki, 2026-11-13: the link said 3000,
+    the server had failed, the browser showed another project's KB)."""
+    if port:
+        return serve(root, int(port))
+    try:
+        return serve(root, DEFAULT_PORT)
+    except OSError:
+        return serve(root, 0)
+
+
 if __name__ == "__main__":
     root = os.environ.get("HOSA_KB_ROOT") or kb.resolve_kb_root()
-    port = int(os.environ.get("PORT", 3000))
+    port = os.environ.get("PORT")
     try:
-        server = serve(root, port)
+        server = listen(root, port)
     except OSError:
-        raise SystemExit(f"Port {port} déjà utilisé (un autre tableau de bord ?) : relance avec PORT=<autre port>.")
+        raise SystemExit(f"Port {port} déjà utilisé (un autre tableau de bord ?) : relance sans PORT, un port libre est pris.")
     url = f"http://127.0.0.1:{server.server_port}"  # IPv4 like the bind: "localhost" may resolve to ::1, another app
     print(f"Hosa — {url}  (KB : {root})", file=sys.stderr, flush=True)
     if os.environ.get("HOSA_OPEN_BROWSER"):

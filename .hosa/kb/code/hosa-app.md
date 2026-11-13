@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T12:44:29Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T12:54:21Z'}
 ---
 
 ## Fichiers
@@ -63,46 +63,47 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:44:29Z'}
 - `KbError` — `hosa/app/kb.py:38`
 - `UsageError` — `hosa/app/kb.py:50`
 - `UsageFailed` — `hosa/app/kb.py:54`
-- `activity` — `hosa/app/kb.py:380` — Entrées des `log.md` : jour, dossier, texte, acteur (humain\|processus\|agent), et `lien` vers le
+- `activity` — `hosa/app/kb.py:381` — Entrées des `log.md` : jour, dossier, texte, acteur (humain\|processus\|agent), et `lien` vers le
 - `append_log` — `hosa/app/kb.py:225` — Entrée OKF §9 dans le log.md du bundle : groupée par date, plus récente en tête.
-- `board` — `hosa/app/kb.py:509` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
-- `coverage` — `hosa/app/kb.py:466` — Couverture des critères de chaque ticket, par chemin de concept.
-- `coverage_of` — `hosa/app/kb.py:458` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
+- `board` — `hosa/app/kb.py:511` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
+- `coverage` — `hosa/app/kb.py:468` — Couverture des critères de chaque ticket, par chemin de concept.
+- `coverage_of` — `hosa/app/kb.py:460` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
 - `create` — `hosa/app/kb.py:282`
 - `dump_frontmatter` — `hosa/app/kb.py:91`
 - `get` — `hosa/app/kb.py:179`
-- `kb_status` — `hosa/app/kb.py:630` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
+- `kb_status` — `hosa/app/kb.py:632` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
 - `load_frontmatter` — `hosa/app/kb.py:66` — Le frontmatter en dict, ou KbError avec une cause lisible : jamais le message de PyYAML, qui cite le contenu.
-- `overview` — `hosa/app/kb.py:564`
+- `overview` — `hosa/app/kb.py:566`
 - `parse` — `hosa/app/kb.py:79` — Retourne (frontmatter, body). Lève KbError « Le fichier est illisible : <cause> » si le YAML est invalide.
-- `plan` — `hosa/app/kb.py:475` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
-- `points` — `hosa/app/kb.py:501`
-- `recettes` — `hosa/app/kb.py:531` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
+- `plan` — `hosa/app/kb.py:477` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
+- `points` — `hosa/app/kb.py:503`
+- `recettes` — `hosa/app/kb.py:533` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
 - `remark` — `hosa/app/kb.py:306` — Remarque de l'utilisateur pour Claude : un fichier de `kb/remarques/`, signé `human:<auteur>`.
-- `remarques` — `hosa/app/kb.py:344` — Les remarques de l'utilisateur : ouvertes d'abord, puis de la plus récente à la plus ancienne.
+- `remarques` — `hosa/app/kb.py:345` — Les remarques de l'utilisateur : ouvertes d'abord, puis de la plus récente à la plus ancienne.
 - `render` — `hosa/app/kb.py:120`
 - `resolve_kb_root` — `hosa/app/kb.py:58`
 - `serialize` — `hosa/app/kb.py:95`
 - `trust_tier` — `hosa/app/kb.py:124`
 - `update` — `hosa/app/kb.py:241` — Met à jour un concept. merge=True fusionne le frontmatter (PATCH), sinon le remplace (édition complète).
-- `usage` — `hosa/app/kb.py:426` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
-- `usage.rows` — `hosa/app/kb.py:448`
+- `usage` — `hosa/app/kb.py:427` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
+- `usage.rows` — `hosa/app/kb.py:450`
 - `version` — `hosa/app/kb.py:208` — Empreinte du fichier sur disque : un PUT qui la renvoie n'écrase pas l'écriture d'un agent.
 - `walk` — `hosa/app/kb.py:153` — Concepts de la KB. Un fichier illisible est sauté (la liste n'échoue jamais) et,
 - `Server` — `hosa/app/server.py:185`
+- `listen` — `hosa/app/server.py:197` — A port asked for (PORT) is that port or an OSError. None asked: 3000, or a free port when 3000 is taken —
 - `make_handler` — `hosa/app/server.py:27`
 - `make_handler.Handler` — `hosa/app/server.py:30`
 - `serve` — `hosa/app/server.py:190`
 - `AppTest` — `hosa/app/test_app.py:35`
-- `BacklogApiTest` — `hosa/app/test_app.py:956` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
-- `BoardTest` — `hosa/app/test_app.py:673` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
-- `CouvertureTest` — `hosa/app/test_app.py:612` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
-- `GraphApiTest` — `hosa/app/test_app.py:246` — KB servie à l'intérieur d'un dépôt git : le graphe est celui de la racine du dépôt.
-- `KbStatusTest` — `hosa/app/test_app.py:357`
-- `RecettesTest` — `hosa/app/test_app.py:817` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
-- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:943`
-- `UsageApiTest` — `hosa/app/test_app.py:479` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
-- `ValidationProvenanceTest` — `hosa/app/test_app.py:768` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
+- `BacklogApiTest` — `hosa/app/test_app.py:965` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
+- `BoardTest` — `hosa/app/test_app.py:682` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
+- `CouvertureTest` — `hosa/app/test_app.py:621` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
+- `GraphApiTest` — `hosa/app/test_app.py:255` — KB servie à l'intérieur d'un dépôt git : le graphe est celui de la racine du dépôt.
+- `KbStatusTest` — `hosa/app/test_app.py:366`
+- `RecettesTest` — `hosa/app/test_app.py:826` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
+- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:952`
+- `UsageApiTest` — `hosa/app/test_app.py:488` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
+- `ValidationProvenanceTest` — `hosa/app/test_app.py:777` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
 - `Base` — `hosa/app/test_atelier.py:23`
 - `Cartes` — `hosa/app/test_atelier.py:69`
 - `Choix` — `hosa/app/test_atelier.py:337`
