@@ -4,7 +4,7 @@ title: skills/interface/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T07:59:49Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-13T08:15:15Z'}
 ---
 
 ## Fichiers
@@ -33,12 +33,13 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T07:59:49Z'}
 - `cartes_proches` — `skills/interface/scripts/atelier.py:320`
 - `chaine` — `skills/interface/scripts/atelier.py:76`
 - `chaines` — `skills/interface/scripts/atelier.py:83`
+- `champ_preuve` — `skills/interface/scripts/atelier.py:1439`
 - `charge_cartes` — `skills/interface/scripts/atelier.py:213`
 - `charge_manifest` — `skills/interface/scripts/atelier.py:1013`
 - `choisir` — `skills/interface/scripts/atelier.py:1199`
 - `comparer` — `skills/interface/scripts/atelier.py:1080`
 - `contraste` — `skills/interface/scripts/atelier.py:139`
-- `controle_grille` — `skills/interface/scripts/atelier.py:1500` — Ce que `revue` écrit et ce que `avancement.py task done interface revue` relit : la même fonction.
+- `controle_grille` — `skills/interface/scripts/atelier.py:1519` — Ce que `revue` écrit et ce que `avancement.py task done interface revue` relit : la même fonction.
 - `controle_revue` — `skills/interface/scripts/atelier.py:1401` — Le contrôle de la tâche interface/revue, déclaré dans pipeline.json (la seule définition).
 - `controles` — `skills/interface/scripts/atelier.py:174` — (une ligne par paire avec son rapport, un manque par paire sous son minimum avec une couleur proposée).
 - `courbe` — `skills/interface/scripts/atelier.py:382` — L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série.
@@ -64,11 +65,12 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T07:59:49Z'}
 - `lit_json` — `skills/interface/scripts/atelier.py:61`
 - `lit_srcset` — `skills/interface/scripts/atelier.py:773` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
 - `luminance` — `skills/interface/scripts/atelier.py:134`
-- `main` — `skills/interface/scripts/atelier.py:1536`
+- `main` — `skills/interface/scripts/atelier.py:1555`
 - `maintenant` — `skills/interface/scripts/atelier.py:1125`
+- `manques_modes` — `skills/interface/scripts/atelier.py:1443` — Une identité à deux modes se revoit dans les deux : parmi les preuves des Oui, au moins une capture
 - `mix` — `skills/interface/scripts/atelier.py:129` — Le mélange sRGB que le navigateur calcule pour `color-mix(in srgb, a part_a, b)`.
 - `mode` — `skills/interface/scripts/atelier.py:336`
-- `note_grille` — `skills/interface/scripts/atelier.py:1451` — {note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
+- `note_grille` — `skills/interface/scripts/atelier.py:1469` — {note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
 - `objet` — `skills/interface/scripts/atelier.py:92`
 - `ordonne` — `skills/interface/scripts/atelier.py:1003` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
 - `paires` — `skills/interface/scripts/atelier.py:155` — Chaque paire de couleurs que la carte et l'interface montrent, avec son minimum WCAG AA :
@@ -77,12 +79,12 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T07:59:49Z'}
 - `police` — `skills/interface/scripts/atelier.py:204` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
 - `prepare_html` — `skills/interface/scripts/atelier.py:966`
 - `prepare_image` — `skills/interface/scripts/atelier.py:977`
-- `preuve_valide` — `skills/interface/scripts/atelier.py:1436` — Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet.
+- `preuve_valide` — `skills/interface/scripts/atelier.py:1454` — Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet.
 - `proposition` — `skills/interface/scripts/atelier.py:144` — La couleur la plus proche de `avant`, même teinte, qui tient `mini` sur `arriere` : poussée vers le noir
 - `questions_grille` — `skills/interface/scripts/atelier.py:1410` — Les questions fermées de la revue.
 - `racine_de` — `skills/interface/scripts/atelier.py:1253`
 - `reecrit_css` — `skills/interface/scripts/atelier.py:711` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
-- `revue` — `skills/interface/scripts/atelier.py:1509` — Calcule la note de la grille remplie et ajoute sa ligne sous `## Revue visuelle` de `navigation.md`.
+- `revue` — `skills/interface/scripts/atelier.py:1528` — Calcule la note de la grille remplie et ajoute sa ligne sous `## Revue visuelle` de `navigation.md`.
 - `section` — `skills/interface/scripts/atelier.py:1129`
 - `ErreurDePage` — `skills/interface/scripts/capture.mjs:304`
 - `Tube` — `skills/interface/scripts/capture.mjs:185`

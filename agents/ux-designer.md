@@ -90,7 +90,7 @@ Commands (absolute paths; `--force` to rebuild a round). Each prints one JSON li
 You get the screenshots, the identity, the design rules, the personas' main tasks and a grid path — not the design reasoning. Edit nothing but the grid. Be strict: the bar is the best product in the category.
 1. No grid at that path yet → `<hosa> atelier grille --out <the grid path>` writes the closed questions of `pipeline.json`. A redispatch with the grid's gaps → complete that same file, nothing else. Fill `categorie` (the product category) and `reference` (what its best products do on the first screen).
 2. Answer each question with `reponse`: `oui`, `non` or `na`. Answer from what the screenshots show, never from what the code should do.
-   - `oui` → `preuve`: the path, from the project root, of the capture you looked at. It must exist.
+   - `oui` → `preuve`: the path, from the project root, of the capture you looked at. It must exist. An identity with two modes: your Oui cite captures of both (`-light`, `-dark`), or the grid is refused.
    - `non` → `ou` (screen and element), `constat` (what you see and its effect), `correction` (the fix, and what to check after).
    - `na` → only where `na_permis` is true, the reason in `constat`.
 3. You never give the note: `atelier revue` computes it from your answers. Judge each question on its own; a task blocked or data lost counts before any visual issue.

@@ -1433,6 +1433,24 @@ def grille(sortie: Path | None) -> dict:
     return {"grille": str(sortie), "questions": len(modele["questions"])}
 
 
+CAPTURE_MODE = re.compile(r"-(light|dark)(?:-marque|-masque)?\.(?:png|jpe?g|webp)$", re.I)
+
+
+def champ_preuve(r: dict | None) -> str:
+    return str((r or {}).get("preuve", "") or "") if str((r or {}).get("reponse", "")).strip().lower() == "oui" else ""
+
+
+def manques_modes(racine: Path, preuves: list[str]) -> list[str]:
+    """Une identité à deux modes se revoit dans les deux : parmi les preuves des Oui, au moins une capture
+    de chaque mode, nommée par `capture --schemes light,dark`."""
+    if lit_choix(racine / ".hosa" / "kb")["variante"] is None:
+        return []
+    vus = {m[1].lower() for p in preuves for c in p.split(",") if (m := CAPTURE_MODE.search(c.strip()))}
+    return [f"identité à deux modes : aucune preuve capturée en mode {nom} (`-{s}.png`) — refais les captures avec "
+            "`capture --schemes light,dark` et cite celles des deux modes"
+            for s, nom in (("light", "clair"), ("dark", "sombre")) if s not in vus]
+
+
 def preuve_valide(racine: Path, preuve: str) -> bool:
     """Chaque capture citée : un chemin depuis la racine du projet vers une image qui existe, dans le projet."""
     chemins = [x.strip() for x in preuve.split(",") if x.strip()]
@@ -1487,6 +1505,7 @@ def note_grille(g: dict, racine: Path) -> dict:
             non.append(f"{q['id']} {champ('ou')} : {champ('constat')} → {champ('correction')}")
     connus = {q["id"] for q in questions}
     manques += [f"{i} : question inconnue de la grille" for i in par_id if i not in connus]
+    manques += manques_modes(racine, [champ_preuve(par_id.get(q["id"])) for q in questions])
     comptes = oui + len(non)
     trop = ctl.get("trop_de_non")
     if trop and len(non) >= int(trop["nombre"]):

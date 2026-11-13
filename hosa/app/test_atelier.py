@@ -583,6 +583,28 @@ class Revue(Base):
         p.write_text(json.dumps(g, ensure_ascii=False), encoding="utf-8")
         return p
 
+    def test_an_identity_with_two_modes_is_reviewed_on_captures_of_both(self):
+        k = self.kb()
+        sans = at.revue(k, self.remplie())  # one mode: a single capture is enough
+        self.assertEqual(sans["note"], 10)
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        data["cartes"][0]["variante"] = Choix.NUIT
+        cfg = self.d / "nuit.json"
+        cfg.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        at.choisir(k, "styles", "email", cfg, "u", None, False)
+        clair, sombre = self.SHOT.replace(".png", "-light.png"), self.SHOT.replace(".png", "-dark-marque.png")
+        for s in (clair, sombre):
+            (self.d / s).write_bytes(b"png")
+        with self.assertRaises(at.Refus) as e:
+            at.revue(k, self.remplie(R3={"preuve": clair}))
+        self.assertIn("aucune preuve capturée en mode sombre", str(e.exception))
+        self.assertNotIn("mode clair", str(e.exception))
+        with self.assertRaises(at.Refus) as e:  # a Non's capture proves nothing: only the Oui count
+            at.revue(k, self.remplie(R3={"preuve": clair}, R4={"reponse": "non", "preuve": sombre, "ou": "a",
+                                                                "constat": "b", "correction": "c"}))
+        self.assertIn("mode sombre", str(e.exception))
+        self.assertEqual(at.revue(k, self.remplie(R3={"preuve": clair}, R5={"preuve": f"{self.SHOT}, {sombre}"}))["note"], 10)
+
     def test_the_grid_comes_from_the_pipeline_and_its_template_is_written_once(self):
         qs = at.questions_grille()
         self.assertEqual((qs[0]["id"], at.plafond(qs[0]), at.plafond(qs[3])), ("R1", 7, 10))
