@@ -46,7 +46,7 @@
         {"id": "R13", "na": true, "q": "Back office : chaque liste a recherche, filtres et nombre de résultats, et chaque fiche n'offre que les actions que son état permet ?"},
         {"id": "R14", "na": true, "q": "Tableaux de bord : chaque indicateur a sa valeur, sa comparaison, sa période et un lien vers les données derrière lui ?"},
         {"id": "R15", "na": true, "q": "Sur mobile (390 px), la tâche principale de chaque espace reste faisable, sans défilement horizontal, avec des cibles faciles à toucher ?"},
-        {"id": "R16", "q": "Aucun ornement par défaut de modèle : ni dégradé, ni halo, ni icône emoji, ni barre colorée au bord des éléments, ni mot surligné dans un titre, ni sur-titre ou capitales sans rôle ?"}]},
+        {"id": "R16", "plafond": 7, "q": "Aucun ornement par défaut de modèle : ni dégradé, ni halo, ni icône emoji, ni barre colorée au bord des éléments, ni mot surligné dans un titre, ni sur-titre ou capitales sans rôle ?"}]},
       {"stage": "backlog", "id": "stories-*", "check": ["lot"], "lot": 8},
       {"stage": "backlog", "id": "securite-*", "after": ["stories-*"]},
       {"stage": "backlog", "id": "juridique-*", "after": ["stories-*"]},

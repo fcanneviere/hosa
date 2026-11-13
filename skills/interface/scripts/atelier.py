@@ -3,7 +3,8 @@
 
   atelier.py cartes   <cartes.json> --out <dossier> [--force]
       Valide les cartes (contraste WCAG AA calculé pour chaque paire de couleurs affichée, avec une couleur proposée
-      pour chaque paire refusée), refuse deux cartes qui diffèrent sur moins de 3 axes de l'identité, dessine une
+      pour chaque paire refusée), refuse une carte aux choix par défaut d'une interface générée (police des titres,
+      accent indigo ou violet) sans `assume`, refuse deux cartes qui diffèrent sur moins de 3 axes de l'identité, dessine une
       carte par identité sur le même contenu réel, et la page `comparaison.html`.
   atelier.py comparer <manifest.json> --out <page.html> [--force]
       Assemble des maquettes locales (html, image, adresse locale) en une page de comparaison autonome, sans réseau.
@@ -295,9 +296,40 @@ def charge_cartes(chemin: Path) -> dict:
             manques += [f"{ou} — mode {mode(var)} — {m}" for m in controles(var)[1]]
     if manques:
         raise Refus("contraste WCAG AA insuffisant, corrige ces couleurs :\n" + "\n".join(manques))
+    banals = []
+    for carte in cartes:
+        trouves = cliches(carte)
+        if trouves and "assume" in carte:
+            chaine(carte, "assume", f"carte {carte['id']}")  # la raison du choix, écrite : jamais vide
+        elif trouves:
+            banals += [f"carte {carte['id']} — {t}" for t in trouves]
+    if banals:
+        raise Refus("des choix par défaut d'une interface générée, sans lien avec le sujet ; change-les, ou écris "
+                    "dans la carte `\"assume\": \"<la raison : une marque imposée…>\"` :\n" + "\n".join(banals))
     if "affinage" in cfg:
         cfg["affinage"] = chaine(cfg, "affinage", "cartes")
     return cfg
+
+
+# Les choix qu'une interface générée prend quand rien ne la guide : une identité qui les porte ne dit rien du sujet.
+POLICES_BANALES = {"inter", "roboto", "open sans", "poppins", "montserrat", "lato", "space grotesk", "dm sans",
+                   "system-ui", "-apple-system", "blinkmacsystemfont", "ui-sans-serif", "segoe ui",
+                   "sans-serif", "serif", "monospace"}
+TEINTES_BANALES = (235, 285)  # l'indigo et le violet saturés des modèles (#6366F1, #8B5CF6…)
+
+
+def cliches(carte: dict) -> list[str]:
+    """Ce qu'une carte prend par défaut : la police des titres en tête de pile, l'accent indigo ou violet saturé."""
+    import colorsys
+    out = []
+    titres = famille(carte["polices"]["titres"])
+    if titres.lower() in POLICES_BANALES:
+        out.append(f"polices.titres : {titres}, la police par défaut ; les titres portent l'identité")
+    accent = carte["couleurs"]["accent"]
+    t, l, s = colorsys.rgb_to_hls(*(x / 255 for x in canaux(accent)))
+    if TEINTES_BANALES[0] <= t * 360 <= TEINTES_BANALES[1] and s >= 0.4 and 0.25 <= l <= 0.8:
+        out.append(f"couleurs.accent : {accent}, l'indigo ou le violet par défaut ; prends la teinte du sujet")
+    return out
 
 
 AXES = ("fond", "teinte de l'accent", "police des titres", "police du texte", "arrondi", "relief", "rythme")

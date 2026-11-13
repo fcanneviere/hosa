@@ -551,6 +551,25 @@ class Diversite(Base):
         self.assertFalse((self.d / "o" / "comparaison.html").exists())
         self.assertEqual(at.cartes_proches(at.charge_cartes(self.cfg())["cartes"]), [])  # the example passes
 
+    def test_default_choices_of_a_generated_interface_are_refused_unless_assumed(self):
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        data["cartes"][0]["polices"]["titres"] = "Inter, system-ui, sans-serif"
+        data["cartes"][3]["couleurs"]["accent"] = "#6D28D9"  # violet-700, readable on its paper
+        with self.assertRaises(at.Refus) as e:
+            at.cartes(self.cfg(cartes=data["cartes"]), self.d / "o", False)
+        msg = str(e.exception)
+        self.assertIn("carte email — polices.titres : Inter", msg)
+        self.assertIn("carte journal — couleurs.accent : #6D28D9", msg)
+        self.assertFalse((self.d / "o" / "comparaison.html").exists())
+        data["cartes"][0]["assume"] = ""
+        with self.assertRaises(at.Refus):  # an empty reason is no reason
+            at.charge_cartes(self.cfg(cartes=data["cartes"]))
+        for i in (0, 3):
+            data["cartes"][i]["assume"] = "la charte de la marque impose cette police et ce violet"
+        self.assertEqual(len(at.charge_cartes(self.cfg(cartes=data["cartes"]))["cartes"]), 4)
+        self.assertEqual([at.cliches(c) for c in at.charge_cartes(self.cfg())["cartes"]], [[]] * 4)  # the example
+        self.assertEqual(at.cliches({"polices": {"titres": "Georgia, serif"}, "couleurs": {"accent": "#2563EB"}}), [])
+
     def test_a_refinement_round_and_the_user_s_choice_are_not_refused(self):
         p = self.jumelles()
         k = self.d / ".hosa" / "kb"
@@ -620,6 +639,7 @@ class Revue(Base):
         r = at.revue(k, self.remplie(R4={"reponse": "non", **non}, R13={"reponse": "na", "constat": "pas de back office"}))
         self.assertEqual((r["note"], r["grille"]), (9, "14/15"))
         self.assertEqual(at.revue(k, self.remplie(R8={"reponse": "non", **non}))["note"], 7)  # a default template
+        self.assertEqual(at.revue(k, self.remplie(R16={"reponse": "non", **non}))["note"], 7)  # default ornaments
         deux = {f"R{i}": {"reponse": "non", **non} for i in (6, 7)}
         self.assertEqual(at.revue(k, self.remplie(**deux))["note"], 8)  # 14/16
         self.assertEqual(at.revue(k, self.remplie(**deux, R10={"reponse": "non", **non}))["note"], 7)  # 13/16 = 8, a 3rd non
@@ -627,8 +647,8 @@ class Revue(Base):
         self.assertEqual(r["note"], 7)
         nav = (k / "interface" / "navigation.md").read_text(encoding="utf-8")
         lignes = [l for l in nav.split("## Revue visuelle")[1].splitlines() if l.startswith("- ")]
-        self.assertEqual(len(lignes), 5)  # appended, never rewritten
-        self.assertRegex(lignes[4], r"— note 7/10 — grille 15/16 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
+        self.assertEqual(len(lignes), 6)  # appended, never rewritten
+        self.assertRegex(lignes[5], r"— note 7/10 — grille 15/16 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
         self.assertIn("## Fondamentaux UX", nav)
         sys.path.insert(0, str(ROOT / "skills" / "status" / "scripts"))
         import avancement as av
