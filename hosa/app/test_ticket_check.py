@@ -153,6 +153,22 @@ class SecurityAndLegalNotes(unittest.TestCase):
         self.write("limite", "", story + "- CA1 [RG3] — 51e article refusé\n")   # another ticket of the exigence takes it
         self.assertEqual(tc.rule_coverage(kb), [])
 
+    def test_an_indicator_criterion_states_the_value_the_dashboard_shows(self):
+        kb = self.tickets.parent
+        (kb / "cdc").mkdir()
+        (kb / "cdc" / "pilotage.md").write_text(
+            "---\ntype: Exigence\n---\n## Règles de gestion\n- **RG1** — semaine du lundi au dimanche\n"
+            "## Indicateurs\n- **IN1** — Places vendues : vendues / ouvertes — source : Réservation — période : semaine — "
+            "cible ou seuil : 80 % — action : relancer les élèves\n", encoding="utf-8")
+        story = "En tant que gérant,\nLié à : [p](../personnas/p.md), [e](../cdc/pilotage.md)\n## Critères d'acceptation\n"
+        p = self.write("tableau", "", story + "- CA1 [IN1] — la tuile affiche les places vendues\n- CA2 [IN2] — inconnu 3\n")
+        gaps = tc.gaps(p)
+        self.assertIn("CA1 cite IN1 sans la valeur attendue sur le jeu de test (un nombre)", gaps)
+        self.assertIn("un critère cite `IN2`, absent de l'exigence liée (ou retiré)", gaps)
+        p = self.write("tableau", "", story + "- CA1 [RG1, IN1] — avec 38 places vendues sur 48, la tuile affiche 38 / 48\n")
+        self.assertFalse(any("IN1" in g for g in tc.gaps(p)))
+        self.assertEqual(tc.rule_coverage(kb), [])
+
     def test_dependency_ranked_after_its_ticket(self):
         self.write("journal", "priority: 43\n", "")
         self.write("fait", "state: done\n", "")

@@ -22,8 +22,9 @@ A ticket is complete when it has, in its body:
   - every `dir/file.ext` its technical and architecture notes cite as existing
     (no `à créer` on the line) present in the project — or created by a ticket
     it `depends_on`,
-  - every rule or error case a criterion cites (`- CA1 [RG2, CE1] — …`) in
-    force in an exigence of its `Lié à :` line.
+  - every rule, error case or indicator a criterion cites (`- CA1 [RG2, CE1] — …`,
+    `- CA2 [IN1] — …`) in force in an exigence of its `Lié à :` line, and a
+    criterion citing an indicator stating its expected value (a number).
 
 Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
@@ -32,7 +33,7 @@ Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       legal note is absent, empty or on its fallback line while the plan marks
       the stage `non applicable` — no agent needed — then checks.
       python ticket_check.py <kb-dir> --regles
-      The rules × criteria matrix, over every ticket: each `RGn`/`CEn` of an
+      The rules × criteria matrix, over every ticket: each `RGn`/`CEn`/`INn` of an
       exigence is cited by a criterion of one of its tickets (exit 1 otherwise).
       An exigence whose tickets cite no rule at all predates the ids: skipped.
 Exit: 0 all complete, 1 at least one incomplete, 2 bad invocation.
@@ -126,7 +127,22 @@ EXIGENCE_LINK = re.compile(r"\(\.\./cdc/([^)#\s]+)\.md")
 
 
 def cited_rules(content: str | None) -> set[str]:
-    return {r for inside in RULE_REF.findall(content or "") for r in re.findall(r"\b(?:RG|CE)\d+\b", inside)}
+    return {r for inside in RULE_REF.findall(content or "") for r in re.findall(r"\b(?:RG|CE|IN)\d+\b", inside)}
+
+
+# `- CA2 [IN1] — Étant donné le jeu de test, le tableau de bord affiche 12 commandes en retard`
+INDICATOR_CRITERION = re.compile(r"^\s*[-*]\s+(CA\d+)\s*\[([^\]]*\bIN\d+\b[^\]]*)\](.*)$", re.M)
+
+
+def indicators_without_value(body: str) -> list[str]:
+    """A criterion that cites an indicator states the value it must show on the test dataset: a wrong number is
+    how a dashboard fails, and only an expected value catches it."""
+    out = []
+    for ca, refs, text in INDICATOR_CRITERION.findall(section(body, "## Critères d'acceptation") or ""):
+        if not re.search(r"\d", text):
+            ids = ", ".join(re.findall(r"\bIN\d+\b", refs))
+            out.append(f"{ca} cite {ids} sans la valeur attendue sur le jeu de test (un nombre)")
+    return out
 
 
 def linked_exigences(body: str) -> list[str]:
@@ -358,6 +374,7 @@ def gaps(path: Path) -> list[str]:
         if not (path.parent / f"{dep}.md").is_file():
             missing.append(f"`depends_on` cite `{dep}`, ticket introuvable")
     missing += unknown_rules(path.parent.parent, body)
+    missing += indicators_without_value(body)
     missing += phantom_paths(path, front, body)
     missing += late_dependencies(path, front)
     loop = cycle_from(path.stem, path.parent)

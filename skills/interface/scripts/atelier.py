@@ -182,6 +182,7 @@ ECRANS = {
     "liste-detail": "Liste et fiche de détail",
     "tuiles": "Menu haut et tuiles",
     "accueil": "Accueil : titre, actions, aperçus",
+    "tableau-de-bord": "Tableau de bord : indicateurs, puis ce qui est à traiter",
 }
 POLICES = {"titres": "Titres", "texte": "Texte", "chiffres": "Chiffres"}
 FAMILLE = re.compile(r"\"[^\"\\]+\"|'[^'\\]+'|[\w -]+")
@@ -218,6 +219,21 @@ def charge_cartes(chemin: Path) -> dict:
     if not isinstance(lignes, list) or not lignes or not all(
             isinstance(r, list) and len(r) == len(colonnes) and all(isinstance(x, str) for x in r) for r in lignes):
         raise Refus(f"contenu.ecran.lignes : une liste de lignes de {len(colonnes)} chaînes, comme `colonnes`")
+    if "indicateurs" in c:
+        inds = c["indicateurs"]
+        if not isinstance(inds, list) or not 2 <= len(inds) <= 4:
+            raise Refus("contenu.indicateurs : 2 à 4 indicateurs, ceux du cahier des charges (`INn`)")
+        for k, ind in enumerate(inds, 1):
+            if not isinstance(ind, dict):
+                raise Refus(f"contenu.indicateurs[{k}] : un objet {{libelle, valeur, evolution, serie}}")
+            for cle in ("libelle", "valeur"):
+                chaine(ind, cle, f"contenu.indicateurs[{k}]")
+            if "evolution" in ind:
+                chaine(ind, "evolution", f"contenu.indicateurs[{k}]")
+            serie = ind.get("serie", [])
+            if not isinstance(serie, list) or (serie and (len(serie) < 2 or not all(
+                    type(x) in (int, float) for x in serie))):
+                raise Refus(f"contenu.indicateurs[{k}].serie : au moins deux nombres, du plus ancien au plus récent")
     cartes = cfg.get("cartes")
     if not isinstance(cartes, list) or not 2 <= len(cartes) <= 6:
         raise Refus(f"cartes : 2 à 6 cartes, il y en a {len(cartes) if isinstance(cartes, list) else 0}")
@@ -252,7 +268,9 @@ def charge_cartes(chemin: Path) -> dict:
         carte["relief"] = parmi(carte, "relief", ou, RELIEFS, "trait")
         carte["rythme"] = parmi(carte, "rythme", ou, tuple(RYTHMES), "normal")
         carte["ecran"] = parmi(carte, "ecran", ou, tuple(ECRANS))
-        manques += [f"{ou} — {m}" for m in controles(col)[1]]
+        if carte["ecran"] == "tableau-de-bord" and "indicateurs" not in c:
+            raise Refus(f"{ou}.ecran : un tableau de bord montre de vrais indicateurs — ajoute `contenu.indicateurs`")
+        manques +=[f"{ou} — {m}" for m in controles(col)[1]]
     if manques:
         raise Refus("contraste WCAG AA insuffisant, corrige ces couleurs :\n" + "\n".join(manques))
     return cfg
@@ -284,6 +302,19 @@ def jetons(carte: dict) -> dict[str, str]:
     }
 
 
+def courbe(serie: list[float]) -> str:
+    """L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série."""
+    if len(serie) < 2:
+        return ""
+    bas, haut = min(serie), max(serie)
+    etendue = (haut - bas) or 1
+    points = " ".join(f"{round(k * 100 / (len(serie) - 1), 1)},{round(22 - (v - bas) * 20 / etendue, 1)}"
+                      for k, v in enumerate(serie))
+    return (f'<svg class="e-courbe" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">'
+            f'<polyline points="{points}" fill="none" stroke="var(--color-accent)" stroke-width="2" '
+            f'vector-effect="non-scaling-stroke"/></svg>')
+
+
 def ecran_html(carte: dict, c: dict) -> str:
     """Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes."""
     e = lambda s: html.escape(str(s))
@@ -303,6 +334,16 @@ def ecran_html(carte: dict, c: dict) -> str:
         fiche = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in zip(ec["colonnes"], lignes[0]))
         return (f'<div class="e e-cote"><ul class="e-liste">{liste}</ul><div class="e-corps">'
                 f'<div class="e-barre"><b>{e(lignes[0][0])}</b>{bouton}</div><dl>{fiche}</dl></div></div>')
+    if carte["ecran"] == "tableau-de-bord":
+        tuiles = "".join(
+            f'<div class="e-ind"><small>{e(i["libelle"])}</small><b>{e(i["valeur"])}</b>'
+            + (f'<small>{e(i["evolution"])}</small>' if i.get("evolution") else "")
+            + courbe(i.get("serie", [])) + "</div>" for i in c["indicateurs"])
+        tete = "".join(f"<th>{e(x)}</th>" for x in ec["colonnes"])
+        corps = "".join("<tr>" + "".join(f"<td>{e(x)}</td>" for x in r) + "</tr>" for r in lignes[:3])
+        return (f'<div class="e e-cote"><ul class="e-menu">{menu}</ul><div class="e-corps">'
+                f'<div class="e-inds">{tuiles}</div><div class="e-barre"><b>À traiter</b>{bouton}</div>'
+                f"<table><thead><tr>{tete}</tr></thead><tbody>{corps}</tbody></table></div></div>")
     haut = f'<ul class="e-menu e-haut">{menu}</ul>'
     tuile = lambda r: f'<div class="e-tuile"><b>{e(r[0])}</b><small>{e(" · ".join(r[1:]))}</small></div>'
     if carte["ecran"] == "tuiles":
@@ -383,6 +424,10 @@ td{{padding:5px 6px;border-bottom:1px solid var(--color-line);white-space:nowrap
 dl{{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}} dt{{color:var(--color-muted)}} dd{{margin:0}}
 .e-tuiles{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}
 .e-tuile{{display:flex;flex-direction:column;gap:2px;padding:9px;border:var(--border);border-radius:var(--radius);background:var(--color-bg)}}
+.e-inds{{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}}
+.e-ind{{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:var(--border);border-radius:var(--radius);background:var(--color-bg)}}
+.e-ind small{{color:var(--color-muted)}} .e-ind b{{font:var(--weight-number) 22px/1.1 var(--font-number);font-variant-numeric:tabular-nums}}
+.e-courbe{{width:100%;height:20px;margin-top:4px}}
 @media (max-width:760px){{.carte{{padding:20px 16px}}.duo{{grid-template-columns:1fr}}.champ{{margin-left:0}}}}
 </style></head><body><main class="carte">
 <header class="entete"><strong>{e(cfg['projet'])}</strong><span>{e(lettre)} · {e(carte['nom'])}</span></header>

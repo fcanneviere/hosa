@@ -125,6 +125,22 @@ class Cartes(Base):
             self.assertIn(want, str(e.exception))
         self.assertFalse((self.d / "out").exists())
 
+    def test_a_dashboard_card_shows_real_indicators_and_their_trend(self):
+        at.cartes(self.cfg(), self.d / "out", False)
+        carte = (self.d / "out" / "carte-galerie.html").read_text(encoding="utf-8")
+        self.assertIn("Places vendues cette semaine", carte)
+        self.assertIn("<b>38 / 48</b>", carte)
+        self.assertEqual(carte.count("<polyline"), 3)
+        self.assertIn("À traiter", carte)
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        del data["contenu"]["indicateurs"]
+        p = self.d / "c.json"
+        p.write_text(json.dumps(data), encoding="utf-8")
+        with self.assertRaises(at.Refus) as e:
+            at.cartes(p, self.d / "o2", False)
+        self.assertIn("contenu.indicateurs", str(e.exception))
+        self.assertEqual(at.courbe([5]), "")
+
     def test_content_is_escaped_and_the_real_screen_is_drawn(self):
         data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
         data["contenu"]["titre"] = "<script>alert(1)</script>"

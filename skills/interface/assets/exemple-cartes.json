@@ -15,6 +15,11 @@
     "action_secondaire": "Voir les créations des élèves",
     "etiquettes": ["Places cette semaine", "Samedi : plus que 2 places"],
     "champ": {"libelle": "Date", "valeur": "Samedi 12 octobre"},
+    "indicateurs": [
+      {"libelle": "Places vendues cette semaine", "valeur": "38 / 48", "evolution": "+6 sur la semaine passée", "serie": [24, 29, 27, 32, 38]},
+      {"libelle": "Réservations à payer", "valeur": "4", "evolution": "dont 1 depuis plus de 7 jours", "serie": [6, 5, 7, 5, 4]},
+      {"libelle": "Pièces en attente de cuisson", "valeur": "61", "evolution": "four plein à 85 %", "serie": [40, 52, 47, 58, 61]}
+    ],
     "ecran": {
       "menu": ["Réservations", "Cours", "Élèves", "Cuissons"],
       "colonnes": ["Élève", "Cours", "Date", "Statut"],
@@ -37,10 +42,10 @@
     },
     {
       "id": "galerie", "nom": "Galerie de porcelaine", "intention": "Comme un cartel de musée : beaucoup de blanc, les pièces au premier plan, le texte en retrait.",
-      "traits": ["Fond blanc froid", "Traits fins, angles droits", "Tableau dense"],
+      "traits": ["Fond blanc froid", "Traits fins, angles droits", "Tableau de bord dense"],
       "couleurs": {"fond": "#F7F7F5", "surface": "#FFFFFF", "texte": "#1E1E1C", "secondaire": "#5E5E5A", "accent": "#1E1E1C", "sur_accent": "#FFFFFF", "trait": "#E2E2DE", "alerte": "#8A4F24"},
       "polices": {"titres": "\"Helvetica Neue\", Arial, sans-serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "\"Helvetica Neue\", sans-serif"},
-      "graisses": {"titres": 400, "chiffres": 400}, "arrondi": 0, "relief": "trait", "rythme": "serre", "ecran": "tableau"
+      "graisses": {"titres": 400, "chiffres": 400}, "arrondi": 0, "relief": "trait", "rythme": "serre", "ecran": "tableau-de-bord"
     },
     {
       "id": "four", "nom": "Cours du soir au four", "intention": "La salle des fours le soir : un charbon sombre sur tout l'écran, l'orange du feu réservé à l'essentiel.",

@@ -3,6 +3,23 @@
 ## 2026-11-13
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-redaction-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-redaction-scripts`
+- process:hosa-graph a mis à jour `skills-redaction-scripts`
+- process:hosa-graph a mis à jour `skills-redaction-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `skills-interface-scripts`
 - process:hosa-graph a mis à jour `skills-interface-scripts`
 - process:hosa-graph a mis à jour `skills-interface-scripts`

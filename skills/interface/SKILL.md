@@ -71,7 +71,7 @@ Redispatch `hosa-ux-designer` (Phase 2) three times, with every persona's needs 
 
 1. **`round: styles`** — 4–6 style cards: the visual identity and the design rules each implies. The user picks one.
 2. **`round: directions`** — the navigation structure, the lexicon and 2–3 layout directions of the main screen in that style. The navigation is the part the user will live with every day: show it as a readable tree per role, not a paragraph. Show the lexicon as its table — each term with what it names and the synonyms it rules out — so the user fixes the words now, not screen by screen later. The user validates each item and picks a direction.
-3. **`round: page`** — one complete page per space in that direction. The user validates it, or asks for changes (redispatch the same round).
+3. **`round: page`** — one complete page per space the exigences name, in that direction: the back-office home is the role's queue or dashboard, with its real indicators. The user validates it, or asks for changes (redispatch the same round).
 
 After each answer, record it in the KB, then in the plan:
 
@@ -102,7 +102,7 @@ Run the checker yourself, from the managed project's root:
 <hosa> lexique_check .hosa/kb .
 ```
 
-The loop is bounded by code: `task done interface 3c` runs these same checkers (control `interface` of `pipeline.json`). Refused → its exact lines go to the sub-phase that owns each one (KB → 3a, screen, route or tokens edited by hand in the project's CSS → 3b), then 3c again: `task add` the sub-phases, `task done` each, then `task done interface 3c` again. The control also reads the line 3c writes under `## Vérification` of `kb/interface/navigation.md`: a failed build or a route that doesn't render is a gap of the same round, counted like the others. Past 2 refusals of one cause the task is `bloqué`: stop, show the user what each round tried, a third round only on their word (`task add … --force`).
+The loop is bounded by code: `task done interface 3c` runs these same checkers (control `interface` of `pipeline.json`). Refused → its exact lines go to the sub-phase that owns each one (KB, including a missing row of `## Gestion back office` or `## Tableaux de bord` → 3a; screen, route or tokens edited by hand in the project's CSS → 3b), then 3c again: `task add` the sub-phases, `task done` each, then `task done interface 3c` again. The control also reads the line 3c writes under `## Vérification` of `kb/interface/navigation.md`: a failed build or a route that doesn't render is a gap of the same round, counted like the others. Past 2 refusals of one cause the task is `bloqué`: stop, show the user what each round tried, a third round only on their word (`task add … --force`).
 
 A gap on an exigence's missing `espace` isn't the designer's to fix, and the control leaves it out: `back interface fondamentaux --detail "espace manquant : <exigences>"`, then propose `fondamentaux`, where `hosa-product-owner` sets it with the user; `back` names the exigences in the plan, and `done fondamentaux` refuses while one lacks its `espace` or is still signed (it goes back to `draft` without `verified`); `relecture` and `contestation` then run again on them, and `done contestation` waits for the user's signature, then come back (`back` refused → a second round already: show the user the exigences still without `espace` and let them decide).
 

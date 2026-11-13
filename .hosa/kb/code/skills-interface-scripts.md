@@ -4,7 +4,7 @@ title: skills/interface/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T23:18:56Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T23:52:08Z'}
 ---
 
 ## Fichiers
@@ -19,51 +19,52 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:18:56Z'}
 
 ## Symboles publics
 
-- `Maquette` — `skills/interface/scripts/atelier.py:647` — Réécrit une maquette en un document autonome, balise par balise : chaque ressource locale intégrée en data:,
+- `Maquette` — `skills/interface/scripts/atelier.py:692` — Réécrit une maquette en un document autonome, balise par balise : chaque ressource locale intégrée en data:,
 - `Refus` — `skills/interface/scripts/atelier.py:45` — Une entrée refusée : le message dit exactement quoi corriger.
-- `Source` — `skills/interface/scripts/atelier.py:488` — Un fichier de maquette et les règles d'intégration de ses ressources locales.
-- `acteur` — `skills/interface/scripts/atelier.py:1013`
-- `adresse_locale` — `skills/interface/scripts/atelier.py:821` — Une option en direct ne vise qu'un serveur de cette machine, sans identifiants, avec un port valide.
-- `bloc_css` — `skills/interface/scripts/atelier.py:1057`
+- `Source` — `skills/interface/scripts/atelier.py:533` — Un fichier de maquette et les règles d'intégration de ses ressources locales.
+- `acteur` — `skills/interface/scripts/atelier.py:1058`
+- `adresse_locale` — `skills/interface/scripts/atelier.py:866` — Une option en direct ne vise qu'un serveur de cette machine, sans identifiants, avec un port valide.
+- `bloc_css` — `skills/interface/scripts/atelier.py:1102`
 - `canaux` — `skills/interface/scripts/atelier.py:110`
-- `carte_html` — `skills/interface/scripts/atelier.py:315`
-- `cartes` — `skills/interface/scripts/atelier.py:412`
+- `carte_html` — `skills/interface/scripts/atelier.py:356`
+- `cartes` — `skills/interface/scripts/atelier.py:457`
 - `chaine` — `skills/interface/scripts/atelier.py:64`
 - `chaines` — `skills/interface/scripts/atelier.py:71`
-- `charge_cartes` — `skills/interface/scripts/atelier.py:200`
-- `charge_manifest` — `skills/interface/scripts/atelier.py:844`
-- `choisir` — `skills/interface/scripts/atelier.py:1020`
-- `comparer` — `skills/interface/scripts/atelier.py:911`
+- `charge_cartes` — `skills/interface/scripts/atelier.py:201`
+- `charge_manifest` — `skills/interface/scripts/atelier.py:889`
+- `choisir` — `skills/interface/scripts/atelier.py:1065`
+- `comparer` — `skills/interface/scripts/atelier.py:956`
 - `contraste` — `skills/interface/scripts/atelier.py:127`
 - `controles` — `skills/interface/scripts/atelier.py:162` — (une ligne par paire avec son rapport, un manque par paire sous son minimum avec une couleur proposée).
-- `css` — `skills/interface/scripts/atelier.py:1065`
-- `data_url` — `skills/interface/scripts/atelier.py:484`
-- `ecarts` — `skills/interface/scripts/atelier.py:1089` — Les jetons de la KB sont-ils ceux du CSS du projet ? Rien à contrôler sans jetons (identité conservée).
-- `ecran_html` — `skills/interface/scripts/atelier.py:287` — Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes.
-- `ecrit_atomique` — `skills/interface/scripts/atelier.py:400`
-- `ecrit_choix` — `skills/interface/scripts/atelier.py:978`
+- `courbe` — `skills/interface/scripts/atelier.py:305` — L'évolution d'un indicateur en une ligne SVG, à la couleur d'accent ; rien sans série.
+- `css` — `skills/interface/scripts/atelier.py:1110`
+- `data_url` — `skills/interface/scripts/atelier.py:529`
+- `ecarts` — `skills/interface/scripts/atelier.py:1134` — Les jetons de la KB sont-ils ceux du CSS du projet ? Rien à contrôler sans jetons (identité conservée).
+- `ecran_html` — `skills/interface/scripts/atelier.py:318` — Le premier écran dans cette identité, avec le vrai menu, les vraies colonnes et les vraies lignes.
+- `ecrit_atomique` — `skills/interface/scripts/atelier.py:445`
+- `ecrit_choix` — `skills/interface/scripts/atelier.py:1023`
 - `entier` — `skills/interface/scripts/atelier.py:94`
-- `famille` — `skills/interface/scripts/atelier.py:261`
-- `jetons` — `skills/interface/scripts/atelier.py:265` — Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code.
-- `journal` — `skills/interface/scripts/atelier.py:998` — Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9).
-- `lit_choix` — `skills/interface/scripts/atelier.py:963` — {manches: {manche: (option, nom, demande, date)}, jetons: {nom: valeur}, css: chemin\|None} — la dernière
+- `famille` — `skills/interface/scripts/atelier.py:279`
+- `jetons` — `skills/interface/scripts/atelier.py:283` — Les jetons de l'identité, nommés comme dans le CSS du projet : la seule définition, de la carte au code.
+- `journal` — `skills/interface/scripts/atelier.py:1043` — Une ligne dans `kb/interface/log.md`, sous la date du jour (OKF §9).
+- `lit_choix` — `skills/interface/scripts/atelier.py:1008` — {manches: {manche: (option, nom, demande, date)}, jetons: {nom: valeur}, css: chemin\|None} — la dernière
 - `lit_json` — `skills/interface/scripts/atelier.py:49`
-- `lit_srcset` — `skills/interface/scripts/atelier.py:625` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
+- `lit_srcset` — `skills/interface/scripts/atelier.py:670` — Les candidats d'un srcset : (adresse, descripteur). Une adresse data: garde ses virgules.
 - `luminance` — `skills/interface/scripts/atelier.py:122`
-- `main` — `skills/interface/scripts/atelier.py:1109`
-- `maintenant` — `skills/interface/scripts/atelier.py:954`
+- `main` — `skills/interface/scripts/atelier.py:1154`
+- `maintenant` — `skills/interface/scripts/atelier.py:999`
 - `mix` — `skills/interface/scripts/atelier.py:117` — Le mélange sRGB que le navigateur calcule pour `color-mix(in srgb, a part_a, b)`.
 - `objet` — `skills/interface/scripts/atelier.py:80`
-- `ordonne` — `skills/interface/scripts/atelier.py:834` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
+- `ordonne` — `skills/interface/scripts/atelier.py:879` — L'écran actuel d'abord, sans lettre ; puis la recommandée en a), les autres dans l'ordre du fichier.
 - `paires` — `skills/interface/scripts/atelier.py:143` — Chaque paire de couleurs que la carte et l'interface montrent, avec son minimum WCAG AA :
 - `parmi` — `skills/interface/scripts/atelier.py:87`
-- `police` — `skills/interface/scripts/atelier.py:191` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
-- `prepare_html` — `skills/interface/scripts/atelier.py:797`
-- `prepare_image` — `skills/interface/scripts/atelier.py:808`
+- `police` — `skills/interface/scripts/atelier.py:192` — Des familles installées, séparées par des virgules : rien qui charge une police par le réseau.
+- `prepare_html` — `skills/interface/scripts/atelier.py:842`
+- `prepare_image` — `skills/interface/scripts/atelier.py:853`
 - `proposition` — `skills/interface/scripts/atelier.py:132` — La couleur la plus proche de `avant`, même teinte, qui tient `mini` sur `arriere` : poussée vers le noir
-- `racine_de` — `skills/interface/scripts/atelier.py:1061`
-- `reecrit_css` — `skills/interface/scripts/atelier.py:563` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
-- `section` — `skills/interface/scripts/atelier.py:958`
+- `racine_de` — `skills/interface/scripts/atelier.py:1106`
+- `reecrit_css` — `skills/interface/scripts/atelier.py:608` — Une passe sur le CSS : chaque `url()` et chaque chaîne d'`image-set()`/`src()` est un fichier local intégré,
+- `section` — `skills/interface/scripts/atelier.py:1003`
 - `ErreurDePage` — `skills/interface/scripts/capture.mjs:296`
 - `Tube` — `skills/interface/scripts/capture.mjs:177`
 - `Tube.attend.fin` — `skills/interface/scripts/capture.mjs:230`
@@ -118,12 +119,19 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:18:56Z'}
 - `remplit` — `skills/interface/scripts/capture.py:58`
 - `roles_du_plan` — `skills/interface/scripts/capture.py:29` — Les rôles de la colonne `Rôles`, dans l'ordre : un passage de capture chacun.
 - `routes_du_plan` — `skills/interface/scripts/capture.py:47` — Les routes de la colonne `Route` de `## Écrans`, dans l'ordre, sans doublon ; avec `role`, celles de ce rôle.
-- `checklist` — `skills/interface/scripts/interface_check.py:43`
-- `field` — `skills/interface/scripts/interface_check.py:33`
-- `gaps` — `skills/interface/scripts/interface_check.py:48`
-- `main` — `skills/interface/scripts/interface_check.py:117`
-- `section` — `skills/interface/scripts/interface_check.py:38`
-- `split` — `skills/interface/scripts/interface_check.py:28`
+- `back_office_gaps` — `skills/interface/scripts/interface_check.py:97`
+- `checklist` — `skills/interface/scripts/interface_check.py:67`
+- `dashboard_gaps` — `skills/interface/scripts/interface_check.py:125`
+- `field` — `skills/interface/scripts/interface_check.py:42`
+- `gaps` — `skills/interface/scripts/interface_check.py:155`
+- `indicators` — `skills/interface/scripts/interface_check.py:91` — The `INn` in force under `## Indicateurs` (a retired one keeps its line: `- **IN2** — retiré : …`).
+- `main` — `skills/interface/scripts/interface_check.py:227`
+- `objects` — `skills/interface/scripts/interface_check.py:82` — The business objects of `kb/cdc/modele-metier.md`: each `## <Objet>` but the notifications.
+- `plain` — `skills/interface/scripts/interface_check.py:62` — A cell without its markdown: `Commandes` → Commandes, `` `/admin` `` → /admin.
+- `section` — `skills/interface/scripts/interface_check.py:47`
+- `split` — `skills/interface/scripts/interface_check.py:37`
+- `stable_exigences` — `skills/interface/scripts/interface_check.py:72` — (slug, frontmatter, body) of each `stable` Exigence.
+- `table` — `skills/interface/scripts/interface_check.py:52` — The rows of the first markdown table in `text`, header dropped, each padded to `width` cells.
 - `cells` — `skills/interface/scripts/lexique_check.py:34`
 - `files` — `skills/interface/scripts/lexique_check.py:65`
 - `lexicon` — `skills/interface/scripts/lexique_check.py:38` — {term: [forbidden synonyms]}, folders to scan, problems.

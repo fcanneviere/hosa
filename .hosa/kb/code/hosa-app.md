@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-12T23:20:32Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-12T23:55:12Z'}
 ---
 
 ## Fichiers
@@ -103,9 +103,9 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:20:32Z'}
 - `ValidationProvenanceTest` — `hosa/app/test_app.py:725` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
 - `Base` — `hosa/app/test_atelier.py:23`
 - `Cartes` — `hosa/app/test_atelier.py:69`
-- `Choix` — `hosa/app/test_atelier.py:302`
-- `Cli` — `hosa/app/test_atelier.py:382`
-- `Comparer` — `hosa/app/test_atelier.py:153`
+- `Choix` — `hosa/app/test_atelier.py:318`
+- `Cli` — `hosa/app/test_atelier.py:398`
+- `Comparer` — `hosa/app/test_atelier.py:169`
 - `Contraste` — `hosa/app/test_atelier.py:53`
 - `AuditStage` — `hosa/app/test_avancement.py:764`
 - `Block` — `hosa/app/test_avancement.py:231`
@@ -133,12 +133,12 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:20:32Z'}
 - `Navigateur` — `hosa/app/test_capture.py:80`
 - `Routes` — `hosa/app/test_capture.py:43`
 - `chrome` — `hosa/app/test_capture.py:32`
-- `Assemble` — `hosa/app/test_cdc.py:274`
+- `Assemble` — `hosa/app/test_cdc.py:291`
 - `Completeness` — `hosa/app/test_cdc.py:114`
-- `Review` — `hosa/app/test_cdc.py:230`
+- `Review` — `hosa/app/test_cdc.py:247`
 - `holes` — `hosa/app/test_cdc.py:110`
 - `kb` — `hosa/app/test_cdc.py:98`
-- `review` — `hosa/app/test_cdc.py:225`
+- `review` — `hosa/app/test_cdc.py:242`
 - `DockerCheck` — `hosa/app/test_docker_check.py:20`
 - `container` — `hosa/app/test_docker_check.py:15`
 - `GraphTest` — `hosa/app/test_graph.py:38`
@@ -146,8 +146,10 @@ generated: {by: 'process:hosa-graph', at: '2026-11-12T23:20:32Z'}
 - `ExtractTest` — `hosa/app/test_graph_extract.py:17`
 - `calls` — `hosa/app/test_graph_extract.py:13`
 - `defs` — `hosa/app/test_graph_extract.py:9`
+- `BackOfficeAndDashboards` — `hosa/app/test_interface_check.py:76`
 - `Screens` — `hosa/app/test_interface_check.py:38`
 - `exigence` — `hosa/app/test_interface_check.py:23`
+- `kb_gaps` — `hosa/app/test_interface_check.py:64`
 - `screen_gaps` — `hosa/app/test_interface_check.py:27`
 - `KbIndex` — `hosa/app/test_kb_index.py:13`
 - `KbQuery` — `hosa/app/test_kb_query.py:22`

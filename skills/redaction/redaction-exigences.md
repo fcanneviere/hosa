@@ -72,6 +72,15 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 
 Use `generated: { by: human:<user>, at: <ISO8601> }` instead if the user dictated the content verbatim rather than you synthesizing it from interview notes.
 
+**A dashboard** (a process whose output is figures a role steers by) adds, after `## Cas d'erreur`, one line per indicator:
+
+```markdown
+## Indicateurs
+- **IN1** — <nom> : <calcul, avec ses filtres> — source : <les données, l'objet du modèle métier> — période : <glissante ou calendaire, fuseau> — cible ou seuil : <valeur, ou « pas encore de cible »> — action : <ce que fait le rôle quand il dérive>
+```
+
+Each part is required (`cdc check` counts a hole for a missing one). `IN` ids follow the same rules as `RG` and `CE`: given by `cdc numerote`, never moved, cited by the ticket that shows the indicator with its expected value on the test dataset (`- CA2 [IN1] — … affiche 12`). A count with no decision behind it is not an indicator.
+
 A process with no rule of its own (pure data entry, say) writes `Aucune règle propre — saisie et consultation.` under `## Règles de gestion`; every process has error cases. These two sections are what `backlog` turns into acceptance criteria: a vague rule here becomes a guessed test later.
 
 **Each rule and each error case has its id** — `RG1`, `RG2`… and `CE1`, `CE2`…, numbered per exigence, one top-level bullet each (its details as sub-bullets). A ticket's criterion cites it (`- CA1 [RG2] — …`), and `ticket_check --regles` refuses the backlog while a rule is cited by no criterion. So an id never moves: never renumber one, never reuse one; a rule that changes keeps its id; a rule dropped keeps its line, `- **RG2** — retirée : <raison>`. `cdc numerote` (Step 3) gives the missing ids — don't count by hand in a fiche you edit — and `cdc check` counts a hole (`règles`) for a rule without one.

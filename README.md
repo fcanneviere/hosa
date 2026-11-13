@@ -140,6 +140,8 @@ Le skill `interface` ne te décrit pas l'interface en paragraphes. Il te la mont
 
 Sur chaque page, l'option recommandée est la a), comme dans la question qui t'est posée. Le bouton « Copier la réponse » te donne la phrase à coller (`Q1 b`, avec ta demande de changement). Ton choix est noté dans la KB (`kb/interface/choix.md`) : une session coupée le retrouve. Les couleurs de la carte choisie deviennent les variables CSS du projet, générées depuis la KB.
 
+**Back office et tableaux de bord.** Chaque objet du modèle métier a son back office : une liste avec filtres et actions groupées, une fiche, son historique, les actions permises par son cycle de vie. Chaque rôle qui pilote a son tableau de bord. Ses indicateurs sont décidés avec toi dans `fondamentaux` : calcul, source, période, cible, action. Chaque indicateur porte un identifiant (`IN1`…) et mène aux données derrière le chiffre. Son ticket donne la valeur attendue sur le jeu de test. `interface_check` refuse un objet sans back office ou un indicateur sans écran.
+
 L'interface construite est ensuite vérifiée sur des captures (ordinateur et mobile) : chaque route du plan de navigation, avec des contrôles d'accessibilité calculés (contraste, libellés, cibles tactiles). Puis une revue indépendante la note. Pour les captures, le poste a besoin de Node 22 et d'un Chrome, Chromium ou Edge. Sans eux, Hosa te donne des tests à faire toi-même.
 
 Les outils (`atelier`, `capture`) sont ceux de Hosa, dans `skills/interface/scripts/`.

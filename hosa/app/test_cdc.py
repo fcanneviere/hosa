@@ -198,6 +198,23 @@ class Completeness(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(cdc.main(["numerote", str(root)]), 0)
 
+    def test_a_dashboard_indicator_is_numbered_like_a_rule_and_says_all_it_needs(self):
+        with tempfile.TemporaryDirectory() as d:
+            text = EXIGENCE.replace("## Responsable", "## Indicateurs\n"
+                                    "- Listes envoyées : nombre de listes passées à « envoyée » — source : Liste — "
+                                    "période : 7 jours glissants — cible ou seuil : 5 — action : relancer le foyer\n"
+                                    "- **IN4** — Articles oubliés : articles ajoutés après l'envoi — source : Liste\n\n"
+                                    "## Responsable")
+            root = kb(d, cdc__envoyer_la_liste=text)
+            found = holes(root)
+            self.assertIn("IN4 sans période, cible ou seuil, action "
+                          "(`— source : … — période : … — cible ou seuil : … — action : …`)", found)
+            self.assertIn("1 règle(s) ou cas d'erreur sans identifiant `RGn`/`CEn` : `cdc numerote` les numérote", found)
+            fiche = root / "cdc" / "envoyer-la-liste.md"
+            self.assertEqual(cdc.numerote(fiche), 1)
+            self.assertIn("- **IN5** — Listes envoyées", fiche.read_text(encoding="utf-8"))
+            self.assertEqual(cdc.rule_ids(fiche.read_text(encoding="utf-8")), ["RG1", "IN5", "IN4"])
+
     def test_obligation_serves_only_a_legal_security_or_basic_exigence(self):
         with tempfile.TemporaryDirectory() as d:
             legal = EXIGENCE.replace("tags: []\n", "").replace("title: Envoyer la liste", "title: Purge\ntags: [juridique]")

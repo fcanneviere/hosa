@@ -17,7 +17,9 @@ confirmed by the user), a rule or an error case without its id. `contestation` s
 nothing while `check` finds one.
 
 A rule is `- **RG2** — …` under `## Règles de gestion`, an error case `- **CE1** — …`
-under `## Cas d'erreur`. The id is what a ticket's criterion cites (`- CA1 [RG2] — …`,
+under `## Cas d'erreur`, a dashboard's indicator `- **IN1** — <nom> : <calcul> — source : … —
+période : … — cible ou seuil : … — action : …` under `## Indicateurs` (a missing part is a hole).
+The id is what a ticket's criterion cites (`- CA1 [RG2] — …`, `- CA2 [IN1] — … affiche 12`,
 checked by `ticket_check.py`): `numerote` adds the missing ones and never moves one.
 
 An anomaly line is `- A12 [p2, bloquante, correction] — … — → redaction — ouverte`:
@@ -52,9 +54,13 @@ ROUTES = ("redaction", "interview", "utilisateur")
 A_CONFIRMER = "[à confirmer]"
 # a rule and an error case carry an id (`- **RG2** — …`, `- **CE1** — …`) that a ticket's criterion cites
 # (`- CA1 [RG2] — …`): never renumbered, never reused — a rule dropped keeps its line, `- **RG2** — retirée : <raison>`
-RULES = {"règles de gestion": "RG", "cas d'erreur": "CE"}
-RULE_ID = re.compile(r"^-\s+\*\*((?:RG|CE)\d+)\*\*")
-RETIRED = re.compile(r"^-\s+\*\*(?:RG|CE)\d+\*\*\s*—\s*retirée?\b", re.I)
+# An indicator of a dashboard (`## Indicateurs`, `- **IN1** — …`) is numbered and cited the same way: a ticket that
+# shows it proves its value on the test dataset (`- CA2 [IN1] — … affiche 12`).
+RULES = {"règles de gestion": "RG", "cas d'erreur": "CE", "indicateurs": "IN"}
+RULE_ID = re.compile(r"^-\s+\*\*((?:RG|CE|IN)\d+)\*\*")
+RETIRED = re.compile(r"^-\s+\*\*(?:RG|CE|IN)\d+\*\*\s*—\s*retirée?\b", re.I)
+# what an indicator line says besides its name and calculation — without one, nobody can build, test or act on it
+INDICATEUR_CHAMPS = ("source", "période", "cible ou seuil", "action")
 OUT = "project/cahier-des-charges.md"
 LINK = re.compile(r"\]\(([^)#\s:]+\.md)(#[^)]*)?\)")
 
@@ -208,6 +214,21 @@ def rule_ids(text: str) -> list[str]:
     return [rid for i, _, rid in rule_lines(text) if rid and not RETIRED.match(lines[i])]
 
 
+def indicateurs(text: str) -> list[dict[str, str]]:
+    """Each indicator in force of `## Indicateurs`: {id, texte} — its whole line, sub-bullets included."""
+    lines, out = text.splitlines(), []
+    for i, prefix, rid in rule_lines(text):
+        if prefix != "IN" or RETIRED.match(lines[i]):
+            continue
+        texte = [lines[i]]
+        for nxt in lines[i + 1:]:
+            if not re.match(r"^\s+\S", nxt):
+                break
+            texte.append(nxt)
+        out.append({"id": rid, "texte": " ".join(texte)})
+    return out
+
+
 def numerote(path: Path) -> int:
     """Give each rule and error case without an id the next free one. An id already there never moves."""
     with path.open(encoding="utf-8", newline="") as f:  # the file's own line ends are kept
@@ -331,6 +352,11 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
         twice = sorted({rid for rid in ids if rid and ids.count(rid) > 1})
         if twice:
             hole("règles", e.rel, f"identifiant en double : {', '.join(twice)}")
+        for ind in indicateurs(e.body):
+            manque = [c for c in INDICATEUR_CHAMPS if not re.search(rf"\b{c}\s*:\s*\S", ind["texte"], re.I)]
+            if manque:
+                hole("indicateurs", e.rel, f"{ind['id'] or 'indicateur'} sans {', '.join(manque)} "
+                                           "(`— source : … — période : … — cible ou seuil : … — action : …`)")
 
     # Modèle métier : cycles de vie, droits, notifications
     model = d["modele"]
