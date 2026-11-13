@@ -122,6 +122,28 @@ class Navigateur(unittest.TestCase):
             self.assertIn(want, issues)
         self.assertRegex(out, r"Verdict : \d+ problème")
 
+    def test_keyboard_focus_must_show_where_it_is(self):
+        tete = '<!doctype html><html lang="fr"><head><title>T</title><style>{}</style></head><body><main><h1>Focus</h1>{}</main></body></html>'
+        bon = self.d / "bon.html"  # a ring of its own, after a transition, replaces the outline
+        bon.write_text(tete.format("button{outline:none;transition:box-shadow .3s}button:focus-visible{box-shadow:0 0 0 3px #1a56db}"
+                                   ".saut{position:absolute;left:-9999px}.saut:focus{left:8px}",
+                                   '<a class="saut" href="#c">Aller au contenu</a><button>Exporter</button><a href="#c">Aide</a>'),
+                       encoding="utf-8")
+        code, out, _ = self.run_capture(str(bon), "--size", "1280x900")
+        self.assertEqual(code, 0, out)
+        mauvais = self.d / "mauvais.html"
+        mauvais.write_text(tete.format("*:focus{outline:none}.cache{position:absolute;left:-9999px}",
+                                       '<button>Exporter</button><a class="cache" href="#c">Fantôme</a><a href="#c">Aide</a>'),
+                           encoding="utf-8")
+        code, out, report = self.run_capture(str(mauvais), "--size", "1280x900,390x844")
+        self.assertEqual(code, 1, out)
+        ordi, mobile = report["captures"][0]["issues"], report["captures"][1]["issues"]
+        issues = " | ".join(ordi)
+        for want in ("focus invisible (ni contour ni changement de style au clavier) : button « Exporter »",
+                     "focus sur un élément caché : a.cache « Fantôme »", "focus invisible (ni contour ni changement de style au clavier) : a « Aide »"):
+            self.assertIn(want, issues)
+        self.assertFalse([x for x in mobile if "focus" in x])  # the keyboard is checked on a computer only
+
     def test_routes_rendered_are_counted_like_the_verification_line(self):
         page = '<!doctype html><html lang="fr"><head><title>T</title></head><body><h1>{}</h1></body></html>'
         (self.d / "a.html").write_text(page.format("A"), encoding="utf-8")

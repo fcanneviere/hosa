@@ -1223,13 +1223,18 @@ REPONSES = ("oui", "non", "na")
 IMAGES = (".png", ".jpg", ".jpeg", ".webp")
 
 
-def questions_grille() -> list[dict]:
-    """Les questions fermées de la revue, déclarées dans pipeline.json (la seule définition)."""
+def controle_revue() -> dict:
+    """Le contrôle de la tâche interface/revue, déclaré dans pipeline.json (la seule définition)."""
     graphe = json.loads(PIPELINE.read_text(encoding="utf-8"))
     ctl = next((x for x in graphe["tasks"]["controls"] if x["stage"] == "interface" and x["id"] == "revue"), {})
     if not ctl.get("grille"):
         raise Refus(f"pas de `grille` pour la tâche interface/revue dans {PIPELINE}")
-    return ctl["grille"]
+    return ctl
+
+
+def questions_grille() -> list[dict]:
+    """Les questions fermées de la revue."""
+    return controle_revue()["grille"]
 
 
 def plafond(q: dict) -> int:
@@ -1270,11 +1275,13 @@ def preuve_valide(racine: Path, preuve: str) -> bool:
 
 def note_grille(g: dict, racine: Path) -> dict:
     """{note, oui, comptes, non, manques} — la note se calcule, l'agent ne la donne pas : plancher de
-    10 × oui / (oui + non), puis le plus bas `plafond` des questions répondues non (7 pour une question bloquante)."""
+    10 × oui / (oui + non), puis le plus bas `plafond` des questions répondues non (7 pour une question bloquante),
+    puis le `plafond` de `trop_de_non` dès `nombre` non."""
     reponses = g.get("questions")
     if not isinstance(reponses, list):
         return {"manques": ["grille : `questions`, la liste remplie depuis `atelier grille`"]}
-    questions = questions_grille()
+    ctl = controle_revue()
+    questions = ctl["grille"]
     par_id = {r.get("id"): r for r in reponses if isinstance(r, dict)}
     manques, non, oui, cap, bloquants = [], [], 0, 10, 0
     for q in questions:
@@ -1306,6 +1313,9 @@ def note_grille(g: dict, racine: Path) -> dict:
     connus = {q["id"] for q in questions}
     manques += [f"{i} : question inconnue de la grille" for i in par_id if i not in connus]
     comptes = oui + len(non)
+    trop = ctl.get("trop_de_non")
+    if trop and len(non) >= int(trop["nombre"]):
+        cap = min(cap, int(trop["plafond"]))
     if not comptes and not manques:
         manques.append("aucune question répondue oui ou non : rien à noter")
     note = min((10 * oui) // comptes, cap) if comptes else 0

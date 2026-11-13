@@ -34,8 +34,9 @@ const AIDE = `Usage : capture <adresse ou fichier> [options]
 
 Chaque capture est contrôlée : erreurs de script, de console et de chargement, statut HTTP, redirection,
 chargement inachevé, débordement horizontal, images cassées, et accessibilité (contraste WCAG AA du texte,
-images sans alt, champs sans libellé, boutons et liens sans nom, langue de la page, cibles tactiles de moins
-de 24 px en mobile). La dernière ligne est le verdict ; le détail est dans report.json.
+images sans alt, champs sans libellé, boutons et liens sans nom, langue et titre de la page, zoom bloqué,
+h1 absent, niveau de titre sauté ; en mobile, cibles tactiles de moins de 24 px et champs sous 16 px ;
+sur ordinateur, focus clavier visible sur les 15 premiers Tab). La dernière ligne est le verdict ; le détail est dans report.json.
 Code : 0 sans problème, 1 sinon, 2 mauvais appel, 3 pas de navigateur.`;
 
 // ---------- Arguments ----------
@@ -536,6 +537,67 @@ function poseMasque() {
   return barres;
 }
 
+// ---------- Focus clavier : chaque élément atteint par Tab montre où il est (WCAG 2.4.7) ----------
+// Avant tout Tab, le style de repos de chaque élément atteignable ; puis, à chaque Tab, le style de l'élément
+// qui a le focus, transitions finies. Aucun changement visible, ou un élément caché : un problème.
+const FOCUS_MAX = 15;
+function focusDeLaPage(mode) {
+  const sel = 'a[href],area[href],button,input:not([type=hidden]),select,textarea,summary,iframe,[tabindex]:not([tabindex="-1"]),[contenteditable]:not([contenteditable="false"])';
+  const lit = (el) => {
+    const s = getComputedStyle(el);
+    const contour = s.outlineStyle === "none" || parseFloat(s.outlineWidth) === 0 ? "none" : [s.outlineStyle, s.outlineWidth, s.outlineColor, s.outlineOffset].join(" ");
+    const bord = ["Top", "Right", "Bottom", "Left"].map((c) => parseFloat(s[`border${c}Width`]) ? s[`border${c}Width`] + " " + s[`border${c}Color`] : "0").join(",");
+    const avant = ["::before", "::after"].map((p) => {
+      const q = getComputedStyle(el, p);
+      return q.content === "none" ? "" : [q.content, q.opacity, q.boxShadow, q.outlineStyle, q.backgroundColor, q.borderTopColor, q.transform].join(" ");
+    });
+    const parent = el.parentElement ? getComputedStyle(el.parentElement) : null;
+    return [contour, s.boxShadow, bord, s.backgroundColor, s.color, s.textDecorationLine, s.transform, ...avant,
+      parent ? [parent.outlineStyle, parent.boxShadow, parent.borderTopColor, parent.backgroundColor].join(" ") : ""].join("|");
+  };
+  const nom = (el) => {
+    const classes = typeof el.className === "string" ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 2) : [];
+    const t = (el.innerText || el.value || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim();
+    return el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (classes.length ? "." + classes.join(".") : "") + (t ? ` « ${t.slice(0, 40)} »` : "");
+  };
+  if (mode === "repos") {
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    window.__hosaRepos = new Map([...document.querySelectorAll(sel)].map((el) => [el, lit(el)]));
+    window.__hosaVus = new Set();
+    return true;
+  }
+  if (mode === "fin") {
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    delete window.__hosaRepos; delete window.__hosaVus;
+    scrollTo(0, 0);
+    return true;
+  }
+  const el = document.activeElement;
+  if (!el || el === document.body || el === document.documentElement || window.__hosaVus.has(el)) return { fin: true };
+  window.__hosaVus.add(el);
+  for (const a of document.getAnimations ? document.getAnimations() : []) try { a.finish(); } catch { /* animation infinie */ }
+  const b = el.getBoundingClientRect(), s = getComputedStyle(el);
+  if (b.width < 1 || b.height < 1 || s.visibility === "hidden" || Number(s.opacity) <= 0.05 || b.bottom < 0 || b.right < 0 || b.top > innerHeight || b.left > innerWidth)
+    return { probleme: `focus sur un élément caché : ${nom(el)}` };
+  const repos = window.__hosaRepos.get(el);
+  if (repos !== undefined && repos === lit(el)) return { probleme: `focus invisible (ni contour ni changement de style au clavier) : ${nom(el)}` };
+  return {};
+}
+
+async function verifieFocus() {
+  const trouves = [];
+  await dansLaPage(focusDeLaPage, "repos");
+  for (let i = 0; i < FOCUS_MAX; i++) {
+    await page("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+    await page("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+    const r = await dansLaPage(focusDeLaPage, "tab");
+    if (r.fin) break;
+    if (r.probleme && trouves.length < 3) trouves.push(r.probleme);
+  }
+  await dansLaPage(focusDeLaPage, "fin");
+  return trouves;
+}
+
 function retireCalques() {
   for (const id of ["hosa-reperes", "hosa-masque", "hosa-masque-css"]) document.getElementById(id)?.remove();
   return true;
@@ -686,6 +748,7 @@ try {
             masquees.push({ fichier: await photo(path.join(dossier, `${nom}-masque.png`), entiere), legende: etat || route || "page" });
             await dansLaPage(retireCalques);
           }
+          if (!drapeaux.has("--sans-a11y") && l >= 600) problemes.push(...await verifieFocus());
         } catch (e) { problemes.push(`capture impossible : ${e.message}`); }
         const tous = [...new Set([...releve, ...problemes])];
         if (route !== null) {

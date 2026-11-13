@@ -476,16 +476,19 @@ class Revue(Base):
         r = at.revue(k, self.remplie(R4={"reponse": "non", **non}, R13={"reponse": "na", "constat": "pas de back office"}))
         self.assertEqual((r["note"], r["grille"]), (9, "14/15"))
         self.assertEqual(at.revue(k, self.remplie(R8={"reponse": "non", **non}))["note"], 7)  # a default template
+        deux = {f"R{i}": {"reponse": "non", **non} for i in (6, 7)}
+        self.assertEqual(at.revue(k, self.remplie(**deux))["note"], 8)  # 14/16
+        self.assertEqual(at.revue(k, self.remplie(**deux, R10={"reponse": "non", **non}))["note"], 7)  # 13/16 = 8, a 3rd non
         r = at.revue(k, self.remplie(R1={"reponse": "non", **non}))
         self.assertEqual(r["note"], 7)
         nav = (k / "interface" / "navigation.md").read_text(encoding="utf-8")
         lignes = [l for l in nav.split("## Revue visuelle")[1].splitlines() if l.startswith("- ")]
-        self.assertEqual(len(lignes), 3)  # appended, never rewritten
-        self.assertRegex(lignes[2], r"— note 7/10 — grille 15/16 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
+        self.assertEqual(len(lignes), 5)  # appended, never rewritten
+        self.assertRegex(lignes[4], r"— note 7/10 — grille 15/16 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
         self.assertIn("## Fondamentaux UX", nav)
         sys.path.insert(0, str(ROOT / "skills" / "status" / "scripts"))
         import avancement as av
-        m = av.REVIEW_LINE.match(lignes[2])
+        m = av.REVIEW_LINE.match(lignes[4])
         self.assertEqual((m[1], bool(av.GRID_MARK.search(m[3]))), ("7", True))  # the control reads what it writes
 
     def test_an_unproven_or_incomplete_grid_writes_nothing(self):
