@@ -46,6 +46,13 @@ class Check(unittest.TestCase):
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- d — PASS — ok\n- d — FAIL — CA2\n"})
         self.assertIn("dernière `## Revue` FAIL", av.check(k, "develop", "s1")[0])
 
+    def test_a_review_line_verdict_is_its_first_one(self):
+        # a note quoting PASS doesn't pass a FAIL; a decision line carries no verdict (hooks/gate.js reads the same)
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- d — FAIL — les tests PASS mais CA2\n"})
+        self.assertIn("dernière `## Revue` FAIL", av.check(k, "develop", "s1")[0])
+        self.assertEqual(av.last_verdict("## Revue\n- d — PASS-WITH-NOTES — un ancien FAIL\n- d — DÉCISION — garder\n"),
+                         "PASS-WITH-NOTES")
+
     def test_validation_accepts_a_recette_oui_as_proof(self):
         k = kb({"sprints/s1.md": SPRINT + "## Audit\nBloquant : 0\n## Démo\n- T1 OK\n",
                 "tickets/t1.md": TICKET.replace("state: doing", "state: done\nverified: { by: po }"),
@@ -1025,12 +1032,18 @@ class Graph(unittest.TestCase):
             self.assertTrue((skills / av.SKILL.get(s, s) / "SKILL.md").is_file(), s)
 
     def test_loops_go_backwards(self):
-        # the upstream pipelines are one order (interface → fondamentaux crosses them); a sprint is another
-        for pipe in ([s for _, ss in av.PIPELINES for s in ss], av.SPRINT):
+        # the upstream pipelines are one order (interface → fondamentaux crosses them); a sprint is another, after
+        # them all: a sprint loop may send work up to the structure (`develop` → `architecture`), never the reverse
+        upstream = [s for _, ss in av.PIPELINES for s in ss]
+        for pipe in (upstream, upstream + av.SPRINT):
             for e in (e for e in av.LOOPS if e["from"] in pipe):
                 for s in e["to"] + e.get("then", []):
+                    self.assertIn(s, pipe, e)
                     self.assertLess(pipe.index(s), pipe.index(e["from"]), e)
                 self.assertGreaterEqual(e["max"], 1)
+        for e in (e for e in av.LOOPS if e["from"] in av.SPRINT):  # a sprint loop's upstream reruns stay upstream
+            ss = e["to"] + e.get("then", [])
+            self.assertTrue(all(s in upstream for s in ss) or all(s in av.SPRINT for s in ss), e)
 
     def test_a_loop_outside_the_stages_is_a_skill_looping_on_itself(self):
         self.assertEqual(av.INNER, {"changement"})
@@ -1058,6 +1071,30 @@ def closed_until(k, stage):
 
 
 class Loops(unittest.TestCase):
+    def test_develop_sends_a_structural_deviation_up_to_its_stage(self):
+        # `develop/blocages.md`: a module or a layer the scaffold lacks → `architecture`, then the threat model again
+        k = kb({})
+        closed_until(k, "backlog")
+        with contextlib.redirect_stdout(io.StringIO()):
+            for s in ("sprint", "qa-plan", "git-demarrage"):
+                av.main([str(k), "done", s, "--sprint", "s1", "--force"])
+        code, out = run(k, "back", "develop", "architecture", "--sprint", "s1", "--ticket", "t1",
+                        "--detail", "module export absent du squelette")
+        self.assertEqual(code, 0, out)
+        sections, _ = av.load(k / "project" / "avancement.md")
+        status = {r[0]: r[1] for title, rows in sections.items() for r in rows}
+        self.assertEqual([status[s] for s in ("architecture", "menaces", "interface", "develop")],
+                         [av.TODO, av.TODO, av.DONE, av.TODO])
+        self.assertIn("`architecture`", run(k, "next")[1])
+        code, out = run(k, "start", "develop", "--sprint", "s1")    # the structure first, then the ticket
+        self.assertEqual(code, 1)
+        self.assertIn("`architecture`, `menaces`", out)
+        with contextlib.redirect_stdout(io.StringIO()):
+            for s in ("architecture", "menaces"):
+                av.main([str(k), "done", s, "--force"])
+        self.assertEqual(run(k, "start", "develop", "--sprint", "s1")[0], 0)
+        self.assertEqual(run(k, "back", "develop", "interface", "--sprint", "s1", "--detail", "x")[0], 2)
+
     def test_back_reopens_the_target_and_the_source_and_counts_the_round(self):
         k = kb({})
         closed_until(k, "relecture")
@@ -1332,7 +1369,8 @@ class Bounds(unittest.TestCase):
                 self.assertNotIn((e["from"], t), seen)
                 seen.add((e["from"], t))
             if e["from"] not in av.INNER:  # `then` runs in order between `to` and `from`
-                pipe = av.SPRINT if e["from"] in av.SPRINT else [s for _, ss in av.PIPELINES for s in ss]
+                upstream = [s for _, ss in av.PIPELINES for s in ss]  # a sprint loop may go up (`develop` → `architecture`)
+                pipe = upstream + av.SPRINT if e["from"] in av.SPRINT else upstream
                 at = [pipe.index(s) for s in e.get("then", [])]
                 self.assertEqual(at, sorted(at), e)
                 self.assertTrue(all(max(pipe.index(t) for t in e["to"]) < i for i in at), e)

@@ -180,3 +180,66 @@ test('the review loop\'s bound is the graph\'s, not a second number in the hook'
   assert.equal(g.tasks.controls.find((c) => c.stage === 'develop' && c.id === '*.revue').fails, 2);
   assert.doesNotMatch(fs.readFileSync(path.join(__dirname, 'gate.js'), 'utf8'), /LOOP_MAX = \d/);
 });
+
+const ps = (root, command, cwd = root) => processPayload({ tool_name: 'PowerShell', cwd, tool_input: { command } });
+
+test('the PowerShell tool meets the same gates as Bash', () => {
+  const r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — FAIL — CA2'), '.hosa/kb/sprints/s1.md': sprint('') });
+  const wt = path.join(r, '.worktrees', 'sprint', 's1');
+  assert.match(denied(ps(r, commit(wt))), /no passed code review/);
+  assert.match(denied(ps(r, 'git commit -m "x`n`nCo-Authored-By: C <n@a.com>"')), /identity only/);
+  assert.match(denied(ps(r, 'git merge --no-ff sprint/s1')), /QA gate fails/);
+  assert.match(denied(ps(r, 'Set-Location -Path .hosa/kb')), /inside the KB/);
+  assert.match(denied(ps(r, '(cd .hosa/kb); git status')), /inside the KB/);  // PowerShell parentheses don't fork
+  assert.doesNotMatch(denied(ps(r, 'cd .hosa/kb')), /subshell/);             // no advice PowerShell refuses
+  const hooks = JSON.parse(fs.readFileSync(path.join(__dirname, 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  const gate = hooks.find((h) => h.hooks.some((x) => /gate\.js/.test(x.command)));
+  for (const tool of ['Bash', 'PowerShell', 'Agent', 'Task']) assert.match(tool, new RegExp(`^(${gate.matcher})$`));
+  assert.equal(ps(r, 'Set-Location C:/dev; git status'), null);
+});
+
+test('a subshell or a nested shell does not hide a commit from its gate', () => {
+  const r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — FAIL — CA2') });
+  assert.match(denied(bash(r, '(cd .worktrees/sprint/s1 && git commit -m x -m "Hosa-Ticket: t1")')), /no passed code review/);
+  assert.match(denied(bash(r, 'bash -c "cd .worktrees/sprint/s1 && git commit -m x"')), /Hosa-Ticket/);
+  assert.match(denied(bash(r, 'bash -lc "cd .worktrees/sprint/s1 && git commit -m x"')), /Hosa-Ticket/);
+  assert.match(denied(bash(r, 'powershell -Command "cd .worktrees/sprint/s1; git commit -m x"')), /Hosa-Ticket/);
+  const [a, b] = gitCalls('(cd sub && git status) && git log', '/r');
+  assert.ok(a.dir.endsWith('sub'));
+  assert.equal(path.resolve(b.dir), path.resolve('/r'));                    // the subshell's cd ends at its `)`
+  assert.equal(bash(r, '(cd .hosa/kb && git status)'), null);              // a subshell cd into the KB passes
+  assert.equal(bash(r, 'git log --format="%H (x)" -1 && echo "$(date -u)"'), null);
+});
+
+test('an amend without a trailer keeps its message, or is refused', () => {
+  const r = project({});
+  const wt = path.join(r, '.worktrees', 'sprint', 's1');
+  assert.equal(bash(r, 'git commit --amend --no-edit', wt), null);
+  assert.match(denied(bash(r, 'git commit --amend -m "other"', wt)), /--no-edit/);
+});
+
+test('a review line\'s verdict is its first one: a note quoting PASS does not pass a FAIL', () => {
+  const wt = (r) => path.join(r, '.worktrees', 'sprint', 's1');
+  let r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — FAIL — les tests PASS mais CA2 manque') });
+  assert.match(denied(bash(r, commit(wt(r)))), /last `## Revue` line is FAIL/);
+  r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — PASS-WITH-NOTES — un ancien FAIL corrigé') });
+  assert.equal(bash(r, commit(wt(r))), null);
+  r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-09 — FAIL — x\n- 2026-10-10 — PASS — ok\n- 2026-10-11 — DÉCISION — garder') });
+  assert.equal(bash(r, commit(wt(r))), null);                               // a decision line has no verdict
+});
+
+test('a sprint branch lands through its gate whatever its ref name', () => {
+  const r = project({ '.hosa/kb/sprints/s1.md': sprint('') });
+  for (const ref of ['refs/heads/sprint/s1', 'heads/sprint/s1', 'origin/sprint/s1']) {
+    assert.match(denied(bash(r, `git merge --no-ff ${ref}`)), /QA gate fails/, ref);
+  }
+  assert.match(denied(bash(r, 'git pull . sprint/s1')), /QA gate fails/);
+  assert.equal(bash(r, 'git merge --no-ff main -m "Merge main into sprint/s1"', path.join(r, '.worktrees', 'sprint', 's1')), null);
+  assert.equal(bash(r, 'git pull origin sprint/s1', path.join(r, '.worktrees', 'sprint', 's1')), null); // a sync, not a landing
+});
+
+test('the review loop\'s bound holds for a correction routed to debug', () => {
+  const r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-09 — FAIL — a\n- 2026-10-10 — FAIL — b') });
+  const out = processPayload({ tool_name: 'Agent', cwd: r, tool_input: { subagent_type: 'hosa:hosa-debugger', prompt: 'ticket t1' } });
+  assert.match(denied(out), /2 FAIL reviews in a row/);
+});

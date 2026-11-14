@@ -134,7 +134,12 @@ const proof = (t) => {
   return v && v.plan && v.total ? `${v.couverts.length}/${v.total}` : 'non testé';
 };
 const recetteName = (r) => { if (!r.persona) return r.titre; const p = S.concepts.find((c) => c.path === `personnas/${r.persona}.md`); return p && p.fm.title ? `${r.titre} — ${String(p.fm.title).split(/[\s,]/)[0]}` : r.titre; };
-const reviewOf = (t) => { const m = (String(t.body || '').split(/^## Revue/m)[1] || '').match(/PASS-WITH-NOTES|PASS|FAIL/g); return m ? m[m.length - 1] : null; };
+// the first verdict of the last `## Revue` line that has one: a note may quote another (same rule as hooks/gate.js)
+const reviewOf = (t) => {
+  const sec = (String(t.body || '').split(/^## Revue[ \t]*$/m)[1] || '').split(/^## /m)[0];
+  const v = sec.split(/\r?\n/).filter((l) => !/—\s*DÉCISION\b/.test(l)).map((l) => (/\b(PASS-WITH-NOTES|PASS|FAIL)\b/.exec(l) || [])[1]).filter(Boolean);
+  return v.length ? v[v.length - 1] : null;
+};
 const roundEven = (x) => { const f = Math.floor(x), d = x - f; return d < 0.5 ? f : d > 0.5 ? f + 1 : f % 2 === 0 ? f : f + 1; };
 const ACTEUR = { humain: 'Vous', processus: 'Application', agent: 'Claude' };
 // le texte d'une ligne de log sans le nom de son acteur, déjà affiché à côté

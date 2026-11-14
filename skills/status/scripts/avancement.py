@@ -609,6 +609,20 @@ def newer(line: str, since: str) -> bool:
     return f"{m[1]}T{m[2]}" >= since[:16] if m[2] else m[1] > since[:10]
 
 
+VERDICT = re.compile(r"\b(PASS-WITH-NOTES|PASS|FAIL)\b")
+
+
+def last_verdict(text: str | None) -> str | None:
+    """A ticket's review verdict: the first PASS-WITH-NOTES, PASS or FAIL of the last `## Revue` line that has one —
+    a note may quote another (`— FAIL — les tests PASS mais…`). The same rule as hooks/gate.js and the dashboard."""
+    found = None
+    for line in (section(text, "Revue") or "").splitlines():
+        m = VERDICT.search(line)
+        if m and not re.search(r"—\s*DÉCISION\b", line):
+            found = m[1]
+    return found
+
+
 def reopened(kb: Path, stage: str, sprint: str | None) -> list[tuple[str, str]]:
     """(when, ticket) of each open loop of this sprint that reran <stage>, or that <stage> sent back (`audit` →
     `develop`: the audit runs again on the correction): its proof must be written after it. `## Audit` and
@@ -658,9 +672,9 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
             if missing:
                 gaps.append(f"{t} : {', '.join(missing)} sans cas de test [CAn] (`qa-plan`)")
         if stage == "develop":
-            verdicts = re.findall(r"\b(PASS-WITH-NOTES|PASS|FAIL)\b", section(text, "Revue") or "")
-            if not verdicts or verdicts[-1] == "FAIL":
-                gaps.append(f"{t} : dernière `## Revue` {verdicts[-1] if verdicts else 'absente'} (`develop`)")
+            verdict = last_verdict(text)
+            if verdict in (None, "FAIL"):
+                gaps.append(f"{t} : dernière `## Revue` {verdict or 'absente'} (`develop`)")
             reviews = [x for x in (section(text, "Revue") or "").splitlines() if re.search(r"\b(PASS|FAIL)", x)]
             # a correction where nothing reproduced writes no code and no review: its `0 prouvé(s)` line is the proof
             unproved = [x for x in (section(text, "Corrections") or "").splitlines() if re.search(r"\b0 prouvé", x)]
@@ -1982,6 +1996,10 @@ def run(argv: list[str]) -> int:
                 before = sections[t] + before
         elif a.stage == SPRINT[0]:  # a sprint is composed from the backlog: the structuration done, every stage of it
             before = [r for t in prev_pipe for r in sections[t]]
+        elif a.stage in SPRINT:  # a loop of this sprint reopened upstream stages (`develop` → `architecture`): first
+            up = {s for lp in loops if lp["etat"] == OPEN and (lp["scope"].split(", ")[0] or None) == a.sprint
+                  and (e := edge(lp["from"], lp["to"])) for s in [lp["to"], *e.get("then", [])] if s not in SPRINT}
+            before = [r for t in prev_pipe for r in sections[t] if r[0] in up] + before
         pending = [r[0] for r in before if r[1] not in CLOSED]
         if pending and not a.force:
             print(f"✗ {where} ne peut pas démarrer : étape(s) précédente(s) pas faite(s) — "
