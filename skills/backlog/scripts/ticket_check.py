@@ -36,6 +36,9 @@ Run:  python ticket_check.py <kb-dir> [ticket.md ...]
       The rules × criteria matrix, over every ticket: each `RGn`/`CEn`/`INn` of an
       exigence is cited by a criterion of one of its tickets (exit 1 otherwise).
       An exigence whose tickets cite no rule at all predates the ids: skipped.
+      python ticket_check.py <kb-dir> --repetes
+      The criteria a `todo` ticket restates from another ticket of the same exigence
+      (70 % of their words in common): one ticket owns a behaviour (exit 1 otherwise).
 Exit: 0 all complete, 1 at least one incomplete, 2 bad invocation.
 Stdlib only, so any Python 3.9+ runs it.
 """
@@ -199,6 +202,54 @@ def rule_coverage(kb: Path) -> list[str]:
         if lacking and got & set(ids):
             out.append(f"✗ cdc/{slug}.md — {', '.join(lacking)} : aucun critère de ses tickets ne les cite "
                        f"(`- CAn [{lacking[0]}] — …`)")
+    return out
+
+
+# One behaviour, one ticket. Rieki: about 7 criteria per ticket whatever it covered, and 54 criteria of 34 `todo` tickets
+# restated another ticket's — « Annuler » n'enregistre rien, the same escaping, one abuse case copied on 3 style tickets.
+# Pilot2, sliced 5 times coarser: 4. 70 %: every pair sampled on rieki at that level was a real repeat.
+REPEATED = 0.7
+REPEATED_MIN_WORDS = 6  # « CA3 — refus » shares its few words with any other refusal
+CRITERION_TEXT = re.compile(r"^\s*[-*]\s+(CA\d+)\b[^\n—]*—\s*(.+)$", re.M)
+STOPWORDS = frozenset("le la les l un une des de du d et à au aux en est sont il elle ils quand alors étant donné "
+                      "dans sur par pour que qui ne n pas son sa ses ce cette ces avec se s y ou".split())
+
+
+def words(text: str) -> frozenset[str]:
+    """A criterion's words: code spans kept whole (they tell two screens apart), numbers neutralised, stopwords out."""
+    text = text.lower()
+    code = {"`" + c for c in re.findall(r"`([^`]+)`", text)}
+    text = re.sub(r"\d+(?:[.,]\d+)*", "0", re.sub(r"`[^`]+`", " ", text))
+    return frozenset(w for w in re.findall(r"[0-9a-zàâçéèêëîïôûùüÿœæ_]+", text) if w not in STOPWORDS) | code
+
+
+def repeated_criteria(kb: Path) -> list[str]:
+    """Each criterion of a `todo` ticket that another ticket of the same exigence already states: the judge reads one
+    ticket at a time and can't see it. A `done` ticket counts as the owner, never as the one to fix. A `depends_on`
+    between the two names the owner: the other keeps only the criterion that checks its screen uses it."""
+    by: dict[str, list[tuple[str, str, bool, frozenset[str]]]] = {}
+    deps: dict[str, set[str]] = {}
+    for f in sorted((kb / "tickets").glob("*.md")) if (kb / "tickets").is_dir() else []:
+        front, body = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") != "Ticket":
+            continue
+        todo, deps[f.stem] = field(front, "state") == "todo", set(depends_on(front))
+        for slug in linked_exigences(body):
+            by.setdefault(slug, []).extend((f.stem, ca, todo, words(text)) for ca, text in
+                                           CRITERION_TEXT.findall(section(body, "## Critères d'acceptation") or ""))
+    out, seen = [], set()
+    for slug, items in sorted(by.items()):
+        for i, (a, ca, todo_a, wa) in enumerate(items):
+            for b, cb, todo_b, wb in items[i + 1:]:
+                if (a == b or not (todo_a or todo_b) or min(len(wa), len(wb)) < REPEATED_MIN_WORDS
+                        or b in deps.get(a, ()) or a in deps.get(b, ())):
+                    continue
+                share = len(wa & wb) / len(wa | wb)
+                if share >= REPEATED and (pair := frozenset({(a, ca), (b, cb)})) not in seen:  # a ticket of 2 exigences: once
+                    seen.add(pair)
+                    out.append(f"✗ cdc/{slug}.md — `{a}` {ca} ≈ `{b}` {cb} ({share:.0%} de mots communs) : un seul "
+                               "ticket porte ce comportement ; l'autre le retire, ou le met en `depends_on` et ne garde "
+                               "que son branchement (ou la définition de terminé, si chaque écran le doit)")
     return out
 
 
@@ -418,7 +469,8 @@ def late_dependencies(path: Path, front: str) -> list[str]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
-        print("usage: ticket_check.py <kb-dir> [--ecartees] [ticket.md ...] | <kb-dir> --regles", file=sys.stderr)
+        print("usage: ticket_check.py <kb-dir> [--ecartees] [ticket.md ...] | <kb-dir> --regles | <kb-dir> --repetes",
+              file=sys.stderr)
         return 2
     fill = "--ecartees" in argv
     argv = [a for a in argv if a != "--ecartees"]
@@ -430,6 +482,10 @@ def main(argv: list[str]) -> int:
         lacking = rule_coverage(kb)
         print("\n".join(lacking) if lacking else "Règles : chaque règle numérotée d'une exigence découpée est citée par un critère.")
         return 1 if lacking else 0
+    if "--repetes" in argv:
+        repeated = repeated_criteria(kb)
+        print("\n".join(repeated) if repeated else "Répétitions : aucun critère d'un ticket `todo` ne répète un autre ticket de son exigence.")
+        return 1 if repeated else 0
     if argv[1:]:
         paths = [Path(p) for p in argv[1:]]
     else:

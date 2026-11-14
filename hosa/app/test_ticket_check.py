@@ -153,6 +153,34 @@ class SecurityAndLegalNotes(unittest.TestCase):
         self.write("limite", "", story + "- CA1 [RG3] — 51e article refusé\n")   # another ticket of the exigence takes it
         self.assertEqual(tc.rule_coverage(kb), [])
 
+    def test_a_behaviour_two_tickets_of_one_exigence_state_is_owned_by_one(self):
+        kb = self.tickets.parent
+        link = "En tant que analyste,\nLié à : [p](../personnas/p.md), [e](../cdc/import.md)"
+        cancel = "- CA{} — Étant donné cette anomalie, quand l'analyste clique sur « Annuler », alors rien n'est enregistré.\n"
+        crit = lambda n, extra="": f"{link}{extra}\n## Critères d'acceptation\n- CA1 — nominal\n" + cancel.format(n)  # noqa: E731
+        self.write("signaler-date", "", crit(2))
+        self.write("signaler-ligne", "", crit(5))
+        self.assertEqual(tc.repeated_criteria(kb), [
+            "✗ cdc/import.md — `signaler-date` CA2 ≈ `signaler-ligne` CA5 (100% de mots communs) : un seul ticket porte "
+            "ce comportement ; l'autre le retire, ou le met en `depends_on` et ne garde que son branchement "
+            "(ou la définition de terminé, si chaque écran le doit)"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kb), "--repetes"]), 1)
+        self.write("signaler-ligne", "depends_on: [signaler-date]\n", crit(5))  # the owner named: its screen's check stays
+        self.assertEqual(tc.repeated_criteria(kb), [])
+        self.write("signaler-ligne", "", crit(5, ", [f](../cdc/fondamentaux.md)"))  # two exigences: reported once
+        self.assertEqual(len(tc.repeated_criteria(kb)), 1)
+        self.write("signaler-date", "state: done\n", crit(2))  # a delivered ticket owns it; the todo one is to fix
+        self.assertEqual(len(tc.repeated_criteria(kb)), 1)
+        self.write("signaler-ligne", "state: done\n", crit(5))  # both delivered: nothing left to change
+        self.assertEqual(tc.repeated_criteria(kb), [])
+        self.write("court-a", "", f"{link}\n## Critères d'acceptation\n- CA1 — refus affiché\n")
+        self.write("court-b", "", f"{link}\n## Critères d'acceptation\n- CA1 — refus affiché\n")  # too few words to judge
+        self.write("autre", "", f"{link}\n## Critères d'acceptation\n- CA1 — Étant donné un fichier de 2 Mo, quand "
+                                "l'analyste l'importe, alors 400 lignes sont enregistrées et le journal note l'import.\n")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kb), "--repetes"]), 0)
+
     def test_an_indicator_criterion_states_the_value_the_dashboard_shows(self):
         kb = self.tickets.parent
         (kb / "cdc").mkdir()

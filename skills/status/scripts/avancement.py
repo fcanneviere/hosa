@@ -568,6 +568,9 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps += script("backlog/scripts/ticket_check.py", kb)
         # the rules × criteria matrix: a rule no ticket took is in no ticket the judge reads
         gaps += script("backlog/scripts/ticket_check.py", kb, "--regles")
+        # one behaviour, one ticket: a criterion restated by two tickets of one exigence (HOSA_REPETES=0 skips it)
+        if os.environ.get("HOSA_REPETES") != "0":
+            gaps += script("backlog/scripts/ticket_check.py", kb, "--repetes")
     return [g for g in gaps if g]
 
 

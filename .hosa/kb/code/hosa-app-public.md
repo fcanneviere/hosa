@@ -4,7 +4,7 @@ title: hosa/app/public
 description: use strict
 resource: hosa/app/public
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T12:11:28Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-14T09:50:10Z'}
 ---
 
 ## Fichiers
@@ -16,151 +16,151 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:11:28Z'}
 ## Symboles publics
 
 - `$` — `hosa/app/public/app.js:5`
-- `actText` — `hosa/app/public/app.js:141`
+- `actText` — `hosa/app/public/app.js:146`
 - `activeSprint` — `hosa/app/public/app.js:126`
-- `activityCard` — `hosa/app/public/app.js:254`
+- `activityCard` — `hosa/app/public/app.js:259`
 - `agentLabel` — `hosa/app/public/app.js:94`
 - `ago` — `hosa/app/public/app.js:43`
 - `api` — `hosa/app/public/app.js:25`
-- `bullets` — `hosa/app/public/app.js:420`
+- `bullets` — `hosa/app/public/app.js:425`
 - `byDate` — `hosa/app/public/app.js:111`
 - `card` — `hosa/app/public/app.js:60`
 - `cardH` — `hosa/app/public/app.js:61`
-- `clearBtn` — `hosa/app/public/app.js:183`
-- `clearBtn.onclick` — `hosa/app/public/app.js:183`
-- `closeDrawer` — `hosa/app/public/app.js:575`
-- `closeNav` — `hosa/app/public/app.js:863` — menu mobile et thème
+- `clearBtn` — `hosa/app/public/app.js:188`
+- `clearBtn.onclick` — `hosa/app/public/app.js:188`
+- `closeDrawer` — `hosa/app/public/app.js:580`
+- `closeNav` — `hosa/app/public/app.js:868` — menu mobile et thème
 - `cmdBox` — `hosa/app/public/app.js:70`
 - `cmdBox.onclick` — `hosa/app/public/app.js:70`
 - `copy` — `hosa/app/public/app.js:50`
 - `copy.done` — `hosa/app/public/app.js:51`
-- `createForm` — `hosa/app/public/app.js:710`
-- `createForm.field` — `hosa/app/public/app.js:724`
-- `createForm.opts` — `hosa/app/public/app.js:711`
-- `createForm.submit` — `hosa/app/public/app.js:713`
-- `createForm.uniq` — `hosa/app/public/app.js:712`
-- `createForm.v` — `hosa/app/public/app.js:711`
+- `createForm` — `hosa/app/public/app.js:715`
+- `createForm.field` — `hosa/app/public/app.js:729`
+- `createForm.opts` — `hosa/app/public/app.js:716`
+- `createForm.submit` — `hosa/app/public/app.js:718`
+- `createForm.uniq` — `hosa/app/public/app.js:717`
+- `createForm.v` — `hosa/app/public/app.js:716`
 - `crumbs` — `hosa/app/public/app.js:63`
 - `del` — `hosa/app/public/app.js:23`
-- `delta` — `hosa/app/public/app.js:201`
-- `docActions` — `hosa/app/public/app.js:628`
-- `docActions.onclick` — `hosa/app/public/app.js:632`
-- `docBox` — `hosa/app/public/app.js:619`
-- `docOrder` — `hosa/app/public/app.js:616`
-- `editor` — `hosa/app/public/app.js:678` — --- édition des concepts ----------------------------------------------------------------------------------------------
-- `editor.dirty` — `hosa/app/public/app.js:685`
-- `editor.list` — `hosa/app/public/app.js:698`
-- `editor.onclick` — `hosa/app/public/app.js:703`
-- `editor.preview` — `hosa/app/public/app.js:684`
-- `editor.save` — `hosa/app/public/app.js:687`
+- `delta` — `hosa/app/public/app.js:206`
+- `docActions` — `hosa/app/public/app.js:633`
+- `docActions.onclick` — `hosa/app/public/app.js:637`
+- `docBox` — `hosa/app/public/app.js:624`
+- `docOrder` — `hosa/app/public/app.js:621`
+- `editor` — `hosa/app/public/app.js:683` — --- édition des concepts ----------------------------------------------------------------------------------------------
+- `editor.dirty` — `hosa/app/public/app.js:690`
+- `editor.list` — `hosa/app/public/app.js:703`
+- `editor.onclick` — `hosa/app/public/app.js:708`
+- `editor.preview` — `hosa/app/public/app.js:689`
+- `editor.save` — `hosa/app/public/app.js:692`
 - `empty` — `hosa/app/public/app.js:59`
 - `enc` — `hosa/app/public/app.js:33`
 - `errBox` — `hosa/app/public/app.js:57`
-- `filterBar` — `hosa/app/public/app.js:174`
-- `filterBar.onchange` — `hosa/app/public/app.js:180`
-- `filterBar.onclick` — `hosa/app/public/app.js:179`
-- `filterBar.oninput` — `hosa/app/public/app.js:176`
-- `flat` — `hosa/app/public/app.js:483`
+- `filterBar` — `hosa/app/public/app.js:179`
+- `filterBar.onchange` — `hosa/app/public/app.js:185`
+- `filterBar.onclick` — `hosa/app/public/app.js:184`
+- `filterBar.oninput` — `hosa/app/public/app.js:181`
+- `flat` — `hosa/app/public/app.js:488`
 - `fmtDate` — `hosa/app/public/app.js:34`
 - `fmtDay` — `hosa/app/public/app.js:35`
 - `fmtNum` — `hosa/app/public/app.js:37`
 - `fmtTime` — `hosa/app/public/app.js:38`
 - `fmtTok` — `hosa/app/public/app.js:40`
 - `fmtUsd` — `hosa/app/public/app.js:39`
-- `folderOf` — `hosa/app/public/app.js:613`
-- `folderRank` — `hosa/app/public/app.js:615`
+- `folderOf` — `hosa/app/public/app.js:618`
+- `folderRank` — `hosa/app/public/app.js:620`
 - `get` — `hosa/app/public/app.js:21`
-- `groupOf` — `hosa/app/public/app.js:614`
+- `groupOf` — `hosa/app/public/app.js:619`
 - `h` — `hosa/app/public/app.js:9` — --- utilitaires -------------------------------------------------------------------------
-- `has` — `hosa/app/public/app.js:184`
-- `here` — `hosa/app/public/app.js:787`
-- `hero` — `hosa/app/public/app.js:189` — --- vue d'ensemble -------------------------------------------------------------------------
-- `hero.box` — `hosa/app/public/app.js:191`
-- `home` — `hosa/app/public/app.js:265`
+- `has` — `hosa/app/public/app.js:189`
+- `here` — `hosa/app/public/app.js:792`
+- `hero` — `hosa/app/public/app.js:194` — --- vue d'ensemble -------------------------------------------------------------------------
+- `hero.box` — `hosa/app/public/app.js:196`
+- `home` — `hosa/app/public/app.js:270`
 - `isAgent` — `hosa/app/public/app.js:112`
 - `isClosed` — `hosa/app/public/app.js:124`
 - `isStable` — `hosa/app/public/app.js:116`
 - `isoDay` — `hosa/app/public/app.js:36`
-- `kbLinks` — `hosa/app/public/app.js:388`
+- `kbLinks` — `hosa/app/public/app.js:393`
 - `kbPath` — `hosa/app/public/app.js:103`
-- `kpi` — `hosa/app/public/app.js:199`
-- `kpis` — `hosa/app/public/app.js:207`
-- `linkSlug` — `hosa/app/public/app.js:142`
-- `livrerCard` — `hosa/app/public/app.js:234`
-- `load` — `hosa/app/public/app.js:147`
-- `loadUsage` — `hosa/app/public/app.js:156`
-- `me` — `hosa/app/public/app.js:751`
-- `me.onclose` — `hosa/app/public/app.js:755`
+- `kpi` — `hosa/app/public/app.js:204`
+- `kpis` — `hosa/app/public/app.js:212`
+- `linkSlug` — `hosa/app/public/app.js:147`
+- `livrerCard` — `hosa/app/public/app.js:239`
+- `load` — `hosa/app/public/app.js:152`
+- `loadUsage` — `hosa/app/public/app.js:161`
+- `me` — `hosa/app/public/app.js:756`
+- `me.onclose` — `hosa/app/public/app.js:760`
 - `meta` — `hosa/app/public/app.js:85`
 - `meter` — `hosa/app/public/app.js:68`
-- `moveTicket` — `hosa/app/public/app.js:330` — --- tickets : tableau, glisser-déposer ou menu ---------------------------------------------------
+- `moveTicket` — `hosa/app/public/app.js:335` — --- tickets : tableau, glisser-déposer ou menu ---------------------------------------------------
 - `next` — `hosa/app/public/app.js:123`
-- `nodeLink` — `hosa/app/public/app.js:482`
-- `nodeName` — `hosa/app/public/app.js:481`
-- `nodePanel` — `hosa/app/public/app.js:484`
-- `nodePanel.rel` — `hosa/app/public/app.js:487`
+- `nodeLink` — `hosa/app/public/app.js:487`
+- `nodeName` — `hosa/app/public/app.js:486`
+- `nodePanel` — `hosa/app/public/app.js:489`
+- `nodePanel.rel` — `hosa/app/public/app.js:492`
 - `none` — `hosa/app/public/app.js:58`
 - `norm` — `hosa/app/public/app.js:42`
 - `ofType` — `hosa/app/public/app.js:92`
-- `openDrawer` — `hosa/app/public/app.js:569`
-- `openPalette` — `hosa/app/public/app.js:852`
+- `openDrawer` — `hosa/app/public/app.js:574`
+- `openPalette` — `hosa/app/public/app.js:857`
 - `openRemarks` — `hosa/app/public/app.js:119`
 - `pageH` — `hosa/app/public/app.js:62`
-- `paintDrawer` — `hosa/app/public/app.js:579`
-- `paintDrawer.onclick` — `hosa/app/public/app.js:601`
-- `paintDrawer.oninput` — `hosa/app/public/app.js:582`
-- `paintDrawer.onkeydown` — `hosa/app/public/app.js:583`
-- `paintDrawer.send` — `hosa/app/public/app.js:586`
-- `paintPalette` — `hosa/app/public/app.js:844`
-- `paintPalette.onclick` — `hosa/app/public/app.js:847`
-- `paintShell` — `hosa/app/public/app.js:790`
-- `paintShell.cur` — `hosa/app/public/app.js:792`
-- `paintShell.onclick` — `hosa/app/public/app.js:803`
-- `paletteItems` — `hosa/app/public/app.js:838`
-- `pipeline` — `hosa/app/public/app.js:220`
-- `pipeline.cls` — `hosa/app/public/app.js:223`
+- `paintDrawer` — `hosa/app/public/app.js:584`
+- `paintDrawer.onclick` — `hosa/app/public/app.js:606`
+- `paintDrawer.oninput` — `hosa/app/public/app.js:587`
+- `paintDrawer.onkeydown` — `hosa/app/public/app.js:588`
+- `paintDrawer.send` — `hosa/app/public/app.js:591`
+- `paintPalette` — `hosa/app/public/app.js:849`
+- `paintPalette.onclick` — `hosa/app/public/app.js:852`
+- `paintShell` — `hosa/app/public/app.js:795`
+- `paintShell.cur` — `hosa/app/public/app.js:797`
+- `paintShell.onclick` — `hosa/app/public/app.js:808`
+- `paletteItems` — `hosa/app/public/app.js:843`
+- `pipeline` — `hosa/app/public/app.js:225`
+- `pipeline.cls` — `hosa/app/public/app.js:228`
 - `plain` — `hosa/app/public/app.js:56`
 - `plural` — `hosa/app/public/app.js:41`
 - `projectTitle` — `hosa/app/public/app.js:122`
 - `proof` — `hosa/app/public/app.js:130`
-- `provenance` — `hosa/app/public/app.js:634`
-- `provenance.onclick` — `hosa/app/public/app.js:639`
-- `readerHref` — `hosa/app/public/app.js:618`
+- `provenance` — `hosa/app/public/app.js:639`
+- `provenance.onclick` — `hosa/app/public/app.js:644`
+- `readerHref` — `hosa/app/public/app.js:623`
 - `recetteName` — `hosa/app/public/app.js:136`
 - `recettes` — `hosa/app/public/app.js:121`
 - `recettesOf` — `hosa/app/public/app.js:129`
-- `reload` — `hosa/app/public/app.js:162`
+- `reload` — `hosa/app/public/app.js:167`
 - `remSt` — `hosa/app/public/app.js:82`
-- `remarkItem` — `hosa/app/public/app.js:540` — --- remarques pour Claude ------------------------------------------------------------------------------------------
-- `remarksCard` — `hosa/app/public/app.js:274`
+- `remarkItem` — `hosa/app/public/app.js:545` — --- remarques pour Claude ------------------------------------------------------------------------------------------
+- `remarksCard` — `hosa/app/public/app.js:279`
 - `remarksOf` — `hosa/app/public/app.js:120`
 - `remarques` — `hosa/app/public/app.js:118`
-- `reviewOf` — `hosa/app/public/app.js:137`
-- `roundEven` — `hosa/app/public/app.js:138`
-- `route` — `hosa/app/public/app.js:813`
+- `reviewOf` — `hosa/app/public/app.js:138`
+- `roundEven` — `hosa/app/public/app.js:143`
+- `route` — `hosa/app/public/app.js:818`
 - `routeOf` — `hosa/app/public/app.js:96`
 - `secOf` — `hosa/app/public/app.js:67`
-- `seg` — `hosa/app/public/app.js:185`
-- `seg.onclick` — `hosa/app/public/app.js:186`
-- `serves` — `hosa/app/public/app.js:387`
+- `seg` — `hosa/app/public/app.js:190`
+- `seg.onclick` — `hosa/app/public/app.js:191`
+- `serves` — `hosa/app/public/app.js:392`
 - `set` — `hosa/app/public/app.js:22`
-- `setF` — `hosa/app/public/app.js:165`
-- `setVerified` — `hosa/app/public/app.js:759`
-- `slugName` — `hosa/app/public/app.js:750`
-- `sprintCard` — `hosa/app/public/app.js:260`
+- `setF` — `hosa/app/public/app.js:170`
+- `setVerified` — `hosa/app/public/app.js:764`
+- `slugName` — `hosa/app/public/app.js:755`
+- `sprintCard` — `hosa/app/public/app.js:265`
 - `sprintName` — `hosa/app/public/app.js:125`
-- `sprintSt` — `hosa/app/public/app.js:301`
+- `sprintSt` — `hosa/app/public/app.js:306`
 - `st` — `hosa/app/public/app.js:74`
 - `stateName` — `hosa/app/public/app.js:78`
 - `statusSt` — `hosa/app/public/app.js:117`
 - `stemOf` — `hosa/app/public/app.js:128`
 - `table` — `hosa/app/public/app.js:64`
-- `targetRemarks` — `hosa/app/public/app.js:549`
-- `targetRemarks.onclick` — `hosa/app/public/app.js:551`
-- `tcard` — `hosa/app/public/app.js:338`
-- `tcard.onchange` — `hosa/app/public/app.js:344`
-- `tcard.ondragend` — `hosa/app/public/app.js:339`
-- `tcard.ondragstart` — `hosa/app/public/app.js:339`
+- `targetRemarks` — `hosa/app/public/app.js:554`
+- `targetRemarks.onclick` — `hosa/app/public/app.js:556`
+- `tcard` — `hosa/app/public/app.js:343`
+- `tcard.onchange` — `hosa/app/public/app.js:349`
+- `tcard.ondragend` — `hosa/app/public/app.js:344`
+- `tcard.ondragstart` — `hosa/app/public/app.js:344`
 - `td` — `hosa/app/public/app.js:66`
 - `ticketHref` — `hosa/app/public/app.js:127`
 - `ticketSt` — `hosa/app/public/app.js:77`
@@ -168,49 +168,49 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:11:28Z'}
 - `toast` — `hosa/app/public/app.js:49`
 - `trustSt` — `hosa/app/public/app.js:110`
 - `trustWord` — `hosa/app/public/app.js:109`
-- `unvalidate` — `hosa/app/public/app.js:768`
-- `v404` — `hosa/app/public/app.js:747`
-- `vAvancement` — `hosa/app/public/app.js:281` — --- plan d'avancement ------------------------------------------------------------------------
-- `vConcepts` — `hosa/app/public/app.js:731`
-- `vConcepts.uniq` — `hosa/app/public/app.js:737`
-- `vConsommation` — `hosa/app/public/app.js:451`
-- `vConsommation.rows` — `hosa/app/public/app.js:460`
-- `vExigence` — `hosa/app/public/app.js:414`
-- `vExigences` — `hosa/app/public/app.js:389`
-- `vExigences.onclick` — `hosa/app/public/app.js:408`
-- `vJournal` — `hosa/app/public/app.js:512` — --- journal ----------------------------------------------------------------------------------------------------
-- `vKb` — `hosa/app/public/app.js:641`
-- `vKb.byType` — `hosa/app/public/app.js:647`
-- `vKb.fillToc` — `hosa/app/public/app.js:661`
-- `vKb.fillToc.onclick` — `hosa/app/public/app.js:663`
-- `vKb.link` — `hosa/app/public/app.js:646`
-- `vPersonas` — `hosa/app/public/app.js:421`
-- `vRecettes` — `hosa/app/public/app.js:434` — --- recettes et qualité --------------------------------------------------------------------------------
-- `vRecettes.audit` — `hosa/app/public/app.js:436`
-- `vRecettes.count` — `hosa/app/public/app.js:438`
-- `vRemarques` — `hosa/app/public/app.js:554`
-- `vRemarques.onclick` — `hosa/app/public/app.js:562`
-- `vSprint` — `hosa/app/public/app.js:316`
-- `vSprints` — `hosa/app/public/app.js:302`
-- `vTicket` — `hosa/app/public/app.js:366`
-- `vTicket.onchange` — `hosa/app/public/app.js:373`
-- `vTickets` — `hosa/app/public/app.js:347`
-- `vTickets.col` — `hosa/app/public/app.js:353`
-- `vTickets.col.ondragleave` — `hosa/app/public/app.js:355`
-- `vTickets.col.ondragover` — `hosa/app/public/app.js:355`
-- `vTickets.col.ondrop` — `hosa/app/public/app.js:356`
-- `vTracabilite` — `hosa/app/public/app.js:494`
-- `vTracabilite.oninput` — `hosa/app/public/app.js:508`
-- `vTracabilite.search` — `hosa/app/public/app.js:496`
-- `vTracabilite.search.onclick` — `hosa/app/public/app.js:497`
-- `vValidation` — `hosa/app/public/app.js:524` — --- à valider ----------------------------------------------------------------------------------------------------
-- `vValidation.onclick` — `hosa/app/public/app.js:536`
-- `validate` — `hosa/app/public/app.js:764`
+- `unvalidate` — `hosa/app/public/app.js:773`
+- `v404` — `hosa/app/public/app.js:752`
+- `vAvancement` — `hosa/app/public/app.js:286` — --- plan d'avancement ------------------------------------------------------------------------
+- `vConcepts` — `hosa/app/public/app.js:736`
+- `vConcepts.uniq` — `hosa/app/public/app.js:742`
+- `vConsommation` — `hosa/app/public/app.js:456`
+- `vConsommation.rows` — `hosa/app/public/app.js:465`
+- `vExigence` — `hosa/app/public/app.js:419`
+- `vExigences` — `hosa/app/public/app.js:394`
+- `vExigences.onclick` — `hosa/app/public/app.js:413`
+- `vJournal` — `hosa/app/public/app.js:517` — --- journal ----------------------------------------------------------------------------------------------------
+- `vKb` — `hosa/app/public/app.js:646`
+- `vKb.byType` — `hosa/app/public/app.js:652`
+- `vKb.fillToc` — `hosa/app/public/app.js:666`
+- `vKb.fillToc.onclick` — `hosa/app/public/app.js:668`
+- `vKb.link` — `hosa/app/public/app.js:651`
+- `vPersonas` — `hosa/app/public/app.js:426`
+- `vRecettes` — `hosa/app/public/app.js:439` — --- recettes et qualité --------------------------------------------------------------------------------
+- `vRecettes.audit` — `hosa/app/public/app.js:441`
+- `vRecettes.count` — `hosa/app/public/app.js:443`
+- `vRemarques` — `hosa/app/public/app.js:559`
+- `vRemarques.onclick` — `hosa/app/public/app.js:567`
+- `vSprint` — `hosa/app/public/app.js:321`
+- `vSprints` — `hosa/app/public/app.js:307`
+- `vTicket` — `hosa/app/public/app.js:371`
+- `vTicket.onchange` — `hosa/app/public/app.js:378`
+- `vTickets` — `hosa/app/public/app.js:352`
+- `vTickets.col` — `hosa/app/public/app.js:358`
+- `vTickets.col.ondragleave` — `hosa/app/public/app.js:360`
+- `vTickets.col.ondragover` — `hosa/app/public/app.js:360`
+- `vTickets.col.ondrop` — `hosa/app/public/app.js:361`
+- `vTracabilite` — `hosa/app/public/app.js:499`
+- `vTracabilite.oninput` — `hosa/app/public/app.js:513`
+- `vTracabilite.search` — `hosa/app/public/app.js:501`
+- `vTracabilite.search.onclick` — `hosa/app/public/app.js:502`
+- `vValidation` — `hosa/app/public/app.js:529` — --- à valider ----------------------------------------------------------------------------------------------------
+- `vValidation.onclick` — `hosa/app/public/app.js:541`
+- `validate` — `hosa/app/public/app.js:769`
 - `validated` — `hosa/app/public/app.js:115`
 - `verdict` — `hosa/app/public/app.js:80`
 - `verifier` — `hosa/app/public/app.js:95`
 - `waitsForYou` — `hosa/app/public/app.js:113`
-- `yourTurn` — `hosa/app/public/app.js:244`
+- `yourTurn` — `hosa/app/public/app.js:249`
 
 ## Tickets et exigences
 

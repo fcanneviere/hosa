@@ -38,7 +38,8 @@ juge-<k> (hosa-juge) : chaque Non rouvre sa tâche, sur ses
 seuls tickets, avec les lignes exactes
         ↓
 Dernier lot jugé → ticket_check --regles : chaque RGn/CEn
-cité par un critère
+cité par un critère ; ticket_check --repetes : chaque
+comportement porté par un seul ticket
         ↓
 Priorités (l'utilisateur valide l'ordre) et estimations
         ↓
@@ -79,6 +80,14 @@ No ticket given → every `state: todo` ticket. Exit `0` = all complete, `1` = g
 ```
 
 It lists each rule (`RGn`) and error case (`CEn`) of an exigence that no criterion of its tickets cites (`- CA1 [RG2] — …`) — the cell the judge can't see, it reads one ticket at a time. Exit `1` → one more `stories-<k>` task for `hosa-product-owner` with those exact lines: a criterion added to the ticket that owns the rule, or a new ticket. `done backlog` refuses while it finds one. An exigence none of whose tickets cites a rule was sliced before the ids existed: it is skipped, never rewritten for this.
+
+**One behaviour, one ticket.** Then, before `done backlog`:
+
+```bash
+<hosa> ticket_check .hosa/kb --repetes
+```
+
+It lists each criterion of a `todo` ticket that another ticket of the same exigence states too (70 % of their words in common) — the judge can't see it either. Exit `1` → one more `stories-<k>` task for `hosa-product-owner` with those exact lines: the criterion stays in one ticket (« Say it once », `redaction-tickets.md`), the other drops it or names that ticket in `depends_on`. `done backlog` refuses while it finds one; `HOSA_REPETES=0` turns this check off.
 
 ---
 

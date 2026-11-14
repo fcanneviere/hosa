@@ -1355,6 +1355,19 @@ class Bounds(unittest.TestCase):
             self.assertEqual(av.script("backlog/scripts/ticket_check.py", "x"), [])
         self.assertIn("contrôleur `ticket_check` pas exécuté", err.getvalue())
 
+    def test_backlog_proof_runs_the_repetition_check_unless_switched_off(self):
+        k = kb({})
+        calls = []
+        fake = lambda rel, *args: calls.append(args[-1]) or []  # noqa: E731
+        with unittest.mock.patch.object(av, "script", side_effect=fake):
+            av.proofs(k, "backlog", None)
+            self.assertIn("--repetes", calls)
+            calls.clear()
+            with unittest.mock.patch.dict(os.environ, {"HOSA_REPETES": "0"}):
+                av.proofs(k, "backlog", None)
+            self.assertNotIn("--repetes", calls)
+            self.assertIn("--regles", calls)
+
     def test_the_graph_names_only_what_exists(self):
         stages = {s for _, ss in av.PIPELINES for s in ss} | set(av.SPRINT)
         self.assertEqual(len(stages), sum(len(ss) for _, ss in av.PIPELINES) + len(av.SPRINT))  # no stage twice

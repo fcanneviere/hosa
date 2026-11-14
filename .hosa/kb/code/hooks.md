@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T12:45:46Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-14T17:48:46Z'}
 ---
 
 ## Fichiers
@@ -121,21 +121,29 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:45:46Z'}
 - `ok` — `hooks/compress-output.test.js:63`
 - `pad` — `hooks/compress-output.test.js:12`
 - `spillOf` — `hooks/compress-output.test.js:11`
-- `cdGate` — `hooks/gate.js:120` — (`.claude/agent-memory-local/`) inside the KB, and later git commands hit `hosa-kb`.
-- `commitGate` — `hooks/gate.js:73`
-- `composeGate` — `hooks/gate.js:131`
-- `dispatchCwdGate` — `hooks/gate.js:225` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
-- `failRun` — `hooks/gate.js:189`
-- `gitCalls` — `hooks/gate.js:43` — Each git call: its directory (cd and -C applied), subcommand and arguments.
-- `mergeGate` — `hooks/gate.js:102`
-- `native` — `hooks/gate.js:25`
-- `processPayload` — `hooks/gate.js:231`
-- `processPayload.deny` — `hooks/gate.js:233`
-- `read` — `hooks/gate.js:60`
-- `reviewLoopGate` — `hooks/gate.js:199`
-- `scriptGate` — `hooks/gate.js:168`
-- `section` — `hooks/gate.js:63` — Body of the last `## <heading>` section (up to the next level-2 heading).
-- `segments` — `hooks/gate.js:28` — Shell words grouped by command (split on && \|\| ; \| newline); quotes kept together.
+- `cdGate` — `hooks/gate.js:192` — A bash subshell `(cd …)` passes; PowerShell's parentheses don't fork, its `Set-Location` sticks either way.
+- `cdTarget` — `hooks/gate.js:52`
+- `commitGate` — `hooks/gate.js:136`
+- `composeGate` — `hooks/gate.js:205`
+- `composeSegment` — `hooks/gate.js:210`
+- `dispatchCwdGate` — `hooks/gate.js:297` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
+- `failRun` — `hooks/gate.js:264`
+- `gitCalls` — `hooks/gate.js:97` — Each git call: its directory (cd and -C applied), subcommand and arguments.
+- `lastVerdict` — `hooks/gate.js:134`
+- `mergeGate` — `hooks/gate.js:170`
+- `native` — `hooks/gate.js:26`
+- `nested` — `hooks/gate.js:65`
+- `processPayload` — `hooks/gate.js:303`
+- `processPayload.deny` — `hooks/gate.js:305`
+- `read` — `hooks/gate.js:113`
+- `reviewLoopGate` — `hooks/gate.js:271` — `hosa-debugger` too: `develop` correction routes an unclear cause to `debug`, which must not escape the bound.
+- `scriptGate` — `hooks/gate.js:243`
+- `section` — `hooks/gate.js:116` — Body of the last `## <heading>` section (up to the next level-2 heading).
+- `segments` — `hooks/gate.js:32` — A bash backslash escapes the next character (`\(` is a word, not a subshell); in PowerShell it is a path separator.
+- `segments.start` — `hooks/gate.js:36`
+- `sprintOf` — `hooks/gate.js:169`
+- `verdicts` — `hooks/gate.js:132`
+- `walk` — `hooks/gate.js:81` — PowerShell's parentheses group, they don't fork), a nested shell's command walked too.
 - `agent` — `hooks/gate.test.js:152`
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
@@ -143,9 +151,10 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:45:46Z'}
 - `dev` — `hooks/gate.test.js:165`
 - `lot` — `hooks/gate.test.js:45`
 - `project` — `hooks/gate.test.js:9`
+- `ps` — `hooks/gate.test.js:184`
 - `sprint` — `hooks/gate.test.js:70`
 - `ticket` — `hooks/gate.test.js:21`
-- `wt` — `hooks/gate.test.js:33`
+- `wt` — `hooks/gate.test.js:222`
 - `broadIdentGrep` — `hooks/graph.js:111`
 - `checkHeader` — `hooks/graph.js:66`
 - `commandLine` — `hooks/graph.js:93`
@@ -179,23 +188,23 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T12:45:46Z'}
 - `read` — `hooks/read-guard.test.js:12`
 - `readBig` — `hooks/read-guard.test.js:30`
 - `bare` — `hooks/register.mjs:45`
-- `dashboard` — `hooks/register.mjs:238` — The dashboard's row: one button to open it, then its link and a button to stop it.
-- `dashboard.onPress` — `hooks/register.mjs:245`
-- `dashboard.start` — `hooks/register.mjs:239`
-- `pane` — `hooks/register.mjs:174` — Everything the user needs, from the plan alone: what waits for them first, then where the project is.
-- `pane.group` — `hooks/register.mjs:177`
-- `pane.mark` — `hooks/register.mjs:178`
-- `pane.para` — `hooks/register.mjs:176`
-- `pane.row` — `hooks/register.mjs:175`
+- `dashboard` — `hooks/register.mjs:239` — The dashboard's row: one button to open it, then its link and a button to stop it.
+- `dashboard.onPress` — `hooks/register.mjs:246`
+- `dashboard.start` — `hooks/register.mjs:240`
+- `pane` — `hooks/register.mjs:175` — Everything the user needs, from the plan alone: what waits for them first, then where the project is.
+- `pane.group` — `hooks/register.mjs:178`
+- `pane.mark` — `hooks/register.mjs:179`
+- `pane.para` — `hooks/register.mjs:177`
+- `pane.row` — `hooks/register.mjs:176`
 - `python` — `hooks/register.mjs:110` — (no console window opens); else the Python on the PATH, and run.py builds what it lacks.
 - `readPlan` — `hooks/register.mjs:26` — the rows above the first `## Sprint` heading are the upstream stages, no list to keep in step here.
 - `readView` — `hooks/register.mjs:46`
-- `redraw` — `hooks/register.mjs:167` — Fail-open: a pane that cannot be drawn again never stops a hook.
+- `redraw` — `hooks/register.mjs:168` — Fail-open: a pane that cannot be drawn again never stops a hook.
 - `refresh` — `hooks/register.mjs:88` — The managed project's plan: a sprint worktree's `.hosa/kb` copy is stale, so start above it.
-- `register` — `hooks/register.mjs:260`
-- `showStatus` — `hooks/register.mjs:255`
-- `startDashboard` — `hooks/register.mjs:121` — The server lives for the session (the stream's loop is its life); 3000 taken → a free port. Fail-open.
-- `stopDashboard` — `hooks/register.mjs:158`
+- `register` — `hooks/register.mjs:261`
+- `showStatus` — `hooks/register.mjs:256`
+- `startDashboard` — `hooks/register.mjs:122` — port when 3000 is taken, and opens the browser on its own address. Fail-open.
+- `stopDashboard` — `hooks/register.mjs:159`
 - `project` — `hooks/register.test.ts:11`
 - `row` — `hooks/register.test.ts:3`
 - `spawn` — `hooks/register.test.ts:74`
