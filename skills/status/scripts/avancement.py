@@ -618,7 +618,7 @@ def last_verdict(text: str | None) -> str | None:
     found = None
     for line in (section(text, "Revue") or "").splitlines():
         m = VERDICT.search(line)
-        if m and not re.search(r"—\s*DÉCISION\b", line):
+        if m and not re.match(r"\s*-\s*[^—\s]+\s*—\s*DÉCISION\b", line):  # DÉCISION right after the date
             found = m[1]
     return found
 

@@ -28,9 +28,10 @@ const native = (p) => (process.platform === 'win32' ? p.replace(/^\/([a-z])(\/|$
 // Shell words grouped by command (split on && || ; | & newline); quotes kept together. Each segment carries
 // `depth` (inside how many parentheses it starts), `open` and `close` (the parentheses it opens and closes):
 // `(cd x && git commit)` runs the commit in x, and the session's own directory stays where it was.
-function segments(cmd) {
+// A bash backslash escapes the next character (`\(` is a word, not a subshell); in PowerShell it is a path separator.
+function segments(cmd, ps = false) {
   const segs = [];
-  const re = /"((?:\\.|[^"\\])*)"|'([^']*)'|(&&|\|\||[;|\n&])|([()])|([^\s"';|&()]+)/g;
+  const re = /"((?:\\.|[^"\\])*)"|'([^']*)'|(&&|\|\||[;|\n&])|([()])|((?:\\[^\n]|[^\s"';|&()\\])+|\\)/g;
   let m, last = -1, depth = 0, seg;
   const start = () => { seg = Object.assign([], { depth, open: 0, close: 0 }); segs.push(seg); };
   start();
@@ -38,7 +39,8 @@ function segments(cmd) {
     if (m[3]) { start(); last = -1; continue; }
     if (m[4] === '(') { if (seg.length) start(); depth++; seg.depth = depth; seg.open++; last = -1; continue; }
     if (m[4] === ')') { depth = Math.max(0, depth - 1); seg.close++; last = -1; continue; }
-    const w = m[1] != null ? m[1].replace(/\\([$`"\\\n])/g, '$1') : m[2] != null ? m[2] : m[5];
+    const w = m[1] != null ? m[1].replace(/\\([$`"\\\n])/g, '$1') : m[2] != null ? m[2]
+      : ps ? m[5] : m[5].replace(/\\(.)/g, '$1');
     if (last === m.index && seg.length) seg[seg.length - 1] += w; else seg.push(w);
     last = re.lastIndex;
   }
@@ -56,11 +58,20 @@ function cdTarget(seg) {
   return null;
 }
 
-// A command run by a nested shell (`bash -c "…"`, `powershell -Command "…"`): its text, and whether it is PowerShell.
-const SHELLS = /^(?:.*[\\/])?(bash|sh|zsh|dash|powershell|pwsh)(\.exe)?$/i;
+// A command run by a nested shell (`bash -c "…"`, `powershell -Command "…"`, `cmd /c …`, `eval …`, `iex …`):
+// its text, and whether it is PowerShell. An encoded command (`-EncodedCommand`) stays unread: the gate is a
+// guard against a skipped step, not against an attacker, and it never blocks what it can't read (fail-open).
+const SHELLS = /^(?:.*[\\/])?(bash|sh|zsh|dash|powershell|pwsh|cmd)(\.exe)?$/i;
 function nested(seg) {
+  const head = String(seg[0] || '').toLowerCase();
+  if (head === 'eval') return { cmd: seg.slice(1).join(' '), ps: false };
+  if (head === 'iex' || head === 'invoke-expression') return { cmd: seg.slice(1).filter((w) => !/^-command$/i.test(w)).join(' '), ps: true };
   const m = SHELLS.exec(seg[0] || '');
   if (!m) return null;
+  if (/^cmd$/i.test(m[1])) {
+    const i = seg.findIndex((w, k) => k > 0 && /^\/[ck]$/i.test(w));
+    return i > 0 ? { cmd: seg.slice(i + 1).join(' '), ps: true } : null; // like PowerShell: `\` is a path, `( )` no fork
+  }
   const i = seg.findIndex((w, k) => k > 0 && /^-(?:[a-z]*c|command)$/i.test(w)); // -c, -lc, -Command
   return i > 0 && seg[i + 1] ? { cmd: seg[i + 1], ps: /^(powershell|pwsh)$/i.test(m[1]) } : null;
 }
@@ -70,7 +81,7 @@ function nested(seg) {
 function walk(cmd, cwd, ps, fn) {
   let dir = cwd;
   const stack = [];
-  for (const seg of segments(cmd)) {
+  for (const seg of segments(cmd, ps)) {
     if (!ps) for (let k = 0; k < seg.open; k++) stack.push(dir);
     const to = cdTarget(seg);
     if (to) dir = path.resolve(dir, native(to));
@@ -88,12 +99,13 @@ function gitCalls(cmd, cwd, ps = false) {
   walk(cmd, cwd, ps, (seg, dir) => {
     let i = seg.findIndex((w) => /^git(\.exe)?$/i.test(w));
     if (i < 0) return;
-    let d = dir;
+    let d = dir, other = false; // `--git-dir`/`--work-tree`: the repository isn't the one `dir` names
     for (i++; i < seg.length && seg[i].startsWith('-'); i++) {
       if (seg[i] === '-C') d = path.resolve(d, native(seg[++i] || '.'));
       else if (seg[i] === '-c') i++;
+      else if (/^--(git-dir|work-tree)/.test(seg[i])) { other = true; if (!seg[i].includes('=')) i++; }
     }
-    if (i < seg.length) calls.push({ dir: d, sub: seg[i], args: seg.slice(i + 1) });
+    if (i < seg.length) calls.push({ dir: d, sub: seg[i], args: seg.slice(i + 1), other: other || /\bGIT_(DIR|WORK_TREE)=/.test(seg.join(' ')) });
   });
   return calls;
 }
@@ -115,8 +127,10 @@ function section(text, heading) {
 // (`— FAIL — les tests PASS mais…`). The ticket's verdict is its last line's that has one. Same rule in
 // avancement.py (`last_verdict`) and in the dashboard (hosa/app/public/app.js `reviewOf`).
 const VERDICT = /\b(PASS-WITH-NOTES|PASS|FAIL)\b/;
+// a decision line: DÉCISION right after its date (`- <date> — DÉCISION — …`), not quoted inside a FAIL's note
+const DECISION = /^\s*-\s*[^—\s]+\s*—\s*DÉCISION\b/;
 const verdicts = (text) => (section(text, 'Revue') || '').split(/\r?\n/)
-  .map((l) => (/—\s*DÉCISION\b/.test(l) ? 'DÉCISION' : (VERDICT.exec(l) || [])[1])).filter(Boolean);
+  .map((l) => (DECISION.test(l) ? 'DÉCISION' : (VERDICT.exec(l) || [])[1])).filter(Boolean);
 const lastVerdict = (text) => verdicts(text).filter((v) => v !== 'DÉCISION').pop() || null;
 
 function commitGate(call, cmd) {
@@ -149,15 +163,18 @@ function commitGate(call, cmd) {
   return null;
 }
 
-// A sprint branch however it is named: `sprint/x`, `refs/heads/sprint/x`, `heads/sprint/x`, `origin/sprint/x`.
+// A sprint branch however it is named: `sprint/x`, `refs/heads/sprint/x`, `heads/sprint/x`, `origin/sprint/x`,
+// as a refspec (`+sprint/x:main`) or a revision (`sprint/x~0`, `sprint/x^{commit}`, `sprint/x@{1}`).
 const SPRINT_REF = /^(?:refs\/)?(?:heads\/|remotes\/[^/]+\/|[\w.-]+\/)?sprint\/(.+)$/;
+const sprintOf = (a) => SPRINT_REF.exec(a.replace(/^\+/, '').split(':')[0].replace(/(?:[~^]\d*|\^\{[^}]*\}|@\{[^}]*\})+$/, ''));
 function mergeGate(call) {
   if (call.args.some((a) => /^--(abort|continue|quit|skip)$/.test(a))) return null;
-  const branch = call.args.map((a) => SPRINT_REF.exec(a)).find(Boolean);
+  const branch = call.args.map(sprintOf).find(Boolean);
   if (!branch) return null;
   const slug = branch[1];
-  // inside that sprint's own worktree, `git pull origin sprint/x` syncs the branch with itself: no landing
-  if (new RegExp(`[\\\\/]\\.worktrees[\\\\/]sprint[\\\\/]${slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\\\/]|$)`).test(call.dir)) return null;
+  // inside that sprint's own worktree, `git pull origin sprint/x` syncs the branch with itself: no landing —
+  // unless `--git-dir`/`--work-tree`/`GIT_DIR` point the command at another repository
+  if (!call.other && new RegExp(`[\\\\/]\\.worktrees[\\\\/]sprint[\\\\/]${slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\\\/]|$)`).test(call.dir)) return null;
   const root = findKbRoot(call.dir);
   if (!root) return null;
   // One source of truth for a stage's proofs: avancement.py `check`.

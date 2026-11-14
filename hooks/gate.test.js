@@ -226,6 +226,22 @@ test('a review line\'s verdict is its first one: a note quoting PASS does not pa
   assert.equal(bash(r, commit(wt(r))), null);
   r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-09 — FAIL — x\n- 2026-10-10 — PASS — ok\n- 2026-10-11 — DÉCISION — garder') });
   assert.equal(bash(r, commit(wt(r))), null);                               // a decision line has no verdict
+  r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-09 — PASS — x\n- 2026-10-10 — FAIL — voir — DÉCISION à venir') });
+  assert.match(denied(bash(r, commit(wt(r)))), /FAIL/);                    // DÉCISION quoted in a note is no decision
+});
+
+test('hardened reading: escapes, cmd /c, eval, refspecs, another repository', () => {
+  const r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — FAIL — CA2'), '.hosa/kb/sprints/s1.md': sprint('') });
+  const wt = path.join(r, '.worktrees', 'sprint', 's1');
+  assert.match(denied(bash(r, 'cd .worktrees/sprint/s1 && git commit -m x \\( -m "Hosa-Ticket: t1"')), /no passed code review/);
+  assert.match(denied(bash(r, 'cmd /c "cd .worktrees\\sprint\\s1 && git commit -m x"')), /Hosa-Ticket/);
+  assert.match(denied(bash(r, 'eval "cd .worktrees/sprint/s1 && git commit -m x"')), /Hosa-Ticket/);
+  assert.match(denied(ps(r, 'iex "cd .worktrees/sprint/s1; git commit -m x"')), /Hosa-Ticket/);
+  for (const ref of ['+sprint/s1:main', 'sprint/s1~0', 'sprint/s1^{commit}', 'sprint/s1@{1}']) {
+    assert.match(denied(bash(r, `git pull . ${ref}`)), /QA gate fails/, ref);
+  }
+  assert.match(denied(bash(r, `git --git-dir="${r}/.git" pull . sprint/s1`, wt)), /QA gate fails/);
+  assert.equal(ps(r, 'git -C C:\\dev\\x status'), null);                    // a PowerShell backslash is a path
 });
 
 test('a sprint branch lands through its gate whatever its ref name', () => {

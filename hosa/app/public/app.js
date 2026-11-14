@@ -137,7 +137,7 @@ const recetteName = (r) => { if (!r.persona) return r.titre; const p = S.concept
 // the first verdict of the last `## Revue` line that has one: a note may quote another (same rule as hooks/gate.js)
 const reviewOf = (t) => {
   const sec = (String(t.body || '').split(/^## Revue[ \t]*$/m)[1] || '').split(/^## /m)[0];
-  const v = sec.split(/\r?\n/).filter((l) => !/—\s*DÉCISION\b/.test(l)).map((l) => (/\b(PASS-WITH-NOTES|PASS|FAIL)\b/.exec(l) || [])[1]).filter(Boolean);
+  const v = sec.split(/\r?\n/).filter((l) => !/^\s*-\s*[^—\s]+\s*—\s*DÉCISION\b/.test(l)).map((l) => (/\b(PASS-WITH-NOTES|PASS|FAIL)\b/.exec(l) || [])[1]).filter(Boolean);
   return v.length ? v[v.length - 1] : null;
 };
 const roundEven = (x) => { const f = Math.floor(x), d = x - f; return d < 0.5 ? f : d > 0.5 ? f + 1 : f % 2 === 0 ? f : f + 1; };
