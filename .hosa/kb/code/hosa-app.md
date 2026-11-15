@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T10:30:45Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T11:19:03Z'}
 ---
 
 ## Fichiers
@@ -156,7 +156,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T10:30:45Z'}
 - `ExtractTest` — `hosa/app/test_graph_extract.py:17`
 - `calls` — `hosa/app/test_graph_extract.py:13`
 - `defs` — `hosa/app/test_graph_extract.py:9`
-- `Cli` — `hosa/app/test_graphe_tickets.py:94`
+- `Cli` — `hosa/app/test_graphe_tickets.py:106`
 - `Path_` — `hosa/app/test_graphe_tickets.py:27` — rieki: « Supprimer un run » waited for 32 tickets; the planner only saw priorities.
 - `graph` — `hosa/app/test_graphe_tickets.py:23`
 - `t` — `hosa/app/test_graphe_tickets.py:18`

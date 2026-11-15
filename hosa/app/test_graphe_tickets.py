@@ -36,9 +36,9 @@ class Path_(unittest.TestCase):
         self.assertEqual(gt.ready(self.g), ["polish", "import"])
 
     def test_the_sprint_is_the_objective_path_ready_tickets_only_on_request(self):
-        c = gt.compose(self.g, "run", 20, 15)
+        c = gt.compose(self.g, "run", 20, 15, exact=True)
         self.assertEqual(([r["slug"] for r in c["tickets"]], c["atteint"]), (["import", "nettoyage", "run"], True))
-        c = gt.compose(self.g, "run", 20, 15, remplir=True)
+        c = gt.compose(self.g, "run", 20, 15, remplir=True, exact=True)
         self.assertEqual([(r["slug"], r["objectif"]) for r in c["tickets"]],
                          [("import", True), ("nettoyage", True), ("run", True), ("polish", False), ("supprimer", False)])
 
@@ -67,6 +67,18 @@ class Path_(unittest.TestCase):
         self.assertEqual((c["tolere"], c["atteint"], len(c["tickets"])), (False, False, 15))  # 15 screens: the demo bound
         self.assertFalse(gt.compose(g, "t20", 20, 15, tolerance=0)["tolere"])  # the switch: strict bounds
 
+    def test_the_objective_goes_further_on_its_own_way_while_it_fits(self):
+        # rieki sprint-3: « importer les ventes » (8 tickets) while « lancer un run » (21) fitted on the same path
+        c = gt.compose(self.g, "import", 20, 15)
+        self.assertEqual((c["demande"], c["objectif"], c["etendu"]), ("import", "supprimer", True))
+        self.assertEqual([r["slug"] for r in c["tickets"]], ["import", "nettoyage", "run", "supprimer"])
+        self.assertEqual(gt.compose(self.g, "import", 3, 15, tolerance=0)["objectif"], "run")  # the furthest that fits
+        c = gt.compose(self.g, "import", 20, 15, exact=True)
+        self.assertEqual((c["objectif"], c["etendu"], len(c["tickets"])), ("import", False, 1))
+        g = dict(self.g, supprimer=t("supprimer", 124, ["run"], manques=["x"])[1])  # an incomplete one stops the way
+        self.assertEqual(gt.compose(g, "import", 20, 15)["objectif"], "run")
+        self.assertEqual(gt.compose(self.g, "polish", 20, 15)["objectif"], "polish")  # nothing waits for it
+
     def test_an_objective_whose_path_cant_be_built_is_refused(self):
         g = dict(self.g, nettoyage=t("nettoyage", 18, ["import"], manques=["section absente"])[1],
                  run=t("run", 72, ["nettoyage", "absent"])[1])
@@ -87,8 +99,8 @@ class Path_(unittest.TestCase):
 
     def test_no_objective_takes_the_first_ticket_whose_path_can_be_built(self):
         g = dict(self.g, polish=t("polish", 9, manques=["x"])[1])
-        c = gt.compose(g, None, 20, 15)  # polish (9) can't; nettoyage (18) can, through import
-        self.assertEqual((c["objectif"], [r["slug"] for r in c["tickets"]][:2]), ("nettoyage", ["import", "nettoyage"]))
+        c = gt.compose(g, None, 20, 15)  # polish (9) can't; nettoyage (18) can, through import — then further on
+        self.assertEqual((c["demande"], c["objectif"]), ("nettoyage", "supprimer"))
 
 
 class Cli(unittest.TestCase):

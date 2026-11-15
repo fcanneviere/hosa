@@ -6,12 +6,13 @@
   python graphe_tickets.py <kb> chemin <ticket> [--json]
       Everything <ticket> still waits for, itself included, in build order, with its points and its gaps.
   python graphe_tickets.py <kb> composer [--objectif <ticket>] [--plafond N] [--demo N] [--sprint <slug>]
-                                         [--tolerance PCT] [--remplir] [--json]
+                                         [--tolerance PCT] [--exact] [--remplir] [--json]
       A sprint: the whole path to the objective (default: the first ticket in priority order whose path can be
       built), within N tickets (default 20) and N demo tests (default 15, at least one per ticket with a screen).
       A path at most `--tolerance` % over a bound (default 5, at least one more) is taken whole: no round trip
       to the user for one ticket. Further over → milestones: whole sub-paths of it, the longest first, that fit.
-      `--remplir` adds ready tickets (`hors objectif`) up to the bounds. `--sprint <slug>`: recompose that sprint,
+      The objective goes further on its own way: the furthest ticket waiting for it whose whole path still fits
+      (`--exact` keeps it as given). `--remplir` adds ready tickets (`hors objectif`) up to the bounds. `--sprint <slug>`: recompose that sprint,
       its tickets free again. The incomplete tickets come back as `ecartes`, with their gaps. Exit 1 when the
       objective can't be reached (a ticket of its path incomplete, missing or in another sprint).
 
@@ -142,11 +143,30 @@ def with_tolerance(bound: int, tolerance: int) -> int:
     return bound + (math.ceil(bound * tolerance / 100) if tolerance > 0 else 0)
 
 
+def further(graph: dict[str, dict], objectif: str, plafond: int, demo: int, tolerance: int, apercu: bool) -> str:
+    """The furthest ticket on the way past `objectif` — one that waits for it, directly or not — whose whole path
+    can be built and fits the bounds (tolerance included): the longest such path, the higher priority on a tie.
+    rieki sprint-3: « importer un fichier de ventes » gave 9 tickets; « lancer un run », 21 tickets on, fitted."""
+    best, best_len = objectif, None
+    cap, dmax = with_tolerance(plafond, tolerance), with_tolerance(demo, tolerance)
+    for s in sorted(graph, key=lambda x: order_key(graph[x])):
+        t = graph[s]
+        if s == objectif or t["state"] != "todo" or t["sprint"] or t["manques"]:
+            continue
+        chain, missing = path_to(graph, s, apercu)
+        if objectif not in chain or missing or obstacles(graph, chain, missing) or not fits(graph, chain, cap, dmax):
+            continue
+        if best_len is None or len(chain) > best_len:
+            best, best_len = s, len(chain)
+    return best
+
+
 def compose(graph: dict[str, dict], objectif: str | None, plafond: int, demo: int,
-            remplir: bool = False, apercu: bool = False, tolerance: int = TOLERANCE) -> dict:
+            remplir: bool = False, apercu: bool = False, tolerance: int = TOLERANCE, exact: bool = False) -> dict:
     """The sprint toward `objectif`: its whole path when it fits the bounds; otherwise the milestone — the ticket of
     that path whose own whole path is the longest that fits, never a cut that leaves half-built branches. `remplir`
-    adds ready tickets `hors objectif` up to the bounds; by default the sprint is the objective's path alone."""
+    adds ready tickets `hors objectif` up to the bounds; by default the sprint is the objective's path alone.
+    The objective goes further on its own way while the path still fits (`further`); `exact` keeps it as given."""
     todo = sorted((s for s, t in graph.items() if t["state"] == "todo" and not t["sprint"]), key=lambda s: order_key(graph[s]))
     ecartes = [{"slug": s, "manques": graph[s]["manques"]} for s in todo if graph[s]["manques"]]
     base = {"objectif": objectif, "tickets": [], "jalon": None, "ecartes": ecartes, "plafond": plafond, "demo_max": demo}
@@ -156,7 +176,12 @@ def compose(graph: dict[str, dict], objectif: str | None, plafond: int, demo: in
             return dict(base, obstacles=["aucun ticket `todo` hors sprint dont le chemin est complet (`graphe_tickets pret`)"])
     if objectif not in graph:
         return dict(base, objectif=objectif, obstacles=[f"`{objectif}` : ticket introuvable"])
+    demande, etendu = objectif, False
     chain, missing = path_to(graph, objectif, apercu)
+    if not exact and not obstacles(graph, chain, missing):
+        objectif = further(graph, objectif, plafond, demo, tolerance, apercu)
+        etendu = objectif != demande
+        chain, missing = path_to(graph, objectif, apercu)
     blocked = obstacles(graph, chain, missing)
     picked, jalon, tolere = [], None, False
     if not blocked:
@@ -191,7 +216,8 @@ def compose(graph: dict[str, dict], objectif: str | None, plafond: int, demo: in
     return dict(base, objectif=objectif, chemin=len(chain), chemin_points=sum(graph[s]["points"] for s in chain), chemin_demo=demo_cost(graph, chain),
                 atteint=bool(picked) and picked[-1] == objectif and not jalon, jalon=jalon, obstacles=blocked,
                 tickets=rows, points=sum(r["points"] for r in rows), demo=demo_cost(graph, [r["slug"] for r in rows]),
-                reste=len(chain) - len(picked), tolere=tolere, tolerance=tolerance)
+                reste=len(chain) - len(picked), tolere=tolere, tolerance=tolerance,
+                demande=demande, etendu=etendu)
 
 
 def report(c: dict) -> str:
@@ -200,6 +226,9 @@ def report(c: dict) -> str:
         lines.append(f"Objectif `{c['objectif']}` inatteignable :")
         lines += [f"- {o}" for o in c["obstacles"]]
         return "\n".join(lines)
+    if c.get("etendu"):
+        lines.append(f"Objectif demandé `{c['demande']}` : son chemin laisse de la place. Objectif prolongé sur le même "
+                     f"chemin jusqu'à `{c['objectif']}`, le plus loin qui tient (`--exact` pour garder le premier).")
     lines.append(f"Objectif `{c['objectif']}` : chemin de {c['chemin']} ticket(s), {c['chemin_points']} point(s), "
                  f"{c['chemin_demo']} test(s) de démo.")
     if c["jalon"]:
@@ -235,6 +264,7 @@ def main(argv: list[str]) -> int:
     co.add_argument("--demo", type=int, default=DEMO)
     co.add_argument("--tolerance", type=int, default=TOLERANCE, help="%% au-dessus des bornes accepté pour l'objectif entier")
     co.add_argument("--sprint", help="recomposer ce sprint : ses tickets redeviennent libres")
+    co.add_argument("--exact", action="store_true", help="garder l'objectif donné, sans le prolonger")
     co.add_argument("--remplir", action="store_true", help="ajouter des tickets prêts hors objectif jusqu'aux bornes")
     co.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
@@ -261,7 +291,7 @@ def main(argv: list[str]) -> int:
             print("\n".join(f"{i}. `{s}`{' — incomplet' if graph[s]['manques'] else ''}" for i, s in enumerate(chain, 1)))
             print("\n".join(f"- {o}" for o in blocked))
         return 0
-    c = compose(graph, a.objectif, a.plafond, a.demo, a.remplir, tolerance=a.tolerance)
+    c = compose(graph, a.objectif, a.plafond, a.demo, a.remplir, tolerance=a.tolerance, exact=a.exact)
     print(json.dumps(c, ensure_ascii=False) if a.json else report(c))
     return 1 if c["obstacles"] else 0
 
