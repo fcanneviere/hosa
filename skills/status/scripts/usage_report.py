@@ -276,8 +276,10 @@ def sprint_period(project: Path, text: str) -> tuple[str | None, str | None, lis
 
 def corrections(project: Path, tickets: list[str]) -> dict:
     """`## Corrections` lines of the sprint's tickets (`develop` Correction Mode): their type, and
-    how many reported findings a failing test proved — the relevance of reviews, audits and recettes."""
-    out = dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits"), 0)
+    how many reported findings a failing test proved — the relevance of reviews, audits and recettes.
+    A `preuve ajoutée` is a review's missing-proof gap closed by a new test: the review was right, the code too
+    (rieki sprint-3: counted as `non reproduit`, it blamed a review that had found a criterion no test proved)."""
+    out = dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits", "preuves"), 0)
     for t in tickets:
         path = project / ".hosa" / "kb" / "tickets" / f"{t}.md"
         text = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
@@ -288,8 +290,10 @@ def corrections(project: Path, tickets: list[str]) -> dict:
             if kind:
                 out[kind.group(1)] += 1
             proved, missed = re.search(r"(\d+) prouvé", row), re.search(r"(\d+) non reproduit", row)
+            added = re.search(r"(\d+) preuve(?:s|\(s\))? ajoutée", row)
             out["prouves"] += int(proved.group(1)) if proved else 0
             out["non_reproduits"] += int(missed.group(1)) if missed else 0
+            out["preuves"] += int(added.group(1)) if added else 0
     return out
 
 
@@ -305,8 +309,9 @@ def earlier_costs(project: Path, slug: str) -> list[float]:
 
 def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier, fixes=None) -> list[str]:
     """`## Mesures` of a sprint: the figures, then what crossed a threshold, as proposals."""
-    fixes = fixes or dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits"), 0)
-    found = fixes["prouves"] + fixes["non_reproduits"]
+    fixes = fixes or dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits", "preuves"), 0)
+    fixes.setdefault("preuves", 0)
+    found = fixes["prouves"] + fixes["non_reproduits"] + fixes["preuves"]
     total = sum(r["usd"] for r in by_model.values())
     done = len(tickets)
     per = total / done if done else None
@@ -320,7 +325,8 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
            f"- Coût : {total:.2f} $ — tickets livrés : {done}/{len(sprint_tickets)}" + (f" — Coût par ticket : {per:.2f} $" if per else ""),
            f"- Revues : {', '.join(f'{k} {n}' for k, n in sorted(verdicts.items())) or 'aucune'} — passages hosa-debugger : {debugger}",
            (f"- Corrections : {fixes['n']} (technique {fixes['technique']}, fonctionnelle {fixes['fonctionnelle']})"
-            f" — constats prouvés {fixes['prouves']}, non reproduits {fixes['non_reproduits']}" if fixes["n"] else "- Corrections : aucune"),
+            f" — constats prouvés {fixes['prouves']}, non reproduits {fixes['non_reproduits']}"
+            + (f", preuves ajoutées {fixes['preuves']}" if fixes["preuves"] else "") if fixes["n"] else "- Corrections : aucune"),
            f"- Session principale : contexte max {fmt(stats['main_ctx'])} — captures ouvertes : {stats['main_images']}",
            f"- Réécritures complètes du cache (≥ {fmt(REWRITE)}) : {stats['rewrites'][0]} ({fmt(stats['rewrites'][1])})",
            wake_line(stats),

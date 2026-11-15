@@ -39,6 +39,19 @@ test('a ticket commit needs a passed review', () => {
   assert.match(denied(bash(r, commit(wt(r)))), /is missing/);
 });
 
+test('a review passing with a note on a criterion is refused until the user decides', () => {
+  const wt = (r) => path.join(r, '.worktrees', 'sprint', 's1');
+  const notes = '- 2026-10-10 — PASS-WITH-NOTES — tests sur un aperçu de ventes, CA6 vise les clients';
+  let r = project({ '.hosa/kb/tickets/t1.md': ticket(notes) });
+  assert.match(denied(bash(r, commit(wt(r)))), /note on CA6/);
+  r = project({ '.hosa/kb/tickets/t1.md': ticket(`${notes}\n- 2026-10-11 — DÉCISION — accepté par l'utilisateur`) });
+  assert.equal(bash(r, commit(wt(r))), null);
+  r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-09 — FAIL — CA2 manque\n- 2026-10-10 — PASS-WITH-NOTES — nom peu clair') });
+  assert.equal(bash(r, commit(wt(r))), null);                                // the FAIL's CA2 is an older line
+  r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — PASS — CA1 à CA6 prouvés') });
+  assert.equal(bash(r, commit(wt(r))), null);
+});
+
 test('a lot commit needs a passed review on every ticket it names', () => {
   const r = project({ '.hosa/kb/tickets/t1.md': ticket('- 2026-10-10 — PASS — ok'), '.hosa/kb/tickets/t2.md': ticket('- 2026-10-10 — FAIL — CA1') });
   const wt = path.join(r, '.worktrees', 'sprint', 's1');

@@ -4,7 +4,7 @@
 // `cd`s, bash subshells `(cd x && …)` and nested shells (`bash -c`, `powershell -Command`).
 // - commit in a Hosa project: no `Co-Authored-By` line;
 // - commit in a sprint worktree: carries `Hosa-Ticket: <slug>` and the ticket's
-//   last `## Revue` is PASS or PASS-WITH-NOTES (`develop` Step 4c);
+//   last `## Revue` is PASS or PASS-WITH-NOTES (`develop` Step 4c), whose notes name no `CAn`;
 // - `git merge|pull … sprint/<slug>` (landing, `refs/heads/…` too): `git` Mode 2's QA gate, i.e.
 //   `avancement.py check validation` — tickets done and verified, every CA
 //   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO;
@@ -132,6 +132,20 @@ const DECISION = /^\s*-\s*[^—\s]+\s*—\s*DÉCISION\b/;
 const verdicts = (text) => (section(text, 'Revue') || '').split(/\r?\n/)
   .map((l) => (DECISION.test(l) ? 'DÉCISION' : (VERDICT.exec(l) || [])[1])).filter(Boolean);
 const lastVerdict = (text) => verdicts(text).filter((v) => v !== 'DÉCISION').pop() || null;
+// A PASS-WITH-NOTES whose notes name a criterion (`CA6`): a criterion a test doesn't fully prove is a gap, never a
+// note (rieki sprint-3: « tests on a sales preview, CA6 aims at clients », « no read of the base for `imports`
+// empty » — both committed as notes, « kept for the QA », which reads no note). Passes once the user's
+// DÉCISION follows it.
+function noteOnCriterion(text) {
+  const lines = (section(text, 'Revue') || '').split(/\r?\n/);
+  let at = -1;
+  lines.forEach((l, i) => { if (!DECISION.test(l) && VERDICT.test(l)) at = i; });
+  if (at < 0 || lines.slice(at + 1).some((l) => DECISION.test(l))) return null;
+  const m = VERDICT.exec(lines[at]);
+  if (m[1] !== 'PASS-WITH-NOTES') return null;
+  const ca = /\bCA\d+\b/.exec(lines[at].slice(m.index + m[0].length));
+  return ca ? ca[0] : null;
+}
 
 function commitGate(call, cmd) {
   // the session's global attribution adds a co-author line; Hosa commits carry the user's identity only
@@ -158,6 +172,12 @@ function commitGate(call, cmd) {
     if (last !== 'PASS' && last !== 'PASS-WITH-NOTES') {
       return `ticket \`${ticket}\` has no passed code review: its last \`## Revue\` line is ${last || 'missing'}. ` +
         'Run `develop` Step 4c (hosa-reviewer), record the verdict, then commit.';
+    }
+    const ca = noteOnCriterion(text);
+    if (ca) {
+      return `ticket \`${ticket}\`: its last \`## Revue\` line passes with a note on ${ca}. A criterion a test doesn't ` +
+        'fully prove (its Given, its Then) is a gap, not a note: record it as FAIL and send it to the correction ' +
+        '(`develop` Step 4c), or write the user\'s `- <date> — DÉCISION — <choix>` under it.';
     }
   }
   return null;

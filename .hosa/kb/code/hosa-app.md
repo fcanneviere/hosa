@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T14:38:17Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T19:11:23Z'}
 ---
 
 ## Fichiers
@@ -138,7 +138,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T14:38:17Z'}
 - `cov` — `hosa/app/test_avancement.py:155` — `av.coverage`, or a clean test failure while it does not exist yet.
 - `kb` — `hosa/app/test_avancement.py:19`
 - `run` — `hosa/app/test_avancement.py:27`
-- `section_rows` — `hosa/app/test_avancement.py:1677`
+- `section_rows` — `hosa/app/test_avancement.py:1692`
 - `tk` — `hosa/app/test_avancement.py:161`
 - `Navigateur` — `hosa/app/test_capture.py:80`
 - `Routes` — `hosa/app/test_capture.py:43`

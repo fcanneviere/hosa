@@ -626,6 +626,11 @@ def last_verdict(text: str | None) -> str | None:
     return found
 
 
+def nothing_fixed(line: str) -> bool:
+    """A `## Corrections` line where nothing was proved and no test was added: no code changed, no review ran."""
+    return bool(re.search(r"\b0 prouvé", line)) and not re.search(r"\b[1-9]\d* preuve(?:s|\(s\))? ajoutée", line)
+
+
 def reopened(kb: Path, stage: str, sprint: str | None) -> list[tuple[str, str]]:
     """(when, ticket) of each open loop of this sprint that reran <stage>, or that <stage> sent back (`audit` →
     `develop`: the audit runs again on the correction): its proof must be written after it. `## Audit` and
@@ -710,8 +715,9 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
             if verdict in (None, "FAIL"):
                 gaps.append(f"{t} : dernière `## Revue` {verdict or 'absente'} (`develop`)")
             reviews = [x for x in (section(text, "Revue") or "").splitlines() if re.search(r"\b(PASS|FAIL)", x)]
-            # a correction where nothing reproduced writes no code and no review: its `0 prouvé(s)` line is the proof
-            unproved = [x for x in (section(text, "Corrections") or "").splitlines() if re.search(r"\b0 prouvé", x)]
+            # a correction where nothing reproduced writes no code and no review: its `0 prouvé(s)` line is the proof;
+            # one that added a test (`preuve ajoutée`) changed the code branch: its correction review proves it
+            unproved = [x for x in (section(text, "Corrections") or "").splitlines() if nothing_fixed(x)]
             for at, only in reopened(kb, "develop", sprint):
                 if only == t and not (reviews and newer(reviews[-1], at)) and not any(newer(x, at) for x in unproved):
                     gaps.append(f"{t} : pas de `## Revue` datée après la réouverture du {at[:16]}Z "
@@ -739,7 +745,7 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
         for at, only in reopened(kb, "develop", sprint):
             reviews = [x for t in tickets for h in ("Revue", "Corrections")
                        for x in (section(read(kb / "tickets" / f"{t}.md"), h) or "").splitlines()
-                       if re.search(r"\b(PASS|FAIL)" if h == "Revue" else r"\b0 prouvé", x)]
+                       if (re.search(r"\b(PASS|FAIL)", x) if h == "Revue" else nothing_fixed(x))]
             if not only and not any(newer(x, at) for x in reviews):
                 gaps.append(f"aucune `## Revue` datée après la réouverture du {at[:16]}Z (`develop` correction)")
                 break

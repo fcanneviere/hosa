@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T10:14:12Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T19:15:57Z'}
 ---
 
 ## Fichiers
@@ -122,40 +122,41 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T10:14:12Z'}
 - `ok` — `hooks/compress-output.test.js:63`
 - `pad` — `hooks/compress-output.test.js:12`
 - `spillOf` — `hooks/compress-output.test.js:11`
-- `cdGate` — `hooks/gate.js:192` — A bash subshell `(cd …)` passes; PowerShell's parentheses don't fork, its `Set-Location` sticks either way.
+- `cdGate` — `hooks/gate.js:212` — A bash subshell `(cd …)` passes; PowerShell's parentheses don't fork, its `Set-Location` sticks either way.
 - `cdTarget` — `hooks/gate.js:52`
-- `commitGate` — `hooks/gate.js:136`
-- `composeGate` — `hooks/gate.js:205`
-- `composeSegment` — `hooks/gate.js:210`
-- `dispatchCwdGate` — `hooks/gate.js:297` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
-- `failRun` — `hooks/gate.js:264`
+- `commitGate` — `hooks/gate.js:150`
+- `composeGate` — `hooks/gate.js:225`
+- `composeSegment` — `hooks/gate.js:230`
+- `dispatchCwdGate` — `hooks/gate.js:317` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
+- `failRun` — `hooks/gate.js:284`
 - `gitCalls` — `hooks/gate.js:97` — Each git call: its directory (cd and -C applied), subcommand and arguments.
 - `lastVerdict` — `hooks/gate.js:134`
-- `mergeGate` — `hooks/gate.js:170`
+- `mergeGate` — `hooks/gate.js:190`
 - `native` — `hooks/gate.js:26`
 - `nested` — `hooks/gate.js:65`
-- `processPayload` — `hooks/gate.js:303`
-- `processPayload.deny` — `hooks/gate.js:305`
+- `noteOnCriterion` — `hooks/gate.js:139` — DÉCISION follows it.
+- `processPayload` — `hooks/gate.js:323`
+- `processPayload.deny` — `hooks/gate.js:325`
 - `read` — `hooks/gate.js:113`
-- `reviewLoopGate` — `hooks/gate.js:271` — `hosa-debugger` too: `develop` correction routes an unclear cause to `debug`, which must not escape the bound.
-- `scriptGate` — `hooks/gate.js:243`
+- `reviewLoopGate` — `hooks/gate.js:291` — `hosa-debugger` too: `develop` correction routes an unclear cause to `debug`, which must not escape the bound.
+- `scriptGate` — `hooks/gate.js:263`
 - `section` — `hooks/gate.js:116` — Body of the last `## <heading>` section (up to the next level-2 heading).
 - `segments` — `hooks/gate.js:32` — A bash backslash escapes the next character (`\(` is a word, not a subshell); in PowerShell it is a path separator.
 - `segments.start` — `hooks/gate.js:36`
-- `sprintOf` — `hooks/gate.js:169`
+- `sprintOf` — `hooks/gate.js:189`
 - `verdicts` — `hooks/gate.js:132`
 - `walk` — `hooks/gate.js:81` — PowerShell's parentheses group, they don't fork), a nested shell's command walked too.
-- `agent` — `hooks/gate.test.js:152`
+- `agent` — `hooks/gate.test.js:165`
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
 - `denied` — `hooks/gate.test.js:19`
-- `dev` — `hooks/gate.test.js:165`
-- `lot` — `hooks/gate.test.js:45`
+- `dev` — `hooks/gate.test.js:178`
+- `lot` — `hooks/gate.test.js:58`
 - `project` — `hooks/gate.test.js:9`
-- `ps` — `hooks/gate.test.js:184`
-- `sprint` — `hooks/gate.test.js:70`
+- `ps` — `hooks/gate.test.js:197`
+- `sprint` — `hooks/gate.test.js:83`
 - `ticket` — `hooks/gate.test.js:21`
-- `wt` — `hooks/gate.test.js:222`
+- `wt` — `hooks/gate.test.js:235`
 - `broadIdentGrep` — `hooks/graph.js:111`
 - `checkHeader` — `hooks/graph.js:66`
 - `commandLine` — `hooks/graph.js:93`

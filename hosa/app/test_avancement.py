@@ -1626,6 +1626,21 @@ class LoopsClosed(unittest.TestCase):
             f.write(f"## Corrections\n- {av.now()[:16]}Z — qa — technique — 0 prouvé(s), 1 non reproduit(s) — aucun\n")
         self.assertEqual(av.check(k, "develop", "s1"), [])
 
+    def test_a_correction_that_added_a_proof_still_needs_its_correction_review(self):
+        # rieki sprint-3: a missing-proof gap closed by new tests changes the code branch — its review proves it
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- 2026-11-01T09:00Z — FAIL — CA6 sans test\n"})
+        for s in ("sprint", "qa-plan", "git-demarrage", "develop", "audit"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        run(k, "back", "qa", "develop", "--sprint", "s1", "--ticket", "t1", "--detail", "CA6 sans test")
+        with open(k / "tickets" / "t1.md", "a", encoding="utf-8") as f:
+            f.write(f"## Corrections\n- {av.now()[:16]}Z — revue — technique — 0 prouvé(s), 0 non reproduit(s), "
+                    "1 preuve(s) ajoutée(s) — abc1234\n")
+        self.assertIn("pas de `## Revue` datée après la réouverture", " ".join(av.check(k, "develop", "s1")))
+        self.assertEqual([av.nothing_fixed(x) for x in ("— 0 prouvé(s), 2 non reproduit(s) — aucun",
+                                                        "— 0 prouvé(s), 0 non reproduit(s), 1 preuve(s) ajoutée(s) — a",
+                                                        "— 0 prouvé(s), 1 non reproduit(s), 0 preuve(s) ajoutée(s) — aucun")],
+                         [True, False, True])
+
     def test_the_interface_proof_keeps_one_backticked_line_per_checker(self):
         k = kb({})
         found = ["interface_check : écran a sans espace", "interface_check : b", "lexique_check : c"]
