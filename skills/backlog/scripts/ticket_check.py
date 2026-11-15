@@ -22,6 +22,9 @@ A ticket is complete when it has, in its body:
   - every `dir/file.ext` its technical and architecture notes cite as existing
     (no `à créer` on the line) present in the project — or created by a ticket
     it `depends_on`,
+  - every « label » a criterion cites present in the code, or brought by this
+    ticket or one of its `depends_on` (the tickets whose criteria click it),
+    and no criterion conditional on another ticket (« dès qu'il existe »),
   - every rule, error case or indicator a criterion cites (`- CA1 [RG2, CE1] — …`,
     `- CA2 [IN1] — …`) in force in an exigence of its `Lié à :` line, and a
     criterion citing an indicator stating its expected value (a number).
@@ -46,6 +49,7 @@ from __future__ import annotations
 
 import functools
 import importlib.util
+import os
 import re
 import sys
 from pathlib import Path
@@ -332,14 +336,33 @@ def depends_on(front: str) -> list[str]:
     return [i.strip().strip("'\"").removesuffix(".md").split("/")[-1] for i in items if i.strip()]
 
 
-def cycle_from(slug: str, tickets: Path, seen: tuple = ()) -> list[str] | None:
+def stamp(tickets: Path) -> tuple:
+    """What the tickets' files are now: a cache keyed on it is read again once one of them changes."""
+    try:  # a DirEntry's stat comes with the listing on Windows: one call, not one per file
+        with os.scandir(tickets) as it:
+            return tuple(sorted((e.name, e.stat().st_mtime_ns, e.stat().st_size) for e in it if e.name.endswith(".md")))
+    except OSError:
+        return ()
+
+
+@functools.lru_cache(maxsize=8)
+def _all_deps(tickets: str, _stamp: tuple) -> dict[str, list[str]]:
+    return {f.stem: depends_on(split(f.read_text(encoding="utf-8"))[0]) for f in Path(tickets).glob("*.md")}
+
+
+def deps_of(tickets: Path) -> dict[str, list[str]]:
+    """{slug: its `depends_on`}, every ticket read once (rieki: 24 886 reads for 122 tickets, 10 s)."""
+    return _all_deps(str(tickets), stamp(tickets))
+
+
+def cycle_from(slug: str, tickets: Path, seen: tuple = (), graph: dict | None = None) -> list[str] | None:
     if slug in seen:
         return list(seen[seen.index(slug):]) + [slug]
-    f = tickets / f"{slug}.md"
-    if not f.is_file():
+    graph = deps_of(tickets) if graph is None else graph
+    if slug not in graph:
         return None
-    for dep in depends_on(split(f.read_text(encoding="utf-8"))[0]):
-        found = cycle_from(dep, tickets, seen + (slug,))
+    for dep in graph[slug]:
+        found = cycle_from(dep, tickets, seen + (slug,), graph)
         if found:
             return found
     return None
@@ -387,6 +410,102 @@ def phantom_paths(path: Path, front: str, body: str) -> list[str]:
     return out
 
 
+SOURCE_EXT = {".py", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".vue", ".svelte", ".html", ".php", ".rb", ".java",
+              ".kt", ".cs", ".go", ".rs", ".dart", ".swift", ".erb", ".twig", ".json", ".toml", ".yaml", ".yml"}
+SOURCE_SKIP = {".hosa", ".git", ".worktrees", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", "vendor"}
+# A button another ticket brings; a choice (« choisit « Semaine » ») is a value, often a column name too (rieki)
+ACTION = re.compile(r"(?:clique|cliquer|appuie|appuyer)\s+sur\s+« ([^»]+?) »")
+QUOTED = re.compile(r"« ([^»]+?) »")
+CONDITIONAL = re.compile(r"dès qu['’](?:il|elle)s? existen?t?|s['’]ils? existen?t? déjà|quand (?:il|elle)s? exister(?:a|ont)"
+                         r"|une fois (?:livrée?s?|créée?s?)", re.I)
+
+
+@functools.lru_cache(maxsize=8)
+def source_text(root: str) -> str:
+    """The project's source, read once: a label it holds as a literal already exists."""
+    out = []
+    for folder, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in SOURCE_SKIP]
+        for name in files:
+            if os.path.splitext(name)[1] in SOURCE_EXT:
+                try:
+                    out.append(Path(folder, name).read_text(encoding="utf-8", errors="ignore"))
+                except OSError:
+                    pass
+    return "\n".join(out)
+
+
+def label_owners(tickets: Path) -> dict[str, frozenset[str]]:
+    """{label: the tickets still to build whose criteria click it} — the tickets that bring it."""
+    return _label_owners(str(tickets), stamp(tickets))
+
+
+@functools.lru_cache(maxsize=8)
+def _label_owners(tickets: str, _stamp: tuple) -> dict[str, frozenset[str]]:
+    out: dict[str, set[str]] = {}
+    for f in Path(tickets).glob("*.md"):
+        front, body = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") != "Ticket" or field(front, "state") == "done":
+            continue
+        for label in ACTION.findall(section(body, "## Critères d'acceptation") or ""):
+            out.setdefault(label, set()).add(f.stem)
+    return {k: frozenset(v) for k, v in out.items()}
+
+
+def closure(slug: str, tickets: Path) -> set[str]:
+    """Every ticket `slug` waits for, directly or through another."""
+    graph, seen, todo = deps_of(tickets), set(), [slug]
+    while todo:
+        for dep in graph.get(todo.pop(), []):
+            if dep not in seen:
+                seen.add(dep)
+                todo.append(dep)
+    return seen
+
+
+def in_code(label: str, code: str) -> bool:
+    """The label as a whole literal: `"Confirmer"`, `>Confirmer<`, `:red[Confirmer]`, « Confirmer » in a comment —
+    never a word of a sentence (« Supprimer une version supprime ses filles »)."""
+    return re.search(r"(?:[\"'`>\[]|«\s?)" + re.escape(label) + r"(?:[\"'`<\]]|\s?»)", code) is not None
+
+
+def unbuilt_labels(path: Path, front: str, body: str) -> list[str]:
+    """A criterion names only what the code, its own ticket or its `depends_on` brings: a button another
+    ticket still to build adds can't be tested here (rieki: « Supprimer » of Résultats, cited at priority 9
+    by the button hierarchy, brought by `supprimer-un-run` at 124, many sprints away). `HOSA_LIBELLES=0`: off."""
+    if os.environ.get("HOSA_LIBELLES") == "0":
+        return []
+    crit = section(body, "## Critères d'acceptation") or ""
+    out = []
+    for line in crit.splitlines():
+        m = re.match(r"\s*[-*]\s*(CA\d+)", line)
+        if m and CONDITIONAL.search(line):
+            out.append(f"{m[1]} conditionnel (« {CONDITIONAL.search(line)[0]} ») : un critère se teste à la fin de "
+                       "son ticket → `depends_on` le ticket qui livre l'élément, ou porter le critère dans ce ticket-là")
+    kb = path.parent.parent
+    if kb.name != "kb" or kb.parent.name != ".hosa":
+        return out
+    owners, deps, code = label_owners(path.parent), None, None
+    for line in crit.splitlines():
+        m = re.match(r"\s*[-*]\s*(CA\d+)", line)
+        if not m:
+            continue
+        for label in dict.fromkeys(QUOTED.findall(line)):
+            by = owners.get(label)
+            if not by or path.stem in by:
+                continue
+            deps = closure(path.stem, path.parent) if deps is None else deps
+            if by & deps:
+                continue
+            code = source_text(str(kb.parent.parent)) if code is None else code
+            if in_code(label, code):
+                continue
+            names = ", ".join(f"`{s}`" for s in sorted(by))
+            out.append(f"{m[1]} cite « {label} », absent du code et livré par {names} (à faire) → ajouter le bon "
+                       "à `depends_on`, ou porter ce critère dans ce ticket-là")
+    return out
+
+
 def gaps(path: Path) -> list[str]:
     front, body = split(path.read_text(encoding="utf-8"))
     if field(front, "type") != "Ticket":
@@ -427,6 +546,7 @@ def gaps(path: Path) -> list[str]:
     missing += unknown_rules(path.parent.parent, body)
     missing += indicators_without_value(body)
     missing += phantom_paths(path, front, body)
+    missing += unbuilt_labels(path, front, body)
     missing += late_dependencies(path, front)
     loop = cycle_from(path.stem, path.parent)
     if loop:

@@ -98,6 +98,9 @@ def make_handler(root):
                 return self._send(200, kb.kb_status(root))
             if method == "GET" and route == "couverture":
                 return self._send(200, kb.coverage(root))
+            if method == "GET" and route == "dependances":
+                objectif = parse_qs(urlsplit(self.path).query).get("objectif", [""])[0]
+                return self._send(200, kb.dependances(root, objectif))
             if method == "GET" and route == "activity":
                 return self._send(200, kb.activity(root, 300))
             if method == "GET" and route == "usage":

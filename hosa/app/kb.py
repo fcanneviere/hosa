@@ -424,6 +424,39 @@ def _usage_report():
 ur = _usage_report()
 
 
+def _graphe_tickets():
+    path = Path(__file__).resolve().parents[2] / "skills" / "sprint" / "scripts" / "graphe_tickets.py"
+    spec = importlib.util.spec_from_file_location("graphe_tickets", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+gt = _graphe_tickets()
+
+
+def dependances(root, objectif=None):
+    """Le graphe des tickets pour planifier (`graphe_tickets.py`) : les tickets prêts, les objectifs possibles,
+    et le sprint calculé vers l'objectif choisi — le même calcul que `sprint-planner`, en aperçu : les tickets
+    des sprints déjà composés comptent comme livrés."""
+    if not (root / "tickets").is_dir():
+        return {"pret": [], "objectifs": [], "composition": None}
+    gt.ticket_check().source_text.cache_clear()  # the server lives long: a button added to the code since counts
+    try:
+        graph = gt.load(root)
+    except (OSError, UnicodeDecodeError):
+        raise KbError("KB illisible") from None
+    if objectif and objectif not in graph:
+        raise KbError("ticket inconnu")
+    todo = sorted((t for t in graph.values() if t["state"] == "todo" and not t["sprint"]), key=gt.order_key)
+    # a preview: the sprints already composed count as delivered (a real composition never assumes it)
+    comp = gt.compose(graph, objectif or None, gt.PLAFOND, gt.DEMO, apercu=True)
+    if comp.get("chemin") is not None and comp["objectif"]:
+        comp["chemin_tickets"] = [graph[s] for s in gt.path_to(graph, comp["objectif"], apercu=True)[0]]
+    return {"pret": [graph[s] for s in gt.ready(graph)], "composition": comp,
+            "objectifs": [{"slug": t["slug"], "title": t["title"], "priority": t["priority"]} for t in todo]}
+
+
 def usage(checkout, days):
     """Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`."""
     try:

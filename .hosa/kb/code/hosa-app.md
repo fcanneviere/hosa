@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T10:30:45Z'}
 ---
 
 ## Fichiers
@@ -23,6 +23,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
 | `hosa/app/test_docker_check.py` | docker_check.py: a sprint project is checked against its worktree, with that worktree's compose files only. |
 | `hosa/app/test_graph.py` |  |
 | `hosa/app/test_graph_extract.py` |  |
+| `hosa/app/test_graphe_tickets.py` | graphe_tickets.py: a sprint is computed from the `depends_on` graph — the path to an objective in build order, |
 | `hosa/app/test_interface_check.py` | interface_check.py: every functional exigence has its screens — except a process with no screen. |
 | `hosa/app/test_kb_index.py` | kb_index.py keeps the KB summary short: long descriptions are cut. |
 | `hosa/app/test_kb_query.py` | kb_query.py reads the KB's frontmatter as YAML would: lists, quoted values, hidden folders, output cap. |
@@ -65,19 +66,20 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
 - `UsageFailed` — `hosa/app/kb.py:54`
 - `activity` — `hosa/app/kb.py:381` — Entrées des `log.md` : jour, dossier, texte, acteur (humain\|processus\|agent), et `lien` vers le
 - `append_log` — `hosa/app/kb.py:225` — Entrée OKF §9 dans le log.md du bundle : groupée par date, plus récente en tête.
-- `board` — `hosa/app/kb.py:511` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
-- `coverage` — `hosa/app/kb.py:468` — Couverture des critères de chaque ticket, par chemin de concept.
-- `coverage_of` — `hosa/app/kb.py:460` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
+- `board` — `hosa/app/kb.py:541` — Tickets à plat, triés par priorité (sans priorité en dernier) puis titre.
+- `coverage` — `hosa/app/kb.py:498` — Couverture des critères de chaque ticket, par chemin de concept.
+- `coverage_of` — `hosa/app/kb.py:490` — Couverture des critères d'un ticket de `tickets/` (`av.coverage`).
 - `create` — `hosa/app/kb.py:282`
+- `dependances` — `hosa/app/kb.py:438` — Le graphe des tickets pour planifier (`graphe_tickets.py`) : les tickets prêts, les objectifs possibles,
 - `dump_frontmatter` — `hosa/app/kb.py:91`
 - `get` — `hosa/app/kb.py:179`
-- `kb_status` — `hosa/app/kb.py:632` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
+- `kb_status` — `hosa/app/kb.py:662` — État git de la KB (lecture seule) : dépôt ou non, fichiers de `git status --short`. Le dossier `code/`
 - `load_frontmatter` — `hosa/app/kb.py:66` — Le frontmatter en dict, ou KbError avec une cause lisible : jamais le message de PyYAML, qui cite le contenu.
-- `overview` — `hosa/app/kb.py:566`
+- `overview` — `hosa/app/kb.py:596`
 - `parse` — `hosa/app/kb.py:79` — Retourne (frontmatter, body). Lève KbError « Le fichier est illisible : <cause> » si le YAML est invalide.
-- `plan` — `hosa/app/kb.py:477` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
-- `points` — `hosa/app/kb.py:503`
-- `recettes` — `hosa/app/kb.py:533` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
+- `plan` — `hosa/app/kb.py:507` — Le plan d'avancement tenu par les skills (`project/avancement.md`), ou None s'il n'existe pas encore.
+- `points` — `hosa/app/kb.py:533`
+- `recettes` — `hosa/app/kb.py:563` — Concepts de `test/` hors `*-technique.md`, FAIL d'abord puis du plus récent au plus ancien.
 - `remark` — `hosa/app/kb.py:306` — Remarque de l'utilisateur pour Claude : un fichier de `kb/remarques/`, signé `human:<auteur>`.
 - `remarques` — `hosa/app/kb.py:345` — Les remarques de l'utilisateur : ouvertes d'abord, puis de la plus récente à la plus ancienne.
 - `render` — `hosa/app/kb.py:120`
@@ -85,25 +87,26 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
 - `serialize` — `hosa/app/kb.py:95`
 - `trust_tier` — `hosa/app/kb.py:124`
 - `update` — `hosa/app/kb.py:241` — Met à jour un concept. merge=True fusionne le frontmatter (PATCH), sinon le remplace (édition complète).
-- `usage` — `hosa/app/kb.py:427` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
-- `usage.rows` — `hosa/app/kb.py:450`
+- `usage` — `hosa/app/kb.py:457` — Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`.
+- `usage.rows` — `hosa/app/kb.py:480`
 - `version` — `hosa/app/kb.py:208` — Empreinte du fichier sur disque : un PUT qui la renvoie n'écrase pas l'écriture d'un agent.
 - `walk` — `hosa/app/kb.py:153` — Concepts de la KB. Un fichier illisible est sauté (la liste n'échoue jamais) et,
-- `Server` — `hosa/app/server.py:185`
-- `listen` — `hosa/app/server.py:197` — A port asked for (PORT) is that port or an OSError. None asked: 3000, or a free port when 3000 is taken —
+- `Server` — `hosa/app/server.py:188`
+- `listen` — `hosa/app/server.py:200` — A port asked for (PORT) is that port or an OSError. None asked: 3000, or a free port when 3000 is taken —
 - `make_handler` — `hosa/app/server.py:27`
 - `make_handler.Handler` — `hosa/app/server.py:30`
-- `serve` — `hosa/app/server.py:190`
+- `serve` — `hosa/app/server.py:193`
 - `AppTest` — `hosa/app/test_app.py:35`
-- `BacklogApiTest` — `hosa/app/test_app.py:965` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
-- `BoardTest` — `hosa/app/test_app.py:682` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
-- `CouvertureTest` — `hosa/app/test_app.py:621` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
+- `BacklogApiTest` — `hosa/app/test_app.py:1006` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
+- `BoardTest` — `hosa/app/test_app.py:723` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
+- `CouvertureTest` — `hosa/app/test_app.py:662` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
+- `DependancesApiTest` — `hosa/app/test_app.py:488` — GET /api/dependances : le graphe des tickets, le même calcul que `graphe_tickets.py composer`.
 - `GraphApiTest` — `hosa/app/test_app.py:255` — KB servie à l'intérieur d'un dépôt git : le graphe est celui de la racine du dépôt.
 - `KbStatusTest` — `hosa/app/test_app.py:366`
-- `RecettesTest` — `hosa/app/test_app.py:826` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
-- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:952`
-- `UsageApiTest` — `hosa/app/test_app.py:488` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
-- `ValidationProvenanceTest` — `hosa/app/test_app.py:777` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
+- `RecettesTest` — `hosa/app/test_app.py:867` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
+- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:993`
+- `UsageApiTest` — `hosa/app/test_app.py:529` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
+- `ValidationProvenanceTest` — `hosa/app/test_app.py:818` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
 - `Base` — `hosa/app/test_atelier.py:23`
 - `Cartes` — `hosa/app/test_atelier.py:69`
 - `Choix` — `hosa/app/test_atelier.py:337`
@@ -112,30 +115,30 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
 - `Contraste` — `hosa/app/test_atelier.py:53`
 - `Diversite` — `hosa/app/test_atelier.py:539`
 - `Revue` — `hosa/app/test_atelier.py:584`
-- `AuditStage` — `hosa/app/test_avancement.py:771`
+- `AuditStage` — `hosa/app/test_avancement.py:784`
 - `Block` — `hosa/app/test_avancement.py:238`
-- `Bounds` — `hosa/app/test_avancement.py:1237` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
-- `Bounds.test_one_writer_of_the_plan_at_a_time.second` — `hosa/app/test_avancement.py:1339`
+- `Bounds` — `hosa/app/test_avancement.py:1263` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
+- `Bounds.test_one_writer_of_the_plan_at_a_time.second` — `hosa/app/test_avancement.py:1365`
 - `Check` — `hosa/app/test_avancement.py:38`
 - `Coverage` — `hosa/app/test_avancement.py:164`
-- `Docs` — `hosa/app/test_avancement.py:1207` — The pipelines written in prose (using-hosa, README) follow pipeline.json.
+- `Docs` — `hosa/app/test_avancement.py:1233` — The pipelines written in prose (using-hosa, README) follow pipeline.json.
 - `Done` — `hosa/app/test_avancement.py:229`
-- `Graph` — `hosa/app/test_avancement.py:1023` — pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards.
-- `Init` — `hosa/app/test_avancement.py:1190`
-- `Loops` — `hosa/app/test_avancement.py:1073`
-- `LoopsClosed` — `hosa/app/test_avancement.py:1401` — The audit's five points left open, 2026-11-12: each one is now a refusal.
-- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1486`
-- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1477`
-- `Next` — `hosa/app/test_avancement.py:794`
+- `Graph` — `hosa/app/test_avancement.py:1036` — pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards.
+- `Init` — `hosa/app/test_avancement.py:1216`
+- `Loops` — `hosa/app/test_avancement.py:1086`
+- `LoopsClosed` — `hosa/app/test_avancement.py:1427` — The audit's five points left open, 2026-11-12: each one is now a refusal.
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1512`
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1503`
+- `Next` — `hosa/app/test_avancement.py:807`
 - `Reponse` — `hosa/app/test_avancement.py:248` — `reponse`: the user's answers leave a blocked stage, and the journal says whether they took the recommendation.
-- `Reprendre` — `hosa/app/test_avancement.py:812` — `reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action.
+- `Reprendre` — `hosa/app/test_avancement.py:825` — `reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action.
 - `Tasks` — `hosa/app/test_avancement.py:339` — `task`: the agents' dispatches of an open stage — a proof of exit like the files its skill writes.
-- `batch` — `hosa/app/test_avancement.py:1055` — A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added.
-- `closed_until` — `hosa/app/test_avancement.py:1064` — Every upstream stage done up to <stage> included (forced: these tests are about the loops).
+- `batch` — `hosa/app/test_avancement.py:1068` — A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added.
+- `closed_until` — `hosa/app/test_avancement.py:1077` — Every upstream stage done up to <stage> included (forced: these tests are about the loops).
 - `cov` — `hosa/app/test_avancement.py:155` — `av.coverage`, or a clean test failure while it does not exist yet.
 - `kb` — `hosa/app/test_avancement.py:19`
 - `run` — `hosa/app/test_avancement.py:27`
-- `section_rows` — `hosa/app/test_avancement.py:1639`
+- `section_rows` — `hosa/app/test_avancement.py:1665`
 - `tk` — `hosa/app/test_avancement.py:161`
 - `Navigateur` — `hosa/app/test_capture.py:80`
 - `Routes` — `hosa/app/test_capture.py:43`
@@ -153,6 +156,10 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
 - `ExtractTest` — `hosa/app/test_graph_extract.py:17`
 - `calls` — `hosa/app/test_graph_extract.py:13`
 - `defs` — `hosa/app/test_graph_extract.py:9`
+- `Cli` — `hosa/app/test_graphe_tickets.py:94`
+- `Path_` — `hosa/app/test_graphe_tickets.py:27` — rieki: « Supprimer un run » waited for 32 tickets; the planner only saw priorities.
+- `graph` — `hosa/app/test_graphe_tickets.py:23`
+- `t` — `hosa/app/test_graphe_tickets.py:18`
 - `BackOfficeAndDashboards` — `hosa/app/test_interface_check.py:76`
 - `Screens` — `hosa/app/test_interface_check.py:38`
 - `exigence` — `hosa/app/test_interface_check.py:23`
@@ -166,9 +173,10 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:43:10Z'}
 - `PluginFrontmatter` — `hosa/app/test_plugin_frontmatter.py:11`
 - `KbRoot` — `hosa/app/test_run.py:16`
 - `Setup` — `hosa/app/test_run.py:27`
-- `PhantomPaths` — `hosa/app/test_ticket_check.py:20`
-- `SecurityAndLegalNotes` — `hosa/app/test_ticket_check.py:60`
-- `ticket` — `hosa/app/test_ticket_check.py:16`
+- `PhantomPaths` — `hosa/app/test_ticket_check.py:21`
+- `SecurityAndLegalNotes` — `hosa/app/test_ticket_check.py:118`
+- `UnbuiltLabels` — `hosa/app/test_ticket_check.py:44` — rieki sprint-3: the button hierarchy (priority 9) tested « Supprimer » of Résultats, which
+- `ticket` — `hosa/app/test_ticket_check.py:17`
 - `SprintMeasures` — `hosa/app/test_usage_report.py:67`
 - `UsageOnce` — `hosa/app/test_usage_report.py:19`
 - `line` — `hosa/app/test_usage_report.py:14`

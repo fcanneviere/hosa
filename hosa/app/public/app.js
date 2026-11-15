@@ -164,7 +164,7 @@ async function loadUsage() {
   if (days === (F.periode || '7')) S.usage = u;
 }
 // la consommation lit tous les transcripts (quelques secondes) : jamais attendue par le premier affichage ni par une écriture
-const reload = async () => { await load(); route(); toast('KB relue'); S.usage = undefined; loadUsage().then(route); };
+const reload = async () => { S.depFor = undefined; await load(); route(); toast('KB relue'); S.usage = undefined; loadUsage().then(route); };
 
 // --- filtres conservés d'un écran à l'autre --------------------------------------------------
 const setF = (k, v) => {
@@ -329,6 +329,46 @@ function vSprint(slug) {
           h('p', { class: 'muted' }, 'Démo : les tests T1, T2… que vous faites avant de fusionner le sprint.'),
           s.demo.length ? h('ul', { class: 'list' }, s.demo.map((d) => h('li', {}, d.ok ? st('OK', 'f', '✓') : st('KO', 'b', '✕'), h('div', { class: 'mono' }, d.t)))) : none('Pas encore de démo.')),
         card('Mesures du bilan', (s.mesures || []).length ? h('ul', {}, s.mesures.map((m) => h('li', {}, m))) : none('Pas encore mesuré : le bilan du sprint écrit ces chiffres.'))))];
+}
+
+// --- planification : le graphe des tickets (`graphe_tickets.py`, le calcul du sprint-planner) ------------------------
+function loadDep() {
+  const obj = F.objectif || ''; S.depFor = obj; S.dep = undefined;
+  return api(`dependances?objectif=${encodeURIComponent(obj)}`).catch((e) => ({ error: e })).then((d) => { if (S.depFor === obj) { S.dep = d; route(); } });
+}
+const depLink = (t) => h('a', { href: ticketHref(`tickets/${t.slug}.md`) }, t.title);
+function vPlanification() {
+  const head = [pageH('Pilotage', 'Planification', 'Les dépendances entre tickets : ce qui peut se construire maintenant, et le chemin jusqu’à un objectif. Le même calcul compose les sprints.')];
+  if (S.depFor !== (F.objectif || '')) { loadDep(); return [...head, none('Calcul du graphe…')]; }
+  const d = S.dep;
+  if (!d) return [...head, none('Calcul du graphe…')];
+  if (d.error) return [...head, errBox(`Graphe indisponible : ${plain(d.error)}.`, true)];
+  if (!d.objectifs.length) return [...head, empty('Aucun ticket à faire hors sprint.', h('p', {}, '/backlog crée les tickets à partir du cahier des charges.'), cmdBox('backlog'))];
+  const c = d.composition || {}, inSprint = new Set((c.tickets || []).map((t) => t.slug));
+  const pick = h('label', { class: 'flt' }, 'Objectif', h('select', { onchange: (e) => setF('objectif', e.target.value) },
+    h('option', { value: '' }, 'le premier ticket atteignable'),
+    d.objectifs.map((o) => h('option', { value: o.slug, selected: o.slug === F.objectif ? '' : null }, `${o.priority == null ? '—' : o.priority} · ${o.title}`))));
+  const obj = d.objectifs.find((o) => o.slug === c.objectif);
+  return [...head, h('div', { class: 'filters' }, pick),
+    c.obstacles && c.obstacles.length ? h('div', { class: 'alert err', role: 'alert' }, h('span', {}, h('b', {}, 'Objectif inatteignable pour l’instant. '), 'À régler d’abord :'),
+      h('ul', { style: 'flex-basis:100%' }, c.obstacles.map((o) => h('li', { class: 'mono' }, o)))) : null,
+    h('div', { class: 'kpis' },
+      kpi({ label: 'Chemin jusqu’à l’objectif', value: String(c.chemin ?? '—'), unit: 'tickets', cmp: c.chemin_points == null ? '' : `${c.chemin_points} points`, href: '#/planification' }),
+      kpi({ label: 'Sprint calculé', value: String((c.tickets || []).length), unit: 'tickets', cmp: `plafond ${c.plafond ?? '—'}`, href: '#/planification' }),
+      kpi({ label: 'Tests de démo', value: String(c.demo ?? '—'), cmp: `au plus ${c.demo_max ?? '—'}, un par écran`, href: '#/planification' }),
+      kpi({ label: 'Prêts maintenant', value: String(d.pret.length), cmp: 'dépendances toutes faites', href: '#/planification' })),
+    h('p', { class: 'hint' }, 'Aperçu : les tickets des sprints déjà composés comptent comme livrés.'),
+    c.jalon ? h('p', { class: 'hint' }, `L’objectif est trop loin pour un sprint : le sprint va jusqu’à ${plural(c.jalon.length, 'jalon', 'jalons')}, chacun avec tout ce qu’il attend. Il restera ${plural(c.reste, 'ticket', 'tickets')} vers l’objectif.`) : null,
+    h('div', { class: 'cols w' },
+      card(`Sprint calculé${obj ? ` · objectif « ${obj.title} »` : ''}`, (c.tickets || []).length
+        ? table(['#', 'Ticket', 'Points', 'Démo', 'Rôle'], c.tickets.map((t, i) => h('tr', {}, td(String(i + 1), 'num r'), td(depLink(t)), td(String(t.points), 'num r'),
+          td(t.ecran ? 'écran' : '—', 'muted'), td(t.objectif ? st('objectif', 'e', '◎') : st('hors objectif', 'a', '○')))), { caption: 'Sprint calculé, dans l’ordre de construction' })
+        : none('Rien à mettre dans un sprint tant que les points ci-dessus ne sont pas réglés.')),
+      card('Chemin jusqu’à l’objectif', (c.chemin_tickets || []).length
+        ? h('ol', { class: 'list' }, c.chemin_tickets.map((t) => h('li', {}, depLink(t), ' ', inSprint.has(t.slug) ? st('ce sprint', 'f', '✓') : t.manques.length ? st('incomplet', 'b', '✕') : t.sprint ? st(`sprint ${t.sprint}`, 'a', '◐') : st('sprint suivant', 'a', '○'))))
+        : none('Aucun ticket à construire.'))),
+    card('Prêts maintenant', d.pret.length ? table(['Ticket', 'Priorité', 'Points'], d.pret.map((t) => h('tr', {}, td(depLink(t)), td(t.priority == null ? '—' : String(t.priority), 'num r'), td(String(t.points), 'num r'))), { caption: 'Tickets dont les dépendances sont faites' })
+      : none('Aucun ticket prêt : chaque ticket à faire attend un autre, ou il est incomplet.'))];
 }
 
 // --- tickets : tableau, glisser-déposer ou menu ---------------------------------------------------
@@ -774,14 +814,14 @@ const unvalidate = (c) => setVerified(c, { by: null, at: null }, {}, `Validation
 
 // --- coque, menu, palette, routes ---------------------------------------------------------------------------------------------
 const NAV = [
-  ['Pilotage', [['/', 'Vue d’ensemble', '⌂'], ['/avancement', 'Plan d’avancement', '▤'], ['/sprints', 'Sprints', '↻'], ['/tickets', 'Tickets', '▦'], ['/recettes', 'Recettes et qualité', '✓'], ['/consommation', 'Consommation', '◔']]],
+  ['Pilotage', [['/', 'Vue d’ensemble', '⌂'], ['/avancement', 'Plan d’avancement', '▤'], ['/sprints', 'Sprints', '↻'], ['/planification', 'Planification', '⇶'], ['/tickets', 'Tickets', '▦'], ['/recettes', 'Recettes et qualité', '✓'], ['/consommation', 'Consommation', '◔']]],
   ['Produit', [['/exigences', 'Cahier des charges', '☰'], ['/personas', 'Personas', '☺'], ['/kb', 'Base de connaissance', '❏'], ['/tracabilite', 'Traçabilité', '⇄']]],
   ['Vos actions', [['/gestion/validation', 'À valider', '◎'], ['/remarques', 'Remarques pour Claude', '✎'], ['/journal', 'Journal', '≡'], ['/gestion/concepts', 'Concepts', '✐']]],
 ];
 const ROUTES = [
   [/^\/$/, home, 'Vue d’ensemble'], [/^\/avancement$/, vAvancement, 'Plan d’avancement'],
   [/^\/tickets$/, vTickets, 'Tickets'], [/^\/gestion\/tickets$/, vTickets, 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
-  [/^\/sprints$/, vSprints, 'Sprints'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(decodeURIComponent(m[1])), 'Sprint'],
+  [/^\/sprints$/, vSprints, 'Sprints'], [/^\/planification$/, vPlanification, 'Planification'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(decodeURIComponent(m[1])), 'Sprint'],
   [/^\/exigences$/, vExigences, 'Cahier des charges'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(decodeURIComponent(m[1])), 'Exigence'],
   [/^\/personas$/, () => vPersonas(), 'Personas'], [/^\/personas\/([^/]+)$/, (m) => vPersonas(decodeURIComponent(m[1])), 'Persona'],
   [/^\/recettes$/, vRecettes, 'Recettes et qualité'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],

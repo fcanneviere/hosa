@@ -640,6 +640,26 @@ def reopened(kb: Path, stage: str, sprint: str | None) -> list[tuple[str, str]]:
     return out
 
 
+def composition(kb: Path, tickets: list[str]) -> list[str]:
+    """A sprint holds what its tickets need: each `depends_on` done or listed before it, and each « label » a
+    criterion tests brought by the code, the ticket or its dependencies (rieki sprint-3: « Supprimer » of
+    Résultats tested by a ticket whose button `supprimer-un-run` brings, many sprints away; found at qa-plan)."""
+    tc, gaps = ticket_check(), []
+    for i, t in enumerate(tickets):
+        path = kb / "tickets" / f"{t}.md"
+        text = read(path)
+        if text is None:
+            gaps.append(f"{t} : ticket absent de kb/tickets/")
+            continue
+        front, body = tc.split(text)
+        for dep in tc.depends_on(front):
+            if dep not in tickets[:i] and field(read(kb / "tickets" / f"{dep}.md"), "state") != "done":
+                where = "placé après lui" if dep in tickets else "hors du sprint"
+                gaps.append(f"{t} : attend `{dep}`, ni fait ni avant lui dans le sprint ({where})")
+        gaps += [f"{t} : {g}" for g in tc.unbuilt_labels(path, front, body)]
+    return gaps
+
+
 def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     """The files and checkers that prove a stage done."""
     if stage not in SPRINT:
@@ -651,6 +671,8 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
         return [f"sprint `{sprint}` absent de kb/sprints/"]
     tickets = re.findall(r"\(\.\./tickets/([^)]+)\.md\)", section(s, "Tickets") or "")
     gaps = [] if tickets else ["`## Tickets` ne liste aucun ticket"]
+    if stage == "sprint":
+        gaps += composition(kb, tickets)
     # the merge (`git` Mode 2) removes `worktree`: a `merge_commit` proves the start too
     if stage == "git-demarrage" and not field(s, "worktree") and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `worktree` (`git` Mode 1)")

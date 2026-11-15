@@ -3,6 +3,7 @@ abuse cases and legal constraints are acceptance criteria; a dependency never ra
 import contextlib
 import importlib.util
 import io
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,6 +39,63 @@ class PhantomPaths(unittest.TestCase):
     def test_dependency_kb_path_and_unknown_path(self):
         self.assertEqual(self.check(ticket("- `core/limitation.py` ; `kb/interface/lexique.md`", "depends_on: [limite]\n")), [])
         self.assertIn("absent du projet", self.check(ticket("- `core/inconnu.py`"))[0])
+
+
+class UnbuiltLabels(unittest.TestCase):
+    """rieki sprint-3: the button hierarchy (priority 9) tested « Supprimer » of Résultats, which
+    `supprimer-un-run` brings at priority 124: qa-plan found it, and asked the user what to do."""
+    HIERARCHIE = ("- CA4 — Étant donné l'écran Résultats avec un run terminé, quand il s'affiche, alors « Exporter en CSV » "
+                  "est secondaire et « Supprimer » est destructeur.\n"
+                  "- CA8 — Étant donné « Tout effacer » et, dès qu'il existe, « Supprimer » (Résultats), quand un "
+                  "attaquant clique une seule fois, alors rien n'est effacé.\n")
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.tickets = self.root / ".hosa" / "kb" / "tickets"
+        self.tickets.mkdir(parents=True)
+        (self.root / "src").mkdir()
+        (self.root / "src" / "resultats.py").write_text('st.button("Exporter en CSV")\n', encoding="utf-8")
+        self.write("supprimer-un-run", "", "- CA1 — Étant donné R12, quand l'analyste clique sur « Supprimer » puis "
+                                           "« Confirmer », alors R12 est supprimé.\n")
+        tc.source_text.cache_clear()
+
+    def write(self, slug, front, crit):
+        p = self.tickets / f"{slug}.md"
+        p.write_text(f"---\ntype: Ticket\nstate: todo\n{front}---\n## Critères d'acceptation\n{crit}", encoding="utf-8")
+        return p
+
+    def check(self, p):
+        return tc.unbuilt_labels(p, *tc.split(p.read_text(encoding="utf-8")))
+
+    def test_a_label_another_ticket_brings_needs_it_in_depends_on(self):
+        gaps = self.check(self.write("hierarchie", "", self.HIERARCHIE))
+        self.assertEqual(len(gaps), 3, gaps)  # CA8 conditional, CA4 and CA8 cite « Supprimer »
+        self.assertTrue(gaps[0].startswith("CA8 conditionnel (« dès qu'il existe »)"))
+        self.assertIn("CA4 cite « Supprimer », absent du code et livré par `supprimer-un-run` (à faire)", gaps[1])
+        self.assertTrue(gaps[2].startswith("CA8 cite « Supprimer »"))
+
+    def test_brought_by_a_dependency_by_itself_or_already_in_the_code(self):
+        crit = self.HIERARCHIE.replace("dès qu'il existe, ", "")
+        self.write("lien", "depends_on: [supprimer-un-run]\n", "- CA1 — rien\n")  # through another ticket
+        self.assertEqual(self.check(self.write("hierarchie", "depends_on: [lien]\n", crit)), [])
+        self.write("supprimer-un-run", "", "- CA1 — rien\n")  # nobody brings it: not this check's business
+        self.assertEqual(self.check(self.write("hierarchie", "", crit)), [])
+        self.write("supprimer-un-run", "", "- CA1 — quand l'analyste clique sur « Supprimer », alors R12 est supprimé.\n")
+        (self.root / "src" / "resultats.py").write_text('st.button("Supprimer")\n', encoding="utf-8")
+        tc.source_text.cache_clear()
+        self.assertEqual(self.check(self.write("hierarchie", "", crit)), [])  # the code has it now
+
+    def test_a_literal_in_any_form_counts_and_the_check_has_its_switch(self):
+        (self.root / "src" / "resultats.py").write_text(
+            '"""Supprimer une version supprime ses filles."""\nif c.button(":red[Confirmer]"):\n', encoding="utf-8")
+        self.write("importer", "", "- CA1 — quand l'analyste clique sur « Confirmer », alors l'import est enregistré.\n")
+        p = self.write("hierarchie", "", "- CA8 — « Supprimer » puis « Confirmer » : rien n'est effacé avant.\n")
+        self.assertEqual([g[:20] for g in self.check(p)], ["CA8 cite « Supprimer"])  # a sentence's word isn't it
+        os.environ["HOSA_LIBELLES"] = "0"
+        try:
+            self.assertEqual(self.check(p), [])
+        finally:
+            del os.environ["HOSA_LIBELLES"]
 
 
 SECURITE = """## Note sécurité (expert cybersécurité)

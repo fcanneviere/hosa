@@ -31,7 +31,10 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 
 ## Mode 1 — Plan
 
-1. Read the ticket's story, criteria, persona link, its five notes (technique, architecture, interface, **sécurité**, **juridique**), the `Stack Decision`s and `kb/rules/design/definition-de-termine.md`. A detail you'd need for a precise case is missing → Open Question; never invent it.
+1. Read the ticket's story, criteria, persona link, its five notes (technique, architecture, interface, **sécurité**, **juridique**), the `Stack Decision`s and `kb/rules/design/definition-de-termine.md`. A detail you'd need for a precise case is missing → look for it first in the criterion's own words, the `done` tickets (`kb_query --type Ticket --where state=done`) and the code. Found → use it, cite where. Only a choice none of them settles is an Open Question; never invent it. Two findings are never questions (rieki sprint-3: three questions, the three answers were already in the KB or obvious):
+   - **Écart de composition** — a `CAn` needs something (a button, a screen state, a table, a function) that neither the code, this ticket, nor its `depends_on` brings. Write **no plan** for this ticket, never one with that case left out « en attendant ». Report it under `## Écarts de composition`: ticket, `CAn`, the missing element, the ticket that brings it (`<hosa> ticket_check` names it).
+   - **Défaut constaté** — what the ticket touches already shows a defect against its story (a wrong message on the very line it changes, a value contradicting a criterion). Fixing it is part of the ticket. Report it under `## Défauts constatés`, with the Given/When/Then criterion to add; write the plan for the criteria the ticket has. Its case comes once `hosa-product-owner` has numbered the criterion: you are then sent back on that one case.
+   An Open Question's recommended option is the one that keeps every criterion of the ticket tested in this sprint; never « différer ».
 2. **Cases:** at least one per acceptance scenario, plus the error and edge cases the criteria don't name, in terms `hosa-tester` can automate directly. Each case starts with the criteria it proves (`[CA2]`). Every `CAn` has at least one automated case, or a `[manuel]` case with its reason: a criterion no test proves is a rule nobody checks — Open Question, never a plan without it. A criterion that names a deferred or conditional effect (a notification sent later, a state reached on another action) gets a case that triggers that later action and observes the effect. No `## Critères d'acceptation` (an old ticket) → say so, derive from the story. Then:
    - Every case the note technique's `Tests à écrire` and `Règles et validations` lines name (reuse their test file paths).
    - **`[sécurité]`** — one case per constraint of the note sécurité: each role allowed **and** refused (a refused role gets an error, never the data), invalid and hostile input rejected at the boundary, sensitive data absent from logs and responses, the audit entry written when one is required. Plus one case per requirement of each `Security Rule` (`kb/rules/security/`) the note sécurité cites or whose scope the ticket touches — each threshold, key, failure mode and log event it names (pilot2: two reviews failed on a counter rule no test plan case covered). Plus every abuse case the note sécurité copies from `kb/cdc/securite.md` (the `socle-comptes` tickets carry theirs there), and every abuse case of `kb/securite/modele-menaces.md` whose boundary or asset this ticket touches: a test that the attack is refused ("A demande la ressource de B par son id → 403/404, rien n'est renvoyé"). No threat model yet → say so. Each abuse case the note ties to a `CAn` is proved by that criterion's case, tagged `[CAn][sécurité]`.
@@ -97,6 +100,12 @@ You do not commit. Report what you changed; the user or the orchestrating skill 
 ```
 ## Plan de test (Mode 1)
 - `kb/test/<ticket>-technique.md` — [N cas, dont M manuels] — Recette requise : [personas / "Aucune"]
+
+## Écarts de composition (Mode 1)
+[- <ticket> CAn — <élément manquant> — apporté par `<ticket>` — ou "Aucun"]
+
+## Défauts constatés (Mode 1)
+[- <ticket> — <défaut> — critère à ajouter : Étant donné … quand … alors … — ou "Aucun"]
 
 ## Démo (Mode 3)
 [T-numérotés, `retours` 3b]

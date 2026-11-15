@@ -18,6 +18,7 @@
     {"from": "schema-db", "to": ["donnees"], "then": ["schema-app"], "max": 2},
     {"from": "menaces", "to": ["architecture"], "max": 2},
     {"from": "interface", "to": ["fondamentaux"], "then": ["relecture", "contestation"], "max": 2},
+    {"from": "qa-plan", "to": ["sprint"], "max": 2},
     {"from": "develop", "to": ["architecture"], "then": ["menaces"], "max": 2},
     {"from": "develop", "to": ["schema-app"], "then": ["schema-db"], "max": 2},
     {"from": "develop", "to": ["schema-db"], "max": 2},
@@ -67,6 +68,7 @@
     ]
   },
   "dispatch": {
-    "backlog": {"parallel": 2, "model": {"hosa-security": "sonnet", "hosa-legal": "sonnet"}}
+    "backlog": {"parallel": 2, "model": {"hosa-security": "sonnet", "hosa-legal": "sonnet"}},
+    "qa-plan": {"parallel": 2}
   }
 }

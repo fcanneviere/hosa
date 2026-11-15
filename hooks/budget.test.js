@@ -187,6 +187,20 @@ test('during backlog: two Hosa agents at once, the security and legal notes on s
   assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security' }), null);
 });
 
+test('during qa-plan: two test-plan lots at once, a sprint of 20 tickets is 5 lots', () => {
+  fs.writeFileSync(plan, '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n' +
+    '|---|---|---|---|---|---|---|---|\n| plans-3 | `qa-plan` (s4) | hosa-qa-lead |  | à faire |  |  |  |\n\n' +
+    '## Sprint s4\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
+    '| `sprint` | fait |  |  |\n| `qa-plan` | en cours |  |  |\n');
+  setContext(10000);
+  const start = (id) => processPayload({ hook_event_name: 'SubagentStart', session_id: 's11', agent_id: id, agent_type: 'hosa:hosa-qa-lead' });
+  start('q1'); start('q2');
+  const lead = () => pre('Agent', 's11', { subagent_type: 'hosa:hosa-qa-lead' });
+  assert.match(lead().hookSpecificOutput.permissionDecisionReason, /Hosa agents are running during `qa-plan`, 2 at most/);
+  setPlan(3);                                                                    // qa-plan no longer under way
+  assert.equal(lead(), null);
+});
+
 test('a dispatch during a stage with no task of its agent is refused once, with the command', () => {
   const head = '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n|---|---|---|---|---|---|---|---|\n';
   const stages = '## Structuration\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +

@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-14T17:48:46Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T10:14:12Z'}
 ---
 
 ## Fichiers
@@ -78,18 +78,19 @@ generated: {by: 'process:hosa-graph', at: '2026-11-14T17:48:46Z'}
 - `taskGate` — `hooks/budget.js:285`
 - `agentFile` — `hooks/budget.test.js:97`
 - `back` — `hooks/budget.test.js:136`
-- `call` — `hooks/budget.test.js:220`
+- `call` — `hooks/budget.test.js:234`
 - `denied` — `hooks/budget.test.js:10`
-- `infra` — `hooks/budget.test.js:195`
+- `infra` — `hooks/budget.test.js:209`
+- `lead` — `hooks/budget.test.js:198`
 - `po` — `hooks/budget.test.js:178`
 - `pre` — `hooks/budget.test.js:105`
 - `report` — `hooks/budget.test.js:135`
-- `say` — `hooks/budget.test.js:222`
+- `say` — `hooks/budget.test.js:236`
 - `setAgentContext` — `hooks/budget.test.js:98`
 - `setContext` — `hooks/budget.test.js:20`
 - `setPlan` — `hooks/budget.test.js:14`
 - `skill` — `hooks/budget.test.js:22`
-- `start` — `hooks/budget.test.js:176`
+- `start` — `hooks/budget.test.js:196`
 - `usage` — `hooks/budget.test.js:17`
 - `clip` — `hooks/compress-output.js:28`
 - `condense` — `hooks/compress-output.js:262`

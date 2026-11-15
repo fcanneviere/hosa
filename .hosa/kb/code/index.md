@@ -11,4 +11,5 @@
 * [skills/kb-commit/scripts](skills-kb-commit-scripts.md) - !/usr/bin/env python3
 * [skills/okf/scripts](skills-okf-scripts.md) - !/usr/bin/env python3
 * [skills/redaction/scripts](skills-redaction-scripts.md) - !/usr/bin/env python3
+* [skills/sprint/scripts](skills-sprint-scripts.md) - !/usr/bin/env python3
 * [skills/status/scripts](skills-status-scripts.md) - !/usr/bin/env python3

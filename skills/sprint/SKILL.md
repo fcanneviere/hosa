@@ -1,6 +1,6 @@
 ---
 name: sprint
-description: "Use to compose a sprint from the backlog in priority order, up to a capacity, with complete tickets only, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
+description: "Use to compose a sprint around one objective from the tickets' dependency graph, up to its bounds (20 tickets, 15 demo tests), with complete tickets only, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
 ---
 
 # Sprint
@@ -16,7 +16,7 @@ Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded s
 ```
 Dispatch hosa-sprint-planner (Phase 1: scope, priority order,
 classify tickets prêts/écartés)
-        ↓ Open Questions (no capacity, empty backlog, no priority order) → relay to user, stop
+        ↓ Open Questions (empty backlog, no priority order, objective unreachable) → relay to user, stop
         ↓ Tickets prêts / Tickets écartés
 Présente le résultat à l'utilisateur — propose de combler les
 tickets écartés (stack/architecture/interface) ou de continuer
@@ -33,7 +33,7 @@ données — les tests font partie du sprint avant son démarrage
 
 ## Trigger
 
-Manual: `/sprint [capacité]`. Auto: immediately after `backlog`, or "planifie un sprint", "compose le prochain sprint".
+Manual: `/sprint [nombre de tickets au plus]`. Auto: immediately after `backlog`, or "planifie un sprint", "compose le prochain sprint".
 
 ---
 
@@ -41,13 +41,15 @@ Manual: `/sprint [capacité]`. Auto: immediately after `backlog`, or "planifie u
 
 First, `kb/infra/environnement-docker.md` must have `## Outillage qualité` with a test command (and the migration command, or "Aucune base de données"): otherwise the project isn't ready for a sprint — say so, invoke `infra` to install them, and stop. Same for security: `kb/securite/modele-menaces.md` must exist once the architecture is documented — otherwise run `securite` (Menaces) first. Its abuse cases become the `[sécurité]` tests of every ticket; written after the code, they only find what must be redone.
 
-Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`) with the capacity if one came with the trigger; otherwise it proposes one from the speed measured by the last sprint reviews (`Vélocité : N points`) — don't ask, show its figures in the proposal.
+Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`) with the capacity if one came with the trigger (a number of tickets). It chooses the objective — the next step of the main persona journey — and computes the sprint with `<hosa> graphe_tickets … composer`: the path to the objective in build order, up to 20 tickets and 15 demo tests (5 % over taken whole), cut at whole milestones when it's longer; ready tickets `(hors objectif)` only when the user asks for them (`--remplir`). A sprint is sized by its objective, not by a developer's week: agents write the code, the demo is the user's time. Don't ask; show its figures in the proposal.
+
+Reopened by `qa-plan` (loop `qa-plan` → `sprint`, an `Écart de composition`): give the planner the loop's exact lines; it recomposes from the current sprint (`composer --sprint <slug>`). The user validates only what changes.
 
 If it returns an Open Question (empty backlog, no priority order) — relay it to the user, propose `backlog` if the backlog itself looks empty, and only redispatch once resolved.
 
 ## Step 2: Review with the User
 
-Present `## Tickets prêts`, in the build order the planner set from `depends_on`, and `## Tickets écartés` (incomplete, or waiting on a dependency). For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, `backlog` to refine a vague ticket, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise present `## Proposition de sprint` (name, objective, capacity) with the tickets as one numbered question for the user to validate or amend in one answer ("Q1 a", or "Q1 b, retire le ticket 3") — they may drop a ticket to wait for a fuller backlog.
+Present `## Tickets prêts`, in the build order the planner set from `depends_on`, and `## Tickets écartés` (incomplete, or waiting on a dependency). For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, `backlog` to refine a vague ticket, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise present `## Proposition de sprint` (name, objective, size, tickets left on the objective's path) with the tickets as one numbered question for the user to validate or amend in one answer ("Q1 a", or "Q1 b, retire le ticket 3") — they may drop a ticket to wait for a fuller backlog.
 
 If `## Tickets prêts` is empty and the user has no gap to fill, stop here — report the tickets écartés and their Open Questions, don't write a `Sprint`.
 
@@ -67,7 +69,7 @@ None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git chec
 
 ```
 ## Sprint composé
-- `kb/sprints/<slug>.md` — [nom] (capacité: N, state: planned)
+- `kb/sprints/<slug>.md` — [nom] (N tickets, state: planned)
 
 ## Tickets inclus
 - `kb/tickets/<slug>.md` — [titre]

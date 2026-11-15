@@ -485,6 +485,47 @@ class KbStatusTest(unittest.TestCase):
 NO_DATA = "Aucune donnée de consommation trouvée pour ce projet"
 
 
+class DependancesApiTest(unittest.TestCase):
+    """GET /api/dependances : le graphe des tickets, le même calcul que `graphe_tickets.py composer`."""
+
+    call = AppTest.call
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        kbroot = self.kbroot = Path(self.tmp.name).resolve() / ".hosa" / "kb"
+        (kbroot / "tickets").mkdir(parents=True)
+        (kbroot / "project").mkdir()
+        (kbroot / "project" / "identity.md").write_text("---\ntype: Project\ntitle: Demo\n---\n", encoding="utf-8")
+        for slug, front in (("socle", "state: done\n"), ("run", "state: todo\npriority: 2\ndepends_on: [socle]\n"),
+                            ("supprimer", "state: todo\npriority: 1\ndepends_on: [run]\n")):
+            (kbroot / "tickets" / f"{slug}.md").write_text(f"---\ntype: Ticket\n{front}---\n", encoding="utf-8")
+        self.srv = server.serve(kbroot)
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.srv.server_port}"
+
+    def tearDown(self):
+        self.srv.shutdown()
+        self.srv.server_close()
+        self.tmp.cleanup()
+
+    def test_the_path_to_an_objective_and_its_obstacles(self):
+        status, body = self.call("GET", "/api/dependances?objectif=supprimer")
+        self.assertEqual(status, 200)
+        c = body["composition"]
+        self.assertEqual(([t["slug"] for t in c["chemin_tickets"]], c["chemin"]), (["run", "supprimer"], 2))
+        self.assertIn("`run` : incomplet → `/backlog run`", c["obstacles"][0])  # bare tickets: no story, no notes
+        self.assertEqual(body["pret"], [])
+        self.assertEqual([o["slug"] for o in body["objectifs"]], ["supprimer", "run"])
+        self.assertEqual(self.call("GET", "/api/dependances?objectif=inconnu")[0], 400)
+
+    def test_a_button_added_to_the_code_counts_at_the_next_computation(self):
+        tc, root = kb.gt.ticket_check(), str(self.kbroot.parent.parent)
+        self.assertNotIn("Supprimer", tc.source_text(root))
+        (self.kbroot.parent.parent / "app.py").write_text('st.button("Supprimer")\n', encoding="utf-8")
+        self.assertEqual(self.call("GET", "/api/dependances")[0], 200)
+        self.assertIn('"Supprimer"', tc.source_text(root))  # the long-lived server read the code again
+
+
 class UsageApiTest(unittest.TestCase):
     """GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude)."""
 

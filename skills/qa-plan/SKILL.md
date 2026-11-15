@@ -7,7 +7,7 @@ description: "Use to add the tests to a sprint before it starts: one test plan p
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (a ticket added to a sprint whose `qa-plan` is done excepted: no call): `avancement.py start qa-plan --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block qa-plan --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done qa-plan --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
-**Tâches.** Before each dispatch, `avancement.py task add qa-plan <id> --sprint <slug> --agent <agent>`; on its return, `task done qa-plan <id> --sprint <slug> --sortie <the paths it wrote>`: `plans-<k>` (`hosa-qa-lead`, Step 3, one per lot) → the lot's `kb/test/<ticket>-technique.md`; `base-de-test` (`hosa-dba`, Step 3b) → `kb/infra/base-de-donnees.md`; `jeu-de-donnees` (`hosa-data-engineer`, Step 4) → the dataset and its README. Stopped on an Open Question → `task block qa-plan <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered. A ticket added to a sprint whose `qa-plan` is done is not a stage: no task.
+**Tâches.** Before each dispatch, `avancement.py task add qa-plan <id> --sprint <slug> --agent <agent>`; on its return, `task done qa-plan <id> --sprint <slug> --sortie <the paths it wrote>`: `plans-<k>` (`hosa-qa-lead`, Step 3, one per lot) → the lot's `kb/test/<ticket>-technique.md`; `base-de-test` (`hosa-dba`, Step 3b) → `kb/infra/base-de-donnees.md`; `jeu-de-donnees` (`hosa-data-engineer`, Step 4) → the dataset and its README; `defaut-<ticket>` (`hosa-product-owner`, a `Défaut constaté`) → `kb/tickets/<ticket>.md`, then `cas-<ticket>` (`hosa-qa-lead`) → its plan. Stopped on an Open Question → `task block qa-plan <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered. A ticket added to a sprint whose `qa-plan` is done is not a stage: no task.
 
 Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, before the sprint starts — so `develop` can write each ticket's tests before its code, and `qa` has something concrete to execute. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
 
@@ -18,7 +18,9 @@ Lit kb/sprints/<slug>.md pour sa liste de tickets
         ↓
 Pour chaque ticket sans kb/test/<slug-ticket>-technique.md
 existant : dispatch hosa-qa-lead (Mode 1)
-        ↓ Open Question (note technique/stack incomplète) → relay to user, stop
+        ↓ Écart de composition → back qa-plan sprint
+        ↓ Défaut constaté → critère ajouté (PO), plan refait
+        ↓ Open Question que la KB ne tranche pas → relay to user, stop
         ↓ plan écrit
 Ticket déjà préparé (fichier existe) → passe au suivant,
 ne re-génère pas
@@ -45,9 +47,12 @@ For each ticket in the sprint, check whether `.hosa/kb/test/<slug-ticket>-techni
 
 ## Step 3: Dispatch for Each Missing Plan
 
-Group the tickets without a plan yet in lots of up to 4 tickets of the same module (`## Placement architecture`), and dispatch `hosa-qa-lead` (Mode 1, `agents/qa-lead.md`) once per lot with its slugs — it reads the shared sources once and writes one plan per ticket. The lots are independent: dispatch them in one message. A big or lone ticket is a lot of one. It reads the ticket's story, persona link, and technical note, reads the recorded `Stack Decision`s, defines the technical test cases — functional, `[sécurité]` from the ticket's note sécurité, `[navigateur]` for its screens, `[nfr]` from the definition of done — identifies the recette required, and writes `kb/test/<slug-ticket>-technique.md`.
+Group the tickets without a plan yet in lots of up to 4 tickets of the same module (`## Placement architecture`), and dispatch `hosa-qa-lead` (Mode 1, `agents/qa-lead.md`) once per lot with its slugs — it reads the shared sources once and writes one plan per ticket. The lots are independent: dispatch them two at a time, in one message — `budget.js` refuses a third while two run (pipeline.json `dispatch`; a sprint of 20 tickets is 5 lots, and four agents at once used up the 5-hour limit in 21 minutes on rieki). A big or lone ticket is a lot of one. It reads the ticket's story, persona link, and technical note, reads the recorded `Stack Decision`s, defines the technical test cases — functional, `[sécurité]` from the ticket's note sécurité, `[navigateur]` for its screens, `[nfr]` from the definition of done — identifies the recette required, and writes `kb/test/<slug-ticket>-technique.md`.
 
-If it returns an Open Question (the technical note or the stack decisions are missing something needed) — relay it to the user, get the answer, and only redispatch once you have it.
+Its report, in this order:
+- **`## Écarts de composition`** — the sprint holds a ticket without what it tests: a composition defect, not a question. `avancement.py back qa-plan sprint --sprint <slug> --cause "<ticket> CAn" --detail "<the exact lines>"`, then run `sprint` on it: `hosa-sprint-planner` takes the ticket that brings the element when its dependencies are done and it fits, or moves the criterion to that ticket (`backlog` Single-Ticket Mode, `hosa-product-owner`), or sets the ticket aside. The user validates only the new sprint (its tickets and capacity), as in `sprint` Step 2. Then `qa-plan` again on the tickets left without a plan.
+- **`## Défauts constatés`** — fixed with the ticket, in this order: `hosa-product-owner` (Responsibility 4, task `defaut-<ticket>`) adds the criterion as given, with its next `CAn`; then `hosa-qa-lead` (task `cas-<ticket>`) adds that criterion's case to the existing plan — the one case Step 2 lets a re-run add to a written plan. Say it in one line; never ask.
+- **`## Open Questions`** — before relaying one, answer it yourself when the ticket, a `done` ticket, the code or the KB answers it (a value the criterion refuses is never stored; a ceiling a done ticket set is settled): redispatch with that answer and say it in one line. Relay only what the user owns (scope, priority, a product choice), its recommended option the one that keeps the ticket's criteria tested in this sprint. Then redispatch once answered.
 
 ## Step 3b: Test Database
 

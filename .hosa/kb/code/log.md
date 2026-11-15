@@ -1,5 +1,45 @@
 # Log — kb/code
 
+## 2026-11-15
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-sprint-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-sprint-scripts`
+- process:hosa-graph a mis à jour `skills-sprint-scripts`
+- process:hosa-graph a mis à jour `hosa-app-public`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-sprint-scripts`
+- process:hosa-graph a mis à jour `skills-sprint-scripts`
+- process:hosa-graph a créé `skills-sprint-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+
 ## 2026-11-14
 - process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `hooks`

@@ -410,6 +410,19 @@ class Tasks(unittest.TestCase):
         self.assertIn("- Tâche bloquée : `a` hosa-senior-dev (`stack`) — Q1. Postgres ou SQLite ?", out)
         self.assertIn("tâche `a` hosa-senior-dev : bloqué", run(self.k, "next")[1])
 
+    def test_a_sprint_holds_what_its_tickets_need(self):
+        sprint = "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n- [B](../tickets/b.md)\n"
+        k = kb({"sprints/s1.md": sprint, "tickets/fait.md": "---\ntype: Ticket\nstate: done\n---\n",
+                "tickets/a.md": "---\ntype: Ticket\nstate: todo\ndepends_on: [fait, b, ailleurs]\n---\n",
+                "tickets/b.md": "---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n"
+                                "- CA4 — et, dès qu'il existe, « Supprimer » est destructeur\n",
+                "tickets/ailleurs.md": "---\ntype: Ticket\nstate: todo\n---\n"})
+        gaps = av.proofs(k, "sprint", "s1")
+        self.assertEqual(gaps[:2], ["a : attend `b`, ni fait ni avant lui dans le sprint (placé après lui)",
+                                    "a : attend `ailleurs`, ni fait ni avant lui dans le sprint (hors du sprint)"])
+        self.assertTrue(gaps[2].startswith("b : CA4 conditionnel (« dès qu'il existe »)"), gaps)
+        self.assertEqual(len(gaps), 3)
+
     def test_sprint_tasks_are_per_sprint(self):
         k = kb({"sprints/s1.md": SPRINT, "sprints/s2.md": SPRINT, "tickets/t1.md": TICKET})
         for s in ("s1", "s2"):
@@ -1141,6 +1154,19 @@ class Loops(unittest.TestCase):
         self.assertEqual(back("t1", "test_b")[0], 1)
         sections, _ = av.load(k / "project" / "avancement.md")
         self.assertEqual({r[0]: r[1] for r in sections["Sprint s1"]}["develop"], av.TODO)
+
+    def test_a_composition_defect_found_at_qa_plan_reopens_the_sprint(self):
+        k = kb({})
+        for s in ("sprint", "qa-plan"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        back = lambda c: run(k, "back", "qa-plan", "sprint", "--sprint", "s1", "--cause", c,  # noqa: E731
+                             "--detail", "hierarchie CA4 cite « Supprimer », livré par supprimer-un-run")
+        self.assertEqual(back("hierarchie CA4")[0], 0)
+        rows = {r[0]: r[1] for r in av.load(k / "project" / "avancement.md")[0]["Sprint s1"]}
+        self.assertEqual((rows["sprint"], rows["qa-plan"]), (av.TODO, av.TODO))
+        self.assertEqual(back("hierarchie CA4")[0], 0)
+        self.assertEqual(back("hierarchie CA4")[0], 1)   # the bound: the user decides
+        self.assertEqual(back("lire-un-csv CA2")[0], 0)  # another cause: its own count
 
     def test_unknown_loop_is_a_bad_invocation(self):
         k = kb({})
