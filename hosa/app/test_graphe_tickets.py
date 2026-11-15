@@ -148,6 +148,9 @@ class Roadmap(unittest.TestCase):
         self.assertEqual(r["sprints"][0]["jalons"], ["imp5"])
         self.assertEqual(r["bloques"][0]["jalon"], "run11")
         self.assertIn("`net3` : incomplet", r["bloques"][0]["obstacles"][0])
+        self.assertEqual([sp["nature"] for sp in r["sprints"]], ["parcours"])  # nothing past it, no bag of the rest
+        r = gt.roadmap(g, ["run11", "imp5"])  # the first milestone blocked: no sprint at all, the fix comes first
+        self.assertEqual((r["sprints"], [b["jalon"] for b in r["bloques"]]), ([], ["run11", "imp5"]))
 
     def test_the_roadmap_file_keeps_the_validated_milestones(self):
         kb = Path(tempfile.mkdtemp())
@@ -160,6 +163,8 @@ class Roadmap(unittest.TestCase):
         gt.write_roadmap(kb, self.g, gt.roadmap(self.g, ["imp5"], plafond=3), "2026-11-15T13:00:00Z")
         self.assertEqual(gt.read_jalons(kb), ["imp5"])  # recomputed: the milestones unchanged
         self.assertIn("### Sprint 2 — `imp5`", f.read_text(encoding="utf-8"))  # cut at whole sub-paths
+        self.assertEqual(gt.read_bornes(kb), (3, 15, 5))  # the bounds written are the ones read back
+        self.assertEqual(gt.read_bornes(Path(tempfile.mkdtemp())), (20, 15, 5))
 
 
 class Cli(unittest.TestCase):
@@ -196,6 +201,23 @@ class Cli(unittest.TestCase):
         (self.kb / "sprints" / "s4.md").write_text("---\ntype: Sprint\n---\n## Tickets\n" + "".join(
             f"- [{r['slug']}](../tickets/{r['slug']}.md)\n" for r in c["tickets"]), encoding="utf-8")
         self.assertEqual(av.proofs(self.kb, "sprint", "s4"), [])
+
+    def test_the_roadmaps_first_sprint_passes_done_sprint(self):
+        av_path = SCRIPT.parents[2] / "status" / "scripts" / "avancement.py"
+        sp = importlib.util.spec_from_file_location("avancement", av_path)
+        av = importlib.util.module_from_spec(sp)
+        sp.loader.exec_module(av)
+        for slug, deps in (("c", "[a]"), ("d", "[c, a]"), ("e", "[d]")):
+            (self.kb / "tickets" / f"{slug}.md").write_text(
+                f"---\ntype: Ticket\nstate: todo\npriority: 3\ndepends_on: {deps}\n---\n", encoding="utf-8")
+        with mock.patch.object(gt.ticket_check(), "gaps", lambda p: []):
+            r = gt.roadmap(gt.load(self.kb, "s3"), ["d", "e"], plafond=3, tolerance=0)
+        first = r["sprints"][0]["tickets"]
+        self.assertEqual((first, r["sprints"][0]["jalons"]), (["a", "c", "d"], ["d"]))
+        (self.kb / "sprints").mkdir()
+        (self.kb / "sprints" / "s5.md").write_text("---\ntype: Sprint\n---\n## Tickets\n" + "".join(
+            f"- [{s}](../tickets/{s}.md)\n" for s in first), encoding="utf-8")
+        self.assertEqual(av.proofs(self.kb, "sprint", "s5"), [])
 
     def test_recomposing_a_sprint_frees_its_tickets(self):
         code, out = self.run_("composer", "--objectif", "b", "--json")

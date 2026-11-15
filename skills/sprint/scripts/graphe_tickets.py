@@ -252,14 +252,16 @@ def roadmap(graph: dict[str, dict], jalons: list[str], plafond: int = PLAFOND, d
     for m in jalons:
         if m not in graph:
             bloques.append({"jalon": m, "obstacles": [f"`{m}` : ticket introuvable"]})
-            continue
+            break
         if graph[m]["state"] == "done" or graph[m]["sprint"] or m in placed:
             continue  # delivered, being delivered, or brought by an earlier milestone
         chain, missing = path_to(graph, m, apercu=True)
         blocked = obstacles(graph, [s for s in chain if s not in placed], missing)
-        if blocked:
+        if blocked:  # the roadmap stops there: no sprint past a milestone that can't be built (rieki: 4 blocked
+            # milestones gave a first sprint of 20 tickets « hors parcours », the bag again)
             bloques.append({"jalon": m, "obstacles": blocked})
-            continue
+            bloques += [{"jalon": n, "obstacles": [f"après le jalon bloqué `{m}`"]} for n in jalons[jalons.index(m) + 1:]]
+            break
         chain = [s for s in chain if s not in placed]
         while chain:
             if cur is not None and fits(graph, cur["tickets"] + chain, cap, dmax):
@@ -285,7 +287,8 @@ def roadmap(graph: dict[str, dict], jalons: list[str], plafond: int = PLAFOND, d
                 placed |= taken
                 chain = [s for s in chain if s not in taken]
                 cur = None
-    rest = sorted((s for s, t in graph.items() if eligible(t) and s not in placed), key=lambda s: order_key(graph[s]))
+    rest = [] if bloques else sorted((s for s, t in graph.items() if eligible(t) and s not in placed),
+                                     key=lambda s: order_key(graph[s]))
     cur = None
     while rest:
         free = [s for s in rest if all(graph.get(d, {}).get("state") == "done" or graph.get(d, {}).get("sprint")
@@ -307,6 +310,16 @@ def roadmap(graph: dict[str, dict], jalons: list[str], plafond: int = PLAFOND, d
         sp["demo"] = demo_cost(graph, sp["tickets"])
     return {"sprints": sprints, "bloques": bloques, "a_completer": a_completer, "en_attente": en_attente,
             "plafond": plafond, "demo_max": demo, "tolerance": tolerance}
+
+
+BORNES = re.compile(r"(\d+) tickets et (\d+) tests de démo par sprint, (\d+) %")
+
+
+def read_bornes(kb: Path) -> tuple[int, int, int]:
+    """The bounds validated with the milestones (`## Bornes`), the defaults otherwise."""
+    f = kb / "project" / "feuille-de-route.md"
+    m = BORNES.search(f.read_text(encoding="utf-8")) if f.is_file() else None
+    return (int(m[1]), int(m[2]), int(m[3])) if m else (PLAFOND, DEMO, TOLERANCE)
 
 
 def read_jalons(kb: Path) -> list[str] | None:
@@ -413,9 +426,9 @@ def main(argv: list[str]) -> int:
     co.add_argument("--json", action="store_true")
     fe = sub.add_parser("feuille")
     fe.add_argument("--jalons", help="jalons séparés par des virgules (sinon ceux de kb/project/feuille-de-route.md)")
-    fe.add_argument("--plafond", type=int, default=PLAFOND)
-    fe.add_argument("--demo", type=int, default=DEMO)
-    fe.add_argument("--tolerance", type=int, default=TOLERANCE)
+    fe.add_argument("--plafond", type=int, help=f"tickets par sprint (sinon `## Bornes`, sinon {PLAFOND})")
+    fe.add_argument("--demo", type=int, help=f"tests de démo par sprint (sinon `## Bornes`, sinon {DEMO})")
+    fe.add_argument("--tolerance", type=int, help=f"%% pour garder un jalon entier (sinon `## Bornes`, sinon {TOLERANCE})")
     fe.add_argument("--sprint", help="recomposer ce sprint : ses tickets redeviennent libres")
     fe.add_argument("--ecrire", action="store_true", help="écrire kb/project/feuille-de-route.md")
     fe.add_argument("--json", action="store_true")
@@ -448,7 +461,8 @@ def main(argv: list[str]) -> int:
         if not jalons:
             print("pas de jalons : `--jalons a,b,…` ou `## Jalons` de kb/project/feuille-de-route.md", file=sys.stderr)
             return 2
-        r = roadmap(graph, jalons, a.plafond, a.demo, a.tolerance)
+        bp, bd, bt = read_bornes(kb)
+        r = roadmap(graph, jalons, a.plafond or bp, a.demo or bd, bt if a.tolerance is None else a.tolerance)
         if a.ecrire:
             from datetime import datetime, timezone
             at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

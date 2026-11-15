@@ -537,11 +537,18 @@ def hidden_dependencies(path: Path, front: str, body: str) -> list[str]:
         writers = {s for s, t in index.items() if table in t["writes"] and s != me}
         if not writers or any(not todo(w) for w in writers) or writers & deps:
             continue
-        if all(me in closure(w, path.parent) for w in writers):  # every writer comes after: an empty state
+        before = {w for w in writers if me not in closure(w, path.parent)}  # one coming after would make a cycle
+        if not before:  # every writer comes after: the reader shows the empty state
             continue
-        names = ", ".join(f"`{w}`" for w in sorted(writers))
-        out.append(f"lit `{table}`, qu'aucun ticket fait ni de ses dépendances n'écrit — l'écrivent (à faire) : {names} "
-                   "→ mettre celui qui la remplit dans `depends_on`")
+        # the first to write it: no other writer before it (rieki `ventes`: the sales import, not the code check
+        # that rewrites two of its columns)
+        first = sorted(w for w in before if not (closure(w, path.parent) & (before - {w})))
+        if len(first) == 1:
+            out.append(f"lit `{table}`, qu'aucun ticket fait ni de ses dépendances n'écrit → `depends_on: [{first[0]}]` "
+                       f"(le premier à l'écrire)")
+        else:
+            out.append(f"lit `{table}`, qu'aucun ticket fait ni de ses dépendances n'écrit — l'écrivent d'abord (à faire) : "
+                       + ", ".join(f"`{w}`" for w in first) + " → mettre celui qui la remplit dans `depends_on`")
     return out
 
 

@@ -7,23 +7,23 @@ description: "Use to compose the next sprint: the next one of the roadmap comput
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start sprint --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block sprint --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done sprint --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
-**Tâches.** Before Step 3, `avancement.py task add sprint ecriture --sprint <slug> --agent hosa-sprint-planner`; on its return, `task done sprint ecriture --sprint <slug> --sortie kb/sprints/<slug>.md`. Phase 1 writes nothing: no task. Stopped on an Open Question → `task block sprint ecriture --sprint <slug> --detail "<la question>"`, and `task add` it again once answered.
+**Tâches.** Before Step 3, `avancement.py task add sprint ecriture --sprint <slug> --agent hosa-sprint-planner`; on its return, `task done sprint ecriture --sprint <slug> --sortie kb/sprints/<slug>.md`. Phase 1 writes nothing: no task. A gap with one fix (Step 1) → `task add sprint graphe-<ticket> --sprint <slug> --agent hosa-product-owner` before the dispatch, `task done … --sortie kb/tickets/<the tickets it changed>.md` on its return; a moved criterion whose ticket has a plan → `task add sprint cas-<ticket> --agent hosa-qa-lead` for its case. Stopped on an Open Question → `task block sprint ecriture --sprint <slug> --detail "<la question>"`, and `task add` it again once answered.
 
 Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line. This skill is the only one that talks to the user — the actual scoping, classification, and write is `hosa-sprint-planner`'s.
 
 ## Flow
 
 ```
-Dispatch hosa-sprint-planner (Phase 1: scope, priority order,
-classify tickets prêts/écartés)
-        ↓ Open Questions (empty backlog, no priority order, objective unreachable) → relay to user, stop
-        ↓ Tickets prêts / Tickets écartés
-Présente le résultat à l'utilisateur — propose de combler les
-tickets écartés (stack/architecture/interface) ou de continuer
-sans eux ; demande le nom/objectif du sprint
+Dispatch hosa-sprint-planner (Phase 1) : feuille de route
+recalculée (graphe_tickets feuille), son Sprint 1
+        ↓ pas encore de jalons → les jalons proposés, une question, une fois
+        ↓ écart à une correction → hosa-product-owner l'applique
+          (backlog, Single-Ticket Mode), puis recalcul — sans question
+        ↓ étape manquante (stack/architecture/interface) → proposée
+Annonce le sprint (jalons, taille) — pas de question tant
+qu'il suit la feuille de route validée
         ↓
-Redispatch hosa-sprint-planner (Phase 2) avec le nom/objectif et
-les tickets confirmés → écrit le Sprint
+Redispatch hosa-sprint-planner (Phase 2) → écrit le Sprint
         ↓
 Log kb/sprints/log.md et kb/tickets/log.md
         ↓
@@ -43,7 +43,7 @@ First, `kb/infra/environnement-docker.md` must have `## Outillage qualité` with
 
 Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`). **The sprint is the next one of the roadmap** (`kb/project/feuille-de-route.md`, its milestones validated once by the user): the planner recomputes it from the graph (`<hosa> graphe_tickets … feuille --ecrire`) and takes its first sprint — the milestones' paths in build order, up to 20 tickets and 15 demo tests (5 % over to keep a milestone whole). No roadmap yet (a backlog made before it) → the planner proposes the milestones (the steps of the main persona journey, in order) and the bounds: one question to the user, once; then the roadmap is written. A sprint is sized by its milestones, not by a developer's week.
 
-Reopened by `qa-plan` (loop `qa-plan` → `sprint`, an `Écart de composition`): give the planner the loop's exact lines; it recomposes from the current sprint (`composer --sprint <slug>`). The user validates only what changes.
+Reopened by `qa-plan` (loop `qa-plan` → `sprint`, an `Écart de composition`): give the planner the loop's exact lines; it recomputes the roadmap with that sprint's tickets free again (`feuille --sprint <slug> --ecrire`). The user validates only what changes.
 
 **A gap with one fix is applied, never offered.** A ticket the checker sets aside for a missing `depends_on`, a criterion to move to the ticket that brings what it tests, or one behaviour in two tickets → `backlog` Single-Ticket Mode on it at once (`hosa-product-owner` applies the checker's line), then recompute. rieki sprint-3: three such gaps came to the user as questions whose answer was written in the gap itself. Only a missing stage (`stack`, `architecture`, `interface`, `securite`, `juridique`) or a product choice goes to the user.
 

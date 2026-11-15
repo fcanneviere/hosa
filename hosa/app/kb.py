@@ -454,7 +454,7 @@ def dependances(root, objectif=None):
     if comp.get("chemin") is not None and comp["objectif"]:
         comp["chemin_tickets"] = [graph[s] for s in gt.path_to(graph, comp["objectif"], apercu=True)[0]]
     jalons = gt.read_jalons(root)
-    feuille = gt.roadmap(graph, jalons) if jalons else None
+    feuille = gt.roadmap(graph, jalons, *gt.read_bornes(root)) if jalons else None
     if feuille:
         feuille["titres"] = {s: graph[s]["title"] for sp in feuille["sprints"] for s in sp["tickets"] + sp["jalons"]}
         feuille["titres"].update({b["jalon"]: graph[b["jalon"]]["title"] for b in feuille["bloques"] if b["jalon"] in graph})

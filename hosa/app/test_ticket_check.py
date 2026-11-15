@@ -141,8 +141,15 @@ class HiddenDependencies(unittest.TestCase):
         self.write("importer-les-ventes", donnees="`ventes`.`date`, `quantite` (DECIMAL) écrits ; `imports`.`id` écrit.")
         p = self.write("nettoyer", donnees="`versions`.`id`, `numero` ; `rapport` écrites ; `ventes` lue seulement.")
         self.assertEqual(tc.data_access(p.read_text(encoding="utf-8")), ({"versions", "rapport"}, {"ventes"}))
-        self.assertEqual(self.gaps(p), ["lit `ventes`, qu'aucun ticket fait ni de ses dépendances n'écrit — l'écrivent "
-                                        "(à faire) : `importer-les-ventes` → mettre celui qui la remplit dans `depends_on`"])
+        self.assertEqual(self.gaps(p), ["lit `ventes`, qu'aucun ticket fait ni de ses dépendances n'écrit → "
+                                        "`depends_on: [importer-les-ventes]` (le premier à l'écrire)"])
+        # a later writer that rewrites columns isn't the one to wait for (rieki: the unknown-codes check)
+        self.write("signaler-les-codes", "depends_on: [importer-les-ventes]\n", donnees="`ventes`.`code_client` écrits.")
+        self.assertEqual(self.gaps(p), ["lit `ventes`, qu'aucun ticket fait ni de ses dépendances n'écrit → "
+                                        "`depends_on: [importer-les-ventes]` (le premier à l'écrire)"])
+        self.write("autre-source", donnees="`ventes`.`date` écrits.")  # two first writers: the product owner picks
+        self.assertIn("l'écrivent d'abord (à faire) : `autre-source`, `importer-les-ventes`", self.gaps(p)[0])
+        (self.tickets / "autre-source.md").unlink()
         p = self.write("nettoyer", "depends_on: [importer-les-ventes]\n", donnees="`ventes` lue seulement.")
         self.assertEqual(self.gaps(p), [])
         # every writer comes after the reader: it shows the empty state, no edge (rieki: versions list, runs later)

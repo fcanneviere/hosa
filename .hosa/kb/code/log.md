@@ -1,6 +1,9 @@
 # Log — kb/code
 
 ## 2026-11-15
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
 - process:hosa-graph a mis à jour `skills-backlog-scripts`
 - process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hosa-app`

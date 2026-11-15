@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T11:57:42Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T12:18:45Z'}
 ---
 
 ## Fichiers
@@ -156,7 +156,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T11:57:42Z'}
 - `ExtractTest` — `hosa/app/test_graph_extract.py:17`
 - `calls` — `hosa/app/test_graph_extract.py:13`
 - `defs` — `hosa/app/test_graph_extract.py:9`
-- `Cli` — `hosa/app/test_graphe_tickets.py:165`
+- `Cli` — `hosa/app/test_graphe_tickets.py:170`
 - `Path_` — `hosa/app/test_graphe_tickets.py:27` — rieki: « Supprimer un run » waited for 32 tickets; the planner only saw priorities.
 - `Roadmap` — `hosa/app/test_graphe_tickets.py:106` — Every sprint to come, computed once the milestones are validated: each ticket lands once, each sprint can
 - `graph` — `hosa/app/test_graphe_tickets.py:23`
@@ -176,7 +176,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T11:57:42Z'}
 - `Setup` — `hosa/app/test_run.py:27`
 - `HiddenDependencies` — `hosa/app/test_ticket_check.py:101` — The dependencies a ticket's own text states, its `depends_on` missing — the rieki cases, as they were written.
 - `PhantomPaths` — `hosa/app/test_ticket_check.py:21`
-- `SecurityAndLegalNotes` — `hosa/app/test_ticket_check.py:175`
+- `SecurityAndLegalNotes` — `hosa/app/test_ticket_check.py:182`
 - `UnbuiltLabels` — `hosa/app/test_ticket_check.py:44` — rieki sprint-3: the button hierarchy (priority 9) tested « Supprimer » of Résultats, which
 - `ticket` — `hosa/app/test_ticket_check.py:17`
 - `SprintMeasures` — `hosa/app/test_usage_report.py:67`
