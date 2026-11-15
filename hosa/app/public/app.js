@@ -349,7 +349,17 @@ function vPlanification() {
     h('option', { value: '' }, 'le premier ticket atteignable'),
     d.objectifs.map((o) => h('option', { value: o.slug, selected: o.slug === F.objectif ? '' : null }, `${o.priority == null ? '—' : o.priority} · ${o.title}`))));
   const obj = d.objectifs.find((o) => o.slug === c.objectif);
-  return [...head, h('div', { class: 'filters' }, pick),
+  const f = d.feuille, tt = (slug) => (f && f.titres[slug]) || slug;
+  const roadmap = f ? card(`Feuille de route · ${plural(f.sprints.length, 'sprint', 'sprints')} à venir`,
+    h('p', { class: 'muted' }, `Les jalons validés, puis les sprints calculés depuis le graphe : ${f.plafond} tickets et ${f.demo_max} tests de démo au plus, ${f.tolerance} % de plus pour garder un jalon entier.`),
+    table(['Sprint', 'Jalons', 'Tickets', 'Points', 'Démo'], f.sprints.map((sp, i) => h('tr', {}, td(String(i + 1), 'num r'),
+      td(sp.jalons.length ? sp.jalons.map(tt).join(' · ') : sp.nature === 'hors parcours' ? 'hors parcours' : 'partie d’un jalon', sp.jalons.length ? null : 'muted'),
+      td(String(sp.tickets.length), 'num r'), td(String(sp.points), 'num r'), td(String(sp.demo), 'num r'))), { caption: 'Sprints à venir' }),
+    f.bloques.length ? h('div', { class: 'alert err', role: 'alert' }, h('span', {}, h('b', {}, `${plural(f.bloques.length, 'jalon bloqué', 'jalons bloqués')}. `), 'Un ticket de leur chemin est à compléter (/backlog).'),
+      h('ul', { style: 'flex-basis:100%' }, f.bloques.map((b) => h('li', {}, tt(b.jalon))))) : null,
+    f.a_completer.length ? h('p', { class: 'hint' }, `${plural(f.a_completer.length, 'ticket à compléter', 'tickets à compléter')}, ${plural(f.en_attente.length, 'ticket en attente', 'tickets en attente')} derrière eux.`) : null)
+    : card('Feuille de route', none('Pas encore de jalons validés : le prochain /sprint les propose, une fois.'));
+  return [...head, roadmap, h('div', { class: 'filters' }, pick),
     c.obstacles && c.obstacles.length ? h('div', { class: 'alert err', role: 'alert' }, h('span', {}, h('b', {}, 'Objectif inatteignable pour l’instant. '), 'À régler d’abord :'),
       h('ul', { style: 'flex-basis:100%' }, c.obstacles.map((o) => h('li', { class: 'mono' }, o)))) : null,
     h('div', { class: 'kpis' },

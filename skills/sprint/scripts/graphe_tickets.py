@@ -5,14 +5,19 @@
       The ready frontier: `todo` tickets in no sprint, complete (`ticket_check`), every dependency done.
   python graphe_tickets.py <kb> chemin <ticket> [--json]
       Everything <ticket> still waits for, itself included, in build order, with its points and its gaps.
+  python graphe_tickets.py <kb> feuille [--jalons a,b,…] [--plafond N] [--demo N] [--tolerance PCT]
+                                        [--sprint <slug>] [--ecrire] [--json]
+      Every sprint to come: the milestones' paths in their order (list scheduling, whole sub-paths), then the
+      complete tickets no milestone needs, by priority. `--ecrire` writes kb/project/feuille-de-route.md, its
+      `## Jalons` kept as the user validated them. Exit 1 when a milestone is blocked (an incomplete ticket).
   python graphe_tickets.py <kb> composer [--objectif <ticket>] [--plafond N] [--demo N] [--sprint <slug>]
-                                         [--tolerance PCT] [--exact] [--remplir] [--json]
+                                         [--tolerance PCT] [--prolonger] [--remplir] [--json]
       A sprint: the whole path to the objective (default: the first ticket in priority order whose path can be
       built), within N tickets (default 20) and N demo tests (default 15, at least one per ticket with a screen).
       A path at most `--tolerance` % over a bound (default 5, at least one more) is taken whole: no round trip
       to the user for one ticket. Further over → milestones: whole sub-paths of it, the longest first, that fit.
-      The objective goes further on its own way: the furthest ticket waiting for it whose whole path still fits
-      (`--exact` keeps it as given). `--remplir` adds ready tickets (`hors objectif`) up to the bounds. `--sprint <slug>`: recompose that sprint,
+      `--prolonger` takes the objective further on its own way: the furthest ticket waiting for it whose whole
+      path still fits (rieki: it made a sprint bigger than its objective; off by default). `--remplir` adds ready tickets (`hors objectif`) up to the bounds. `--sprint <slug>`: recompose that sprint,
       its tickets free again. The incomplete tickets come back as `ecartes`, with their gaps. Exit 1 when the
       objective can't be reached (a ticket of its path incomplete, missing or in another sprint).
 
@@ -162,11 +167,12 @@ def further(graph: dict[str, dict], objectif: str, plafond: int, demo: int, tole
 
 
 def compose(graph: dict[str, dict], objectif: str | None, plafond: int, demo: int,
-            remplir: bool = False, apercu: bool = False, tolerance: int = TOLERANCE, exact: bool = False) -> dict:
+            remplir: bool = False, apercu: bool = False, tolerance: int = TOLERANCE, prolonger: bool = False) -> dict:
     """The sprint toward `objectif`: its whole path when it fits the bounds; otherwise the milestone — the ticket of
     that path whose own whole path is the longest that fits, never a cut that leaves half-built branches. `remplir`
     adds ready tickets `hors objectif` up to the bounds; by default the sprint is the objective's path alone.
-    The objective goes further on its own way while the path still fits (`further`); `exact` keeps it as given."""
+    `prolonger` takes the objective further on its own way while the path still fits (`further`); by default it
+    stays as given: the sprint's size comes from the roadmap's milestones, not from filling the bounds."""
     todo = sorted((s for s, t in graph.items() if t["state"] == "todo" and not t["sprint"]), key=lambda s: order_key(graph[s]))
     ecartes = [{"slug": s, "manques": graph[s]["manques"]} for s in todo if graph[s]["manques"]]
     base = {"objectif": objectif, "tickets": [], "jalon": None, "ecartes": ecartes, "plafond": plafond, "demo_max": demo}
@@ -178,7 +184,7 @@ def compose(graph: dict[str, dict], objectif: str | None, plafond: int, demo: in
         return dict(base, objectif=objectif, obstacles=[f"`{objectif}` : ticket introuvable"])
     demande, etendu = objectif, False
     chain, missing = path_to(graph, objectif, apercu)
-    if not exact and not obstacles(graph, chain, missing):
+    if prolonger and not obstacles(graph, chain, missing):
         objectif = further(graph, objectif, plafond, demo, tolerance, apercu)
         etendu = objectif != demande
         chain, missing = path_to(graph, objectif, apercu)
@@ -220,6 +226,144 @@ def compose(graph: dict[str, dict], objectif: str | None, plafond: int, demo: in
                 demande=demande, etendu=etendu)
 
 
+def roadmap(graph: dict[str, dict], jalons: list[str], plafond: int = PLAFOND, demo: int = DEMO,
+            tolerance: int = TOLERANCE) -> dict:
+    """Every sprint to come, computed (list scheduling on the dependency graph):
+    1. each milestone in its order brings its whole path — what it still waits for — into the open sprint while it
+       fits the bounds (tolerance included); otherwise the sprint closes and the path starts the next one; a path
+       over a whole sprint is cut at whole sub-paths (never half a branch);
+    2. then the complete tickets no milestone needs, in priority order, each once its dependencies are placed;
+    3. an incomplete ticket is placed nowhere: it waits under `a_completer`, and so does every milestone whose path
+       holds one. A ticket already in a composed sprint counts as delivered before the roadmap's first sprint.
+    Each ticket lands once; each sprint lists its tickets after their dependencies."""
+    cap, dmax = with_tolerance(plafond, tolerance), with_tolerance(demo, tolerance)
+    placed: set[str] = set()
+    sprints: list[dict] = []
+    bloques: list[dict] = []
+
+    def open_sprint(kind: str) -> dict:
+        sprints.append({"tickets": [], "jalons": [], "nature": kind})
+        return sprints[-1]
+
+    def todo_path(s: str) -> list[str]:
+        return [x for x in path_to(graph, s, apercu=True)[0] if x not in placed]
+
+    cur = None
+    for m in jalons:
+        if m not in graph:
+            bloques.append({"jalon": m, "obstacles": [f"`{m}` : ticket introuvable"]})
+            continue
+        if graph[m]["state"] == "done" or graph[m]["sprint"] or m in placed:
+            continue  # delivered, being delivered, or brought by an earlier milestone
+        chain, missing = path_to(graph, m, apercu=True)
+        blocked = obstacles(graph, [s for s in chain if s not in placed], missing)
+        if blocked:
+            bloques.append({"jalon": m, "obstacles": blocked})
+            continue
+        chain = [s for s in chain if s not in placed]
+        while chain:
+            if cur is not None and fits(graph, cur["tickets"] + chain, cap, dmax):
+                cur["tickets"] += chain
+                placed |= set(chain)
+                cur["jalons"].append(m)
+                chain = []
+            elif cur is not None and cur["tickets"]:
+                cur = None  # full: the path starts the next sprint
+            else:
+                cur = cur or open_sprint("parcours")
+                if fits(graph, chain, cap, dmax):
+                    continue  # taken whole at the next turn
+                taken: set[str] = set()  # whole sub-paths, the longest first, while they fit the strict bounds
+                for s, sub in sorted(((s, todo_path(s)) for s in chain if s != m),
+                                     key=lambda x: (-len(x[1]), order_key(graph[x[0]]))):
+                    if s not in taken and fits(graph, list(taken | set(sub)), plafond, demo):
+                        taken |= set(sub)
+                if not taken:  # one ticket alone over the bounds: it still has to be built
+                    taken = {chain[0]}
+                part = [s for s in chain if s in taken]
+                cur["tickets"] += part
+                placed |= taken
+                chain = [s for s in chain if s not in taken]
+                cur = None
+    rest = sorted((s for s, t in graph.items() if eligible(t) and s not in placed), key=lambda s: order_key(graph[s]))
+    cur = None
+    while rest:
+        free = [s for s in rest if all(graph.get(d, {}).get("state") == "done" or graph.get(d, {}).get("sprint")
+                                       or d in placed for d in graph[s]["depends_on"])]
+        if not free:
+            break
+        s = free[0]
+        if cur is None or not fits(graph, cur["tickets"] + [s], plafond, demo):
+            cur = open_sprint("hors parcours")
+        cur["tickets"].append(s)
+        placed.add(s)
+        rest.remove(s)
+    left = [s for s, t in sorted(graph.items(), key=lambda x: order_key(x[1]))
+            if t["state"] == "todo" and not t["sprint"] and s not in placed]
+    a_completer = [{"slug": s, "manques": graph[s]["manques"]} for s in left if graph[s]["manques"]]
+    en_attente = [s for s in left if not graph[s]["manques"]]  # complete, behind an incomplete one
+    for sp in sprints:
+        sp["points"] = sum(graph[s]["points"] for s in sp["tickets"])
+        sp["demo"] = demo_cost(graph, sp["tickets"])
+    return {"sprints": sprints, "bloques": bloques, "a_completer": a_completer, "en_attente": en_attente,
+            "plafond": plafond, "demo_max": demo, "tolerance": tolerance}
+
+
+def read_jalons(kb: Path) -> list[str] | None:
+    """The milestones the user validated, in order: `## Jalons` of `kb/project/feuille-de-route.md`."""
+    f = kb / "project" / "feuille-de-route.md"
+    if not f.is_file():
+        return None
+    tc = ticket_check()
+    return re.findall(r"\]\((?:\.\./tickets/)?([\w-]+)\.md\)", tc.section(tc.split(f.read_text(encoding="utf-8"))[1], "## Jalons") or "")
+
+
+def write_roadmap(kb: Path, graph: dict[str, dict], r: dict, at: str, jalons_list: list[str] | None = None) -> Path:
+    """Rewrites the computed part of the roadmap. `## Jalons` stays as the user validated it, or is written from
+    `jalons_list` (the milestones the user just validated)."""
+    f = kb / "project" / "feuille-de-route.md"
+    tc = ticket_check()
+    link = lambda s: f"[{graph[s]['title']}](../tickets/{s}.md) (`{s}`)" if s in graph else f"`{s}`"  # noqa: E731
+    if jalons_list is not None:
+        jalons = "\n".join(f"- {link(j)}" for j in jalons_list)
+    else:
+        jalons = tc.section(tc.split(f.read_text(encoding="utf-8"))[1], "## Jalons") or ""
+    f.parent.mkdir(parents=True, exist_ok=True)
+    out = ["---", "type: Feuille de route", "title: Feuille de route",
+           'description: "Les jalons du parcours, validés une fois, et les sprints calculés depuis le graphe des tickets"',
+           "tags: [pilotage]", f"generated: {{ by: process:hosa-graphe-tickets, at: {at} }}", "---",
+           "## Jalons", jalons.strip(), "",
+           "## Bornes", f"- {r['plafond']} tickets et {r['demo_max']} tests de démo par sprint, {r['tolerance']} % de plus "
+           "pour garder un jalon entier.", "", "## Sprints"]
+    for i, sp in enumerate(r["sprints"], 1):
+        head = ", ".join(f"`{j}`" for j in sp["jalons"]) or ("hors parcours" if sp["nature"] == "hors parcours" else "partie d'un jalon")
+        out += [f"### Sprint {i} — {head}", f"{len(sp['tickets'])} tickets, {sp['points']} points, {sp['demo']} tests de démo.", ""]
+        out += [f"- {link(s)}" for s in sp["tickets"]] + [""]
+    if r["bloques"]:
+        out += ["## Jalons bloqués"] + [f"- `{b['jalon']}` — " + " ; ".join(b["obstacles"]) for b in r["bloques"]] + [""]
+    if r["a_completer"]:
+        out += ["## À compléter"] + [f"- {link(a['slug'])} — " + " ; ".join(a["manques"]) for a in r["a_completer"]] + [""]
+    if r["en_attente"]:
+        out += ["## En attente d'un ticket à compléter"] + [f"- {link(s)}" for s in r["en_attente"]] + [""]
+    f.write_text("\n".join(out), encoding="utf-8")
+    return f
+
+
+def roadmap_report(graph: dict[str, dict], r: dict) -> str:
+    lines = [f"{len(r['sprints'])} sprint(s) à venir (bornes : {r['plafond']} tickets, {r['demo_max']} tests de démo, "
+             f"+{r['tolerance']} % pour un jalon entier) :"]
+    for i, sp in enumerate(r["sprints"], 1):
+        head = ", ".join(f"`{j}`" for j in sp["jalons"]) or sp["nature"]
+        lines.append(f"- Sprint {i} — {head} : {len(sp['tickets'])} tickets, {sp['points']} points, {sp['demo']} tests de démo")
+    lines += [f"Jalon bloqué `{b['jalon']}` : " + " ; ".join(b["obstacles"]) for b in r["bloques"]]
+    if r["a_completer"]:
+        lines.append(f"À compléter (`/backlog <ticket>`) : {len(r['a_completer'])} ticket(s) — "
+                     + ", ".join(f"`{a['slug']}`" for a in r["a_completer"]))
+    if r["en_attente"]:
+        lines.append(f"En attente d'un ticket à compléter : {len(r['en_attente'])} ticket(s).")
+    return "\n".join(lines)
+
+
 def report(c: dict) -> str:
     lines = []
     if c["obstacles"]:
@@ -228,7 +372,7 @@ def report(c: dict) -> str:
         return "\n".join(lines)
     if c.get("etendu"):
         lines.append(f"Objectif demandé `{c['demande']}` : son chemin laisse de la place. Objectif prolongé sur le même "
-                     f"chemin jusqu'à `{c['objectif']}`, le plus loin qui tient (`--exact` pour garder le premier).")
+                     f"chemin jusqu'à `{c['objectif']}`, le plus loin qui tient (`--prolonger`).")
     lines.append(f"Objectif `{c['objectif']}` : chemin de {c['chemin']} ticket(s), {c['chemin_points']} point(s), "
                  f"{c['chemin_demo']} test(s) de démo.")
     if c["jalon"]:
@@ -264,9 +408,17 @@ def main(argv: list[str]) -> int:
     co.add_argument("--demo", type=int, default=DEMO)
     co.add_argument("--tolerance", type=int, default=TOLERANCE, help="%% au-dessus des bornes accepté pour l'objectif entier")
     co.add_argument("--sprint", help="recomposer ce sprint : ses tickets redeviennent libres")
-    co.add_argument("--exact", action="store_true", help="garder l'objectif donné, sans le prolonger")
+    co.add_argument("--prolonger", action="store_true", help="prolonger l'objectif sur son chemin tant qu'il tient")
     co.add_argument("--remplir", action="store_true", help="ajouter des tickets prêts hors objectif jusqu'aux bornes")
     co.add_argument("--json", action="store_true")
+    fe = sub.add_parser("feuille")
+    fe.add_argument("--jalons", help="jalons séparés par des virgules (sinon ceux de kb/project/feuille-de-route.md)")
+    fe.add_argument("--plafond", type=int, default=PLAFOND)
+    fe.add_argument("--demo", type=int, default=DEMO)
+    fe.add_argument("--tolerance", type=int, default=TOLERANCE)
+    fe.add_argument("--sprint", help="recomposer ce sprint : ses tickets redeviennent libres")
+    fe.add_argument("--ecrire", action="store_true", help="écrire kb/project/feuille-de-route.md")
+    fe.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     kb = Path(a.kb)
     if not (kb / "tickets").is_dir():
@@ -291,7 +443,19 @@ def main(argv: list[str]) -> int:
             print("\n".join(f"{i}. `{s}`{' — incomplet' if graph[s]['manques'] else ''}" for i, s in enumerate(chain, 1)))
             print("\n".join(f"- {o}" for o in blocked))
         return 0
-    c = compose(graph, a.objectif, a.plafond, a.demo, a.remplir, tolerance=a.tolerance, exact=a.exact)
+    if a.cmd == "feuille":
+        jalons = [j.strip() for j in a.jalons.split(",") if j.strip()] if a.jalons else read_jalons(kb)
+        if not jalons:
+            print("pas de jalons : `--jalons a,b,…` ou `## Jalons` de kb/project/feuille-de-route.md", file=sys.stderr)
+            return 2
+        r = roadmap(graph, jalons, a.plafond, a.demo, a.tolerance)
+        if a.ecrire:
+            from datetime import datetime, timezone
+            at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            print(f"écrit : {write_roadmap(kb, graph, r, at, jalons if a.jalons else None)}", file=sys.stderr)
+        print(json.dumps(r, ensure_ascii=False) if a.json else roadmap_report(graph, r))
+        return 1 if r["bloques"] else 0
+    c = compose(graph, a.objectif, a.plafond, a.demo, a.remplir, tolerance=a.tolerance, prolonger=a.prolonger)
     print(json.dumps(c, ensure_ascii=False) if a.json else report(c))
     return 1 if c["obstacles"] else 0
 

@@ -36,9 +36,9 @@ class Path_(unittest.TestCase):
         self.assertEqual(gt.ready(self.g), ["polish", "import"])
 
     def test_the_sprint_is_the_objective_path_ready_tickets_only_on_request(self):
-        c = gt.compose(self.g, "run", 20, 15, exact=True)
+        c = gt.compose(self.g, "run", 20, 15)
         self.assertEqual(([r["slug"] for r in c["tickets"]], c["atteint"]), (["import", "nettoyage", "run"], True))
-        c = gt.compose(self.g, "run", 20, 15, remplir=True, exact=True)
+        c = gt.compose(self.g, "run", 20, 15, remplir=True)
         self.assertEqual([(r["slug"], r["objectif"]) for r in c["tickets"]],
                          [("import", True), ("nettoyage", True), ("run", True), ("polish", False), ("supprimer", False)])
 
@@ -69,15 +69,15 @@ class Path_(unittest.TestCase):
 
     def test_the_objective_goes_further_on_its_own_way_while_it_fits(self):
         # rieki sprint-3: « importer les ventes » (8 tickets) while « lancer un run » (21) fitted on the same path
-        c = gt.compose(self.g, "import", 20, 15)
+        c = gt.compose(self.g, "import", 20, 15, prolonger=True)
         self.assertEqual((c["demande"], c["objectif"], c["etendu"]), ("import", "supprimer", True))
         self.assertEqual([r["slug"] for r in c["tickets"]], ["import", "nettoyage", "run", "supprimer"])
-        self.assertEqual(gt.compose(self.g, "import", 3, 15, tolerance=0)["objectif"], "run")  # the furthest that fits
-        c = gt.compose(self.g, "import", 20, 15, exact=True)
+        self.assertEqual(gt.compose(self.g, "import", 3, 15, tolerance=0, prolonger=True)["objectif"], "run")  # the furthest that fits
+        c = gt.compose(self.g, "import", 20, 15)  # by default the objective stays as given
         self.assertEqual((c["objectif"], c["etendu"], len(c["tickets"])), ("import", False, 1))
         g = dict(self.g, supprimer=t("supprimer", 124, ["run"], manques=["x"])[1])  # an incomplete one stops the way
-        self.assertEqual(gt.compose(g, "import", 20, 15)["objectif"], "run")
-        self.assertEqual(gt.compose(self.g, "polish", 20, 15)["objectif"], "polish")  # nothing waits for it
+        self.assertEqual(gt.compose(g, "import", 20, 15, prolonger=True)["objectif"], "run")
+        self.assertEqual(gt.compose(self.g, "polish", 20, 15, prolonger=True)["objectif"], "polish")  # nothing waits for it
 
     def test_an_objective_whose_path_cant_be_built_is_refused(self):
         g = dict(self.g, nettoyage=t("nettoyage", 18, ["import"], manques=["section absente"])[1],
@@ -99,8 +99,67 @@ class Path_(unittest.TestCase):
 
     def test_no_objective_takes_the_first_ticket_whose_path_can_be_built(self):
         g = dict(self.g, polish=t("polish", 9, manques=["x"])[1])
-        c = gt.compose(g, None, 20, 15)  # polish (9) can't; nettoyage (18) can, through import — then further on
-        self.assertEqual((c["demande"], c["objectif"]), ("nettoyage", "supprimer"))
+        c = gt.compose(g, None, 20, 15)  # polish (9) can't; nettoyage (18) can, through import
+        self.assertEqual((c["objectif"], [r["slug"] for r in c["tickets"]]), ("nettoyage", ["import", "nettoyage"]))
+
+
+class Roadmap(unittest.TestCase):
+    """Every sprint to come, computed once the milestones are validated: each ticket lands once, each sprint can
+    be built when the earlier ones are delivered."""
+
+    def setUp(self):
+        rows = [t("socle", None, state="done")]
+        rows += [t(f"imp{i}", 10 + i, [f"imp{i - 1}"] if i else ["socle"], ecran=True) for i in range(6)]   # import
+        rows += [t(f"net{i}", 20 + i, [f"net{i - 1}"] if i else ["imp5"]) for i in range(10)]               # cleaning
+        rows += [t(f"run{i}", 40 + i, [f"run{i - 1}"] if i else ["net9"], ecran=i % 2 == 0) for i in range(12)]
+        rows += [t("polish", 1), t("secu", 2, ["imp2"]), t("trou", 3, manques=["CA1 cite `x`"]), t("apres-trou", 4, ["trou"])]
+        self.g = graph(*rows)
+
+    def check_invariants(self, r):
+        seen = [s for sp in r["sprints"] for s in sp["tickets"]]
+        self.assertEqual(len(seen), len(set(seen)))  # each ticket once
+        left = {s for s, x in self.g.items() if x["state"] == "todo"} - set(seen)
+        self.assertEqual(left, {a["slug"] for a in r["a_completer"]} | set(r["en_attente"]))  # and every one somewhere
+        done = {s for s, x in self.g.items() if x["state"] == "done"}
+        for sp in r["sprints"]:  # buildable in order, the earlier sprints delivered
+            for s in sp["tickets"]:
+                self.assertTrue(set(self.g[s]["depends_on"]) <= done, (s, self.g[s]["depends_on"]))
+                done.add(s)
+            self.assertLessEqual(len(sp["tickets"]), gt.with_tolerance(20, 5))
+            self.assertLessEqual(sp["demo"], gt.with_tolerance(15, 5))
+
+    def test_milestones_in_order_then_the_rest_by_priority(self):
+        r = gt.roadmap(self.g, ["imp5", "net9", "run11"])
+        self.check_invariants(r)
+        self.assertEqual([sp["jalons"] for sp in r["sprints"]][:2], [["imp5", "net9"], ["run11"]])
+        self.assertEqual(r["sprints"][-1]["nature"], "hors parcours")
+        self.assertEqual(r["sprints"][-1]["tickets"], ["polish", "secu"])  # by priority, after the journey
+        self.assertEqual(([a["slug"] for a in r["a_completer"]], r["en_attente"]), (["trou"], ["apres-trou"]))
+
+    def test_a_milestone_longer_than_a_sprint_is_cut_at_whole_sub_paths(self):
+        r = gt.roadmap(self.g, ["run11"], plafond=8, demo=15, tolerance=0)
+        self.check_invariants(r)
+        self.assertEqual([len(sp["tickets"]) for sp in r["sprints"] if sp["nature"] == "parcours"], [8, 8, 8, 4])
+        self.assertEqual(r["sprints"][3]["jalons"], ["run11"])  # the milestone closes the sprint that ends its path
+
+    def test_a_milestone_behind_an_incomplete_ticket_is_blocked_and_named(self):
+        g = dict(self.g, net3=t("net3", 23, ["net2"], manques=["lit `ventes`…"])[1])
+        r = gt.roadmap(g, ["imp5", "run11"])
+        self.assertEqual(r["sprints"][0]["jalons"], ["imp5"])
+        self.assertEqual(r["bloques"][0]["jalon"], "run11")
+        self.assertIn("`net3` : incomplet", r["bloques"][0]["obstacles"][0])
+
+    def test_the_roadmap_file_keeps_the_validated_milestones(self):
+        kb = Path(tempfile.mkdtemp())
+        r = gt.roadmap(self.g, ["imp5"])
+        f = gt.write_roadmap(kb, self.g, r, "2026-11-15T12:00:00Z", ["imp5"])
+        self.assertEqual(gt.read_jalons(kb), ["imp5"])
+        text = f.read_text(encoding="utf-8")
+        self.assertIn("## Sprints\n### Sprint 1 — `imp5`", text)
+        self.assertIn("type: Feuille de route", text)
+        gt.write_roadmap(kb, self.g, gt.roadmap(self.g, ["imp5"], plafond=3), "2026-11-15T13:00:00Z")
+        self.assertEqual(gt.read_jalons(kb), ["imp5"])  # recomputed: the milestones unchanged
+        self.assertIn("### Sprint 2 — `imp5`", f.read_text(encoding="utf-8"))  # cut at whole sub-paths
 
 
 class Cli(unittest.TestCase):

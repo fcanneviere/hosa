@@ -41,7 +41,8 @@ Dernier lot jugé → ticket_check --regles : chaque RGn/CEn
 cité par un critère ; ticket_check --repetes : chaque
 comportement porté par un seul ticket
         ↓
-Priorités (l'utilisateur valide l'ordre) et estimations
+Priorités et jalons du parcours (l'utilisateur valide les deux
+en une réponse), estimations, feuille de route calculée
         ↓
 Log kb/tickets/log.md → checkpoint hosa-git : socle encore
 non commité, puis KB
@@ -63,7 +64,7 @@ A ticket is ready to be planned (`sprint`) and executed (`develop`, `qa-plan`) w
 - real `## Note technique (senior dev)`, `## Placement architecture (architecte)`, `## Placement interface (UX/UI)`, `## Note sécurité (expert cybersécurité)` and `## Note juridique (expert conformité)` notes — not the fallback lines below; the security or legal note of a stage the plan marks `non applicable` is the line `ticket_check --ecartees` writes;
 - each abuse case of the security note and each legal constraint of the legal note tied to its acceptance criterion (`→ CAn`): security and compliance are built and tested with the ticket, not found at the audit, the recette or the release gate;
 - a `priority`, unless the user explicitly answered "pas encore";
-- a `depends_on` (when present) naming existing tickets, with no cycle, none ranked after this ticket;
+- a `depends_on` (when present) naming existing tickets, with no cycle (a dependency ranked after it is only reported: the roadmap builds from the graph, `priority` breaks ties);
 - no criterion testing a button another ticket brings (`clique sur « … »` in its criteria) unless that ticket is in its `depends_on` or the code has the button, and none conditional (« dès qu'il existe ») — `HOSA_LIBELLES=0` turns this check off.
 
 The checker is the source of truth — run it from the managed project's root, with any Python 3.9+:
@@ -133,6 +134,14 @@ What each ticket holds — the split, the story, the criteria, the Grounding Rul
 ## Step 6: Priority and Estimate
 
 Once every ticket for this run is written, propose an order and ask the user once: "Je propose cet ordre pour ces N tickets ; je l'applique ? (oui, un autre ordre, ou 'pas encore' pour laisser sans priorité)". The proposal puts the main persona journey first, end to end, one thin ticket per step (rieki: after three sprints, import → nettoyage → run → résultats had no run yet, while polish of the Résultats screen ranked 9). Variants, polish and secondary screens come after the journey step they improve. It puts every ticket after the tickets in its `depends_on`, and the security and compliance mechanisms (Step 2) right after the first slice that makes them usable — never in a block at the end. An order from the user that ranks a ticket before one of its dependencies → say which, once; the checker reports it until it's fixed. Given an order, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then copy each ticket's `Complexité` (written by the `stories-<k>` pass, `redaction-tickets.md`) into its `estimate` — a copy, no judgment of yours —, in points — the one unit `sprint`, `develop` and the sprint reviews count: `1` (≤ ½ day), `2` (about 1 day) or `3` (2-3 days). Show them in the report; the user can correct any. Bigger than 3 → split it, as in Step 2.
+
+**Milestones and roadmap.** In the same question, propose the milestones: the tickets that end each step of the main persona journey, in order (rieki: import des ventes → nettoyage → run → graphique de prévision), each a result a persona sees at a demo. A ticket that must come by a given step (a security fix, a legal page) is a milestone too, placed there. Once the user validated them, compute every sprint:
+
+```bash
+<hosa> graphe_tickets .hosa/kb feuille --jalons <slug>,<slug>,… --ecrire
+```
+
+It writes `kb/project/feuille-de-route.md`: `## Jalons` as validated, then each sprint computed from the graph (each milestone's whole path in order, cut at whole sub-paths over the bounds, then the tickets no milestone needs by priority), the blocked milestones and the tickets to complete. `sprint` takes the next one and recomputes it; the user validates the milestones once, not each sprint. A blocked milestone or a ticket to complete → the refinement of Step 1, at once.
 
 ## Step 7: Log and Check
 

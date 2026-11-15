@@ -656,7 +656,7 @@ def composition(kb: Path, tickets: list[str]) -> list[str]:
             if dep not in tickets[:i] and field(read(kb / "tickets" / f"{dep}.md"), "state") != "done":
                 where = "placé après lui" if dep in tickets else "hors du sprint"
                 gaps.append(f"{t} : attend `{dep}`, ni fait ni avant lui dans le sprint ({where})")
-        gaps += [f"{t} : {g}" for g in tc.unbuilt_labels(path, front, body)]
+        gaps += [f"{t} : {g}" for g in tc.unbuilt_labels(path, front, body) + tc.hidden_dependencies(path, front, body)]
     return gaps
 
 

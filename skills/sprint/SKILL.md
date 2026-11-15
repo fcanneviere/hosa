@@ -1,6 +1,6 @@
 ---
 name: sprint
-description: "Use to compose a sprint around one objective from the tickets' dependency graph, up to its bounds (20 tickets, 15 demo tests), with complete tickets only, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
+description: "Use to compose the next sprint: the next one of the roadmap computed from the tickets' dependency graph (milestones validated once by the user, up to 20 tickets and 15 demo tests), complete tickets only, gaps with one fix applied, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
 ---
 
 # Sprint
@@ -41,15 +41,17 @@ Manual: `/sprint [nombre de tickets au plus]`. Auto: immediately after `backlog`
 
 First, `kb/infra/environnement-docker.md` must have `## Outillage qualité` with a test command (and the migration command, or "Aucune base de données"): otherwise the project isn't ready for a sprint — say so, invoke `infra` to install them, and stop. Same for security: `kb/securite/modele-menaces.md` must exist once the architecture is documented — otherwise run `securite` (Menaces) first. Its abuse cases become the `[sécurité]` tests of every ticket; written after the code, they only find what must be redone.
 
-Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`) with the capacity if one came with the trigger (a number of tickets). It chooses the objective — the next step of the main persona journey — and computes the sprint with `<hosa> graphe_tickets … composer`: the path to the objective in build order, up to 20 tickets and 15 demo tests (5 % over taken whole), cut at whole milestones when it's longer; ready tickets `(hors objectif)` only when the user asks for them (`--remplir`). A sprint is sized by its objective, not by a developer's week: agents write the code, the demo is the user's time. Don't ask; show its figures in the proposal.
+Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`). **The sprint is the next one of the roadmap** (`kb/project/feuille-de-route.md`, its milestones validated once by the user): the planner recomputes it from the graph (`<hosa> graphe_tickets … feuille --ecrire`) and takes its first sprint — the milestones' paths in build order, up to 20 tickets and 15 demo tests (5 % over to keep a milestone whole). No roadmap yet (a backlog made before it) → the planner proposes the milestones (the steps of the main persona journey, in order) and the bounds: one question to the user, once; then the roadmap is written. A sprint is sized by its milestones, not by a developer's week.
 
 Reopened by `qa-plan` (loop `qa-plan` → `sprint`, an `Écart de composition`): give the planner the loop's exact lines; it recomposes from the current sprint (`composer --sprint <slug>`). The user validates only what changes.
+
+**A gap with one fix is applied, never offered.** A ticket the checker sets aside for a missing `depends_on`, a criterion to move to the ticket that brings what it tests, or one behaviour in two tickets → `backlog` Single-Ticket Mode on it at once (`hosa-product-owner` applies the checker's line), then recompute. rieki sprint-3: three such gaps came to the user as questions whose answer was written in the gap itself. Only a missing stage (`stack`, `architecture`, `interface`, `securite`, `juridique`) or a product choice goes to the user.
 
 If it returns an Open Question (empty backlog, no priority order) — relay it to the user, propose `backlog` if the backlog itself looks empty, and only redispatch once resolved.
 
 ## Step 2: Review with the User
 
-Present `## Tickets prêts`, in the build order the planner set from `depends_on`, and `## Tickets écartés` (incomplete, or waiting on a dependency). For each ticket écarté, offer to fill the gap now (`stack`/`architecture`/`interface`, `backlog` to refine a vague ticket, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`) — if the user does, redispatch Phase 1 fresh afterward so the reclassification reflects the fix, rather than patching the old result by hand. Otherwise present `## Proposition de sprint` (name, objective, size, tickets left on the objective's path) with the tickets as one numbered question for the user to validate or amend in one answer ("Q1 a", or "Q1 b, retire le ticket 3") — they may drop a ticket to wait for a fuller backlog.
+Present `## Tickets prêts`, in the build order of the roadmap, and `## Tickets écartés` with what was already fixed (above). A ticket set aside for a missing stage → offer that stage (`stack`/`architecture`/`interface`, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`), then redispatch Phase 1 fresh. **The roadmap's milestones validated, the sprint is announced, not asked** (`## Proposition de sprint`: name, milestones, size), and Step 3 runs in the same turn; the user can still say « retire le ticket 3 ». A question only when the sprint differs from the validated roadmap's next sprint by a milestone (blocked, moved): « Q1 a » validates, « Q1 b, … » amends.
 
 If `## Tickets prêts` is empty and the user has no gap to fill, stop here — report the tickets écartés and their Open Questions, don't write a `Sprint`.
 

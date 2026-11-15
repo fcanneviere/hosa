@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T11:19:03Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T11:57:42Z'}
 ---
 
 ## Fichiers
@@ -97,16 +97,16 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T11:19:03Z'}
 - `make_handler.Handler` — `hosa/app/server.py:30`
 - `serve` — `hosa/app/server.py:193`
 - `AppTest` — `hosa/app/test_app.py:35`
-- `BacklogApiTest` — `hosa/app/test_app.py:1006` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
-- `BoardTest` — `hosa/app/test_app.py:723` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
-- `CouvertureTest` — `hosa/app/test_app.py:662` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
+- `BacklogApiTest` — `hosa/app/test_app.py:1014` — Tickets du backlog après le sprint 1 : un test par critère vérifiable côté serveur.
+- `BoardTest` — `hosa/app/test_app.py:731` — GET /api/overview -> board et kb.points (ticket tickets-tableau-colonnes).
+- `CouvertureTest` — `hosa/app/test_app.py:670` — GET /api/couverture et kb.coverage_of (ticket qualite-couverture-criteres-api).
 - `DependancesApiTest` — `hosa/app/test_app.py:488` — GET /api/dependances : le graphe des tickets, le même calcul que `graphe_tickets.py composer`.
 - `GraphApiTest` — `hosa/app/test_app.py:255` — KB servie à l'intérieur d'un dépôt git : le graphe est celui de la racine du dépôt.
 - `KbStatusTest` — `hosa/app/test_app.py:366`
-- `RecettesTest` — `hosa/app/test_app.py:867` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
-- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:993`
-- `UsageApiTest` — `hosa/app/test_app.py:529` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
-- `ValidationProvenanceTest` — `hosa/app/test_app.py:818` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
+- `RecettesTest` — `hosa/app/test_app.py:875` — `recettes` de GET /api/overview (ticket qualite-recettes-api). Cas navigateur : recette (T1-T4).
+- `RecettesTest.test_read_only_and_relative_paths.snap` — `hosa/app/test_app.py:1001`
+- `UsageApiTest` — `hosa/app/test_app.py:537` — GET /api/usage : lit les transcripts factices via kb.ur.project_dir patché (jamais ~/.claude).
+- `ValidationProvenanceTest` — `hosa/app/test_app.py:826` — Ticket validation-provenance-liste : couche serveur (le reste est en recette).
 - `Base` — `hosa/app/test_atelier.py:23`
 - `Cartes` — `hosa/app/test_atelier.py:69`
 - `Choix` — `hosa/app/test_atelier.py:337`
@@ -156,8 +156,9 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T11:19:03Z'}
 - `ExtractTest` — `hosa/app/test_graph_extract.py:17`
 - `calls` — `hosa/app/test_graph_extract.py:13`
 - `defs` — `hosa/app/test_graph_extract.py:9`
-- `Cli` — `hosa/app/test_graphe_tickets.py:106`
+- `Cli` — `hosa/app/test_graphe_tickets.py:165`
 - `Path_` — `hosa/app/test_graphe_tickets.py:27` — rieki: « Supprimer un run » waited for 32 tickets; the planner only saw priorities.
+- `Roadmap` — `hosa/app/test_graphe_tickets.py:106` — Every sprint to come, computed once the milestones are validated: each ticket lands once, each sprint can
 - `graph` — `hosa/app/test_graphe_tickets.py:23`
 - `t` — `hosa/app/test_graphe_tickets.py:18`
 - `BackOfficeAndDashboards` — `hosa/app/test_interface_check.py:76`
@@ -173,8 +174,9 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T11:19:03Z'}
 - `PluginFrontmatter` — `hosa/app/test_plugin_frontmatter.py:11`
 - `KbRoot` — `hosa/app/test_run.py:16`
 - `Setup` — `hosa/app/test_run.py:27`
+- `HiddenDependencies` — `hosa/app/test_ticket_check.py:101` — The dependencies a ticket's own text states, its `depends_on` missing — the rieki cases, as they were written.
 - `PhantomPaths` — `hosa/app/test_ticket_check.py:21`
-- `SecurityAndLegalNotes` — `hosa/app/test_ticket_check.py:118`
+- `SecurityAndLegalNotes` — `hosa/app/test_ticket_check.py:175`
 - `UnbuiltLabels` — `hosa/app/test_ticket_check.py:44` — rieki sprint-3: the button hierarchy (priority 9) tested « Supprimer » of Résultats, which
 - `ticket` — `hosa/app/test_ticket_check.py:17`
 - `SprintMeasures` — `hosa/app/test_usage_report.py:67`

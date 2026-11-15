@@ -11,8 +11,7 @@ A ticket is complete when it has, in its body:
     holding a real note, not `backlog`'s "pas encore …" fallback line — or,
     for the security and the legal note, the line `Non applicable — étape …`
     when the progress plan marks that stage `non applicable`,
-  - a `depends_on` (if any) naming existing tickets, without a cycle, none
-    ranked after this ticket (`priority`),
+  - a `depends_on` (if any) naming existing tickets, without a cycle,
   - grounded notes (`backlog`'s Grounding Rule): every note carries its
     labelled bullets, none still `inconnu — …` and none a structural gap
     `à créer — owner: …`,
@@ -463,6 +462,89 @@ def closure(slug: str, tickets: Path) -> set[str]:
     return seen
 
 
+TICKET_LINK = re.compile(r"\]\((?:\.\./tickets/)?([\w-]+)\.md\)")
+WRITE = re.compile(r"\bécrite?s?\b|\binsérée?s?\b|\bcréée?s?\b")
+READ = re.compile(r"\blue?s?\b")
+
+
+def data_access(body: str) -> tuple[set[str], set[str]]:
+    """(tables written, tables read) from the architecture placement's `Données` bullet, as `backlog` writes it:
+    « `ventes`.`date`, … écrits ; `imports`.`date_export` … écrits » — a verb closes the segments before it."""
+    m = re.search(r"\*\*Données\*\*\s*:\s*(.*)", section(body, "## Placement architecture (architecte)") or "")
+    written, read, pending = set(), set(), set()
+    for seg in (m[1].split(";") if m else []):
+        seg = seg.strip()
+        pending |= set(re.findall(r"`(\w+)`\.`", seg)) | set(re.findall(r"^`(\w+)`(?!\.)", seg))
+        w, r = WRITE.search(seg), READ.search(seg)
+        if w:
+            written |= pending
+        if r:
+            read |= pending
+        if w or r or "supprim" in seg:
+            pending = set()
+    return written, read - written
+
+
+@functools.lru_cache(maxsize=8)
+def _ticket_index(tickets: str, _stamp: tuple) -> dict[str, dict]:
+    out = {}
+    for f in Path(tickets).glob("*.md"):
+        front, body = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") != "Ticket":
+            continue
+        links = {}
+        for line in (section(body, "## Critères d'acceptation") or "").splitlines():
+            m = re.match(r"\s*[-*]\s*(CA\d+)", line)
+            if m:
+                links[m[1]] = [x for x in dict.fromkeys(TICKET_LINK.findall(line)) if x != f.stem]
+        written, read = data_access(body)
+        out[f.stem] = {"done": field(front, "state") == "done", "links": links, "writes": written, "reads": read}
+    return out
+
+
+def ticket_index(tickets: Path) -> dict[str, dict]:
+    return _ticket_index(str(tickets), stamp(tickets))
+
+
+def hidden_dependencies(path: Path, front: str, body: str) -> list[str]:
+    """The dependencies a ticket's own text states that its `depends_on` misses — the edges `sprint` plans from.
+    - A criterion that cites another ticket still to build: it can't be tested without it (rieki: « consulter les
+      articles » CA5, an article deleted by `supprimer-un-article`). Both citing each other: one behaviour in two
+      tickets (rieki: the `op-…` message of a failed sales import, in the import's CA7 and in the guard's CA9).
+    - A table its `Données` read that no ticket done or among its dependencies writes (rieki: the cleaning read
+      `ventes`, whose import came 3 sprints later) — unless every writer comes after it: it shows the empty state.
+    `HOSA_DEPENDANCES=0`: off."""
+    if os.environ.get("HOSA_DEPENDANCES") == "0" or path.parent.name != "tickets":
+        return []
+    index, me, out = ticket_index(path.parent), path.stem, []
+    deps = closure(me, path.parent)
+    todo = lambda s: s in index and not index[s]["done"]  # noqa: E731
+    for ca, cited in (index.get(me) or {"links": {}})["links"].items():
+        for x in cited:
+            if not todo(x) or x in deps:
+                continue
+            back = [c for c, ls in index[x]["links"].items() if me in ls]
+            if back:
+                out.append(f"{ca} et `{x}` {', '.join(back)} portent le même comportement (chacun cite l'autre) : un "
+                           "seul des deux le garde, l'autre le retire")
+            elif me in closure(x, path.parent):  # x waits for this one: the criterion is x's
+                out.append(f"{ca} cite `{x}`, qui vient après ce ticket (il en dépend) → porter ce critère dans `{x}`")
+            else:
+                out.append(f"{ca} cite `{x}` (à faire), hors de ses dépendances → `depends_on: [{x}]`, ou porter ce "
+                           f"critère dans `{x}`")
+    written, read = data_access(body)
+    for table in sorted(read):
+        writers = {s for s, t in index.items() if table in t["writes"] and s != me}
+        if not writers or any(not todo(w) for w in writers) or writers & deps:
+            continue
+        if all(me in closure(w, path.parent) for w in writers):  # every writer comes after: an empty state
+            continue
+        names = ", ".join(f"`{w}`" for w in sorted(writers))
+        out.append(f"lit `{table}`, qu'aucun ticket fait ni de ses dépendances n'écrit — l'écrivent (à faire) : {names} "
+                   "→ mettre celui qui la remplit dans `depends_on`")
+    return out
+
+
 def in_code(label: str, code: str) -> bool:
     """The label as a whole literal: `"Confirmer"`, `>Confirmer<`, `:red[Confirmer]`, « Confirmer » in a comment —
     never a word of a sentence (« Supprimer une version supprime ses filles »)."""
@@ -547,6 +629,7 @@ def gaps(path: Path) -> list[str]:
     missing += indicators_without_value(body)
     missing += phantom_paths(path, front, body)
     missing += unbuilt_labels(path, front, body)
+    missing += hidden_dependencies(path, front, body)
     missing += late_dependencies(path, front)
     loop = cycle_from(path.stem, path.parent)
     if loop:
@@ -567,8 +650,9 @@ def rank(front: str) -> float | None:
 
 
 def late_dependencies(path: Path, front: str) -> list[str]:
-    """A dependency still to build that ranks after this ticket: `sprint` can't plan this one
-    until it gets there (pilot2: the security log at 43, used by tickets at 7 to 17)."""
+    """A dependency still to build that ranks after this ticket — reported only: the roadmap builds each ticket after
+    its dependencies whatever their rank; `priority` breaks ties (pilot2 had to re-rank by hand: the security log at
+    43, used by tickets at 7 to 17)."""
     own, out = rank(front), []
     if own is None:
         return out
@@ -582,7 +666,7 @@ def late_dependencies(path: Path, front: str) -> list[str]:
         theirs = rank(dep_front)
         if theirs is None or theirs > own:
             where = f"priorité {field(dep_front, 'priority')}" if theirs is not None else "sans priorité"
-            out.append(f"dépend de `{dep}` ({where}), classé après lui → remonter `{dep}` avant {field(front, 'priority')}")
+            out.append(f"(info) dépend de `{dep}` ({where}), classé après lui : le graphe le construit avant quand même")
     return out
 
 

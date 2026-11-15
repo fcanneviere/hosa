@@ -98,6 +98,63 @@ class UnbuiltLabels(unittest.TestCase):
             del os.environ["HOSA_LIBELLES"]
 
 
+class HiddenDependencies(unittest.TestCase):
+    """The dependencies a ticket's own text states, its `depends_on` missing — the rieki cases, as they were written."""
+
+    def setUp(self):
+        self.tickets = Path(tempfile.mkdtemp()) / ".hosa" / "kb" / "tickets"
+        self.tickets.mkdir(parents=True)
+
+    def write(self, slug, front="", crit="", donnees=None):
+        place = f"## Placement architecture (architecte)\n- **Données** : {donnees}\n" if donnees else ""
+        p = self.tickets / f"{slug}.md"
+        state = "" if "state:" in front else "state: todo\n"
+        p.write_text(f"---\ntype: Ticket\n{state}{front}---\n## Critères d'acceptation\n{crit}{place}", encoding="utf-8")
+        return p
+
+    def gaps(self, p):
+        return tc.hidden_dependencies(p, *tc.split(p.read_text(encoding="utf-8")))
+
+    def test_a_criterion_citing_a_ticket_to_build_needs_it(self):
+        self.write("supprimer-un-article")
+        p = self.write("consulter-les-articles", crit="- CA5 — Étant donné un article supprimé par "
+                       "[supprimer-un-article](supprimer-un-article.md), quand le tableau s'affiche, alors il n'y est plus.\n")
+        self.assertEqual(self.gaps(p), ["CA5 cite `supprimer-un-article` (à faire), hors de ses dépendances → "
+                                        "`depends_on: [supprimer-un-article]`, ou porter ce critère dans `supprimer-un-article`"])
+        p = self.write("consulter-les-articles", "depends_on: [supprimer-un-article]\n", p.read_text(encoding="utf-8").split("\n## Critères d'acceptation\n")[1])
+        self.assertEqual(self.gaps(p), [])
+        self.write("supprimer-un-article", "state: done\n")
+        self.assertEqual(self.gaps(self.write("consulter-les-articles", crit="- CA5 — [s](supprimer-un-article.md)\n")), [])
+
+    def test_two_tickets_citing_each_other_hold_one_behaviour_and_a_later_one_takes_the_criterion(self):
+        v = self.write("importer-les-ventes", crit="- CA7 — l'erreur s'affiche ([p](proteger-les-rappels.md))\n")
+        p = self.write("proteger-les-rappels", crit="- CA9 — un import de ventes qui échoue ([v](importer-les-ventes.md))\n")
+        self.assertEqual(self.gaps(v), ["CA7 et `proteger-les-rappels` CA9 portent le même comportement (chacun cite "
+                                        "l'autre) : un seul des deux le garde, l'autre le retire"])
+        self.assertEqual(len(self.gaps(p)), 1)
+        self.write("afficher-la-cause", "depends_on: [suivre-le-statut]\n")
+        s = self.write("suivre-le-statut", crit="- CA4 — la cause ([a](afficher-la-cause.md))\n")
+        self.assertEqual(self.gaps(s), ["CA4 cite `afficher-la-cause`, qui vient après ce ticket (il en dépend) → "
+                                        "porter ce critère dans `afficher-la-cause`"])
+
+    def test_a_table_read_needs_a_writer_done_or_among_its_dependencies(self):
+        self.write("importer-les-ventes", donnees="`ventes`.`date`, `quantite` (DECIMAL) écrits ; `imports`.`id` écrit.")
+        p = self.write("nettoyer", donnees="`versions`.`id`, `numero` ; `rapport` écrites ; `ventes` lue seulement.")
+        self.assertEqual(tc.data_access(p.read_text(encoding="utf-8")), ({"versions", "rapport"}, {"ventes"}))
+        self.assertEqual(self.gaps(p), ["lit `ventes`, qu'aucun ticket fait ni de ses dépendances n'écrit — l'écrivent "
+                                        "(à faire) : `importer-les-ventes` → mettre celui qui la remplit dans `depends_on`"])
+        p = self.write("nettoyer", "depends_on: [importer-les-ventes]\n", donnees="`ventes` lue seulement.")
+        self.assertEqual(self.gaps(p), [])
+        # every writer comes after the reader: it shows the empty state, no edge (rieki: versions list, runs later)
+        self.write("lancer-un-run", "depends_on: [lister-les-versions]\n", donnees="`runs`.`id` écrit.")
+        self.assertEqual(self.gaps(self.write("lister-les-versions", donnees="`runs`.`id` lus.")), [])
+        os.environ["HOSA_DEPENDANCES"] = "0"
+        try:
+            self.assertEqual(self.gaps(self.write("nettoyer", donnees="`ventes` lue seulement.")), [])
+        finally:
+            del os.environ["HOSA_DEPENDANCES"]
+
+
 SECURITE = """## Note sécurité (expert cybersécurité)
 - **Règles** : `limitation-de-debit` — 10 échecs par 15 min par couple
 - **Cas d'abus** :
@@ -260,7 +317,7 @@ class SecurityAndLegalNotes(unittest.TestCase):
         self.write("fait", "state: done\n", "")
         p = self.write("pas-moi", "priority: 17\ndepends_on: [journal, fait]\n", "")
         self.assertEqual(tc.late_dependencies(p, tc.split(p.read_text(encoding="utf-8"))[0]),
-                         ["dépend de `journal` (priorité 43), classé après lui → remonter `journal` avant 17"])
+                         ["(info) dépend de `journal` (priorité 43), classé après lui : le graphe le construit avant quand même"])
 
 
 if __name__ == "__main__":

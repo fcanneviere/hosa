@@ -518,6 +518,14 @@ class DependancesApiTest(unittest.TestCase):
         self.assertEqual([o["slug"] for o in body["objectifs"]], ["supprimer", "run"])
         self.assertEqual(self.call("GET", "/api/dependances?objectif=inconnu")[0], 400)
 
+    def test_the_roadmap_comes_with_its_validated_milestones(self):
+        self.assertIsNone(self.call("GET", "/api/dependances")[1]["feuille"])  # no milestones yet
+        (self.kbroot / "project" / "feuille-de-route.md").write_text(
+            "---\ntype: Feuille de route\n---\n## Jalons\n- [Supprimer](../tickets/supprimer.md)\n", encoding="utf-8")
+        f = self.call("GET", "/api/dependances")[1]["feuille"]
+        self.assertEqual(f["bloques"][0]["jalon"], "supprimer")  # bare tickets: incomplete, the milestone waits
+        self.assertEqual(f["titres"]["supprimer"], "supprimer")
+
     def test_a_button_added_to_the_code_counts_at_the_next_computation(self):
         tc, root = kb.gt.ticket_check(), str(self.kbroot.parent.parent)
         self.assertNotIn("Supprimer", tc.source_text(root))

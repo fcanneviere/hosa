@@ -453,7 +453,12 @@ def dependances(root, objectif=None):
     comp = gt.compose(graph, objectif or None, gt.PLAFOND, gt.DEMO, apercu=True)
     if comp.get("chemin") is not None and comp["objectif"]:
         comp["chemin_tickets"] = [graph[s] for s in gt.path_to(graph, comp["objectif"], apercu=True)[0]]
-    return {"pret": [graph[s] for s in gt.ready(graph)], "composition": comp,
+    jalons = gt.read_jalons(root)
+    feuille = gt.roadmap(graph, jalons) if jalons else None
+    if feuille:
+        feuille["titres"] = {s: graph[s]["title"] for sp in feuille["sprints"] for s in sp["tickets"] + sp["jalons"]}
+        feuille["titres"].update({b["jalon"]: graph[b["jalon"]]["title"] for b in feuille["bloques"] if b["jalon"] in graph})
+    return {"pret": [graph[s] for s in gt.ready(graph)], "composition": comp, "feuille": feuille,
             "objectifs": [{"slug": t["slug"], "title": t["title"], "priority": t["priority"]} for t in todo]}
 
 
