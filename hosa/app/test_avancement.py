@@ -423,6 +423,18 @@ class Tasks(unittest.TestCase):
         self.assertTrue(gaps[2].startswith("b : CA4 conditionnel (« dès qu'il existe »)"), gaps)
         self.assertEqual(len(gaps), 3)
 
+    def test_a_sprint_closes_once_the_backlog_s_one_fix_lines_are_applied(self):
+        sprint = "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n"
+        k = kb({"sprints/s1.md": sprint, "tickets/a.md": "---\ntype: Ticket\nstate: todo\n---\n",
+                "tickets/lire.md": "---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n- CA1 — voir [a](a.md)\n",
+                "tickets/fait.md": "---\ntype: Ticket\nstate: done\n---\n## Critères d'acceptation\n- CA1 — [a](a.md)\n"})
+        self.assertEqual(av.proofs(k, "sprint", "s1"), [
+            "lire : correction unique à appliquer sans question (`backlog` Single-Ticket Mode, `hosa-product-owner` "
+            "Graph fixes) — CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a`"])
+        (k / "tickets" / "lire.md").write_text("---\ntype: Ticket\nstate: todo\ndepends_on: [a]\n---\n"
+                                               "## Critères d'acceptation\n- CA1 — voir [a](a.md)\n", encoding="utf-8")
+        self.assertEqual(av.proofs(k, "sprint", "s1"), [])
+
     def test_sprint_tasks_are_per_sprint(self):
         k = kb({"sprints/s1.md": SPRINT, "sprints/s2.md": SPRINT, "tickets/t1.md": TICKET})
         for s in ("s1", "s2"):

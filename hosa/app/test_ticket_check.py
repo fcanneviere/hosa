@@ -179,6 +179,38 @@ JURIDIQUE = """## Note juridique (expert conformité)
 """
 
 
+class OneFix(unittest.TestCase):
+    """The checker lines that are their own decision: the product owner applies them, nobody is asked."""
+
+    def test_one_ticket_named_is_one_fix_several_or_none_is_not(self):
+        yes = ["lit `ventes`, qu'aucun ticket fait ni de ses dépendances n'écrit → `depends_on: [importer-les-ventes]` "
+               "(le premier à l'écrire)",
+               "CA5 cite `supprimer-un-article` (à faire), hors de ses dépendances → `depends_on: [supprimer-un-article]`, "
+               "ou porter ce critère dans `supprimer-un-article`",
+               "CA4 cite `afficher-la-cause`, qui vient après ce ticket (il en dépend) → porter ce critère dans `afficher-la-cause`",
+               "CA7 et `proteger` CA9 portent le même comportement (chacun cite l'autre) : un seul des deux le garde, l'autre le retire",
+               "`src/a.py` cité comme existant, créé par `creer-a` → ajouter `depends_on: [creer-a]`",
+               "CA4 cite « Supprimer », absent du code et livré par `supprimer-un-run` (à faire) → ajouter le bon à `depends_on`"]
+        no = ["lit `ventes`, qu'aucun ticket fait ni de ses dépendances n'écrit — l'écrivent d'abord (à faire) : `a`, `b` "
+              "→ mettre celui qui la remplit dans `depends_on`",
+              "CA4 cite « Supprimer », absent du code et livré par `a`, `b` (à faire) → ajouter le bon à `depends_on`",
+              "CA8 conditionnel (« dès qu'il existe ») : un critère se teste à la fin de son ticket → `depends_on` le ticket "
+              "qui livre l'élément, ou porter le critère dans ce ticket-là",
+              "section `## Note sécurité` absente"]
+        self.assertEqual([tc.one_fix(g) for g in yes], [True] * len(yes))
+        self.assertEqual([tc.one_fix(g) for g in no], [False] * len(no))
+
+    def test_single_fixes_lists_every_todo_ticket_s_lines(self):
+        tickets = Path(tempfile.mkdtemp()) / "tickets"
+        tickets.mkdir()
+        body = "## Critères d'acceptation\n- CA1 — voir [b](b.md)\n"
+        (tickets / "a.md").write_text(f"---\ntype: Ticket\nstate: todo\n---\n{body}", encoding="utf-8")
+        (tickets / "b.md").write_text("---\ntype: Ticket\nstate: todo\n---\n", encoding="utf-8")
+        (tickets / "c.md").write_text(f"---\ntype: Ticket\nstate: done\n---\n{body}", encoding="utf-8")
+        self.assertEqual(tc.single_fixes(tickets), [("a", "CA1 cite `b` (à faire), hors de ses dépendances → "
+                                                     "`depends_on: [b]`, ou porter ce critère dans `b`")])
+
+
 class SecurityAndLegalNotes(unittest.TestCase):
     def setUp(self):
         self.tickets = Path(tempfile.mkdtemp()) / "tickets"

@@ -362,6 +362,12 @@ def write_roadmap(kb: Path, graph: dict[str, dict], r: dict, at: str, jalons_lis
     return f
 
 
+def single_fixes(r: dict) -> list[tuple[str, str]]:
+    """The checker lines of the tickets to complete that are their own decision, verbatim."""
+    tc = ticket_check()
+    return [(a["slug"], g) for a in r["a_completer"] for g in a["manques"] if tc.one_fix(g)]
+
+
 def roadmap_report(graph: dict[str, dict], r: dict) -> str:
     lines = [f"{len(r['sprints'])} sprint(s) à venir (bornes : {r['plafond']} tickets, {r['demo_max']} tests de démo, "
              f"+{r['tolerance']} % pour un jalon entier) :"]
@@ -372,6 +378,11 @@ def roadmap_report(graph: dict[str, dict], r: dict) -> str:
     if r["a_completer"]:
         lines.append(f"À compléter (`/backlog <ticket>`) : {len(r['a_completer'])} ticket(s) — "
                      + ", ".join(f"`{a['slug']}`" for a in r["a_completer"]))
+    fixes = single_fixes(r)
+    if fixes:
+        lines.append(f"Corrections uniques ({len(fixes)}) : `hosa-product-owner` les applique sans question (Graph "
+                     "fixes), ces lignes telles quelles, puis `feuille --ecrire` recalcule ; `done sprint` les refuse :")
+        lines += [f"- `{s}` : {g}" for s, g in fixes]
     if r["en_attente"]:
         lines.append(f"En attente d'un ticket à compléter : {len(r['en_attente'])} ticket(s).")
     return "\n".join(lines)
@@ -467,7 +478,7 @@ def main(argv: list[str]) -> int:
             from datetime import datetime, timezone
             at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             print(f"écrit : {write_roadmap(kb, graph, r, at, jalons if a.jalons else None)}", file=sys.stderr)
-        print(json.dumps(r, ensure_ascii=False) if a.json else roadmap_report(graph, r))
+        print(json.dumps({**r, "corrections": [{"slug": s, "ligne": g} for s, g in single_fixes(r)]}, ensure_ascii=False) if a.json else roadmap_report(graph, r))
         return 1 if r["bloques"] else 0
     c = compose(graph, a.objectif, a.plafond, a.demo, a.remplir, tolerance=a.tolerance, prolonger=a.prolonger)
     print(json.dumps(c, ensure_ascii=False) if a.json else report(c))

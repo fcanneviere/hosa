@@ -595,6 +595,29 @@ def unbuilt_labels(path: Path, front: str, body: str) -> list[str]:
     return out
 
 
+ONE_FIX = re.compile(r"→ (?:ajouter )?`depends_on: \[[\w-]+\]`"  # one ticket to add
+                     r"|→ porter ce critère dans `[\w-]+`$"  # one criterion to move
+                     r"|portent le même comportement"  # one behaviour in two tickets: the mechanism's keeps it
+                     r"|livré par `[\w-]+` \(à faire\)")  # one ticket brings the label
+
+
+def one_fix(gap: str) -> bool:
+    """A checker line that is its own decision: `hosa-product-owner` applies it (Graph fixes), nobody is asked.
+    Several writers, several owners, a conditional with no ticket named, a missing note: not one fix."""
+    return ONE_FIX.search(gap) is not None
+
+
+def single_fixes(tickets: Path) -> list[tuple[str, str]]:
+    """Every `todo` ticket's one-fix lines, verbatim (rieki 0.1.107: 16 tickets left « à compléter » while the
+    product owner got a hand-written list of four other points, and the sprint closed)."""
+    out = []
+    for f in sorted(tickets.glob("*.md")):
+        front, _ = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") == "Ticket" and (field(front, "state") or "todo") == "todo":
+            out += [(f.stem, g) for g in gaps(f) if one_fix(g)]
+    return out
+
+
 def gaps(path: Path) -> list[str]:
     front, body = split(path.read_text(encoding="utf-8"))
     if field(front, "type") != "Ticket":

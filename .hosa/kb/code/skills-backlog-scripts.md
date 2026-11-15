@@ -4,7 +4,7 @@ title: skills/backlog/scripts
 description: '!/usr/bin/env python3'
 resource: skills/backlog/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T12:16:04Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-15T14:35:43Z'}
 ---
 
 ## Fichiers
@@ -26,21 +26,23 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T12:16:04Z'}
 - `depends_on` — `skills/backlog/scripts/ticket_check.py:324`
 - `deps_of` — `skills/backlog/scripts/ticket_check.py:352` — {slug: its `depends_on`}, every ticket read once (rieki: 24 886 reads for 122 tickets, 10 s).
 - `field` — `skills/backlog/scripts/ticket_check.py:306`
-- `gaps` — `skills/backlog/scripts/ticket_check.py:598`
+- `gaps` — `skills/backlog/scripts/ticket_check.py:621`
 - `grounding` — `skills/backlog/scripts/ticket_check.py:287`
 - `hidden_dependencies` — `skills/backlog/scripts/ticket_check.py:509` — The dependencies a ticket's own text states that its `depends_on` misses — the edges `sprint` plans from.
 - `in_code` — `skills/backlog/scripts/ticket_check.py:555` — The label as a whole literal: `"Confirmer"`, `>Confirmer<`, `:red[Confirmer]`, « Confirmer » in a comment —
 - `indicators_without_value` — `skills/backlog/scripts/ticket_check.py:143` — A criterion that cites an indicator states the value it must show on the test dataset: a wrong number is
 - `label_owners` — `skills/backlog/scripts/ticket_check.py:437` — {label: the tickets still to build whose criteria click it} — the tickets that bring it.
-- `late_dependencies` — `skills/backlog/scripts/ticket_check.py:659` — A dependency still to build that ranks after this ticket — reported only: the roadmap builds each ticket after
+- `late_dependencies` — `skills/backlog/scripts/ticket_check.py:682` — A dependency still to build that ranks after this ticket — reported only: the roadmap builds each ticket after
 - `linked_exigences` — `skills/backlog/scripts/ticket_check.py:154`
-- `main` — `skills/backlog/scripts/ticket_check.py:680`
+- `main` — `skills/backlog/scripts/ticket_check.py:703`
+- `one_fix` — `skills/backlog/scripts/ticket_check.py:604` — A checker line that is its own decision: `hosa-product-owner` applies it (Graph fixes), nobody is asked.
 - `phantom_paths` — `skills/backlog/scripts/ticket_check.py:387` — Paths cited as existing that the project doesn't have: the ticket that creates
-- `rank` — `skills/backlog/scripts/ticket_check.py:652`
+- `rank` — `skills/backlog/scripts/ticket_check.py:675`
 - `repeated_criteria` — `skills/backlog/scripts/ticket_check.py:229` — Each criterion of a `todo` ticket that another ticket of the same exigence already states: the judge reads one
 - `rule_coverage` — `skills/backlog/scripts/ticket_check.py:190` — Each numbered rule and error case of an exigence, cited by a criterion of one of its tickets — the cell
 - `rules_of` — `skills/backlog/scripts/ticket_check.py:172` — The `RGn`/`CEn` in force in `kb/cdc/<slug>.md`; None when the fiche or `cdc.py` can't be read.
 - `section` — `skills/backlog/scripts/ticket_check.py:311`
+- `single_fixes` — `skills/backlog/scripts/ticket_check.py:610` — Every `todo` ticket's one-fix lines, verbatim (rieki 0.1.107: 16 tickets left « à compléter » while the
 - `skipped_note` — `skills/backlog/scripts/ticket_check.py:90`
 - `skipped_stages` — `skills/backlog/scripts/ticket_check.py:84` — {stage: detail} of the stages the progress plan marks `non applicable`.
 - `source_text` — `skills/backlog/scripts/ticket_check.py:423` — The project's source, read once: a label it holds as a literal already exists.

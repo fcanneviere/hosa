@@ -660,6 +660,15 @@ def composition(kb: Path, tickets: list[str]) -> list[str]:
     return gaps
 
 
+def backlog_fixes(kb: Path, tickets: list[str]) -> list[str]:
+    """A sprint closes once every one-fix line of the backlog is applied, not only its own tickets' (rieki 0.1.107:
+    the roadmap left 16 tickets « à compléter », each with one fix, and the sprint closed on « aucun écart »)."""
+    if not (kb / "tickets").is_dir():
+        return []
+    return [f"{s} : correction unique à appliquer sans question (`backlog` Single-Ticket Mode, `hosa-product-owner` "
+            f"Graph fixes) — {g}" for s, g in ticket_check().single_fixes(kb / "tickets") if s not in tickets]
+
+
 def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     """The files and checkers that prove a stage done."""
     if stage not in SPRINT:
@@ -672,7 +681,7 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     tickets = re.findall(r"\(\.\./tickets/([^)]+)\.md\)", section(s, "Tickets") or "")
     gaps = [] if tickets else ["`## Tickets` ne liste aucun ticket"]
     if stage == "sprint":
-        gaps += composition(kb, tickets)
+        gaps += composition(kb, tickets) + backlog_fixes(kb, tickets)
     # the merge (`git` Mode 2) removes `worktree`: a `merge_commit` proves the start too
     if stage == "git-demarrage" and not field(s, "worktree") and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `worktree` (`git` Mode 1)")

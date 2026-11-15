@@ -186,6 +186,16 @@ class Cli(unittest.TestCase):
         self.assertEqual((g["a"]["points"], g["a"]["ecran"], g["b"]["points"], g["b"]["ecran"]), (3, True, 2, False))
         self.assertTrue(g["a"]["manques"])  # incomplete: no story, no notes
 
+    def test_the_roadmap_prints_every_one_fix_line_as_the_checker_wrote_it(self):
+        (self.kb / "tickets" / "e.md").write_text("---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n"
+                                                  "- CA1 — voir [a](a.md)\n", encoding="utf-8")
+        line = "CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a`"
+        _, out = self.run_("feuille", "--jalons", "a")
+        self.assertIn("Corrections uniques (1)", out)
+        self.assertIn(f"- `e` : {line}", out)
+        _, out = self.run_("feuille", "--jalons", "a", "--json")
+        self.assertEqual(json.loads(out)["corrections"], [{"slug": "e", "ligne": line}])
+
     def test_a_sprint_written_from_the_composition_passes_done_sprint(self):
         av_path = SCRIPT.parents[2] / "status" / "scripts" / "avancement.py"
         sp = importlib.util.spec_from_file_location("avancement", av_path)
