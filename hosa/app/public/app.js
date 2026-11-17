@@ -163,14 +163,23 @@ async function loadUsage() {
   const u = await api(`usage?days=${days}`).catch((e) => ({ error: e }));
   if (days === (F.periode || '7')) S.usage = u;
 }
+// lue seulement par l'écran qui la montre : sa lecture occupe le serveur, et l'écran ouvert (le graphe des tickets
+// de rieki) attendait plus de 10 s derrière elle
+const USAGE_PAGES = ['/', '/consommation'];
+let usageLoading = false;
+function ensureUsage() {
+  if (S.usage !== undefined || usageLoading || !S.ov || !USAGE_PAGES.includes(here())) return;
+  usageLoading = true;
+  loadUsage().finally(() => { usageLoading = false; route(); });
+}
 // la consommation lit tous les transcripts (quelques secondes) : jamais attendue par le premier affichage ni par une écriture
-const reload = async () => { S.depFor = undefined; await load(); route(); toast('KB relue'); S.usage = undefined; loadUsage().then(route); };
+const reload = async () => { S.depFor = undefined; S.usage = undefined; await load(); route(); toast('KB relue'); };
 
 // --- filtres conservés d'un écran à l'autre --------------------------------------------------
 const setF = (k, v) => {
   const typing = document.activeElement && document.activeElement.id === 'search';
   F[k] = v; store.set('hosa.filtres', JSON.stringify(F), 'session');
-  if (k === 'periode') { S.usage = undefined; loadUsage().then(route); }
+  if (k === 'periode') S.usage = undefined;
   route();
   const s = $('search'); if (typing && s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
 };
@@ -1017,6 +1026,7 @@ function route() {
   if (keep && $(keep[0])) { const el = $(keep[0]); el.focus({ preventScroll: true }); if (keep[1] != null && el.setSelectionRange) el.setSelectionRange(keep[1], keep[1]); }
   document.title = `${S.target ? S.target.title : title} — Hosa`;
   $('fab').textContent = S.target ? '✎ Remarque sur ce document' : '✎ Remarque pour Claude';
+  ensureUsage();
 }
 
 // palette de recherche : écrans et documents
@@ -1073,4 +1083,4 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !$('palette').open) { e.preventDefault(); const s = $('search'); if (s) s.focus(); else openPalette(); }
 });
 route();
-load().then(route).then(loadUsage).then(route);
+load().then(route);

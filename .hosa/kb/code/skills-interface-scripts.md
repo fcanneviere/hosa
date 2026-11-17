@@ -4,7 +4,7 @@ title: skills/interface/scripts
 description: '!/usr/bin/env python3'
 resource: skills/interface/scripts
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-13T08:26:41Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-17T19:19:28Z'}
 ---
 
 ## Fichiers
@@ -90,56 +90,56 @@ generated: {by: 'process:hosa-graph', at: '2026-11-13T08:26:41Z'}
 - `ErreurDePage` — `skills/interface/scripts/capture.mjs:304`
 - `Tube` — `skills/interface/scripts/capture.mjs:185`
 - `Tube.attend.fin` — `skills/interface/scripts/capture.mjs:238`
-- `adresse` — `skills/interface/scripts/capture.mjs:707`
+- `adresse` — `skills/interface/scripts/capture.mjs:710`
 - `adresseDeBase` — `skills/interface/scripts/capture.mjs:127`
 - `adresseDeBase.absent` — `skills/interface/scripts/capture.mjs:135`
 - `arret` — `skills/interface/scripts/capture.mjs:49`
-- `centre` — `skills/interface/scripts/capture.mjs:641`
+- `centre` — `skills/interface/scripts/capture.mjs:644`
 - `chargee` — `skills/interface/scripts/capture.mjs:324`
-- `clique` — `skills/interface/scripts/capture.mjs:654`
-- `controlesDeLaPage` — `skills/interface/scripts/capture.mjs:356` — Chaque problème nomme l'élément par un sélecteur court, et son texte quand il en a un.
-- `controlesDeLaPage.cite` — `skills/interface/scripts/capture.mjs:363`
-- `controlesDeLaPage.couleur` — `skills/interface/scripts/capture.mjs:407`
-- `controlesDeLaPage.fondDe` — `skills/interface/scripts/capture.mjs:417`
-- `controlesDeLaPage.hexa` — `skills/interface/scripts/capture.mjs:433`
-- `controlesDeLaPage.lum` — `skills/interface/scripts/capture.mjs:428`
-- `controlesDeLaPage.nom` — `skills/interface/scripts/capture.mjs:359`
-- `controlesDeLaPage.nomme` — `skills/interface/scripts/capture.mjs:456`
-- `controlesDeLaPage.rapport` — `skills/interface/scripts/capture.mjs:432`
-- `controlesDeLaPage.sur` — `skills/interface/scripts/capture.mjs:415`
-- `controlesDeLaPage.visible` — `skills/interface/scripts/capture.mjs:367`
+- `clique` — `skills/interface/scripts/capture.mjs:657`
+- `controlesDeLaPage` — `skills/interface/scripts/capture.mjs:359` — Chaque problème nomme l'élément par un sélecteur court, et son texte quand il en a un.
+- `controlesDeLaPage.cite` — `skills/interface/scripts/capture.mjs:366`
+- `controlesDeLaPage.couleur` — `skills/interface/scripts/capture.mjs:410`
+- `controlesDeLaPage.fondDe` — `skills/interface/scripts/capture.mjs:420`
+- `controlesDeLaPage.hexa` — `skills/interface/scripts/capture.mjs:436`
+- `controlesDeLaPage.lum` — `skills/interface/scripts/capture.mjs:431`
+- `controlesDeLaPage.nom` — `skills/interface/scripts/capture.mjs:362`
+- `controlesDeLaPage.nomme` — `skills/interface/scripts/capture.mjs:459`
+- `controlesDeLaPage.rapport` — `skills/interface/scripts/capture.mjs:435`
+- `controlesDeLaPage.sur` — `skills/interface/scripts/capture.mjs:418`
+- `controlesDeLaPage.visible` — `skills/interface/scripts/capture.mjs:370`
 - `dansLaPage` — `skills/interface/scripts/capture.mjs:307` — (page d'erreur du navigateur) perd son contexte un instant : on réessaie.
 - `dePage` — `skills/interface/scripts/capture.mjs:283`
 - `empreinte` — `skills/interface/scripts/capture.mjs:104`
-- `fenetre` — `skills/interface/scripts/capture.mjs:336`
-- `focusDeLaPage` — `skills/interface/scripts/capture.mjs:550`
-- `focusDeLaPage.lit` — `skills/interface/scripts/capture.mjs:552`
-- `focusDeLaPage.nom` — `skills/interface/scripts/capture.mjs:564`
-- `joue` — `skills/interface/scripts/capture.mjs:675`
-- `joue.tour` — `skills/interface/scripts/capture.mjs:685`
-- `joue.unSeul` — `skills/interface/scripts/capture.mjs:678`
+- `fenetre` — `skills/interface/scripts/capture.mjs:339`
+- `focusDeLaPage` — `skills/interface/scripts/capture.mjs:553`
+- `focusDeLaPage.lit` — `skills/interface/scripts/capture.mjs:555`
+- `focusDeLaPage.nom` — `skills/interface/scripts/capture.mjs:567`
+- `joue` — `skills/interface/scripts/capture.mjs:678`
+- `joue.tour` — `skills/interface/scripts/capture.mjs:688`
+- `joue.unSeul` — `skills/interface/scripts/capture.mjs:681`
 - `liste` — `skills/interface/scripts/capture.mjs:79`
-- `mots` — `skills/interface/scripts/capture.mjs:632` — ---------- Actions : se connecter, ouvrir un menu, remplir un champ… ----------
+- `mots` — `skills/interface/scripts/capture.mjs:635` — ---------- Actions : se connecter, ouvrir un menu, remplir un champ… ----------
 - `nettoie` — `skills/interface/scripts/capture.mjs:258`
 - `nomRoute` — `skills/interface/scripts/capture.mjs:106`
 - `nomSur` — `skills/interface/scripts/capture.mjs:105`
 - `ouvre` — `skills/interface/scripts/capture.mjs:326`
 - `page` — `skills/interface/scripts/capture.mjs:282`
 - `pause` — `skills/interface/scripts/capture.mjs:110`
-- `photo` — `skills/interface/scripts/capture.mjs:342`
-- `planche` — `skills/interface/scripts/capture.mjs:613` — ---------- Planche : les captures d'une taille, quatre par ligne ----------
-- `planche.echappe` — `skills/interface/scripts/capture.mjs:616`
-- `poseMasque` — `skills/interface/scripts/capture.mjs:508`
-- `poseReperes` — `skills/interface/scripts/capture.mjs:474` — ---------- Repères, masque : un calque SVG posé sur la page, retiré après la capture ----------
-- `poseReperes.forme` — `skills/interface/scripts/capture.mjs:482`
+- `photo` — `skills/interface/scripts/capture.mjs:345`
+- `planche` — `skills/interface/scripts/capture.mjs:616` — ---------- Planche : les captures d'une taille, quatre par ligne ----------
+- `planche.echappe` — `skills/interface/scripts/capture.mjs:619`
+- `poseMasque` — `skills/interface/scripts/capture.mjs:511`
+- `poseReperes` — `skills/interface/scripts/capture.mjs:477` — ---------- Repères, masque : un calque SVG posé sur la page, retiré après la capture ----------
+- `poseReperes.forme` — `skills/interface/scripts/capture.mjs:485`
 - `prive` — `skills/interface/scripts/capture.mjs:123`
-- `retireCalques` — `skills/interface/scripts/capture.mjs:607`
-- `sansBarre` — `skills/interface/scripts/capture.mjs:747`
-- `souris` — `skills/interface/scripts/capture.mjs:652`
-- `touche` — `skills/interface/scripts/capture.mjs:666`
+- `retireCalques` — `skills/interface/scripts/capture.mjs:610`
+- `sansBarre` — `skills/interface/scripts/capture.mjs:750`
+- `souris` — `skills/interface/scripts/capture.mjs:655`
+- `touche` — `skills/interface/scripts/capture.mjs:669`
 - `trouveNavigateur` — `skills/interface/scripts/capture.mjs:160` — ---------- Navigateur : invisible, profil jetable, piloté sur un tube ----------
-- `verifieFocus` — `skills/interface/scripts/capture.mjs:593`
-- `vide` — `skills/interface/scripts/capture.mjs:764`
+- `verifieFocus` — `skills/interface/scripts/capture.mjs:596`
+- `vide` — `skills/interface/scripts/capture.mjs:767`
 - `lignes_ecrans` — `skills/interface/scripts/capture.py:39`
 - `main` — `skills/interface/scripts/capture.py:82`
 - `node` — `skills/interface/scripts/capture.py:70`

@@ -34,8 +34,11 @@ class GraphError(ValueError):
 # --- Emplacements -------------------------------------------------------------
 
 def checkout_root(start=None):
-    """Racine git du checkout qui contient `start` ; à défaut, le dossier qui porte `.hosa/`, sinon `start`."""
+    """Racine git du checkout qui contient `start` ; à défaut, le dossier qui porte `.hosa/`, sinon `start`.
+    Depuis la KB, le projet qui la porte : `.hosa/kb` est son propre checkout (la branche `hosa-kb`), et sa racine
+    git n'est pas le projet (rieki : la consommation cherchée sous `.hosa/kb`, 404 ; le graphe du code, absent)."""
     start = Path(start or Path.cwd()).resolve()
+    start = next((d.parent for d in (start, *start.parents) if d.name == ".hosa"), start)
     try:
         out = subprocess.run(["git", "-C", str(start), "rev-parse", "--show-toplevel"],
                              capture_output=True, text=True, check=True, **NO_WINDOW).stdout.strip()

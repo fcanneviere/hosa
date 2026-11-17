@@ -423,9 +423,15 @@ CITED = ("## Note technique (senior dev)", "## Placement architecture (architect
 
 
 def creators(tickets: Path) -> dict[str, str]:
-    """{path: slug of the ticket whose notes mark it `à créer`}."""
+    """{path: slug of the ticket whose notes mark it `à créer`}, every ticket read once while none changes
+    (rieki: the whole backlog read again for each of 28 tickets, 2.2 s of the dashboard's 3.9 s)."""
+    return _creators(str(tickets), stamp(tickets))
+
+
+@functools.lru_cache(maxsize=8)
+def _creators(tickets: str, _stamp: tuple) -> dict[str, str]:
     out = {}
-    for f in sorted(tickets.glob("*.md")):
+    for f in sorted(Path(tickets).glob("*.md")):
         body = split(f.read_text(encoding="utf-8"))[1]
         for heading in CITED:
             for line in (section(body, heading) or "").splitlines():

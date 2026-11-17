@@ -466,14 +466,43 @@ def dependances(root, objectif=None):
             "objectifs": [{"slug": t["slug"], "title": t["title"], "priority": t["priority"]} for t in todo]}
 
 
+_USAGE: dict = {}
+
+
+def _transcripts_stamp(base):
+    """Ce que sont les transcripts maintenant (nombre, dernière modification, taille) : le cache tient tant
+    qu'aucun ne change."""
+    n = last = size = 0
+    for d, _, files in os.walk(base):
+        for f in files:
+            if f.endswith(".jsonl"):
+                try:
+                    s = os.stat(os.path.join(d, f))
+                except OSError:
+                    continue
+                n, last, size = n + 1, max(last, s.st_mtime_ns), size + s.st_size
+    return n, last, size
+
+
 def usage(checkout, days):
-    """Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan`."""
+    """Consommation par agent et par modèle sur les `days` derniers jours, via `usage_report.scan` — gardée tant
+    que les transcripts ne changent pas (rieki : 14 s de lecture à chaque ouverture du tableau de bord)."""
     try:
         days = int(days)
     except (TypeError, ValueError) as e:
         raise KbError("days doit être un entier ≥ 1") from e
     if days < 1 or days > 3650:
         raise KbError("days doit être un entier ≥ 1")
+    base = ur.project_dir(Path(checkout))
+    key = (str(base), days, date.today().isoformat(), _transcripts_stamp(base))
+    if key not in _USAGE:
+        if len(_USAGE) > 16:
+            _USAGE.clear()
+        _USAGE[key] = _usage(checkout, days)
+    return _USAGE[key]
+
+
+def _usage(checkout, days):
     since = (date.today() - timedelta(days=days)).isoformat()
     try:
         by_actor, by_model, *_ = ur.scan(ur.project_dir(Path(checkout)), since, None)

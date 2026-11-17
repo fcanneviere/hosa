@@ -35,6 +35,19 @@ def git(root, *args):
     subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
 
 
+class CheckoutRootTest(unittest.TestCase):
+    def test_from_a_kb_that_is_its_own_checkout_the_root_is_the_project(self):
+        """rieki: `.hosa/kb` is the `hosa-kb` branch checked out there; its git root is not the project."""
+        root = Path(tempfile.mkdtemp()).resolve()
+        kbdir = root / ".hosa" / "kb"
+        kbdir.mkdir(parents=True)
+        for d in (root, kbdir):
+            subprocess.run(["git", "init", "-q", str(d)], check=True, **graph.NO_WINDOW)
+        self.assertEqual(graph.checkout_root(kbdir), root)
+        self.assertEqual(graph.checkout_root(kbdir / "tickets"), root)
+        self.assertEqual(graph.checkout_root(root), root)
+
+
 class GraphTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

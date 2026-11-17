@@ -2,6 +2,11 @@
 
 ## 2026-11-17
 - process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-interface-scripts`
+- process:hosa-graph a mis à jour `skills-backlog-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
 - process:hosa-graph a mis à jour `hosa-app-public`
 - process:hosa-graph a mis à jour `hosa-app-public`
 - process:hosa-graph a mis à jour `hosa-app`

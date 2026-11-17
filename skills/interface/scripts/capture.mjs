@@ -328,6 +328,9 @@ async function ouvre(adresse) {
   const fin = chargee(15000);
   const r = await page("Page.navigate", { url: adresse });
   if (r.errorText) throw new Error(`impossible d'ouvrir ${adresse} : ${r.errorText}`);
+  // la même adresse à un `#` près : navigation dans le document, sans chargement ni rendu neuf (le tableau de bord,
+  // chaque taille après la première : « chargement inachevé » à tort) → on recharge la page, comme une autre adresse
+  if (!r.loaderId) await page("Page.reload", {});
   if (!(await fin)) releve.push("chargement inachevé après 15 s");
   await dansLaPage(() => (document.fonts ? document.fonts.ready.then(() => true) : true));
   await pause(attente);
