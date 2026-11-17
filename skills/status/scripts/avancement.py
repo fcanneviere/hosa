@@ -406,6 +406,99 @@ def coverage(kb: Path, ticket: str) -> dict:
     return {"criteres": crit, "couverts": done, "total": len(crit), "plan": plan is not None}
 
 
+RESULT = re.compile(r"^\s*-\s*((?:\[?CA\d+\]?(?:\s*(?:,|et|à|-)\s*)?)+)\b[^:\n]*:\s*(réussi|échec|échoué)", re.M | re.I)
+
+
+def result_status(plan: str | None) -> dict[str, str]:
+    """Each criterion's last status in `## Résultats techniques`: `- CAn (…) : réussi — <tests>` (`hosa-tester` step 7).
+    The plan's `## Cas de test` cites every `[CAn]` by construction: only a result line proves one (rieki sprint-3:
+    the product owner rejected a ticket whose results named no test for CA2, CA3, CA4, CA7 — a loop a script sees)."""
+    status = {}
+    for m in RESULT.finditer(section(plan, "Résultats techniques") or ""):
+        for ca in re.findall(r"CA\d+", m[1]):
+            status[ca] = "réussi" if m[2].lower() == "réussi" else "échec"
+    return status
+
+
+def recettes(kb: Path, ticket: str) -> list[tuple[str, str]]:
+    """A ticket's recette files (`kb/test/<ticket>-<persona>.md`) and their text."""
+    if not (kb / "test").is_dir():
+        return []
+    return [(p.name, read(p) or "") for p in sorted((kb / "test").glob(f"{ticket}-*.md"))
+            if p.name != f"{ticket}-technique.md"]
+
+
+def result_gaps(kb: Path, ticket: str, plan: str | None, crit: list[str]) -> list[str]:
+    """`qa`'s proof per criterion: a passed result line, or a recette `CAn — Oui`."""
+    status = result_status(plan)
+    seen = "\n".join(r for _, r in recettes(kb, ticket))
+    oui = {ca for ca in crit if re.search(rf"^-\s*{re.escape(ca)}\s*—\s*Oui\b", seen, re.M)}
+    failed = [ca for ca in crit if status.get(ca) == "échec" and ca not in oui]
+    missing = [ca for ca in crit if ca not in status and ca not in oui]
+    gaps = [f"{ticket} : {', '.join(failed)} en échec dans `## Résultats techniques` (`qa`)"] if failed else []
+    if missing:
+        gaps.append(f"{ticket} : {', '.join(missing)} sans ligne `- CAn (…) : réussi — <tests>` dans "
+                    "`## Résultats techniques` ni recette `CAn — Oui` (`qa`)")
+    return gaps
+
+
+CLEAN_VERDICT = re.compile(r"^(Accepté|Réussi|Non applicable)\.?$")
+
+
+def acceptance_gaps(kb: Path, ticket: str) -> list[str]:
+    """What keeps `accepte` from closing a ticket by itself: anything left is a judgment for `hosa-product-owner`.
+    rieki: its one rejection in three sprints was a fact this reads (criteria with no passed test)."""
+    text = read(kb / "tickets" / f"{ticket}.md")
+    if text is None:
+        return [f"{ticket} : pas de `kb/tickets/{ticket}.md`"]
+    crit = criteria(text)
+    if not crit:
+        return [f"{ticket} : aucun critère `CAn` — acceptation par l'utilisateur"]
+    plan = read(kb / "test" / f"{ticket}-technique.md")
+    if section(plan, "Résultats techniques") is None:
+        return [f"{ticket} : pas de `## Résultats techniques` (`qa`)"]
+    gaps = result_gaps(kb, ticket, plan, crit)
+    names = {n for n, _ in recettes(kb, ticket)}
+    for p in re.findall(r"\(\.\./personnas/([^)]+)\.md\)", section(plan, "Recette requise") or ""):
+        if f"{ticket}-{p}.md" not in names:
+            gaps.append(f"{ticket} : recette de {p} absente (`qa`)")
+    for name, r in recettes(kb, ticket):
+        verdict = next((x.strip() for x in (section(r, "Verdict") or "").splitlines() if x.strip()), "")
+        if not CLEAN_VERDICT.match(verdict):
+            gaps.append(f"{name} : verdict « {verdict[:60] or 'absent'} »")
+        if re.search(r"^-\s*CA\d+\s*—\s*Non\b(?!\s*observé)", r, re.M):
+            gaps.append(f"{name} : un critère répondu Non")
+    return gaps
+
+
+def accept(kb: Path, ticket: str) -> list[str]:
+    """`state: done` and `verified` written by the script when the machine proof is complete; else its gaps."""
+    path = kb / "tickets" / f"{ticket}.md"
+    text = read(path) or ""
+    if field(front(text), "state") == "done" and field(front(text), "verified"):
+        return []
+    gaps = acceptance_gaps(kb, ticket)
+    if gaps:
+        return gaps
+    head, body = text.split("\n---", 1)[0], text.split("\n---", 1)[1]
+    head = re.sub(r"^verified:.*\n?", "", head + "\n", flags=re.M).rstrip("\n")
+    head = re.sub(r"^state:.*$", "state: done", head, flags=re.M) if re.search(r"^state:", head, re.M) \
+        else head + "\nstate: done"
+    head += f"\nverified: {{ by: process:avancement, at: {now()} }}"
+    path.write_text(head + "\n---" + body, encoding="utf-8")
+    log = kb / "tickets" / "log.md"
+    day, entry = now()[:10], (f"- process:avancement, validation : [{ticket}]({ticket}.md) accepté, passé à `done` "
+                              "(chaque CAn prouvé par un test réussi ou une recette Oui, recettes Accepté)")
+    old = read(log) or "# Journal des tickets\n"
+    if f"## {day}\n" in old:
+        old = re.sub(rf"^## {day}\n\n?", f"## {day}\n\n{entry}\n", old, count=1, flags=re.M)
+    else:
+        title, _, rest = old.partition("\n")
+        old = f"{title}\n\n## {day}\n\n{entry}\n{rest}"
+    log.write_text(old, encoding="utf-8")
+    return []
+
+
 def front(text: str | None) -> str:
     m = re.match(r"---\s*\n(.*?)\n---", text or "", re.S)
     return m.group(1) if m else ""
@@ -751,6 +844,8 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
                                 "(`- <AAAA-MM-JJTHH:MMZ> — PASS…`, `develop` correction)")
         if stage in ("qa", "validation") and section(plan, "Résultats techniques") is None:
             gaps.append(f"{t} : pas de `## Résultats techniques` (`qa`)")
+        elif stage == "qa":
+            gaps += result_gaps(kb, t, plan, crit)
         if stage in ("qa", "validation"):
             for p in re.findall(r"\(\.\./personnas/([^)]+)\.md\)", section(plan, "Recette requise") or ""):
                 if f"{t}-{p}.md" not in tests:
@@ -1830,7 +1925,8 @@ def run(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("kb", type=Path)
     ap.add_argument("action", choices=["show", "next", "reprendre", "check", "start", "progress", "done", "block", "skip",
-                                       "reprise", "back", "init", "task", "juge", "reponse", "remarques", "remarque"])
+                                       "reprise", "back", "init", "task", "juge", "reponse", "remarques", "remarque",
+                                       "accepte"])
     ap.add_argument("stage", nargs="?")
     ap.add_argument("to", nargs="?")
     ap.add_argument("item", nargs="?")
@@ -1963,6 +2059,16 @@ def run(argv: list[str]) -> int:
             print(resume)
         print("\n".join(x for x in open_loops(loops) if x not in resume))
         return 0
+    if a.action == "accepte":  # validation: each ticket the machine proof closes; the rest go to hosa-product-owner
+        s = read(a.kb / "sprints" / f"{a.sprint}.md") if a.sprint else None
+        slugs = [a.stage] if a.stage else re.findall(r"\(\.\./tickets/([^)]+)\.md\)", section(s, "Tickets") or "")
+        if not slugs:
+            print("error: accepte needs a ticket or --sprint", file=sys.stderr)
+            return 2
+        left = {t: accept(a.kb, t) for t in slugs}
+        print("\n".join(f"- {t} : accepté (`done`, `verified`)" if not g else f"- {t} → hosa-product-owner : " + " ; ".join(g)
+                        for t, g in left.items()))
+        return 1 if any(left.values()) else 0
     if a.action == "check":
         if not a.stage:
             print("error: check needs a stage", file=sys.stderr)

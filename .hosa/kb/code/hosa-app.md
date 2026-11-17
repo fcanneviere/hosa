@@ -4,7 +4,7 @@ title: hosa/app
 description: 'Graphe du projet géré : code (tree-sitter) + liens vers la KB, incrémental, requêtes compactes pour les agents.'
 resource: hosa/app
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-17T06:22:30Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-17T17:29:40Z'}
 ---
 
 ## Fichiers
@@ -116,31 +116,32 @@ generated: {by: 'process:hosa-graph', at: '2026-11-17T06:22:30Z'}
 - `Contraste` — `hosa/app/test_atelier.py:53`
 - `Diversite` — `hosa/app/test_atelier.py:539`
 - `Revue` — `hosa/app/test_atelier.py:584`
-- `AuditStage` — `hosa/app/test_avancement.py:814`
-- `Block` — `hosa/app/test_avancement.py:256`
-- `Bounds` — `hosa/app/test_avancement.py:1293` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
-- `Bounds.test_one_writer_of_the_plan_at_a_time.second` — `hosa/app/test_avancement.py:1395`
+- `Accepte` — `hosa/app/test_avancement.py:111` — `accepte`: a ticket the machine proof closes is `done` without hosa-product-owner; the rest are named.
+- `AuditStage` — `hosa/app/test_avancement.py:874`
+- `Block` — `hosa/app/test_avancement.py:316`
+- `Bounds` — `hosa/app/test_avancement.py:1353` — The audit of 2026-11-12: each bound and each state below was open, and is now a refusal with its test.
+- `Bounds.test_one_writer_of_the_plan_at_a_time.second` — `hosa/app/test_avancement.py:1455`
 - `Check` — `hosa/app/test_avancement.py:38`
-- `Coverage` — `hosa/app/test_avancement.py:181`
-- `Docs` — `hosa/app/test_avancement.py:1263` — The pipelines written in prose (using-hosa, README) follow pipeline.json.
-- `Done` — `hosa/app/test_avancement.py:247`
-- `Graph` — `hosa/app/test_avancement.py:1066` — pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards.
-- `Init` — `hosa/app/test_avancement.py:1246`
-- `Loops` — `hosa/app/test_avancement.py:1116`
-- `LoopsClosed` — `hosa/app/test_avancement.py:1457` — The audit's five points left open, 2026-11-12: each one is now a refusal.
-- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1542`
-- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1533`
-- `Next` — `hosa/app/test_avancement.py:837`
-- `Reponse` — `hosa/app/test_avancement.py:266` — `reponse`: the user's answers leave a blocked stage, and the journal says whether they took the recommendation.
-- `Reprendre` — `hosa/app/test_avancement.py:855` — `reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action.
-- `Tasks` — `hosa/app/test_avancement.py:357` — `task`: the agents' dispatches of an open stage — a proof of exit like the files its skill writes.
-- `batch` — `hosa/app/test_avancement.py:1098` — A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added.
-- `closed_until` — `hosa/app/test_avancement.py:1107` — Every upstream stage done up to <stage> included (forced: these tests are about the loops).
-- `cov` — `hosa/app/test_avancement.py:172` — `av.coverage`, or a clean test failure while it does not exist yet.
+- `Coverage` — `hosa/app/test_avancement.py:241`
+- `Docs` — `hosa/app/test_avancement.py:1323` — The pipelines written in prose (using-hosa, README) follow pipeline.json.
+- `Done` — `hosa/app/test_avancement.py:307`
+- `Graph` — `hosa/app/test_avancement.py:1126` — pipeline.json is the one stage graph: each stage once, each stage's skill exists, loops go backwards.
+- `Init` — `hosa/app/test_avancement.py:1306`
+- `Loops` — `hosa/app/test_avancement.py:1176`
+- `LoopsClosed` — `hosa/app/test_avancement.py:1517` — The audit's five points left open, 2026-11-12: each one is now a refusal.
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.done` — `hosa/app/test_avancement.py:1602`
+- `LoopsClosed.test_the_review_closes_on_a_note_of_8_computed_from_its_grid_or_its_two_exits.grid` — `hosa/app/test_avancement.py:1593`
+- `Next` — `hosa/app/test_avancement.py:897`
+- `Reponse` — `hosa/app/test_avancement.py:326` — `reponse`: the user's answers leave a blocked stage, and the journal says whether they took the recommendation.
+- `Reprendre` — `hosa/app/test_avancement.py:915` — `reprendre`: the resume card, in one call — the stage, its skill, the sprint, the tasks, the action.
+- `Tasks` — `hosa/app/test_avancement.py:417` — `task`: the agents' dispatches of an open stage — a proof of exit like the files its skill writes.
+- `batch` — `hosa/app/test_avancement.py:1158` — A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added.
+- `closed_until` — `hosa/app/test_avancement.py:1167` — Every upstream stage done up to <stage> included (forced: these tests are about the loops).
+- `cov` — `hosa/app/test_avancement.py:232` — `av.coverage`, or a clean test failure while it does not exist yet.
 - `kb` — `hosa/app/test_avancement.py:19`
 - `run` — `hosa/app/test_avancement.py:27`
-- `section_rows` — `hosa/app/test_avancement.py:1710`
-- `tk` — `hosa/app/test_avancement.py:178`
+- `section_rows` — `hosa/app/test_avancement.py:1770`
+- `tk` — `hosa/app/test_avancement.py:238`
 - `Navigateur` — `hosa/app/test_capture.py:80`
 - `Routes` — `hosa/app/test_capture.py:43`
 - `chrome` — `hosa/app/test_capture.py:32`

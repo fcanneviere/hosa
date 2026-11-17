@@ -56,12 +56,13 @@ Be strict. "Close enough" is not satisfied. A partial implementation is a gap.
 ### Step 3: Assess quality (non-blocking)
 Note any quality issues that don't block the spec but would matter to a future maintainer:
 - Correctness issues not covered by the spec (e.g., off-by-one errors)
-- Security issues (SQL injection, missing input validation, hardcoded secrets)
 - Readability issues that would cause a future maintainer to misunderstand intent (not stylistic preferences — only genuine confusion risks)
 - Naming that breaks the developer's rule 2 (`agents/developer.md`): a synonym of a domain or entity word, a name that lies about what the function does, a boolean or a unit-bearing value you can't read as such
 - A hand-written piece an installed dependency, the stdlib or an existing function of the project already provides — name it
-- Architecture issues: a change placed outside the layer/module it belongs to, a new dependency between modules that shouldn't know about each other, logic duplicated instead of reusing what already exists
-- Performance issues visible from static reading alone (e.g., an N+1 query, an unindexed lookup on a large table, an obviously unbounded loop) — flag as potential impact, never as a measured one; do not fabricate a number you haven't measured
+
+Outside a sprint (the generic `review`), also note security issues (injection, missing input validation, hardcoded secrets), performance visible from static reading (an N+1 query, an unindexed lookup on a large table, an unbounded loop — potential impact, never a made-up number) and architecture issues (a change outside its layer, a dependency between modules that shouldn't know each other).
+
+**Ticket review of a sprint:** not yours — unforeseen security holes, performance, architecture and duplication across the codebase. The sprint audit (`qualite`, stage `audit`) checks them on the same diff, one stage later, with its own checklist (rieki sprint-3: 8 PASS-WITH-NOTES out of 11 reviews, on subjects the audit then checked again). What the ticket requires — its security note, each `Security Rule` it cites, the Definition of Done — stays a requirement of Step 2.
 
 These are non-blocking. They do not affect the PASS/FAIL verdict. Only what a maintainer would actually trip on: a review with no note is a normal result, not a missed one. Never a note to show you looked — a stylistic preference, a "could also" or a hypothetical future need is not one.
 

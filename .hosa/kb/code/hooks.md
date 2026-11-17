@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-17T05:48:48Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-17T06:57:02Z'}
 ---
 
 ## Fichiers
@@ -243,7 +243,7 @@ generated: {by: 'process:hosa-graph', at: '2026-11-17T05:48:48Z'}
 - `stop` — `hooks/stop.test.js:15`
 - `processPayload` — `hooks/subagent-start.js:62`
 - `pythonLine` — `hooks/subagent-start.js:51` — a path under the plugin cache breaks at the next update.
-- `ctx` — `hooks/subagent-start.test.js:38`
+- `ctx` — `hooks/subagent-start.test.js:42`
 
 ## Tickets et exigences
 

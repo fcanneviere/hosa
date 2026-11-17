@@ -86,12 +86,10 @@ Lié à : [ticket](../tickets/<slug-ticket>.md)
 
 ## Mode 3 — Demo
 
-The user sees the sprint working before it lands. One T-test per ticket — two at most for a ticket with a front-office and a back-office side — on its main acceptance scenario, per `retours` 3b:
-- the exact URL in the sprint's environment (ports from `kb/sprints/<slug>.md` and `environnement-docker.md`), the screen named as in `kb/interface/lexique.md`;
-- a test account from the dataset README's `## Comptes de test`, for the persona of the story;
-- one action per row, with an observable expected result;
-- a criterion under the plan's `## Observation` is seen through its means (the journal, the injection tool, the command), in the rows of its ticket's T-test.
-Order them as a person would chain them. **Already played:** a ticket whose last `## Résultats techniques` holds a passed `manuel` case on that main scenario gets no T-test — the user played it on this code during `qa` (a correction is always followed by a new `qa` run, so the last results are the current code's); list it under `Déjà joué en QA` (ticket, case, date). Write nothing: `validation` records the answers. No `## Comptes de test` or no URL you can derive → Open Question; never guess one.
+The user sees the sprint working before it lands, and plays only what the agents could not see. Two kinds of T-test, per `retours` 3b:
+- **The journey** — one to three T-tests chaining the sprint's tickets as a persona would, from its home screen to the result, on their main acceptance scenarios. Not one T-test per ticket: a criterion a passed test and a recette `Oui` both prove is already shown.
+- **What no agent saw** — one T-test per criterion of a sprint ticket that is, in its last recette, `Non observé` without `prouvé par le test`, under a reserve (`Accepté avec réserves`, `Réussi (réserve : CAn)`) or in a `Différé` recette, and one per line of its plan's `## Observation`, seen through the means that line names (the journal, the injection tool, the command). Read the recettes' `## Verdict` and criteria lines and the plans' `## Observation` only.
+Each T-test gives the exact URL in the sprint's environment (ports from `kb/sprints/<slug>.md` and `environnement-docker.md`), the screen named as in `kb/interface/lexique.md`, a test account from the dataset README's `## Comptes de test` for the persona of the story, one action per row with an observable expected result, and the tickets and `CAn` it covers. Order them as a person would chain them. **Already played:** a ticket whose last `## Résultats techniques` holds a passed `manuel` case on its main scenario needs no place in the journey — the user played it on this code during `qa` (a correction is always followed by a new `qa` run, so the last results are the current code's); list it under `Déjà joué en QA` (ticket, case, date). Write nothing: `validation` records the answers. No `## Comptes de test` or no URL you can derive → Open Question; never guess one.
 
 ## Context Diet
 
@@ -114,7 +112,7 @@ You do not commit. Report what you changed; the user or the orchestrating skill 
 [- <ticket> — <défaut> — critère à ajouter : Étant donné … quand … alors … — ou "Aucun"]
 
 ## Démo (Mode 3)
-[T-numérotés, `retours` 3b]
+[T-numérotés, `retours` 3b — le parcours d'abord, puis un T par critère qu'aucun agent n'a vu, chacun avec ses tickets et ses CAn]
 Déjà joué en QA : [<ticket> — <cas> — <date>, ou "Aucun"]
 
 ## Outillage (Mode 2)

@@ -85,11 +85,71 @@ class Check(unittest.TestCase):
         self.assertEqual(av.check(k, "validation", "s1"), [])
 
     def test_qa_needs_each_required_recette(self):
-        plan = "- [CA1] x\n- [CA2] y\n## Résultats techniques\n2/2\n## Recette requise\n- [Karim](../personnas/karim.md)\n"
+        plan = ("- [CA1] x\n- [CA2] y\n## Résultats techniques\n- CA1, CA2 : réussi — t\n"
+                "## Recette requise\n- [Karim](../personnas/karim.md)\n")
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})
         self.assertEqual(av.check(k, "qa", "s1"), ["t1 : recette de karim absente (`kb/test/t1-karim.md`, `qa`)"])
         (k / "test" / "t1-karim.md").write_text("## Verdict\nAccepté\n", encoding="utf-8")
         self.assertEqual(av.check(k, "qa", "s1"), [])
+
+    def test_qa_needs_a_passed_result_line_per_criterion(self):
+        # the plan's cases cite every [CAn]: only a result line proves one (rieki sprint-3: a PO rejection a script reads)
+        plan = "- [CA1] x\n- [CA2] y\n## Résultats techniques\n- 2026-11-16 — 12/12\n- CA1 (aperçu) : réussi — test_a\n"
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})
+        self.assertEqual(av.check(k, "qa", "s1"), ["t1 : CA2 sans ligne `- CAn (…) : réussi — <tests>` dans "
+                                                   "`## Résultats techniques` ni recette `CAn — Oui` (`qa`)"])
+        (k / "test" / "t1-technique.md").write_text(plan + "  - CA2 : échec — test_b\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "qa", "s1"), ["t1 : CA2 en échec dans `## Résultats techniques` (`qa`)"])
+        (k / "test" / "t1-technique.md").write_text(plan + "  - CA2 : échec — test_b\n  - CA2 : réussi — test_b\n",
+                                                    encoding="utf-8")
+        self.assertEqual(av.check(k, "qa", "s1"), [])  # the last line counts
+        (k / "test" / "t1-technique.md").write_text(plan, encoding="utf-8")
+        (k / "test" / "t1-karim.md").write_text("- CA2 — Oui — vu à l'écran\n## Verdict\nAccepté\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "qa", "s1"), [])
+
+
+class Accepte(unittest.TestCase):
+    """`accepte`: a ticket the machine proof closes is `done` without hosa-product-owner; the rest are named."""
+    PLAN = ("- [CA1] x\n- [CA2] y\n## Recette requise\n- [Karim](../personnas/karim.md)\n"
+            "## Résultats techniques\n- CA1 à CA2 : réussi — t\n")
+
+    def setUp(self):
+        self.k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": self.PLAN,
+                     "test/t1-karim.md": "### Critères\n- CA1 — Oui — x\n- CA2 — Non observé — prouvé par le test\n"
+                                         "## Verdict\nAccepté\n",
+                     "tickets/log.md": "# Journal des tickets\n\n## 2000-01-01\n\n- ancien\n"})
+
+    def test_a_ticket_fully_proved_is_accepted_and_logged(self):
+        self.assertEqual(run(self.k, "accepte", "--sprint", "s1")[0], 0)
+        text = (self.k / "tickets" / "t1.md").read_text(encoding="utf-8")
+        self.assertIn("state: done", text)
+        self.assertRegex(text, r"verified: \{ by: process:avancement, at: \S+ \}")
+        self.assertIn("## Critères d'acceptation", text)
+        log = (self.k / "tickets" / "log.md").read_text(encoding="utf-8")
+        self.assertRegex(log, r"## \d{4}-\d\d-\d\d\n\n- process:avancement, validation : \[t1\]\(t1\.md\) accepté.*\n\n## 2000")
+        self.assertEqual(run(self.k, "accepte", "t1")[0], 0)  # idempotent
+        self.assertEqual(text, (self.k / "tickets" / "t1.md").read_text(encoding="utf-8"))
+
+    def test_a_judgment_goes_to_the_product_owner(self):
+        for recette, gap in (("## Verdict\nAccepté avec réserves\n", "verdict « Accepté avec réserves »"),
+                             ("## Verdict\nDifféré\n", "verdict « Différé »"),
+                             ("- CA1 — Non — x\n## Verdict\nAccepté\n", "un critère répondu Non")):
+            (self.k / "test" / "t1-karim.md").write_text(recette, encoding="utf-8")
+            code, out = run(self.k, "accepte", "--sprint", "s1")
+            self.assertEqual(code, 1)
+            self.assertIn("t1 → hosa-product-owner", out)
+            self.assertIn(gap, out)
+            self.assertIn("state: doing", (self.k / "tickets" / "t1.md").read_text(encoding="utf-8"))
+
+    def test_a_criterion_without_its_passed_test_goes_to_the_product_owner(self):
+        (self.k / "test" / "t1-technique.md").write_text(self.PLAN.replace("CA1 à CA2", "CA1"), encoding="utf-8")
+        code, out = run(self.k, "accepte", "t1")
+        self.assertEqual(code, 1)
+        self.assertIn("CA2 sans ligne", out)
+
+    def test_a_ticket_without_criteria_is_the_users(self):
+        (self.k / "tickets" / "t1.md").write_text("---\ntype: Ticket\nstate: doing\n---\nrien\n", encoding="utf-8")
+        self.assertIn("acceptation par l'utilisateur", run(self.k, "accepte", "t1")[1])
 
     def test_audit_needs_no_bloquant_left(self):
         k = kb({"sprints/s1.md": SPRINT + "## Audit\n- d1 Bloquant : 1\n- d2 Bloquant : 0\n", "tickets/t1.md": TICKET})
