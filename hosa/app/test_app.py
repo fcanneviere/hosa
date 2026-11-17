@@ -485,6 +485,23 @@ class KbStatusTest(unittest.TestCase):
 NO_DATA = "Aucune donnée de consommation trouvée pour ce projet"
 
 
+class AideTest(unittest.TestCase):
+    """La documentation de Hosa dans l'app : de pipeline.json, des frontmatters et du README, jamais une 2ᵉ liste."""
+
+    def test_the_docs_follow_the_graph_and_describe_every_stage_and_agent(self):
+        d = kb.aide()
+        stages = [[e["stage"] for e in p["etapes"]] for p in d["pipelines"]]
+        self.assertEqual(stages, [ss for _, ss in kb.av.PIPELINES] + [kb.av.SPRINT])
+        self.assertTrue(all(e["description"] for p in d["pipelines"] for e in p["etapes"]))
+        qa = next(e for p in d["pipelines"] for e in p["etapes"] if e["stage"] == "qa")
+        self.assertIn({"vers": ["develop"], "puis": ["audit"], "max": 2}, qa["boucles"])  # the loops of pipeline.json
+        self.assertEqual(len(d["agents"]), len(list((kb.HOSA_ROOT / "agents").glob("*.md"))))
+        self.assertTrue(all(a["description"] for a in d["agents"]))
+        self.assertIn("Comment ça marche", d["guide"])
+        self.assertNotIn("Développer Hosa", d["guide"])
+        self.assertNotIn("<script", d["guide"])
+
+
 class DependancesApiTest(unittest.TestCase):
     """GET /api/dependances : le graphe des tickets, le même calcul que `graphe_tickets.py composer`."""
 

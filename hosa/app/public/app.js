@@ -558,6 +558,33 @@ function vGraphe(sel) {
   return [...head, filters, legend, h('div', { class: 'cols w tg-cols' }, h('div', { class: 'tg-wrap' }, shown.size ? svg : none('Aucun ticket à montrer avec ces filtres.')), panel)];
 }
 
+// --- documentation de Hosa : ses étapes et boucles (pipeline.json), ses skills et agents, le guide du README ----------
+function vAide() {
+  const head = [pageH('Hosa', 'Documentation de Hosa', 'Comment Hosa mène un projet : les étapes, ce que chacune produit, les retours en arrière possibles, les agents, et le guide complet.')];
+  if (S.aide === undefined) { S.aide = null; api('aide').then((d) => { S.aide = d; route(); }, (e) => { S.aide = { error: e }; route(); }); }
+  const d = S.aide;
+  if (!d) return [...head, none('Chargement de la documentation…')];
+  if (d.error) return [...head, errBox(`Documentation indisponible : ${plain(d.error)}.`, true)];
+  const n = next(), F0 = (s) => n && n.stage === s;
+  const step = (e, i) => h('li', {}, h('details', { class: F0(e.stage) ? 'cur' : null },
+    h('summary', {}, h('span', { class: 'num' }, String(i + 1)), h('b', {}, e.stage), e.skill !== e.stage ? h('span', { class: 'muted' }, ` · skill ${e.skill}`) : null,
+      F0(e.stage) ? [' ', st('étape en cours', 'r', '●')] : null),
+    h('p', {}, e.description || 'Pas de description.'),
+    h('p', { class: 'muted' }, 'Lancer : ', h('code', {}, `/${e.skill}`)),
+    e.boucles.length ? h('p', { class: 'muted' }, 'Peut renvoyer le travail vers : ',
+      e.boucles.map((b, k) => [k ? ' ; ' : '', h('b', {}, b.vers.join(' ou ')), b.puis.length ? `, puis ${b.puis.join(', ')}` : '', ` (${b.max} tours au plus)`])) : null));
+  const parcours = card('Le parcours',
+    h('p', { class: 'muted' }, 'Hosa enchaîne ces étapes tout seul et ne s’arrête que pour vos décisions. Chaque étape a sa preuve dans la KB : sans elle, elle n’est pas marquée faite. Ouvrez une étape pour lire ce qu’elle fait.'),
+    d.pipelines.map((p) => [h('h3', {}, p.titre), h('ol', { class: 'steps' }, p.etapes.map(step))]));
+  const agents = card(`Les agents · ${d.agents.length}`,
+    h('p', { class: 'muted' }, 'Les skills orchestrent, les agents font le travail, chacun dans son domaine et sur le modèle adapté.'),
+    table(['Agent', 'Modèle', 'Rôle'], d.agents.map((a) => h('tr', {}, td(a.nom, 'mono'), td(a.modele || '—', 'muted'), td(a.description))), { caption: 'Les agents de Hosa' }));
+  const guide = h('div', { class: 'doc' });
+  guide.innerHTML = d.guide;  // HTML assaini par le serveur (nh3), depuis le README de Hosa
+  return [...head, d.version ? h('p', { class: 'hint' }, `Version ${d.version}. Cette page lit les fichiers de Hosa lui-même : elle suit chaque mise à jour.`) : null,
+    parcours, card('Guide', guide), agents];
+}
+
 // --- tickets : tableau, glisser-déposer ou menu ---------------------------------------------------
 async function moveTicket(path, state) {
   const t = (S.ov.board || []).find((x) => x.path === path); if (!t || t.state === state) return;
@@ -1004,6 +1031,7 @@ const NAV = [
   ['Pilotage', [['/', 'Vue d’ensemble', '⌂'], ['/avancement', 'Plan d’avancement', '▤'], ['/sprints', 'Sprints', '↻'], ['/planification', 'Planification', '⇶'], ['/tickets', 'Tickets', '▦'], ['/recettes', 'Recettes et qualité', '✓'], ['/consommation', 'Consommation', '◔']]],
   ['Produit', [['/exigences', 'Cahier des charges', '☰'], ['/personas', 'Personas', '☺'], ['/kb', 'Base de connaissance', '❏'], ['/tracabilite', 'Traçabilité', '⇄']]],
   ['Vos actions', [['/gestion/validation', 'À valider', '◎'], ['/remarques', 'Remarques pour Claude', '✎'], ['/journal', 'Journal', '≡'], ['/gestion/concepts', 'Concepts', '✐']]],
+  ['Hosa', [['/aide', 'Documentation de Hosa', '?']]],
 ];
 const ROUTES = [
   [/^\/$/, home, 'Vue d’ensemble'], [/^\/avancement$/, vAvancement, 'Plan d’avancement'],
@@ -1013,7 +1041,7 @@ const ROUTES = [
   [/^\/exigences$/, vExigences, 'Cahier des charges'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(decodeURIComponent(m[1])), 'Exigence'],
   [/^\/personas$/, () => vPersonas(), 'Personas'], [/^\/personas\/([^/]+)$/, (m) => vPersonas(decodeURIComponent(m[1])), 'Persona'],
   [/^\/recettes$/, vRecettes, 'Recettes et qualité'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
-  [/^\/remarques$/, vRemarques, 'Remarques pour Claude'],
+  [/^\/remarques$/, vRemarques, 'Remarques pour Claude'], [/^\/aide$/, vAide, 'Documentation de Hosa'],
   [/^\/kb$/, () => vKb(), 'Base de connaissance'], [/^\/kb\/(.+)$/, (m) => vKb(decodeURIComponent(m[1])), 'Document'],
   [/^\/gestion\/validation$/, vValidation, 'À valider'], [/^\/gestion\/concepts$/, () => vConcepts(), 'Concepts'], [/^\/gestion\/concepts\/(.+)$/, (m) => vConcepts(decodeURIComponent(m[1])), 'Modifier'],
 ];

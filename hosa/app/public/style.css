@@ -380,3 +380,12 @@ dialog::backdrop { background: rgba(10, 10, 8, .4); }
 .tg .ch .ct { fill: var(--ink); font: 700 13px var(--sans); }
 .tg .ch .cs { fill: var(--muted); font: 500 11.5px var(--sans); }
 .tg .ch line { stroke: var(--line-2); stroke-width: 1; }
+
+/* --- documentation de Hosa ---------------------------------------------------------- */
+.steps { list-style: none; padding: 0; margin: 6px 0 16px; display: grid; gap: 6px; }
+.steps details { border: 1px solid var(--line); border-radius: var(--r-s); background: var(--surface); }
+.steps details.cur { border-color: var(--act); }
+.steps summary { cursor: pointer; padding: 8px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.steps summary:focus-visible { outline: 3px solid var(--accent); }
+.steps .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 99px; background: var(--surface-2); color: var(--ink-2); font: 600 12px var(--sans); }
+.steps details > p { margin: 0 12px 10px 42px; }

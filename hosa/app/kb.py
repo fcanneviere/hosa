@@ -466,6 +466,48 @@ def dependances(root, objectif=None):
             "objectifs": [{"slug": t["slug"], "title": t["title"], "priority": t["priority"]} for t in todo]}
 
 
+HOSA_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _frontmatter(path, key):
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    m = re.match(r"---\s*\n(.*?)\n---", text, re.S)
+    found = re.search(rf'^{key}:\s*"?(.*?)"?\s*$', m[1] if m else "", re.M)
+    return found[1].replace('\\"', '"') if found else ""
+
+
+def aide():
+    """La documentation de Hosa, de ses sources seules : les étapes et les boucles de `pipeline.json` (via
+    avancement.py), la description de chaque skill et de chaque agent (leur frontmatter), le guide du README.
+    Jamais une 2ᵉ liste d'étapes (CLAUDE.md, « Une seule définition »)."""
+    stages = {s for _, ss in av.PIPELINES for s in ss} | set(av.SPRINT)
+
+    def stage(s):
+        skill = av.SKILL.get(s, s)
+        return {"stage": s, "skill": skill,
+                "description": _frontmatter(HOSA_ROOT / "skills" / skill / "SKILL.md", "description"),
+                "boucles": [{"vers": lp["to"], "puis": lp.get("then", []), "max": lp["max"]}
+                            for lp in av.LOOPS if lp["from"] == s and lp["from"] in stages]}
+
+    pipelines = [{"titre": t, "etapes": [stage(s) for s in ss]} for t, ss in av.PIPELINES]
+    pipelines.append({"titre": "Chaque sprint", "etapes": [stage(s) for s in av.SPRINT]})
+    agents = [{"nom": _frontmatter(f, "name") or f.stem, "description": _frontmatter(f, "description"),
+               "modele": _frontmatter(f, "model")} for f in sorted((HOSA_ROOT / "agents").glob("*.md"))]
+    readme = (HOSA_ROOT / "README.md").read_text(encoding="utf-8")
+    start, end = readme.find("## Comment ça marche"), readme.find("## Développer Hosa")
+    guide = readme[start if start >= 0 else 0:end if end > start else len(readme)]
+    return {"version": _frontmatter_json(HOSA_ROOT / ".claude-plugin" / "plugin.json"), "pipelines": pipelines,
+            "agents": agents, "guide": render(guide)}
+
+
+def _frontmatter_json(path):
+    try:
+        import json
+        return json.loads(path.read_text(encoding="utf-8")).get("version", "")
+    except (OSError, ValueError):
+        return ""
+
+
 _USAGE: dict = {}
 
 

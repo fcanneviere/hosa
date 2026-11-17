@@ -94,6 +94,8 @@ def make_handler(root):
         def _api(self, method, route, query):
             if method == "GET" and route == "overview":
                 return self._send(200, kb.overview(root))
+            if method == "GET" and route == "aide":
+                return self._send(200, kb.aide())
             if method == "GET" and route == "kb-status":
                 return self._send(200, kb.kb_status(root))
             if method == "GET" and route == "couverture":
