@@ -102,7 +102,7 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 ```markdown
 ---
 type: Modèle de Menaces
-title: Modèle de menaces — <projet>
+title: "Modèle de menaces — <projet>"
 description: "<une ligne : nombre de frontières, de menaces, de cas d'abus>"
 tags: [securite]
 status: stable
@@ -170,7 +170,7 @@ Seed only what applies (Mode 1 step 6, Mode 3 step 6). The user can edit, drop o
 ```markdown
 ---
 type: Audit Sécurité
-title: Audit sécurité — <scope>
+title: "Audit sécurité — <scope>"
 description: "<une ligne>"
 tags: [securite]
 status: stable

@@ -56,7 +56,7 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 ```markdown
 ---
 type: Infra
-title: Environnement Docker — <projet>
+title: "Environnement Docker — <projet>"
 description: "Services Docker du projet géré, versions épinglées"
 tags: []
 status: stable
@@ -121,7 +121,7 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ```markdown
 ---
 type: Infra
-title: <élément installé> — <projet>
+title: "<élément installé> — <projet>"
 description: "<ce qui a été installé et pourquoi>"
 tags: []
 status: stable

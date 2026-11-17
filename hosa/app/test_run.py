@@ -51,5 +51,20 @@ class Setup(unittest.TestCase):
             self.assertEqual(Path(out), want)
 
 
+class Encoding(unittest.TestCase):
+    def test_a_script_prints_utf8_on_a_cp1252_pipe(self):
+        # rieki sprint-3: `graphe_tickets feuille` crashed on « → » with a piped stdout (cp1252 on Windows).
+        d = Path(tempfile.mkdtemp())
+        (d / "fleche.py").write_text('print("a → b")\n', encoding="utf-8")
+        code = ("import importlib.util as u, sys; s = u.spec_from_file_location('run', sys.argv[1]); "
+                "m = u.module_from_spec(s); s.loader.exec_module(m); m.setup = lambda: None; m.PY = __import__('pathlib').Path(sys.executable); "
+                "m.scripts = lambda: {'fleche': __import__('pathlib').Path(sys.argv[2])}; sys.exit(m.run_script('fleche', []))")
+        env = {k: v for k, v in os.environ.items() if k not in ("PYTHONUTF8", "PYTHONIOENCODING")}
+        out = subprocess.run([sys.executable, "-c", code, spec.origin, str(d / "fleche.py")], capture_output=True,
+                             env={**env, "PYTHONIOENCODING": "cp1252"})
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(out.stdout.decode("utf-8").strip(), "a → b")
+
+
 if __name__ == "__main__":
     unittest.main()

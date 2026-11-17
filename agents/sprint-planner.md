@@ -52,7 +52,7 @@ Naming the sprint, stating its objective and sizing it are yours to propose; the
 ```markdown
 ---
 type: Sprint
-title: <nom du sprint>
+title: "<nom du sprint>"
 description: "<objectif ou période>"
 tags: []
 state: planned

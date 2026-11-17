@@ -43,7 +43,7 @@ Read `kb/sprints/<slug>.md` for its `## Tickets` list. If the sprint file doesn'
 
 ## Step 2: Scope — Skip Already-Prepared Tickets
 
-For each ticket in the sprint, check whether `.hosa/kb/test/<slug-ticket>-technique.md` already exists. If it does, skip it — a re-run of `qa-plan` only prepares the gaps, it never regenerates or duplicates a plan already written for a ticket. If every ticket already has a plan, say so and report nothing to do.
+For each ticket in the sprint, check whether `.hosa/kb/test/<slug-ticket>-technique.md` already exists. If it does, skip it — a re-run of `qa-plan` only prepares the gaps, it never regenerates or duplicates a plan already written for a ticket. A plan without `## Observation` (written before 0.1.110) is a gap: its lot's dispatch adds only that section. If every ticket already has a complete plan, say so and report nothing to do.
 
 ## Step 3: Dispatch for Each Missing Plan
 

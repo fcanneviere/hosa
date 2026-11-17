@@ -1,5 +1,18 @@
 # Log — kb/code
 
+## 2026-11-17
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `skills-status-scripts`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hooks`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `skills-kb-commit-scripts`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `hosa-app`
+- process:hosa-graph a mis à jour `racine`
+
 ## 2026-11-15
 - process:hosa-graph a mis à jour `hooks`
 - process:hosa-graph a mis à jour `hooks`

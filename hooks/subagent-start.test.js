@@ -8,6 +8,10 @@ test('injects the auto-audit rule into Hosa agents only', () => {
   const linux = processPayload({ agent_type: 'hosa-tester' }, 'linux').hookSpecificOutput.additionalContext;
   assert.match(linux, /Run every command in the foreground/);
   assert.doesNotMatch(linux, /PYTHONIOENCODING/);
+  assert.match(linux, /over 180 s is moved to the background/);
+  assert.match(linux, /EXIT=\$\?/);
+  assert.doesNotMatch(linux, /MSYS_NO_PATHCONV/);
+  assert.match(processPayload({ agent_type: 'hosa-dba' }, 'win32').hookSpecificOutput.additionalContext, /MSYS_NO_PATHCONV=1/);
   assert.match(processPayload({ agent_type: 'hosa-tester' }, 'win32').hookSpecificOutput.additionalContext, /PYTHONIOENCODING=utf-8/);
   assert.match(processPayload({ agent_type: 'hosa-dba' }).hookSpecificOutput.additionalContext, /`<hosa>` in your instructions means `".+" ".+"`/);
   assert.ok(processPayload({ agent_type: 'hosa:hosa-git' }));

@@ -97,7 +97,7 @@ Every `kb/documentation/<slug>.md` you write or update follows this shape:
 ```markdown
 ---
 type: Documentation
-title: <section> — <projet>
+title: "<section> — <projet>"
 description: "<une ligne>"
 tags: []
 status: stable

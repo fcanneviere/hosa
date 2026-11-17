@@ -358,6 +358,31 @@ def criteria(text: str | None) -> list[str]:
     return ticket_check().criteria_ids(section(text, "Critères d'acceptation"))
 
 
+OBSERVATION = re.compile(r"^-\s*(CA\d+)\s*—\s*(.+?)\s*—\s*observé par\s*:\s*(\S.*)$")
+
+
+def observation_gaps(plan: str, crit: list[str]) -> list[str]:
+    """A plan's `## Observation`: each criterion whose effect the screen doesn't show (a failure, a volume, the
+    base's state) and how the demo sees it, or `Aucun`. rieki: recettes « avec réserves » three sprints running,
+    on criteria nobody had planned a way to observe."""
+    body = section(plan, "Observation")
+    if body is None:
+        return ["pas de `## Observation` (critères invisibles à l'écran et leur moyen d'observation, ou « Aucun »)"]
+    lines = [x.strip() for x in body.splitlines() if x.strip() and not x.lstrip().startswith("Lié à")]
+    if not lines:
+        return ["`## Observation` vide : une ligne par critère invisible à l'écran, ou « Aucun »"]
+    if len(lines) == 1 and lines[0].startswith("Aucun"):
+        return []
+    gaps = []
+    for x in lines:
+        m = OBSERVATION.match(x)
+        if not m:
+            gaps.append(f"`## Observation` : « {x[:80]} » n'a pas la forme `- CAn — <pourquoi invisible> — observé par : <moyen>`")
+        elif m[1] not in crit:
+            gaps.append(f"`## Observation` : {m[1]} n'est pas un critère du ticket")
+    return gaps
+
+
 @functools.cache
 def ticket_check():
     import importlib.util
@@ -710,6 +735,8 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
             missing = [ca for ca in crit if f"[{ca}]" not in (plan or "")]
             if missing:
                 gaps.append(f"{t} : {', '.join(missing)} sans cas de test [CAn] (`qa-plan`)")
+            if plan is not None:
+                gaps += [f"{t} : {g} (`qa-plan`)" for g in observation_gaps(plan, crit)]
         if stage == "develop":
             verdict = last_verdict(text)
             if verdict in (None, "FAIL"):

@@ -272,3 +272,27 @@ test('the review loop\'s bound holds for a correction routed to debug', () => {
   const out = processPayload({ tool_name: 'Agent', cwd: r, tool_input: { subagent_type: 'hosa:hosa-debugger', prompt: 'ticket t1' } });
   assert.match(denied(out), /2 FAIL reviews in a row/);
 });
+
+test('a test suite piped to tail or head is refused: its exit code would be tail\'s', () => {
+  const root = project({ '.hosa/kb/index.md': '# KB\n' });
+  for (const c of [
+    'PYTHONIOENCODING=utf-8 uv run pytest -q | tail -3',
+    'docker compose exec -T app pytest tests -q 2>&1 | tail -20',
+    'python -m pytest -m navigateur | head -50',
+    'cd app && npm test | tail',
+    'node --test hooks/*.test.js 2>&1 | tail -5',
+  ]) assert.match(denied(bash(root, c)), /tail's code/, c);
+  for (const c of [
+    'set -o pipefail; pytest -q | tail -20',
+    'pytest tests -q > /tmp/t.log 2>&1; echo EXIT=$?; tail -20 /tmp/t.log',
+    'pytest --collect-only -q | head',
+    'pytest -q || tail -5 log.txt',
+    'git log --oneline | head -5',
+    'grep -rn pytest pyproject.toml | head',
+    'pip list | grep pytest | head',
+    'git commit -m "doc: pytest | tail cache le code"',
+  ]) assert.equal(bash(root, c), null, c);
+  assert.equal(ps(root, 'pytest -q | Select-Object -Last 5'), null);
+  const other = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-pipe-')); // not a Hosa project: untouched
+  assert.equal(bash(other, 'pytest -q | tail -20'), null);
+});

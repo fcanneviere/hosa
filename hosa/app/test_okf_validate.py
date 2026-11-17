@@ -53,6 +53,13 @@ class OkfValidate(unittest.TestCase):
         self.assertNotIn("cdc/old3.md: recommended", out)
         self.assertIn("cdc/old3.md: recommended", self.validate("--all").stdout)
 
+    def test_a_file_names_the_root_to_pass(self):
+        # rieki sprint-3: a tester passed one KB file; the error now gives the call to make.
+        r = subprocess.run([sys.executable, str(SCRIPT), str(self.kb / "cdc" / "a.md")], capture_output=True,
+                           text=True, encoding="utf-8")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn(f'pass the KB root: okf_validate "{self.kb.resolve().as_posix()}"', r.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

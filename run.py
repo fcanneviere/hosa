@@ -69,13 +69,18 @@ def run_script(name, args):
         print(f"[hosa] venv indisponible ({exc}) — script lancé avec {sys.executable}", file=sys.stderr)
         py = Path(sys.executable)
     sys.argv = [str(path), *args]
+    # A piped stdout on Windows is cp1252: a « → » in a script's output crashed it (rieki sprint-3, graphe_tickets
+    # feuille). Every script prints UTF-8, whatever the console.
     if Path(sys.executable).resolve() == py.resolve():  # already Hosa's Python: no child process, no window
+        for stream in (sys.stdout, sys.stderr):
+            if hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8", errors="replace")
         sys.path.insert(0, str(path.parent))
         runpy.run_path(str(path), run_name="__main__")
         return 0
     # No NO_WINDOW here: the child shares our console, and with it the venv's python.exe redirector
     # loses the inherited stdout (tested on Windows, 2026-10-24).
-    return subprocess.call([str(py), str(path), *args])
+    return subprocess.call([str(py), str(path), *args], env={**os.environ, "PYTHONIOENCODING": "utf-8"})
 
 
 def kb_root(start):

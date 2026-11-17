@@ -37,10 +37,27 @@ TICKET = "---\ntype: Ticket\nstate: doing\n---\n## Critères d'acceptation\n- CA
 
 class Check(unittest.TestCase):
     def test_qa_plan_needs_a_case_per_criterion(self):
-        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": "- [CA1] x\n"})
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": "- [CA1] x\n## Observation\nAucun\n"})
         self.assertEqual(av.check(k, "qa-plan", "s1"), ["t1 : CA2 sans cas de test [CAn] (`qa-plan`)"])
-        (k / "test" / "t1-technique.md").write_text("- [CA1] x\n- [CA2] [manuel] y\n", encoding="utf-8")
+        (k / "test" / "t1-technique.md").write_text("- [CA1] x\n- [CA2] [manuel] y\n## Observation\nAucun\n",
+                                                    encoding="utf-8")
         self.assertEqual(av.check(k, "qa-plan", "s1"), [])
+
+    def test_qa_plan_names_how_the_demo_sees_each_hidden_criterion(self):
+        # rieki: recettes « avec réserves » three sprints running, on failures and base states nobody could see.
+        plan = "- [CA1] x\n- [CA2] y\n"
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})
+        self.assertEqual(av.check(k, "qa-plan", "s1"), [
+            "t1 : pas de `## Observation` (critères invisibles à l'écran et leur moyen d'observation, ou « Aucun ») (`qa-plan`)"])
+        (k / "test" / "t1-technique.md").write_text(
+            plan + "## Observation\n- CA2 — panne du disque — observé par : journal affiché sur Importer\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "qa-plan", "s1"), [])
+        (k / "test" / "t1-technique.md").write_text(
+            plan + "## Observation\n- CA2 — panne du disque\n- CA9 — volume — observé par : outil\n", encoding="utf-8")
+        gaps = av.check(k, "qa-plan", "s1")
+        self.assertEqual(len(gaps), 2)
+        self.assertIn("observé par", gaps[0])
+        self.assertIn("CA9 n'est pas un critère du ticket", gaps[1])
 
     def test_develop_needs_a_passed_review(self):
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- d — PASS — ok\n- d — FAIL — CA2\n"})
@@ -199,6 +216,7 @@ class Coverage(unittest.TestCase):
                 "test/t1-p.md": "## Verdict\nRefusé\n### Critères\n- CA2 — Non — x\n- CA3 — Oui — y\n"})
         self.assertEqual(av.check(k, "qa-plan", "s1"), [
             "t1 : CA2, CA3 sans cas de test [CAn] (`qa-plan`)",
+            "t1 : pas de `## Observation` (critères invisibles à l'écran et leur moyen d'observation, ou « Aucun ») (`qa-plan`)",
             "t2 : pas de plan `kb/test/t2-technique.md` (`qa-plan`)",
             "t2 : CA1, CA2, CA3 sans cas de test [CAn] (`qa-plan`)",
             "t3 : pas de plan `kb/test/t3-technique.md` (`qa-plan`)"])

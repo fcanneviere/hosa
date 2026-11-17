@@ -33,6 +33,7 @@ from pathlib import Path
 NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 BRANCH = "hosa-kb"
+FILES_SHOWN = 30  # files named in a KB commit's body
 
 
 def git(root: Path, *args: str, env: dict | None = None, check: bool = True) -> str:
@@ -253,7 +254,12 @@ def commit(root: Path, message: str) -> int:
         print("✓ rien à committer")
         return 0
     code = git(root, "rev-parse", "HEAD", check=False) or "aucun"
-    git(kb, "commit", "-q", "-m", message, "-m", f"Hosa-Code-Commit: {code}")
+    # `add -A` takes every pending KB change, not only the caller's: the body names them all, so a message that
+    # describes part of them doesn't hide the rest (rieki sprint-3: 52 files under a one-line summary).
+    files = git(kb, "diff", "--cached", "--name-only").splitlines()
+    shown = files[:FILES_SHOWN] + ([f"… et {len(files) - FILES_SHOWN} autres"] if len(files) > FILES_SHOWN else [])
+    body = f"Fichiers KB ({len(files)}) :\n" + "\n".join(f"- {f}" for f in shown)
+    git(kb, "commit", "-q", "-m", message, "-m", body, "-m", f"Hosa-Code-Commit: {code}")
     print(f"✓ {git(kb, 'rev-parse', '--short', 'HEAD')} sur {BRANCH} (code : {code[:12]})")
     return 0
 

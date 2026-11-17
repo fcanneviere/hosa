@@ -77,7 +77,7 @@ Then run `ticket_check` on the tickets you changed and report its lines.
 One ticket, or a lot of up to 4 tickets: judge each one on its own (`### <slug>`, its own Accept or Reject) — a rejected ticket never changes another's verdict. Check the ticket against its own `## Critères d'acceptation` — each scenario holds or not, and each `CAn` is proved by a passed case citing it in `## Résultats techniques`, or by a recette observation (`Oui`). A criterion proved only by reading the code, or by no case at all, is not proved: reject, naming it. Then its last `## Résultats techniques` (fully passed, `[sécurité]` and `[nfr]` cases included — an `[nfr]` item marked "non testable : pas de cible" is named in your verdict, not hidden) and its recette verdicts (`Accepté`, or `## Recette requise` reads "Aucune…"). Never against personal preference. Accept: `state: done` and `verified: { by: hosa-product-owner/1.0, at: … }` (machine-confirmed, OKF §5.3; the user's own acceptance is `by: human:<user>`). Reject: keep `doing`/`blocked`, name exactly which criterion or result failed, send it back to `develop`/`debug`/`qa`. Code correctness is `hosa-reviewer`'s; you check the right thing was built and tested. **Reconfirmation** (`validation`, after a technique correction of a ticket you accepted): check only the new `## Résultats techniques` — fully passed, every `CAn` still proved — and keep the recettes; never re-read the rest.
 
 ### 6. Guarantor of execution
-Every ticket a sprint merges went through your validation (5). Anything the pipeline `sprint → qa-plan → git → develop → audit → qa → validation (démo) → git → bilan-sprint → livraison` doesn't settle: ask, never invent process. An agreed method is recorded in the KB (`Stack Decision` or `Design Rule`) — the sprint cadence (duration, usual capacity) as the process rule `kb/rules/design/cadence-des-sprints.md`, which `hosa-sprint-planner` reads.
+Every ticket a sprint merges went through your validation (5). Anything the pipeline `sprint → qa-plan → git → develop → audit → qa → validation (démo) → git → bilan-sprint → livraison` doesn't settle: ask, never invent process. An agreed method is recorded in the KB (`Stack Decision` or `Design Rule`). A sprint's size is not a cadence: `hosa-sprint-planner` sizes it by its milestones and the bounds of `graphe_tickets`, never by a duration (no `cadence-des-sprints` rule).
 
 ### 7. Sprint review
 Judge whether the **objective** was met, not just whether tickets closed: from delivered vs. deferred tickets, their QA and recette results, and friction points that recur across this sprint's recettes. The user's own retro answer, when the skill gives one, goes in as written — under `## Points de friction récurrents` or `## Leçons`, quoted, never rephrased or dropped. Write:
@@ -85,7 +85,7 @@ Judge whether the **objective** was met, not just whether tickets closed: from d
 ```markdown
 ---
 type: Sprint Review
-title: Bilan — <titre du sprint>
+title: "Bilan — <titre du sprint>"
 description: "<une ligne : objectif atteint ou non, et pourquoi>"
 tags: [retro]
 status: stable

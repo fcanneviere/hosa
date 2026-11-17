@@ -29,7 +29,7 @@ Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
 ```markdown
 ---
 type: Ticket
-title: <titre>
+title: "<titre>"
 description: "<description courte>"
 tags: []
 state: todo

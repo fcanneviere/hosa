@@ -10,7 +10,8 @@
 //   proved, no recette Refusé, `Bloquant : 0` audit, demo with no T-test KO;
 // - `cd` into `.hosa/` (a subshell `(cd …)` passes): the session stays at the root;
 // - `docker compose -p <projet>-sprint-<slug> up|create|run` from anywhere but that worktree;
-// - a Hosa script run by its versioned path under the plugin cache, not through `<hosa>`.
+// - a Hosa script run by its versioned path under the plugin cache, not through `<hosa>`;
+// - a test suite piped to `tail`/`head` (bash) without `pipefail`: its exit code would be tail's.
 // PreToolUse on Agent: a dispatch while the session's cwd is inside `.hosa/` (the agent's memory would land
 // in the KB); `hosa-developer` or `hosa-debugger` dispatched on a ticket whose `## Revue` ends on two FAIL.
 // Fail-open on any error. Kill switch: HOSA_GATE=0.
@@ -272,6 +273,28 @@ function scriptGate(cmd) {
     `Run: \`${hosa} ${script[1]} <args>\` — from any folder; \`${hosa} --list\` gives the names.`;
 }
 
+// A test suite piped to `tail` or `head`: the pipeline's exit code is tail's, so a red suite reads as green
+// (rieki sprint-3, hosa-tester: `pytest … | tail` hid a failing exit code). Bash only: PowerShell keeps
+// `$LASTEXITCODE`. A listing (`--collect-only`, `--help`) passes; so does `pipefail` or `PIPESTATUS`.
+const RUNNER = String.raw`\b(?:pytest|unittest|playwright\s+test|vitest|jest|mocha|rspec|phpunit|npm\s+(?:run\s+)?test|pnpm\s+(?:run\s+)?test|yarn\s+test|node\s+--test|go\s+test|cargo\s+test|mvn\s+(?:-\S+\s+)*(?:test|verify)|gradlew?\s+test)\b`;
+const PIPED_RUN = new RegExp(RUNNER + String.raw`(?:[^;&\n|]|\d?>&\d)*\|(?!\|)\s*(?:tail|head)\b`);
+// The runner must be the command itself (or what a launcher runs), never a word a `grep` or a message carries.
+const LAUNCHERS = new Set(['pytest', 'python', 'python3', 'py', 'uv', 'poetry', 'pipenv', 'npx', 'npm', 'pnpm', 'yarn',
+  'node', 'go', 'cargo', 'mvn', 'gradle', 'gradlew', 'docker', 'docker-compose', 'jest', 'vitest', 'playwright',
+  'mocha', 'rspec', 'phpunit', 'bundle']);
+const RUNNER_RE = new RegExp(RUNNER);
+function pipeGate(cmd) {
+  if (!PIPED_RUN.test(cmd) || /\bpipefail\b|\bPIPESTATUS\b/.test(cmd)) return null;
+  if (/--(?:collect-only|co|help|version|list|listTests)\b/.test(cmd)) return null;
+  const words = segments(cmd.replace(/\d?>&\d/g, ' ')).map((w) => w.slice(Math.max(0, w.findIndex((x) => !/^\w+=/.test(x))))); // VAR=x cmd
+  const piped = words.some((w, i) => LAUNCHERS.has(path.basename(w[0] || '').replace(/\.exe$/i, '')) &&
+    RUNNER_RE.test(w.join(' ')) && words[i + 1] && /^(tail|head)$/.test(words[i + 1][0]));
+  if (!piped) return null;
+  return 'a test suite piped to `tail`/`head` exits with tail\'s code: a failing suite would read as passed. ' +
+    'Write its output to a file and print its code: `<suite> > "<scratchpad>/tests.log" 2>&1; echo EXIT=$?`, ' +
+    'then read the end of that file. Or start the command with `set -o pipefail;`.';
+}
+
 // The review loop's bound (`develop` Step 4c): two FAIL in a row on a ticket → the user decides, not a third
 // correction. Counted on the ticket's `## Revue` lines; a `- <date> — DÉCISION — …` line restarts the count.
 // The bound is the graph's (`tasks.controls`, `*.revue`, `fails`): one definition. Unreadable → 2.
@@ -337,7 +360,8 @@ function processPayload(p) {
   const cwd = native(p.cwd || process.cwd());
   // An agent's `cd` lasts one command (rieki: 337 of 337 left its cwd unchanged), and 79 of the 109 `cd` refusals
   // of that project were agents': each one a lost call that re-reads the agent's context. Main session only.
-  const cd = (p.agent_id ? null : cdGate(cmd, cwd, ps)) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd, ps) : null) || scriptGate(cmd);
+  const cd = (p.agent_id ? null : cdGate(cmd, cwd, ps)) || (/\bcompose\b/.test(cmd) ? composeGate(cmd, cwd, ps) : null) || scriptGate(cmd)
+    || (ps || !findKbRoot(cwd) ? null : pipeGate(cmd)); // Hosa projects only, like the commit gate
   if (cd) return deny(cd);
   if (!/\bgit\b/i.test(cmd)) return null;
   for (const call of gitCalls(cmd, cwd, ps)) {

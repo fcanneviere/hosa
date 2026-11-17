@@ -51,7 +51,7 @@ For each platform the CDC imposes (and its minimum version), check the capabilit
 ```markdown
 ---
 type: Verification Plateforme
-title: <capacité> — prise en charge
+title: "<capacité> — prise en charge"
 description: "<capacité> sur <plateformes> : <verdict en une ligne>"
 tags: [plateforme]
 generated: { by: hosa-senior-dev/1.0, at: <ISO8601> }

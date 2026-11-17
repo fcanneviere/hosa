@@ -164,7 +164,7 @@ Input: the version about to ship, the planned release date, and the date of the 
 ```markdown
 ---
 type: Porte Juridique
-title: Porte juridique — <version>
+title: "Porte juridique — <version>"
 description: "<une ligne : Go / No-Go et nombre de points KO>"
 tags: [juridique]
 status: stable

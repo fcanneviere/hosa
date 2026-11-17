@@ -4,7 +4,7 @@ title: hooks
 description: Hosa — progress plan at session start. Reads `.hosa/kb/project/avancement.md`
 resource: hooks
 tags: [code]
-generated: {by: 'process:hosa-graph', at: '2026-11-15T19:15:57Z'}
+generated: {by: 'process:hosa-graph', at: '2026-11-17T05:48:48Z'}
 ---
 
 ## Fichiers
@@ -122,30 +122,31 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T19:15:57Z'}
 - `ok` — `hooks/compress-output.test.js:63`
 - `pad` — `hooks/compress-output.test.js:12`
 - `spillOf` — `hooks/compress-output.test.js:11`
-- `cdGate` — `hooks/gate.js:212` — A bash subshell `(cd …)` passes; PowerShell's parentheses don't fork, its `Set-Location` sticks either way.
-- `cdTarget` — `hooks/gate.js:52`
-- `commitGate` — `hooks/gate.js:150`
-- `composeGate` — `hooks/gate.js:225`
-- `composeSegment` — `hooks/gate.js:230`
-- `dispatchCwdGate` — `hooks/gate.js:317` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
-- `failRun` — `hooks/gate.js:284`
-- `gitCalls` — `hooks/gate.js:97` — Each git call: its directory (cd and -C applied), subcommand and arguments.
-- `lastVerdict` — `hooks/gate.js:134`
-- `mergeGate` — `hooks/gate.js:190`
-- `native` — `hooks/gate.js:26`
-- `nested` — `hooks/gate.js:65`
-- `noteOnCriterion` — `hooks/gate.js:139` — DÉCISION follows it.
-- `processPayload` — `hooks/gate.js:323`
-- `processPayload.deny` — `hooks/gate.js:325`
-- `read` — `hooks/gate.js:113`
-- `reviewLoopGate` — `hooks/gate.js:291` — `hosa-debugger` too: `develop` correction routes an unclear cause to `debug`, which must not escape the bound.
-- `scriptGate` — `hooks/gate.js:263`
-- `section` — `hooks/gate.js:116` — Body of the last `## <heading>` section (up to the next level-2 heading).
-- `segments` — `hooks/gate.js:32` — A bash backslash escapes the next character (`\(` is a word, not a subshell); in PowerShell it is a path separator.
-- `segments.start` — `hooks/gate.js:36`
-- `sprintOf` — `hooks/gate.js:189`
-- `verdicts` — `hooks/gate.js:132`
-- `walk` — `hooks/gate.js:81` — PowerShell's parentheses group, they don't fork), a nested shell's command walked too.
+- `cdGate` — `hooks/gate.js:213` — A bash subshell `(cd …)` passes; PowerShell's parentheses don't fork, its `Set-Location` sticks either way.
+- `cdTarget` — `hooks/gate.js:53`
+- `commitGate` — `hooks/gate.js:151`
+- `composeGate` — `hooks/gate.js:226`
+- `composeSegment` — `hooks/gate.js:231`
+- `dispatchCwdGate` — `hooks/gate.js:340` — `cdGate` closes one route (Bash `cd`); `pushd`, the PowerShell tool or any other move are caught here.
+- `failRun` — `hooks/gate.js:307`
+- `gitCalls` — `hooks/gate.js:98` — Each git call: its directory (cd and -C applied), subcommand and arguments.
+- `lastVerdict` — `hooks/gate.js:135`
+- `mergeGate` — `hooks/gate.js:191`
+- `native` — `hooks/gate.js:27`
+- `nested` — `hooks/gate.js:66`
+- `noteOnCriterion` — `hooks/gate.js:140` — DÉCISION follows it.
+- `pipeGate` — `hooks/gate.js:286`
+- `processPayload` — `hooks/gate.js:346`
+- `processPayload.deny` — `hooks/gate.js:348`
+- `read` — `hooks/gate.js:114`
+- `reviewLoopGate` — `hooks/gate.js:314` — `hosa-debugger` too: `develop` correction routes an unclear cause to `debug`, which must not escape the bound.
+- `scriptGate` — `hooks/gate.js:264`
+- `section` — `hooks/gate.js:117` — Body of the last `## <heading>` section (up to the next level-2 heading).
+- `segments` — `hooks/gate.js:33` — A bash backslash escapes the next character (`\(` is a word, not a subshell); in PowerShell it is a path separator.
+- `segments.start` — `hooks/gate.js:37`
+- `sprintOf` — `hooks/gate.js:190`
+- `verdicts` — `hooks/gate.js:133`
+- `walk` — `hooks/gate.js:82` — PowerShell's parentheses group, they don't fork), a nested shell's command walked too.
 - `agent` — `hooks/gate.test.js:165`
 - `bash` — `hooks/gate.test.js:18`
 - `commit` — `hooks/gate.test.js:22`
@@ -240,8 +241,8 @@ generated: {by: 'process:hosa-graph', at: '2026-11-15T19:15:57Z'}
 - `stateFile` — `hooks/stop.js:13`
 - `setPlan` — `hooks/stop.test.js:13`
 - `stop` — `hooks/stop.test.js:15`
-- `processPayload` — `hooks/subagent-start.js:58`
-- `pythonLine` — `hooks/subagent-start.js:47` — a path under the plugin cache breaks at the next update.
+- `processPayload` — `hooks/subagent-start.js:62`
+- `pythonLine` — `hooks/subagent-start.js:51` — a path under the plugin cache breaks at the next update.
 - `ctx` — `hooks/subagent-start.test.js:38`
 
 ## Tickets et exigences

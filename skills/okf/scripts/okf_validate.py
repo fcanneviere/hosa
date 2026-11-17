@@ -608,7 +608,10 @@ def main() -> int:
     args = ap.parse_args()
 
     if not args.bundle.is_dir():
-        print(f"error: {args.bundle} is not a directory", file=sys.stderr)
+        # A file of the KB passed instead of its root (rieki sprint-3, a tester's brief): name the root to pass.
+        root = next((d for d in args.bundle.resolve().parents if (d / "index.md").is_file() and d.name == "kb"), None)
+        print(f"error: {args.bundle} is not a directory" + (f" — pass the KB root: okf_validate \"{root.as_posix()}\""
+                                                           if root else " — pass the KB root (`.hosa/kb`)"), file=sys.stderr)
         return 2
 
     migrated = migrate(args.bundle) if args.migrate else []
