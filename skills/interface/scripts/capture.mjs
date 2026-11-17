@@ -273,9 +273,9 @@ process.on("exit", () => {
 for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) process.on(signal, async () => { await nettoie(); process.exit(code); });
 
 try {
-  await tube.appel("Browser.getVersion", {}, undefined, 15000);
+  await tube.appel("Browser.getVersion", {}, undefined, 30000);
 } catch {
-  arret(`le navigateur n'a pas démarré en 15 secondes.${journalNav ? "\n" + journalNav.trim().split("\n").slice(-3).join("\n") : ""}`, 3);
+  arret(`le navigateur n'a pas démarré en 30 secondes.${journalNav ? "\n" + journalNav.trim().split("\n").slice(-3).join("\n") : ""}`, 3);
 }
 const { targetId } = await tube.appel("Target.createTarget", { url: "about:blank" });
 const { sessionId } = await tube.appel("Target.attachToTarget", { targetId, flatten: true });
