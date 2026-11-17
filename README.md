@@ -112,24 +112,13 @@ Quand un agent bute sur une consigne de Hosa (contradiction, étape manquante, c
 - Les questions qui attendent ta réponse sont numérotées, avec des options : réponds en une ligne, par exemple `Q1 a, Q2 b`.
 - Les tests à faire toi-même sont numérotés T1, T2…, avec le lien, le compte de test et le résultat attendu : réponds `T1 OK, T2 KO : …`.
 
-## Recommandé : la recherche par le sens avec `ccc`
+## La recherche dans le code
 
-Hosa indexe déjà le code (graphe des fonctions, appels, impacts) et la KB (sommaire, extraction précise). Avec [cocoindex-code](https://github.com/cocoindex-io/cocoindex-code), les agents peuvent en plus **chercher par ce que fait le code, et pas seulement par son nom** (« où sont gérées les sessions ? »). Ils lisent moins de fichiers, donc consomment moins.
+Hosa indexe le code du projet (fonctions, appels, impacts) et la KB (sommaire, extraction précise). Rien à installer.
 
-Hosa l'utilise s'il est installé, et ne l'installe jamais lui-même :
+`graph find` cherche dans les noms, les docstrings et les mots du corps de chaque fonction. « session expirée » trouve aussi la fonction qui lit le cookie de session, même si son nom ne le dit pas. Ce n'est pas une recherche par le sens : un synonyme absent du code ne la trouve pas.
 
-```bash
-pipx install 'cocoindex-code[full]'      # modèle local inclus, environ 1 Go
-# ou, sans le modèle local (clé d'API d'un fournisseur d'embeddings) :
-pipx install cocoindex-code
-```
-
-Les agents l'initialisent et le tiennent à jour. Tu peux aussi le faire toi-même, à la racine du projet et dans la KB :
-
-```bash
-ccc init && ccc index
-(cd .hosa/kb && ccc init && ccc index)
-```
+`graph status` compte les recherches sans résultat et celles suivies d'un Grep. Ces mesures diront si une recherche par le sens vaut son coût.
 
 ## L'interface : choisir sur des pages de comparaison
 

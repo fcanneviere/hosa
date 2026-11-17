@@ -82,6 +82,27 @@ class GraphTest(unittest.TestCase):
         both = self.ix.find("helper", limit=2)
         self.assertEqual(self.ix.find("helper", limit=1) + self.ix.find("helper", limit=1, offset=1), both)
 
+    def test_find_by_body_words_after_names(self):
+        """`find` finds a function by what its body does, not only by its name; a name match still comes first."""
+        def node(qual, terms, doc=""):
+            return {"id": f"a.py::{qual}", "kind": "function", "label": qual, "file": "a.py", "doc": doc, "terms": terms}
+        ix = graph.Index({"nodes": [node("get_user_token", "cookie sessions expire token user"),
+                                    node("load_session", "load session"),
+                                    node("render", "render html template"),
+                                    node("send_mail", "mail smtp")], "edges": []})
+        self.assertEqual(ix.find("session"), ["a.py::load_session", "a.py::get_user_token"])
+        self.assertEqual(ix.find("session expiration")[0], "a.py::get_user_token")  # both words, one in each form
+        self.assertEqual(ix.find("payment"), [])
+
+    def test_find_logs_searches_and_status_counts_the_greps_after_them(self):
+        graph.run(self.root, "find", "fmt")
+        graph.run(self.root, "find", "nothing_like_this")
+        log = graph.graph_dir(self.root) / graph.SEARCH_LOG
+        with open(log, "a", encoding="utf-8") as f:  # what hooks/graph.js appends on a Grep right after
+            f.write(f'{{"ts": {int(time.time())}, "grep": "nothing_like_this"}}\n')
+        self.assertEqual(graph.search_stats(self.root), {"finds": 2, "empty": 1, "grepped": 1})
+        self.assertIn("Recherches `find` : 2 — sans résultat : 1 — suivies d'un Grep (< 120 s) : 1", graph.status(self.root))
+
     def test_status_reports_freshness_and_exclusions(self):
         self.assertIn("à jour", graph.status(self.root))
         (self.root / "app/util.py").write_text(FILES["app/util.py"] + "\n# v3\n", encoding="utf-8")

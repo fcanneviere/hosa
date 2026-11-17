@@ -60,4 +60,4 @@ The full text of the rules `using-hosa` sums up under `## Hosa project rules`. R
 
 ## Lecture
 
-**Read little, read once.** `.hosa/kb/sommaire.md` first, then exact parts with `skills/okf/scripts/kb_query.py` (filters, `--sections`, `--fields`); for code, the project graph before Grep. If `ccc --version` works, `ccc search <concept>` finds code by meaning (in `.hosa/kb` with `--lang markdown` for the KB); never install it yourself. When dispatching, pass what you already know — slugs, paths, `worktree`, `docker_project`, the exact excerpt — so the agent doesn't search again. Full reads stay for audits (`relecture`, `contestation`, `securite`).
+**Read little, read once.** `.hosa/kb/sommaire.md` first, then exact parts with `skills/okf/scripts/kb_query.py` (filters, `--sections`, `--fields`); for code, the project graph before Grep. `graph find <words>` also matches the words inside function bodies: search what the code does, not only its name. When dispatching, pass what you already know — slugs, paths, `worktree`, `docker_project`, the exact excerpt — so the agent doesn't search again. Full reads stay for audits (`relecture`, `contestation`, `securite`).

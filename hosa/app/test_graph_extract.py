@@ -27,6 +27,14 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(calls(f), {("helper", "Foo.run"), ("stop", "Foo.run"), ("Foo", "main"), ("run", "main")})
         self.assertEqual(f["imports"], [".b", "pkg.util"])
 
+    def test_body_terms_split_identifiers_and_drop_noise(self):
+        f = gx.extract("t.py", b"def get_user_token(req):\n    # check the session cookie\n"
+                               b"    return parseSessionCookie(req.cookies['sid'], self)\n")
+        words = f["defs"][0]["terms"].split()
+        self.assertEqual(words[:4], ["cookie", "req", "session", "check"])  # most frequent first, then a→z
+        self.assertTrue({"user", "token", "parse", "cookies", "req"} <= set(words))
+        self.assertFalse({"self", "return", "def", "the"} & set(words))
+
     def test_javascript_esm_and_commonjs(self):
         f = gx.extract("u.js", b"// util module\nimport { a } from './lib/x.js';\nconst y = require('../y');\n/** Does f. */\n"
                                 b"export function f() { a(); }\nclass K extends Base { m() { this.n(); } }\n")

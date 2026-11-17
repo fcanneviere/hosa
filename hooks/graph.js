@@ -131,6 +131,17 @@ function guardGrep(p, gdir, root, query) {
     'Need raw text matches anyway? Retry the Grep (it will pass), or scope it to a file.' } };
 }
 
+// A Grep soon after a `graph find`: the graph didn't answer. Logged next to the finds (graph.py search_stats
+// counts it, `graph status` shows it): the measure that says whether the graph needs search by meaning.
+const SEARCH_LOG = 'searches.jsonl';
+const GREP_AFTER_FIND_MS = 120000; // = GREP_AFTER_FIND in graph.py
+function logGrepAfterFind(p, gdir, now = Date.now()) {
+  if (p.tool_name !== 'Grep') return;
+  const log = path.join(gdir, SEARCH_LOG);
+  if (now - mtime(log) > GREP_AFTER_FIND_MS) return;
+  fs.appendFileSync(log, JSON.stringify({ ts: Math.round(now / 1000), grep: (p.tool_input || {}).pattern || '' }) + '\n');
+}
+
 // SessionStart: marks the session start and rebuilds the graph in the background
 // (a full first build can exceed the hook timeout). Returns the context line, or ''.
 function sessionStart(cwd) {
@@ -167,6 +178,7 @@ function processPayload(p, run = runGraph, summarize = refreshSummary, query = q
     const root = findUp(p.cwd || process.cwd(), path.join('.hosa', 'graph', 'graph.json'));
     if (!root) return null;
     const gdir = path.join(root, '.hosa', 'graph');
+    logGrepAfterFind(p, gdir);
     if (broadIdentGrep(p)) {
       const refused = guardGrep(p, gdir, root, query);
       if (refused) return refused;

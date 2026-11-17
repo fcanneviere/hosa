@@ -3,6 +3,7 @@ import argparse
 import fnmatch
 import hashlib
 import json
+import math
 import os
 import posixpath
 import re
@@ -15,7 +16,7 @@ from pathlib import Path
 import graph_extract as gx
 import kb
 
-VERSION = 2  # à augmenter quand l'extraction change : les faits en cache sont alors recalculés
+VERSION = 3  # à augmenter quand l'extraction change : les faits en cache sont alors recalculés
 ACTOR = "process:hosa-graph"
 BUDGET = 2000  # tokens, estimés à 4 caractères/token
 # Fichiers plus gros que ça (générés, empaquetés, minifiés) : hors du graphe. HOSA_GRAPH_MAX_KB pour changer.
@@ -207,7 +208,7 @@ def build(facts, kb_items, touches):
         for d in f["defs"]:
             nid = node_id(path, d["qual"])
             nodes[nid] = {"id": nid, "kind": d["kind"], "label": d["qual"], "file": path, "line": d["line"],
-                          "end": d["end"], "lang": f["lang"], "doc": d["doc"]}
+                          "end": d["end"], "lang": f["lang"], "doc": d["doc"], "terms": d.get("terms", "")}
             edge(node_id(path, d["parent"]), nid, "contains")
             by_name.setdefault(d["name"], []).append(nid)
             by_file.setdefault((path, d["name"]), []).append(nid)
@@ -520,6 +521,15 @@ def refresh(root, paths=None):
 
 # --- Requêtes ------------------------------------------------------------------
 
+def _same_word(t, w):
+    """Même mot, au pluriel ou à la flexion près (session/sessions, expire/expiration) : un préfixe commun
+    d'au moins 4 lettres, à 2 lettres près du mot le plus court."""
+    if t == w:
+        return True
+    n = len(os.path.commonprefix((t, w)))
+    return n >= 4 and n >= min(len(t), len(w)) - 2
+
+
 class Index:
     """Vue indexée d'un graphe pour les requêtes."""
 
@@ -548,8 +558,22 @@ class Index:
             raise GraphError(f"« {term} » est ambigu :\n" + "\n".join(fmt(self.nodes[h]) for h in hits[:20]))
         return hits[0]
 
+    def _body_weights(self, tokens):
+        """Poids de chaque mot de la requête dans les corps (idf : un mot rare pèse plus), entre 0 et 0,9."""
+        bodies = [n["terms"].split() for n in self.nodes.values() if n.get("terms")]
+        weights = {}
+        for t in tokens:
+            df = sum(1 for words in bodies if any(_same_word(t, w) for w in words))
+            weights[t] = 0.9 * math.log(1 + len(bodies) / df) / math.log(1 + len(bodies)) if df else 0
+        return weights
+
     def find(self, text, limit=20, path=None, kind=None, offset=0):
+        """Nom (3, 2), id ou docstring (1), sinon un mot du corps (moins de 1, plus si le mot est rare).
+        Un élément qui ne contient pas tous les mots de la requête vient après ceux qui les contiennent tous."""
         tokens = [t for t in re.split(r"[\s/.:_-]+", text.lower()) if t]
+        if not tokens:
+            return []
+        weights = self._body_weights(tokens)
         scored = []
         for i, n in self.nodes.items():
             if path and not fnmatch.fnmatch(n.get("file", ""), path):
@@ -557,15 +581,15 @@ class Index:
             if kind and n["kind"] != kind:
                 continue
             label, hay = n["label"].lower(), f"{i} {n.get('doc', '')}".lower()
-            score = 0
+            words = n.get("terms", "").split()
+            score, found = 0, 0
             for t in tokens:
-                s = 3 if label.split(".")[-1] == t else 2 if t in label else 1 if t in hay else 0
-                if not s:
-                    break
+                s = (3 if label.split(".")[-1] == t else 2 if t in label else 1 if t in hay
+                     else weights[t] if any(_same_word(t, w) for w in words) else 0)
                 score += s
-            else:
-                if tokens:
-                    scored.append((-score, KIND_ORDER[n["kind"]], i))
+                found += s > 0
+            if found:
+                scored.append((-found, -score, KIND_ORDER[n["kind"]], i))
         return [i for *_, i in sorted(scored)[offset:offset + limit]]
 
     def detail(self, nid):
@@ -639,6 +663,41 @@ def _edge_lines(edges, key, arrow):
     return lines
 
 
+SEARCH_LOG = "searches.jsonl"  # chaque `find`, et chaque Grep qui le suit de près (hook graph.js) : mesure du graphe
+GREP_AFTER_FIND = 120  # secondes : un Grep plus proche d'un `find` est compté comme son échec
+
+
+def _log_search(root, entry):
+    try:
+        with open(graph_dir(Path(root)) / SEARCH_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": round(time.time()), **entry}, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def search_stats(root):
+    """Recherches `find` : total, sans résultat, suivies d'un Grep (le graphe n'a pas suffi)."""
+    finds, empty, grepped = 0, 0, 0
+    try:
+        lines = (graph_dir(Path(root)) / SEARCH_LOG).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
+    last = None
+    for line in lines:
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if "find" in e:
+            finds += 1
+            empty += e.get("hits") == 0
+            last = e
+        elif "grep" in e and last is not None and e["ts"] - last["ts"] <= GREP_AFTER_FIND:
+            grepped += 1
+            last = None  # un seul échec compté par `find`
+    return {"finds": finds, "empty": empty, "grepped": grepped}
+
+
 def status(root):
     """État de l'index, sans le reconstruire : taille, fraîcheur, fichiers à réindexer ou exclus."""
     root = Path(root).resolve()
@@ -674,6 +733,9 @@ def status(root):
              f"À réindexer : {len(stale)} modifié(s), {len(missing)} nouveau(x)" + (" → `graph.py index`" if stale or missing else " — à jour"),
              f"Exclus (> {MAX_FILE_BYTES // 1024} Ko, HOSA_GRAPH_MAX_KB) : {len(big)}" + (f" — {', '.join(big[:5])}" if big else ""),
              f"Extraction en échec : {len(errors)}" + (f" — {', '.join(errors[:5])}" if errors else "")]
+    st = search_stats(root)
+    lines.append(f"Recherches `find` : {st['finds']} — sans résultat : {st['empty']} — "
+                 f"suivies d'un Grep (< {GREP_AFTER_FIND} s) : {st['grepped']}")
     return "\n".join(lines)
 
 
@@ -689,8 +751,10 @@ def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET, path=None, kind=N
     g = Index(refresh(root))
     (graph_dir(root) / "last_query").write_text(str(time.time()), encoding="utf-8")
     if cmd == "find":
+        hits = g.find(arg, limit, path, kind, offset)
+        _log_search(root, {"find": arg, "hits": len(hits)})
         return budgeted([fmt(g.nodes[i]) + (f"  — {g.nodes[i]['doc']}" if g.nodes[i].get("doc") else "")
-                         for i in g.find(arg, limit, path, kind, offset)] or ["Aucun résultat."], budget)
+                         for i in hits] or ["Aucun résultat."], budget)
     if cmd == "explain":
         d = g.detail(g.one(arg))
         head = [fmt(d["node"])] + ([f"  {d['node']['doc']}"] if d["node"].get("doc") else [])

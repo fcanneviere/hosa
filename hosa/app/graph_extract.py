@@ -18,6 +18,23 @@ BASE_NOISE = {"extends", "implements", "public", "private", "protected", "intern
 IMPORT_LINE = re.compile(r"^[ \t]*(import|from|use|using|require|require_relative|require_once|include|include_once)\b(.*)$", re.M)
 REQUIRE_CALL = re.compile(r"""\brequire\(\s*['"]([^'"]+)['"]""")
 _queries = {}
+# Mots du corps d'une définition, pour `graph find` : identifiants découpés (camelCase, snake_case), commentaires, chaînes.
+WORD = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+")
+TERMS_MAX = 40  # mots gardés par définition : les plus fréquents
+TERMS_NOISE = {"self", "this", "cls", "def", "return", "function", "const", "let", "var", "class", "import", "from",
+               "the", "and", "for", "not", "none", "null", "true", "false", "else", "elif", "with", "new", "async",
+               "await", "public", "private", "protected", "static", "void", "int", "str", "string", "len", "les",
+               "des", "une", "pour", "dans", "est", "pas", "qui", "que", "sur", "par", "avec"}
+
+
+def terms(text):
+    """Les mots les plus fréquents d'un texte de code, en minuscules, séparés par des espaces."""
+    counts = {}
+    for w in WORD.findall(text):
+        w = w.lower()
+        if len(w) >= 3 and not w.isdigit() and w not in TERMS_NOISE:
+            counts[w] = counts.get(w, 0) + 1
+    return " ".join(sorted(counts, key=lambda w: (-counts[w], w))[:TERMS_MAX])
 
 
 def lang_of(path):
@@ -108,7 +125,7 @@ def _imports(text, lang):
 
 def extract(path, source):
     """Faits d'un fichier : {'lang', 'doc', 'defs': [...], 'calls': [...], 'imports': [...]}.
-    defs : {'qual', 'name', 'kind', 'line', 'end', 'doc', 'parent', 'bases'} — lignes 1-based, parent = qual ou None.
+    defs : {'qual', 'name', 'kind', 'line', 'end', 'doc', 'parent', 'bases', 'terms'} — lignes 1-based, parent = qual ou None.
     calls : {'name', 'line', 'scope'} — scope = qual de la définition englobante, ou None (niveau fichier)."""
     lang = lang_of(path)
     tree = tsp.get_parser(lang).parse(source)
@@ -141,7 +158,8 @@ def extract(path, source):
         d = {"qual": f"{parent['qual']}.{name}" if parent else name, "name": name, "kind": kind,
              "line": node.start_point[0] + 1, "end": node.end_point[0] + 1, "doc": _doc(node),
              "parent": parent["qual"] if parent else None,
-             "bases": _bases(node, name_node, source) if kind == "class" else []}
+             "bases": _bases(node, name_node, source) if kind == "class" else [],
+             "terms": terms(node.text.decode("utf-8", "replace"))}
         defs.append(d)
         stack.append((node, d))
 

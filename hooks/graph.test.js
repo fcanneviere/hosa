@@ -60,6 +60,22 @@ test('regex, single-file and no-hit greps are never refused', () => {
   assert.equal(deny({ pattern: 'logout' }, () => ''), false);
 });
 
+test('a Grep soon after a graph find is logged as its failure, a later one is not', () => {
+  const root = project();
+  const log = path.join(root, '.hosa', 'graph', 'searches.jsonl');
+  const grep = (pattern) => processPayload({ hook_event_name: 'PreToolUse', tool_name: 'Grep', cwd: root, session_id: 's7',
+    tool_input: { pattern, path: 'x.py' } });
+  grep('before');
+  assert.equal(fs.existsSync(log), false);
+  fs.writeFileSync(log, '{"ts": 1, "find": "session", "hits": 0}\n');
+  grep('session');
+  assert.match(fs.readFileSync(log, 'utf8'), /"grep":"session"/);
+  const old = new Date(Date.now() - 300000);
+  fs.utimesSync(log, old, old);
+  grep('late');
+  assert.doesNotMatch(fs.readFileSync(log, 'utf8'), /late/);
+});
+
 test('no nudge when the graph was already queried this session', () => {
   const root = project();
   const later = new Date(Date.now() + 5000);
