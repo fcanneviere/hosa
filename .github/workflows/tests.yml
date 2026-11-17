@@ -15,12 +15,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Python dependencies
+        run: pip install -r hosa/app/requirements.txt
       - name: Hooks
         run: node --test hooks/*.test.js
       - name: App and plugin frontmatter
         working-directory: hosa/app
-        run: |
-          pip install -r requirements.txt
-          python -m unittest
+        run: python -m unittest
       - name: Scripts compile
         run: python -m py_compile skills/*/scripts/*.py
