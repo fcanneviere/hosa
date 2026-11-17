@@ -10,6 +10,9 @@
       Every sprint to come: the milestones' paths in their order (list scheduling, whole sub-paths), then the
       complete tickets no milestone needs, by priority. `--ecrire` writes kb/project/feuille-de-route.md, its
       `## Jalons` kept as the user validated them. Exit 1 when a milestone is blocked (an incomplete ticket).
+      A ticket whose notes are still absent is planned (`ticket_check --planifiable`): the next sprint's come
+      back under `a_detailler`. `--jalons` needs `--mesure <On>` when kb/project/identity.md has measurable
+      objectives: the first milestone is the one whose demo measures it.
   python graphe_tickets.py <kb> composer [--objectif <ticket>] [--plafond N] [--demo N] [--sprint <slug>]
                                          [--tolerance PCT] [--prolonger] [--remplir] [--json]
       A sprint: the whole path to the objective (default: the first ticket in priority order whose path can be
@@ -56,7 +59,11 @@ def points(value: str) -> int:
 def has_screen(body: str) -> bool:
     """A ticket the user plays at the demo: its interface placement names a screen (`Écran / route`, not `aucun`)."""
     tc = ticket_check()
-    m = re.search(r"\*\*Écran / route\*\*\s*:\s*(.*)", tc.section(body, "## Placement interface (UX/UI)") or "")
+    placement = tc.section(body, "## Placement interface (UX/UI)")
+    if placement is None:  # not detailed yet (`sprint` writes it): a criterion the user sees on a screen
+        crit = tc.section(body, "## Critères d'acceptation") or ""
+        return bool(re.search(r"\b(?:écran|page|clique|affiche|bouton)\b", crit, re.I))
+    m = re.search(r"\*\*Écran / route\*\*\s*:\s*(.*)", placement)
     return bool(m) and not m[1].strip().lower().startswith(("aucun", "non applicable", "—"))
 
 
@@ -68,11 +75,14 @@ def load(kb: Path, recompose: str | None = None) -> dict[str, dict]:
         if tc.field(front, "type") != "Ticket":
             continue
         state = tc.field(front, "state") or "todo"
+        found = [] if state == "done" else [g for g in tc.gaps(f) if not g.startswith("(info)")]
         out[f.stem] = {
             "slug": f.stem, "title": (tc.field(front, "title") or f.stem).strip("'\""), "state": state,
             "sprint": None if tc.field(front, "sprint") in (None, "", recompose) else tc.field(front, "sprint"), "priority": tc.rank(front), "points": points(tc.field(front, "estimate")),
             "depends_on": tc.depends_on(front), "ecran": has_screen(body),
-            "manques": [] if state == "done" else [g for g in tc.gaps(f) if not g.startswith("(info)")]}
+            # planned on its story, criteria and graph; its notes are written when it enters a sprint
+            "manques": [g for g in found if not g.startswith(tc.TO_DETAIL)],
+            "a_detailler": any(g.startswith(tc.TO_DETAIL) for g in found)}
     return out
 
 
@@ -308,8 +318,22 @@ def roadmap(graph: dict[str, dict], jalons: list[str], plafond: int = PLAFOND, d
     for sp in sprints:
         sp["points"] = sum(graph[s]["points"] for s in sp["tickets"])
         sp["demo"] = demo_cost(graph, sp["tickets"])
+    # the next sprint's tickets still without their notes: `sprint` writes them (`notes-<k>`…) before it starts
+    a_detailler = [s for s in (sprints[0]["tickets"] if sprints else []) if graph[s].get("a_detailler")]
     return {"sprints": sprints, "bloques": bloques, "a_completer": a_completer, "en_attente": en_attente,
-            "plafond": plafond, "demo_max": demo, "tolerance": tolerance}
+            "a_detailler": a_detailler, "plafond": plafond, "demo_max": demo, "tolerance": tolerance}
+
+
+OBJECTIF = re.compile(r"^\|\s*(O\d+)\s*\|", re.M)
+MESURE = re.compile(r"—\s*mesure\s+(O\d+)\b")
+
+
+def objectives(kb: Path) -> list[str]:
+    """The ids of the measurable objectives (`## Objectifs mesurables` of kb/project/identity.md): O1, O2…"""
+    f = kb / "project" / "identity.md"
+    tc = ticket_check()
+    return OBJECTIF.findall(tc.section(tc.split(f.read_text(encoding="utf-8"))[1], "## Objectifs mesurables") or "") \
+        if f.is_file() else []
 
 
 BORNES = re.compile(r"(\d+) tickets et (\d+) tests de démo par sprint, (\d+) %")
@@ -331,14 +355,16 @@ def read_jalons(kb: Path) -> list[str] | None:
     return re.findall(r"\]\((?:\.\./tickets/)?([\w-]+)\.md\)", tc.section(tc.split(f.read_text(encoding="utf-8"))[1], "## Jalons") or "")
 
 
-def write_roadmap(kb: Path, graph: dict[str, dict], r: dict, at: str, jalons_list: list[str] | None = None) -> Path:
+def write_roadmap(kb: Path, graph: dict[str, dict], r: dict, at: str, jalons_list: list[str] | None = None,
+                  mesure: str | None = None) -> Path:
     """Rewrites the computed part of the roadmap. `## Jalons` stays as the user validated it, or is written from
-    `jalons_list` (the milestones the user just validated)."""
+    `jalons_list` (the milestones the user just validated), the first one followed by the objective it measures."""
     f = kb / "project" / "feuille-de-route.md"
     tc = ticket_check()
     link = lambda s: f"[{graph[s]['title']}](../tickets/{s}.md) (`{s}`)" if s in graph else f"`{s}`"  # noqa: E731
     if jalons_list is not None:
-        jalons = "\n".join(f"- {link(j)}" for j in jalons_list)
+        jalons = "\n".join(f"- {link(j)}" + (f" — mesure {mesure}" if mesure and i == 0 else "")
+                           for i, j in enumerate(jalons_list))
     else:
         jalons = tc.section(tc.split(f.read_text(encoding="utf-8"))[1], "## Jalons") or ""
     f.parent.mkdir(parents=True, exist_ok=True)
@@ -358,6 +384,8 @@ def write_roadmap(kb: Path, graph: dict[str, dict], r: dict, at: str, jalons_lis
         out += ["## À compléter"] + [f"- {link(a['slug'])} — " + " ; ".join(a["manques"]) for a in r["a_completer"]] + [""]
     if r["en_attente"]:
         out += ["## En attente d'un ticket à compléter"] + [f"- {link(s)}" for s in r["en_attente"]] + [""]
+    if r.get("a_detailler"):
+        out += ["## À détailler (Sprint 1)"] + [f"- {link(s)}" for s in r["a_detailler"]] + [""]
     f.write_text("\n".join(out), encoding="utf-8")
     return f
 
@@ -385,6 +413,10 @@ def roadmap_report(graph: dict[str, dict], r: dict) -> str:
         lines += [f"- `{s}` : {g}" for s, g in fixes]
     if r["en_attente"]:
         lines.append(f"En attente d'un ticket à compléter : {len(r['en_attente'])} ticket(s).")
+    if r.get("a_detailler"):
+        lines.append(f"À détailler avant le Sprint 1 ({len(r['a_detailler'])}) : `sprint` écrit leurs notes "
+                     "(`notes-<k>` → `securite-<k>`, `juridique-<k>` → `juge-<k>`) — "
+                     + ", ".join(f"`{s}`" for s in r["a_detailler"]))
     return "\n".join(lines)
 
 
@@ -441,6 +473,8 @@ def main(argv: list[str]) -> int:
     fe.add_argument("--demo", type=int, help=f"tests de démo par sprint (sinon `## Bornes`, sinon {DEMO})")
     fe.add_argument("--tolerance", type=int, help=f"%% pour garder un jalon entier (sinon `## Bornes`, sinon {TOLERANCE})")
     fe.add_argument("--sprint", help="recomposer ce sprint : ses tickets redeviennent libres")
+    fe.add_argument("--mesure", help="l'objectif (O1…) que le premier jalon mesure, requis avec `--jalons` "
+                                     "quand l'identité a des objectifs mesurables")
     fe.add_argument("--ecrire", action="store_true", help="écrire kb/project/feuille-de-route.md")
     fe.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
@@ -472,12 +506,20 @@ def main(argv: list[str]) -> int:
         if not jalons:
             print("pas de jalons : `--jalons a,b,…` ou `## Jalons` de kb/project/feuille-de-route.md", file=sys.stderr)
             return 2
+        objs = objectives(kb)
+        if a.jalons and objs and a.mesure not in objs:
+            # rieki: « exploratoire, tester Timestral » (O1), three milestones all in Importer, no forecast after
+            # three sprints. The first milestone is the shortest path to what the objective measures.
+            print(f"premier jalon : `--mesure <{'|'.join(objs)}>` — l'objectif de kb/project/identity.md que le premier "
+                  "jalon permet de mesurer à la démo (le chemin le plus court jusqu'à son indicateur)"
+                  + (f" ; `{a.mesure}` n'en est pas un" if a.mesure else ""), file=sys.stderr)
+            return 2
         bp, bd, bt = read_bornes(kb)
         r = roadmap(graph, jalons, a.plafond or bp, a.demo or bd, bt if a.tolerance is None else a.tolerance)
         if a.ecrire:
             from datetime import datetime, timezone
             at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            print(f"écrit : {write_roadmap(kb, graph, r, at, jalons if a.jalons else None)}", file=sys.stderr)
+            print(f"écrit : {write_roadmap(kb, graph, r, at, jalons if a.jalons else None, a.mesure)}", file=sys.stderr)
         print(json.dumps({**r, "corrections": [{"slug": s, "ligne": g} for s, g in single_fixes(r)]}, ensure_ascii=False) if a.json else roadmap_report(graph, r))
         return 1 if r["bloques"] else 0
     c = compose(graph, a.objectif, a.plafond, a.demo, a.remplir, tolerance=a.tolerance, prolonger=a.prolonger)

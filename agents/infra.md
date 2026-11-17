@@ -106,6 +106,19 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ```
 
    `hosa-tester`, `hosa-developer` and `hosa-git` run exactly these commands. A tool the stack can't offer → say which, and why.
+
+   **Exit proof.** Then run each command once more **inside the container**, on the code as committed, and write what it gave under `## Preuve de sortie` of the same file. `done infra` refuses a missing line or one without `exit 0` (`avancement.py check infra`). rieki started its first sprint with `main` red on lint and format, a container serving stale code (the Windows mount not reloaded), 15 tests that ran only on the host and a browser suite of 799 s: half of sprint 2 paid for it.
+
+```markdown
+## Preuve de sortie
+- **Lint** : <commande> — exit 0 — <durée> s — <date>
+- **Format** : <commande de vérification> — exit 0 — <durée> s — <date>
+- **Tests** : <commande de la suite complète, dans le conteneur> — exit 0 — <durée> s — <date>
+- **Rechargement** : <fichier monté modifié, puis ce que le serveur sert> — exit 0 — <date> — ou `aucun — <pas de code monté>`
+- **Navigateur** : <commande, sous 180 s ou découpée par fichier> — exit 0 — <durée> s — <date> — ou `aucun — pas d'interface web`
+```
+
+   A command that fails is fixed before the stage closes: never a red baseline handed to the first sprint. Each exit code is read from the command itself (`> fichier; echo EXIT=$?`), never through `| tail`.
 9. Return `## Documentation à produire`: the paths that hold what was installed, its versions and the quality commands, one line each with what to document from it (`retours` §4).
 
 ## Mode 2 — Installation Request

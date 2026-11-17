@@ -37,7 +37,7 @@ Manual: `/infra`. Auto: immediately after `stack`, or "mets en place l'environne
 
 ### Step 1: Dispatch for Setup
 
-Dispatch `hosa-infra` (Mode 1, `agents/infra.md`) to find the managed project, check the recorded `Stack Decision`s, read existing infrastructure and non-functional needs, determine the Docker composition, pin versions, write and start the environment, install the quality tooling (test runner, browser tests, linter, formatter, type checker, CI pipeline) and update `kb/infra/environnement-docker.md` with its `## Outillage qualité` commands. The quality tooling is part of this stage: no sprint starts without it (`git` Mode 1 checks it). Relay its Open Question on the CI host to the user.
+Dispatch `hosa-infra` (Mode 1, `agents/infra.md`) to find the managed project, check the recorded `Stack Decision`s, read existing infrastructure and non-functional needs, determine the Docker composition, pin versions, write and start the environment, install the quality tooling (test runner, browser tests, linter, formatter, type checker, CI pipeline) and update `kb/infra/environnement-docker.md` with its `## Outillage qualité` commands and its `## Preuve de sortie`: lint, format, tests, the reload of mounted code and the browser suite, each run in the container with `exit 0` (`done infra` refuses otherwise). The quality tooling is part of this stage: no sprint starts without it (`git` Mode 1 checks it). Relay its Open Question on the CI host to the user.
 
 If it returns an Open Question (no project path, no `Stack Decision` yet, Docker unavailable) — relay it to the user, get the answer, and only redispatch once you have it. Never guess a path or an installed version yourself.
 

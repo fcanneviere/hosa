@@ -210,7 +210,8 @@ class Cli(unittest.TestCase):
         (self.kb / "sprints").mkdir()
         (self.kb / "sprints" / "s4.md").write_text("---\ntype: Sprint\n---\n## Tickets\n" + "".join(
             f"- [{r['slug']}](../tickets/{r['slug']}.md)\n" for r in c["tickets"]), encoding="utf-8")
-        self.assertEqual(av.proofs(self.kb, "sprint", "s4"), [])
+        # its order holds; the notes are what `sprint` writes next (`(à détailler)`)
+        self.assertEqual([g for g in av.proofs(self.kb, "sprint", "s4") if "(à détailler)" not in g], [])
 
     def test_the_roadmaps_first_sprint_passes_done_sprint(self):
         av_path = SCRIPT.parents[2] / "status" / "scripts" / "avancement.py"
@@ -227,7 +228,45 @@ class Cli(unittest.TestCase):
         (self.kb / "sprints").mkdir()
         (self.kb / "sprints" / "s5.md").write_text("---\ntype: Sprint\n---\n## Tickets\n" + "".join(
             f"- [{s}](../tickets/{s}.md)\n" for s in first), encoding="utf-8")
-        self.assertEqual(av.proofs(self.kb, "sprint", "s5"), [])
+        self.assertEqual([g for g in av.proofs(self.kb, "sprint", "s5") if "(à détailler)" not in g], [])
+
+    def test_a_ticket_without_notes_is_planned_and_its_sprint_details_it(self):
+        """rieki: 128 tickets' notes written before the first sprint, 22 used after three."""
+        story = ("---\ntype: Ticket\nstate: todo\npriority: {p}\nestimate: 1\n---\nEn tant que analyste,\n"
+                 "Lié à : [x](../cdc/x.md)\n## Critères d'acceptation\n- CA1 — l'écran affiche le WAPE\n")
+        for slug, p in (("p1", 1), ("p2", 2)):
+            (self.kb / "tickets" / f"{slug}.md").write_text(story.format(p=p), encoding="utf-8")
+        g = gt.load(self.kb)
+        self.assertEqual((g["p1"]["manques"], g["p1"]["a_detailler"], g["p1"]["ecran"]), ([], True, True))
+        r = gt.roadmap(g, ["p1"], plafond=1, tolerance=0)
+        self.assertEqual((r["sprints"][0]["tickets"], r["a_detailler"]), (["p1"], ["p1"]))  # the next sprint's only
+        self.assertIn("À détailler avant le Sprint 1 (1)", gt.roadmap_report(g, r))
+
+    def test_the_first_milestone_names_the_objective_it_measures(self):
+        """rieki: an exploratory project (O1: Timestral beats the baseline), three milestones all in Importer."""
+        (self.kb / "project").mkdir()
+        (self.kb / "project" / "identity.md").write_text(
+            "---\ntype: Project\n---\n## Objectifs mesurables\n| Id | Objectif |\n|---|---|\n| O1 | battre la référence |\n",
+            encoding="utf-8")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(self.run_("feuille", "--jalons", "a", "--ecrire")[0], 2)
+            self.assertEqual(self.run_("feuille", "--jalons", "a", "--mesure", "O7")[0], 2)
+        self.assertIn("`--mesure <O1>`", err.getvalue())
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.run_("feuille", "--jalons", "a", "--mesure", "O1", "--ecrire")
+        text = (self.kb / "project" / "feuille-de-route.md").read_text(encoding="utf-8")
+        self.assertIn("(`a`) — mesure O1", text)
+        self.assertEqual(gt.read_jalons(self.kb), ["a"])
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertNotEqual(self.run_("feuille")[0], 2)  # recomputed from the written milestones: no flag
+        av_path = SCRIPT.parents[2] / "status" / "scripts" / "avancement.py"
+        sp = importlib.util.spec_from_file_location("avancement", av_path)
+        av = importlib.util.module_from_spec(sp)
+        sp.loader.exec_module(av)
+        self.assertEqual(av.roadmap_objective(self.kb), [])
+        (self.kb / "project" / "feuille-de-route.md").write_text(text.replace(" — mesure O1", ""), encoding="utf-8")
+        self.assertIn("ne mesure aucun objectif (O1)", av.roadmap_objective(self.kb)[0])
 
     def test_recomposing_a_sprint_frees_its_tickets(self):
         code, out = self.run_("composer", "--objectif", "b", "--json")

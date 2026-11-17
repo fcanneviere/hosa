@@ -1,6 +1,10 @@
 # Rédaction des tickets
 
-What `backlog` Steps 2-5c write in each ticket, for the agents that write them: `hosa-product-owner` (Steps 2-5, one `stories-<k>` pass of 8 tickets at most), `hosa-security` (Step 5b, Mode 5) and `hosa-legal` (Step 5c, Mode 3). The orchestration — batches, judge, tasks — is `backlog`'s (`SKILL.md`), not yours: read this file, not that one.
+What each ticket holds, for the agents that write it, in two moments:
+- **`backlog`**, every ticket at once: `hosa-product-owner` writes Step 2 (split, story, criteria, `depends_on`, `estimate`), one `stories-<k>` pass of 8 tickets at most. No note: the roadmap needs only these.
+- **`sprint`**, the tickets of the next sprint only, against the code as it is then: `hosa-product-owner` writes Steps 3-5 (one `notes-<k>` pass of 8 tickets at most), then `hosa-security` Step 5b (Mode 5) and `hosa-legal` Step 5c (Mode 3). Single-Ticket Mode writes them too, for one ticket. rieki wrote the five notes of 128 tickets before its first sprint (≈ 61 $) and used 22 of them three sprints later.
+
+The orchestration — batches, judge, tasks — is `backlog`'s and `sprint`'s (`SKILL.md`), not yours: read this file, not those.
 
 **Read by part.** The documents the notes cite (data dictionary, architecture, interface, threat model) are read by the section the ticket touches — `Grep -n "^## "` for the headings, then `Read` with `offset`/`limit`, or `graph find`/`explain` — never whole, once per pass: each line read stays in the context for every later turn (rieki: 25 KB of `donnees.md` read whole, then carried over 60 turns).
 
@@ -12,7 +16,7 @@ For each `Exigence` left after Step 1, **split it into tickets** first. A ticket
 
 **Too big.** More than 10 criteria — the checker's limit, counting those `hosa-security` and `hosa-legal` add after you: write 8 at most, so their abuse cases and legal constraints still fit (rieki: 21 tickets over 10 once the security notes were in) — two variants of one flow (two kinds of token, two triggers, two populations), or a ticket that adds a migration, a scheduled command and a screen → split, one variant or one rule per ticket (pilot2: « Ce n'était pas moi », 16 criteria over two variants, estimated "simple"; « Changer son adresse e-mail », 15 criteria with a migration and a daily purge, estimate 2). A catch-all ticket ("corrections de l'interface", eleven unrelated retouches plus a new action) is split by screen, and a new action goes to the ticket of its feature. A split never moves the abuse cases or legal constraints into a ticket of their own (« protéger X contre… », « sécuriser X ») : each one stays in the ticket of the criterion it protects, and every part keeps the abuse cases of its own flow. Too many criteria once they are in → split the flow itself, by variant, screen or rule (rieki: 14 tickets held only criteria moved out of their feature, mostly security, and became features of their own in the backlog).
 
-**Security and compliance mechanisms first.** A mechanism several tickets use — the security event log, the security headers and production configuration, the rate-limit store, the legal pages and the CGU version, consent, the purge of expired data — is its own ticket, the first of its exigence, and every ticket that uses it lists it in `depends_on`: a criterion « … est journalisé » needs the log's ticket. Pilot2 ranked the security log at 43, the legal pages at 49 and the security headers at 51, while 14 tickets ranked 7 to 39 wrote to the log and the signup asked to accept CGU no page showed: security and compliance were left to the end, where they cost a redevelopment.
+**Security and compliance mechanisms first.** While `## Usage` of `kb/project/identity.md` is `exploratoire`, only the mechanisms the deferred abuse cases don't cover (Step 5b) get a ticket: the others wait for real use. A mechanism several tickets use — the security event log, the security headers and production configuration, the rate-limit store, the legal pages and the CGU version, consent, the purge of expired data — is its own ticket, the first of its exigence, and every ticket that uses it lists it in `depends_on`: a criterion « … est journalisé » needs the log's ticket. Pilot2 ranked the security log at 43, the legal pages at 49 and the security headers at 51, while 14 tickets ranked 7 to 39 wrote to the log and the signup asked to accept CGU no page showed: security and compliance were left to the end, where they cost a redevelopment.
 
 **Say it once.** A behaviour several tickets share — « Annuler » n'enregistre rien, a value shown as text and never as a link, the same abuse case on every style sheet — is a criterion of one ticket only: its mechanism's ticket, or the definition of done (Step 1b) when every screen must hold it. A ticket that uses it lists that ticket in `depends_on` and keeps at most one criterion that checks its screen calls it. A rule every screen follows (one main button per screen, a destructive button styled as such, the focus outline) is a definition-of-done item: its ticket covers the screens the code has today, and each screen built later applies it in its own ticket.
 
@@ -34,6 +38,7 @@ description: "<description courte>"
 tags: []
 state: todo
 depends_on: []          # tickets à livrer avant celui-ci — retiré si vide
+estimate: <1|2|3>       # 1 ≤ ½ jour, 2 ≈ 1 jour, 3 = 2-3 jours ; plus → découper
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 En tant que [persona],
@@ -42,6 +47,8 @@ afin de [valeur].
 
 Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
 ```
+
+**`estimate`** is yours, with the split: the criteria, the screens and the tables the ticket touches against the architecture's module map. The technical note's `Complexité` (Step 3, at the sprint) confirms it or corrects it, and says why.
 
 If the `Exigence` names no clear persona, ask the user which persona it serves before writing the story — same "no guessing" discipline as every other Hosa skill.
 
@@ -136,7 +143,7 @@ Never block ticket creation on a missing interface doc.
 
 ## Step 5b: Add the Security Note (`hosa-security`)
 
-`hosa-security` (Mode 5 — Notes de tickets), on one lot of 8 tickets at most, once its stories are written; `hosa-juge` judges the lot after the security and legal notes. A note only listing rule names is not a note: pilot2's said « Règles X et Y : compteurs atomiques… », and its sprint 1 then had 2 reviews FAIL on a rule, 14 audit findings and 13 follow-up tickets. The agent reads `kb/cdc/securite.md`, `kb/securite/modele-menaces.md`, the `Security Rule`s and the linked `Exigence`'s `## Contraintes de sécurité`, then for each ticket:
+`hosa-security` (Mode 5 — Notes de tickets), from `sprint`, on one lot of 8 tickets at most, once their `notes-<k>` pass is done; `hosa-juge` judges the lot after the security and legal notes. A note only listing rule names is not a note: pilot2's said « Règles X et Y : compteurs atomiques… », and its sprint 1 then had 2 reviews FAIL on a rule, 14 audit findings and 13 follow-up tickets. The agent reads `kb/cdc/securite.md`, `kb/securite/modele-menaces.md`, the `Security Rule`s and the linked `Exigence`'s `## Contraintes de sécurité`, then for each ticket:
 - **appends an acceptance criterion per abuse case** this ticket must refuse, after the last `CAn`, in the PO's Given/When/Then form — « Étant donné …, quand un attaquant …, alors … » — unless an existing criterion already states it;
 - writes the note:
 
@@ -150,7 +157,9 @@ Never block ticket creation on a missing interface doc.
 - **Données sensibles** : <champ (classification)> — <où il ne doit jamais sortir : journal, réponse, e-mail, cache> — ou `aucun`
 ```
 
-A ticket with no constraint of its own writes `aucun` on each bullet but **Règles** (the general rules it touches). If `kb/cdc/securite.md` doesn't exist yet (`securite` never ran), append instead:
+A ticket with no constraint of its own writes `aucun` on each bullet but **Règles** (the general rules it touches).
+
+**Exploratory use.** While `## Usage` of `kb/project/identity.md` says `exploratoire` (a local test, one user, no real data exposed to others), an abuse case gets its criterion only when it comes from **an input the user doesn't control**: a file or a message from outside, the network, another account. Every other abuse case is written `- <abus> — différé : usage exploratoire`, with no criterion and no ticket of its own: `livraison` refuses real use while one is left (`ticket_check --differes`), and the user moves `## Usage` to `réel` before that. rieki, a local single-user test of a forecasting model: verrous, textes hostiles and démarrage unique took 6 of its first 26 tickets, and no forecast had run after three sprints. If `kb/cdc/securite.md` doesn't exist yet (`securite` never ran), append instead:
 
 ```markdown
 ## Note sécurité (expert cybersécurité)
@@ -161,7 +170,7 @@ Never block ticket creation on a missing analysis.
 
 ## Step 5c: Add the Legal Note (`hosa-legal`)
 
-`hosa-legal` (Mode 3 — Notes de tickets), same lot. Pilot2's tickets had no legal note: legal constraints sat in the security note as « Contrainte juridique : RGPD art. 12 à 20 », and the legal gate at release was the first to check them. The agent reads `kb/cdc/juridique.md` (registre, contraintes retenues, documents hors logiciel) and the linked `Exigence`'s `## Contraintes juridiques`, then for each ticket:
+`hosa-legal` (Mode 3 — Notes de tickets), from `sprint`, same lot. Pilot2's tickets had no legal note: legal constraints sat in the security note as « Contrainte juridique : RGPD art. 12 à 20 », and the legal gate at release was the first to check them. The agent reads `kb/cdc/juridique.md` (registre, contraintes retenues, documents hors logiciel) and the linked `Exigence`'s `## Contraintes juridiques`, then for each ticket:
 - **appends an acceptance criterion per legal constraint** the ticket delivers, unless an existing criterion already states it — testable, not « respecter le RGPD »;
 - writes the note:
 
@@ -180,6 +189,6 @@ If `kb/cdc/juridique.md` doesn't exist yet (`juridique` never ran), append inste
 Analyse juridique pas encore faite — contraintes non déterminées.
 ```
 
-A `securite` or `juridique` stage the progress plan marks `non applicable` gets neither a note from you nor a criterion: `backlog` writes its line (`Non applicable — étape … écartée : …`) with `ticket_check --ecartees`. Leave that line as it is.
+A `securite` or `juridique` stage the progress plan marks `non applicable` gets no note, no criterion and no dispatch: the checker accepts the note absent (rieki: 44 KB of « Non applicable » lines over 148 tickets). A `Non applicable — étape … écartée` line already written stays as it is.
 
 Never block ticket creation on a missing analysis.

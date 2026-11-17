@@ -24,6 +24,11 @@ def kb(files: dict) -> Path:
     return root
 
 
+def planned(gaps: list[str]) -> list[str]:
+    """The gaps but the notes a sprint writes for its tickets (`(à détailler)`)."""
+    return [g for g in gaps if "(à détailler)" not in g]
+
+
 def run(*argv) -> tuple[int, str]:
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
@@ -495,7 +500,7 @@ class Tasks(unittest.TestCase):
                 "tickets/b.md": "---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n"
                                 "- CA4 — et, dès qu'il existe, « Supprimer » est destructeur\n",
                 "tickets/ailleurs.md": "---\ntype: Ticket\nstate: todo\n---\n"})
-        gaps = av.proofs(k, "sprint", "s1")
+        gaps = planned(av.proofs(k, "sprint", "s1"))
         self.assertEqual(gaps[:2], ["a : attend `b`, ni fait ni avant lui dans le sprint (placé après lui)",
                                     "a : attend `ailleurs`, ni fait ni avant lui dans le sprint (hors du sprint)"])
         self.assertTrue(gaps[2].startswith("b : CA4 conditionnel (« dès qu'il existe »)"), gaps)
@@ -506,12 +511,24 @@ class Tasks(unittest.TestCase):
         k = kb({"sprints/s1.md": sprint, "tickets/a.md": "---\ntype: Ticket\nstate: todo\n---\n",
                 "tickets/lire.md": "---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n- CA1 — voir [a](a.md)\n",
                 "tickets/fait.md": "---\ntype: Ticket\nstate: done\n---\n## Critères d'acceptation\n- CA1 — [a](a.md)\n"})
-        self.assertEqual(av.proofs(k, "sprint", "s1"), [
+        self.assertEqual(planned(av.proofs(k, "sprint", "s1")), [
             "lire : correction unique à appliquer sans question (`backlog` Single-Ticket Mode, `hosa-product-owner` "
             "Graph fixes) — CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a`"])
         (k / "tickets" / "lire.md").write_text("---\ntype: Ticket\nstate: todo\ndepends_on: [a]\n---\n"
                                                "## Critères d'acceptation\n- CA1 — voir [a](a.md)\n", encoding="utf-8")
-        self.assertEqual(av.proofs(k, "sprint", "s1"), [])
+        self.assertEqual(planned(av.proofs(k, "sprint", "s1")), [])
+
+    def test_a_sprint_details_its_tickets_before_it_starts(self):
+        """rieki: 128 tickets' notes written up front (≈ 61 $), 22 used after 3 sprints. `backlog` plans a ticket
+        on its story, criteria and graph; `sprint` writes the notes of the tickets it takes."""
+        sprint = "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n"
+        k = kb({"sprints/s1.md": sprint, "tickets/a.md": "---\ntype: Ticket\nstate: todo\n---\n"})
+        gaps = av.proofs(k, "sprint", "s1")
+        self.assertEqual(len(gaps), 5)
+        self.assertEqual(gaps[0], "a : (à détailler) section `## Note technique (senior dev)` absente — tâches "
+                                  "`notes-<k>`, `securite-<k>`, `juridique-<k>`, `juge-<k>` de `sprint`")
+        (k / "tickets" / "a.md").write_text("---\ntype: Ticket\nstate: done\n---\n", encoding="utf-8")
+        self.assertEqual(av.proofs(k, "sprint", "s1"), [])  # a done ticket is never detailed again
 
     def test_sprint_tasks_are_per_sprint(self):
         k = kb({"sprints/s1.md": SPRINT, "sprints/s2.md": SPRINT, "tickets/t1.md": TICKET})
@@ -520,8 +537,8 @@ class Tasks(unittest.TestCase):
         with self.assertRaises(SystemExit):  # a sprint stage needs --sprint
             run(k, "task", "add", "sprint", "x", "--agent", "hosa-sprint-planner")
         run(k, "task", "add", "sprint", "compo", "--sprint", "s1", "--agent", "hosa-sprint-planner")
-        self.assertEqual(av.check(k, "sprint", "s2"), [])
-        self.assertEqual(av.check(k, "sprint", "s1"), ["tâche `compo` hosa-sprint-planner : à faire"])
+        self.assertEqual(planned(av.check(k, "sprint", "s2")), [])
+        self.assertEqual(planned(av.check(k, "sprint", "s1")), ["tâche `compo` hosa-sprint-planner : à faire"])
 
     def test_a_lot_output_is_found_in_the_sprint_worktree(self):
         wt = Path(tempfile.mkdtemp())
@@ -617,29 +634,30 @@ class Tasks(unittest.TestCase):
         self.assertEqual(done()[0], 0)
 
     def test_each_non_reopens_the_task_its_question_names_with_its_exact_lines(self):
-        k = kb({"tickets/t1.md": TICKET, "tickets/t2.md": TICKET})
-        closed_until(k, "interface")
-        run(k, "start", "backlog")
-        batch(k, "1", ["t1", "t2"])
-        items = av.juge_items("backlog", "juge-1")
+        k = kb({"tickets/t1.md": TICKET, "tickets/t2.md": TICKET, "sprints/s1.md": SPRINT})
+        closed_until(k, "backlog")
+        run(k, "start", "sprint", "--sprint", "s1")
+        notes_batch(k, "1", ["t1", "t2"])
+        items = av.juge_items("sprint", "juge-1")
         owner = lambda to: next(i for i, q in enumerate(items, 1) if q["to"] == to)  # noqa: E731
-        po, sec = owner("stories-*"), owner("securite-*")
-        verdict = k / "jugements" / "backlog-juge-1.md"
+        po, sec = owner("notes-*"), owner("securite-*")
+        verdict = k / "jugements" / "sprint-s1-juge-1.md"
         verdict.parent.mkdir(exist_ok=True)
         body = "".join(f"## {s}\n" + "".join(
-            f"- Q{i} — " + ("Non — CA9 sans origine" if (s, i) == ("t1", po) else
+            f"- Q{i} — " + ("Non — CA9 sans moyen" if (s, i) == ("t1", po) else
                            "Non — abus A2 sans critère" if (s, i) == ("t2", sec) else "Oui — tickets/t1.md:6 « CA1 »") + "\n"
             for i in range(1, len(items) + 1)) for s in ("t1", "t2"))
         verdict.write_text("---\ntype: Jugement\n---\n" + body, encoding="utf-8")
-        code, out = run(k, "task", "done", "backlog", "juge-1", "--sortie", "kb/jugements/backlog-juge-1.md")
-        self.assertEqual(code, 1)
-        self.assertIn(f"`stories-1` (hosa-product-owner) : Q{po} — t1 : Non — CA9 sans origine", out)
+        code, out = run(k, "task", "done", "sprint", "juge-1", "--sprint", "s1", "--sortie",
+                        "kb/jugements/sprint-s1-juge-1.md")
+        self.assertEqual(code, 1, out)
+        self.assertIn(f"`notes-1` (hosa-product-owner) : Q{po} — t1 : Non — CA9 sans moyen", out)
         self.assertIn(f"`securite-1` (hosa-security) : Q{sec} — t2 : Non — abus A2 sans critère", out)
         tasks = {t["id"]: t for t in av.load_tasks(k / "project" / "avancement.md")}
-        self.assertEqual((tasks["stories-1"]["statut"], tasks["securite-1"]["statut"], tasks["juridique-1"]["statut"]),
+        self.assertEqual((tasks["notes-1"]["statut"], tasks["securite-1"]["statut"], tasks["juridique-1"]["statut"]),
                          (av.TODO, av.TODO, av.DONE))
-        self.assertIn(f"rouvert par `juge-1` (juge-Q{po}) — Q{po} — t1 : Non — CA9", tasks["stories-1"]["detail"])
-        self.assertNotIn("t2", tasks["stories-1"]["detail"])
+        self.assertIn(f"rouvert par `juge-1` (juge-Q{po}) — Q{po} — t1 : Non — CA9", tasks["notes-1"]["detail"])
+        self.assertNotIn("t2", tasks["notes-1"]["detail"])
 
     def test_each_judged_done_is_journaled_and_measured(self):
         k = kb({"tickets/t1.md": TICKET})
@@ -697,7 +715,7 @@ class Tasks(unittest.TestCase):
         self.assertEqual(av.unproved(k, "Oui — `cdc/e.md n'a pas de section « ## Contraintes de sécurité »`"), "")
         self.assertIn("a la section", av.unproved(k, "Oui — cdc/e.md n'a pas de section « Contraintes juridiques »"))
         self.assertIn("n'existe pas", av.unproved(k, "Oui — cdc/x.md n'a pas de section « Contraintes de sécurité »"))
-        q = av.juge_questions("backlog", "juge-1")  # the questions give the form the script accepts
+        q = av.juge_questions("sprint", "juge-1")  # the questions give the form the script accepts
         self.assertTrue(any("n'a pas de section « Contraintes de sécurité »" in x for x in q))
 
     def test_hosa_juge_0_skips_the_judge(self):
@@ -794,14 +812,16 @@ class Tasks(unittest.TestCase):
     def test_the_judge_gets_numbered_lines_of_the_story_the_criteria_the_notes_and_the_exigence_only(self):
         k = self.judge_setup("t1")
         (k / "tickets" / "t1.md").write_text((k / "tickets" / "t1.md").read_text(encoding="utf-8") +
-                                             "## Note technique (senior dev)\n- **Contrat** : secret\n"
+                                             "## Note technique (senior dev)\n- **Contrat** : envoi par smtplib\n"
                                              "## Note sécurité (expert cybersécurité)\n- **Cas d'abus** :\n"
                                              "  - quand un attaquant forge le foyer → CA3\n"
-                                             "## Note juridique (expert conformité)\n- **Contraintes** : aucun\n",
+                                             "## Note juridique (expert conformité)\n- **Contraintes** : aucun\n"
+                                             "## Placement architecture (architecte)\n- **Module/couche** : secret\n",
                                              encoding="utf-8")
         out = self.extract(run(k, "juge", "backlog", "juge-1", "--tickets", "kb/tickets/t1.md")[1])
         self.assertIn("### tickets/t1.md\n5: En tant que parent,\n7: Lié à : [e](../cdc/e.md)", out)
         self.assertIn("10: - CA2 — b", out)
+        self.assertIn("12: - **Contrat** : envoi par smtplib", out)  # the means of a platform capability (`notes-*`)
         self.assertNotIn("secret", out)
         self.assertIn("15:   - quand un attaquant forge le foyer → CA3", out)  # where a criterion comes from
         self.assertIn("17: - **Contraintes** : aucun", out)
@@ -842,22 +862,28 @@ class Tasks(unittest.TestCase):
         self.assertIn("`task add backlog stories-2b` pour les 1 autres", out)
 
     def test_the_notes_wait_for_their_stories_and_the_judge_for_both_notes(self):
-        k = kb({"tickets/t1.md": TICKET})
-        closed_until(k, "interface")
-        run(k, "start", "backlog")
-        run(k, "task", "add", "backlog", "stories-1", "--agent", "hosa-product-owner")
-        code, out = run(k, "task", "add", "backlog", "securite-1", "--agent", "hosa-security")
-        self.assertEqual((code, "après `stories-1`" in out), (1, True))
-        self.assertEqual(run(k, "task", "add", "backlog", "juridique-1", "--agent", "hosa-legal")[0], 1)
-        self.assertEqual(run(k, "task", "add", "backlog", "securite-9", "--agent", "hosa-security")[0], 0)  # no such batch
-        run(k, "task", "done", "backlog", "stories-1", "--sortie", "kb/tickets/t1.md")
+        k = kb({"tickets/t1.md": TICKET, "sprints/s1.md": SPRINT})
+        closed_until(k, "backlog")
+        run(k, "start", "sprint", "--sprint", "s1")
+        task = lambda verb, tid, *rest: run(k, "task", verb, "sprint", tid, "--sprint", "s1", *rest)  # noqa: E731
+        task("add", "notes-1", "--agent", "hosa-product-owner")
+        code, out = task("add", "securite-1", "--agent", "hosa-security")
+        self.assertEqual((code, "après `notes-1`" in out), (1, True))
+        self.assertEqual(task("add", "juridique-1", "--agent", "hosa-legal")[0], 1)
+        self.assertEqual(task("add", "securite-9", "--agent", "hosa-security")[0], 0)  # no such batch
+        task("done", "notes-1", "--sortie", "kb/tickets/t1.md")
         for tid, agent in (("securite-1", "hosa-security"), ("juridique-1", "hosa-legal")):
-            self.assertEqual(run(k, "task", "add", "backlog", tid, "--agent", agent)[0], 0)
-        run(k, "task", "done", "backlog", "securite-1", "--sortie", "kb/tickets/t1.md")
-        code, out = run(k, "task", "add", "backlog", "juge-1", "--agent", "hosa-juge")
+            self.assertEqual(task("add", tid, "--agent", agent)[0], 0)
+        task("done", "securite-1", "--sortie", "kb/tickets/t1.md")
+        code, out = task("add", "juge-1", "--agent", "hosa-juge")
         self.assertEqual((code, "après `juridique-1`" in out), (1, True))
-        run(k, "task", "skip", "backlog", "juridique-1", "--detail", "pas encore d'analyse")  # skipped counts as closed
-        self.assertEqual(run(k, "task", "add", "backlog", "juge-1", "--agent", "hosa-juge")[0], 0)
+        task("skip", "juridique-1", "--detail", "pas encore d'analyse")  # skipped counts as closed
+        self.assertEqual(task("add", "juge-1", "--agent", "hosa-juge")[0], 0)
+
+    def test_the_backlog_judges_its_stories_alone(self):
+        """The backlog writes no note: its judge asks only the story and criteria questions, after `stories-*`."""
+        self.assertEqual({q["to"] for q in av.juge_items("backlog", "juge-1")}, {"stories-*"})
+        self.assertEqual({q["to"] for q in av.juge_items("sprint", "juge-1")}, {"notes-*", "securite-*", "juridique-*"})
 
     def test_task_rows_are_never_read_as_stages(self):
         run(self.k, "task", "add", "stack", "a", "--agent", "hosa-senior-dev")
@@ -1156,12 +1182,20 @@ class Graph(unittest.TestCase):
 
 
 def batch(k, n, tickets):
-    """A backlog batch `n` whose stories, security and legal notes are done on `tickets`, its judge's task added."""
+    """A backlog batch `n` whose stories are done on `tickets`, its judge's task added."""
     sortie = ",".join(f"kb/tickets/{t}.md" for t in tickets)
-    for tid, agent in (("stories", "hosa-product-owner"), ("securite", "hosa-security"), ("juridique", "hosa-legal")):
-        run(k, "task", "add", "backlog", f"{tid}-{n}", "--agent", agent)
-        run(k, "task", "done", "backlog", f"{tid}-{n}", "--sortie", sortie)
+    run(k, "task", "add", "backlog", f"stories-{n}", "--agent", "hosa-product-owner")
+    run(k, "task", "done", "backlog", f"stories-{n}", "--sortie", sortie)
     run(k, "task", "add", "backlog", f"juge-{n}", "--agent", "hosa-juge")
+
+
+def notes_batch(k, n, tickets, sprint="s1"):
+    """A sprint's batch `n` whose technical, security and legal notes are done on `tickets`, its judge's task added."""
+    sortie = ",".join(f"kb/tickets/{t}.md" for t in tickets)
+    for tid, agent in (("notes", "hosa-product-owner"), ("securite", "hosa-security"), ("juridique", "hosa-legal")):
+        run(k, "task", "add", "sprint", f"{tid}-{n}", "--sprint", sprint, "--agent", agent)
+        run(k, "task", "done", "sprint", f"{tid}-{n}", "--sprint", sprint, "--sortie", sortie)
+    run(k, "task", "add", "sprint", f"juge-{n}", "--sprint", sprint, "--agent", "hosa-juge")
 
 
 def closed_until(k, stage):
@@ -1447,6 +1481,35 @@ class Bounds(unittest.TestCase):
         (k / "infra").mkdir()
         (k / "infra" / "derniere-livraison-test.md").write_text("---\ntype: Infra\n---\n## Version\n1.0\n", encoding="utf-8")
         self.assertEqual(av.check(k, "livraison", "s1"), [])
+        # real use: an abuse case deferred while the project was explored is built before the release
+        (k / "tickets").mkdir()
+        (k / "tickets" / "a.md").write_text("---\ntype: Ticket\nstate: done\n---\n## Note sécurité (expert cybersécurité)\n"
+                                            "- **Cas d'abus** :\n  - fichier forgé — différé : usage exploratoire\n",
+                                            encoding="utf-8")
+        self.assertIn("a (done) : fichier forgé", av.check(k, "livraison", "s1")[0])
+        (k / "project").mkdir(exist_ok=True)
+        (k / "project" / "identity.md").write_text("---\ntype: Project\n---\n## Usage\nexploratoire\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "livraison", "s1"), [])
+
+    def test_infra_closes_on_what_it_ran_in_the_container(self):
+        """rieki: `main` red on lint and format, a container serving stale code, 15 tests only on the host, a browser
+        suite of 799 s — half of sprint 2, and « recette et test très lourde » at sprint 3."""
+        k = kb({"infra/environnement-docker.md": "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n"})
+        self.assertIn("aucune entrée `Infra` n'a de section `## Preuve de sortie`", av.upstream_check(k, "infra")[0])
+        proof = ("## Preuve de sortie\n- **Lint** : ruff check . — exit 0 — 2 s — 2026-11-17\n"
+                 "- **Format** : ruff format --check . — exit 1 — 1 s — 2026-11-17\n"
+                 "- **Tests** : pytest -q — exit 0 — 9 s — 2026-11-17\n"
+                 "- **Navigateur** : aucun — pas d'interface web\n")
+        (k / "infra" / "environnement-docker.md").write_text(
+            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + proof, encoding="utf-8")
+        self.assertEqual(av.upstream_check(k, "infra"), [
+            "`kb/infra/environnement-docker.md` `## Preuve de sortie` : **Format** sans `exit 0` — "
+            "ruff format --check . — exit 1 — 1 s — 2026-11-17",
+            "`kb/infra/environnement-docker.md` `## Preuve de sortie` : ligne **Rechargement** absente"])
+        fixed = proof.replace("exit 1", "exit 0") + "- **Rechargement** : fichier monté modifié, page servie changée — exit 0\n"
+        (k / "infra" / "environnement-docker.md").write_text(
+            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + fixed, encoding="utf-8")
+        self.assertEqual(av.upstream_check(k, "infra"), [])
 
     def test_one_writer_of_the_plan_at_a_time(self):
         import threading
@@ -1483,6 +1546,20 @@ class Bounds(unittest.TestCase):
                 av.proofs(k, "backlog", None)
             self.assertNotIn("--repetes", calls)
             self.assertIn("--regles", calls)
+
+    def test_backlog_closes_on_every_sprint_planned(self):
+        """Plan everything before the first sprint: the roadmap is the backlog's proof, its first milestone measuring
+        an objective of the identity."""
+        k = kb({"project/identity.md": "---\ntype: Project\n---\n## Objectifs mesurables\n| Id | Objectif |\n|---|---|\n"
+                                       "| O1 | battre la référence |\n"})
+        with unittest.mock.patch.object(av, "script", return_value=[]):
+            self.assertTrue(any("pas de `kb/project/feuille-de-route.md`" in g for g in av.proofs(k, "backlog", None)))
+            (k / "project" / "feuille-de-route.md").write_text("---\ntype: Feuille de route\n---\n## Jalons\n"
+                                                               "- [A](../tickets/a.md) (`a`)\n", encoding="utf-8")
+            self.assertTrue(any("ne mesure aucun objectif" in g for g in av.proofs(k, "backlog", None)))
+            (k / "project" / "feuille-de-route.md").write_text("---\ntype: Feuille de route\n---\n## Jalons\n"
+                                                               "- [A](../tickets/a.md) (`a`) — mesure O1\n", encoding="utf-8")
+            self.assertFalse(any("feuille" in g or "objectif" in g for g in av.proofs(k, "backlog", None)))
 
     def test_the_graph_names_only_what_exists(self):
         stages = {s for _, ss in av.PIPELINES for s in ss} | set(av.SPRINT)

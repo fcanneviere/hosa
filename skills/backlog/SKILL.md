@@ -1,23 +1,24 @@
 ---
 name: backlog
-description: "Use to turn every stable Exigence into Product Backlog tickets — vertical slices with `depends_on`, story and criteria (PO), grounded technical, architecture and interface notes, security and legal notes whose abuse cases and legal constraints are criteria; `nfr` exigences become the definition of done; also refines vague `todo` tickets. Structuration stage 9. Triggers: \"crée le product backlog\", after `interface`."
+description: "Use to turn every stable Exigence into Product Backlog tickets planned at once — vertical slices with story, criteria, `depends_on` and estimate, judged, then the roadmap whose first milestone measures an objective; notes come at the sprint; `nfr` exigences become the definition of done; also completes one ticket. Structuration stage 9. Triggers: \"crée le product backlog\", after `interface`."
 ---
 
 # Backlog
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (Single-Ticket Mode excepted: not a stage, no call): `avancement.py start backlog`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block backlog --detail "<question>"`. Once the stage's output is written and committed: `done backlog`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
+**Plan everything, detail just in time.** This stage writes every ticket's story, criteria, `depends_on` and `estimate`, then the roadmap: what the graph needs, and the cheap part. The five notes are `sprint`'s, for the tickets of the next sprint only (`notes-<k>` → `securite-<k>`, `juridique-<k>` → `juge-<k>`). rieki wrote the notes of 128 tickets up front: about 61 $, 27 % of the project, and 22 of them used after three sprints; the others went stale (« classe existe sans méthode ») or out of the plan. `ticket_check --planifiable` is this stage's proof: an absent note is an `(à détailler)` line, not a gap here.
+
 **Tâches.** A lot is **8 tickets at most**, not 8 exigences (rieki: 2 exigences gave 52 tickets, one pass wrote 39 of them up to 273 k tokens of context). `task done stories-<k>` refuses more (`lot`, pipeline.json). An exigence that splits into more: its first pass decides the whole split, writes the first 8 and lists the others under `## Reprise` (slug — scope — `depends_on`, one line each); the next pass is `stories-<k>b` on that list.
-A lot is a graph of four tasks, the judge last: `stories-<k>` → `securite-<k>` and `juridique-<k>` → `juge-<k>`. Each is refused at `task add` before the ones it comes after are done or skipped (`after`, pipeline.json).
+A lot is two tasks, the judge last: `stories-<k>` → `juge-<k>`. The judge's task is refused at `task add` before its stories are done (`after`, pipeline.json).
 - `avancement.py task add backlog stories-<k> --agent hosa-product-owner --objet "<exigences, tickets>"`; on its return, `task done backlog stories-<k> --sortie <the ticket paths>`.
-- Then `task add` `securite-<k>` (`hosa-security`) and `juridique-<k>` (`hosa-legal`) with `--objet "lot <k>"`, dispatched together; each return → `task done backlog <id> --sortie <the ticket paths it completed>`. A security or legal analysis still missing (fallback line) → `task skip backlog securite-<k> --detail "pas encore d'analyse"`. A `securite` or `juridique` stage the plan marks `non applicable` (the user set it aside) → no agent: `task skip backlog juridique-<k> --detail "étape écartée"`, then `<hosa> ticket_check .hosa/kb --ecartees <the lot's ticket paths>` writes the note `Non applicable — étape … écartée : <the plan's detail>` in each ticket, and the checker accepts it while the plan keeps that status.
 - A `## Reprise` report → `task add` a new id (`<id>b`) for what it lists, then `task done` the cut one with what it did write.
-- Then `task add backlog juge-<k> --agent hosa-juge --objet "lot <k>"`, dispatch `hosa-juge` with `backlog juge-<k>` and the slugs of the lot's tickets, and `task done backlog juge-<k> --sortie <the verdict path it gives>`. The judge judges each ticket once, complete: story, criteria, security and legal notes. Its report says the extract is too long for one judge → dispatch one `hosa-juge` per group it lists, together, then `task done` once.
-- Refused by `juge-Qn` → each Non is already sent back: the refusal lists, per task it reopened (`stories-<k>`, `securite-<k>` or `juridique-<k>`, the `to` of its question), the exact lines. Dispatch a fresh agent of each reopened task on its refused tickets only, with those lines as they are; `task done` its task; then `hosa-juge` on the corrected tickets only (`juge backlog juge-<k> --tickets …`) and `task done backlog juge-<k>` again — never the whole lot: each ticket keeps its newest verdict. A PO correction that makes a security or legal note wrong is caught by the same judgment, and sent on. Refused as `plus ancien que le ticket` → the judge on the slugs it lists. At the bound (2 rounds of one question, or a ticket judged 3 times) it stops: show the user what each round refused.
+- Then `task add backlog juge-<k> --agent hosa-juge --objet "lot <k>"`, dispatch `hosa-juge` with `backlog juge-<k>` and the slugs of the lot's tickets, and `task done backlog juge-<k> --sortie <the verdict path it gives>`. The judge asks the story and criteria questions only. Its report says the extract is too long for one judge → dispatch one `hosa-juge` per group it lists, together, then `task done` once.
+- Refused by `juge-Qn` → each Non is already sent back: the refusal lists the exact lines per ticket and reopens `stories-<k>`. Dispatch a fresh `hosa-product-owner` on its refused tickets only, with those lines as they are; `task done` its task; then `hosa-juge` on the corrected tickets only (`juge backlog juge-<k> --tickets …`) and `task done backlog juge-<k>` again — never the whole lot: each ticket keeps its newest verdict. Refused as `plus ancien que le ticket` → the judge on the slugs it lists. At the bound (2 rounds of one question, or a ticket judged 3 times) it stops: show the user what each round refused.
 
-**Dispatch.** `budget.js` applies pipeline.json's `dispatch` for `backlog`: **2 Hosa agents at once** at most (the judge of lot k beside the PO of lot k+1), and `hosa-security` and `hosa-legal` with `model: "sonnet"` (notes de tickets; their threat model, audits and gates stay on Opus). Four agents at once used up the 5-hour limit in 21 minutes on rieki. An agent cut by a limit or a pause is **not resumed** with `SendMessage`: its cache lasts 5 minutes, and a message writes its whole context again (rieki: 460 k for one agent). Dispatch a fresh one with its `## Reprise` and the files it wrote — refused past 5 minutes and 50 k tokens.
+**Dispatch.** `budget.js` applies pipeline.json's `dispatch` for `backlog`: **2 Hosa agents at once** at most (the judge of lot k beside the PO of lot k+1). Four agents at once used up the 5-hour limit in 21 minutes on rieki. An agent cut by a limit or a pause is **not resumed** with `SendMessage`: its cache lasts 5 minutes, and a message writes its whole context again (rieki: 460 k for one agent). Dispatch a fresh one with its `## Reprise` and the files it wrote — refused past 5 minutes and 50 k tokens.
 
-Turns "what the application must do" (the stable cahier des charges) into Product Backlog tickets — each one carrying the business story, its technical feasibility, where it lands in the architecture, and where it lands in the interface, so nothing enters `kb/tickets/` disconnected from the technical reality already decided by `stack`, `architecture`, and `interface`.
+Turns "what the application must do" (the stable cahier des charges) into Product Backlog tickets — each one a vertical slice with its story, its criteria, its dependencies and its size, so the whole roadmap is computed from the graph before the first sprint. Each ticket gets its technical feasibility, its place in the architecture and the interface, and its security and legal notes when it enters a sprint, against the code as it is then.
 
 ## Flow
 
@@ -25,29 +26,27 @@ Turns "what the application must do" (the stable cahier des charges) into Produc
 Exigences non fonctionnelles [nfr] → définition de terminé
 (kb/rules/design/definition-de-termine.md), vérifiée sur chaque ticket
         ↓
-Exigences stables sans ticket lié, et tickets todo à préciser
+Exigences stables sans ticket lié
         ↓
-Par lot de 8 tickets au plus, un graphe de 4 tâches :
+Par lot de 8 tickets au plus :
 stories-<k> (hosa-product-owner) : découpe, depends_on, story,
-critères, note technique, placements architecture et interface
+critères, estimation — aucune note
         ↓
-securite-<k> (hosa-security) et juridique-<k> (hosa-legal),
-dispatchés ensemble : notes, cas d'abus et contraintes → critères
-        ↓
-juge-<k> (hosa-juge) : chaque Non rouvre sa tâche, sur ses
-seuls tickets, avec les lignes exactes
+juge-<k> (hosa-juge) : story et critères ; chaque Non rouvre
+stories-<k>, sur ses seuls tickets, avec les lignes exactes
         ↓
 Dernier lot jugé → ticket_check --regles : chaque RGn/CEn
 cité par un critère ; ticket_check --repetes : chaque
 comportement porté par un seul ticket
         ↓
-Priorités et jalons du parcours (l'utilisateur valide les deux
-en une réponse), estimations, feuille de route calculée
+Priorités et jalons (l'utilisateur valide les deux en une
+réponse) : le premier jalon mesure un objectif de l'identité
+(--mesure On) ; feuille de route calculée
         ↓
 Log kb/tickets/log.md → checkpoint hosa-git : socle encore
 non commité, puis KB
         ↓
-Enchaîne sur `sprint`
+Enchaîne sur `sprint` : il détaille les tickets de son sprint
 ```
 
 ## Trigger
@@ -56,24 +55,28 @@ Manual: `/backlog`. Auto: immediately after `interface`, or "crée le product ba
 
 Single-ticket mode: `/backlog <slug-ticket>`, or chained by any skill that just created a `Ticket` — see **Single-Ticket Mode** below. A ticket is born complete: no skill reports a new ticket before this mode has run on it.
 
-## Ticket complet
+## Ticket planifiable, ticket complet
 
-A ticket is ready to be planned (`sprint`) and executed (`develop`, `qa-plan`) when it has all of:
+A ticket is **planifiable** — the roadmap places it, this stage closes on it — when it has:
 - a story (`En tant que … je veux … afin de …`) and a `Lié à :` line — to its `Exigence`, or, for a ticket born outside the cahier des charges (bug, recette gap, audit finding, change impact, sprint follow-up), to the concept that surfaced it;
 - `## Critères d'acceptation` with at least one Given/When/Then scenario;
-- real `## Note technique (senior dev)`, `## Placement architecture (architecte)`, `## Placement interface (UX/UI)`, `## Note sécurité (expert cybersécurité)` and `## Note juridique (expert conformité)` notes — not the fallback lines below; the security or legal note of a stage the plan marks `non applicable` is the line `ticket_check --ecartees` writes;
-- each abuse case of the security note and each legal constraint of the legal note tied to its acceptance criterion (`→ CAn`): security and compliance are built and tested with the ticket, not found at the audit, the recette or the release gate;
-- a `priority`, unless the user explicitly answered "pas encore";
+- an `estimate` and a `priority`, unless the user explicitly answered "pas encore";
 - a `depends_on` (when present) naming existing tickets, with no cycle (a dependency ranked after it is only reported: the roadmap builds from the graph, `priority` breaks ties);
 - no criterion testing a button another ticket brings (`clique sur « … »` in its criteria) unless that ticket is in its `depends_on` or the code has the button, and none conditional (« dès qu'il existe ») — `HOSA_LIBELLES=0` turns this check off.
+
+A ticket is **complete** — ready to be built (`develop`, `qa-plan`) — when it also has:
+- real `## Note technique (senior dev)`, `## Placement architecture (architecte)`, `## Placement interface (UX/UI)`, `## Note sécurité (expert cybersécurité)` and `## Note juridique (expert conformité)` notes — not the fallback lines below; a stage the plan marks `non applicable` needs no note at all;
+- each abuse case of the security note and each legal constraint of the legal note tied to its acceptance criterion (`→ CAn`): security and compliance are built and tested with the ticket, not found at the audit, the recette or the release gate. While `## Usage` of `kb/project/identity.md` is `exploratoire`, an abuse case may say `— différé : usage exploratoire` instead (`hosa-security` Mode 5); `livraison` refuses real use while one is left (`ticket_check --differes`).
+
+`sprint` makes the tickets of its sprint complete; Single-Ticket Mode makes one ticket complete.
 
 The checker is the source of truth — run it from the managed project's root, with any Python 3.9+:
 
 ```bash
-<hosa> ticket_check .hosa/kb [.hosa/kb/tickets/<slug>.md ...]
+<hosa> ticket_check .hosa/kb [--planifiable] [.hosa/kb/tickets/<slug>.md ...]
 ```
 
-No ticket given → every `state: todo` ticket. Exit `0` = all complete, `1` = gaps listed per ticket.
+No ticket given → every `state: todo` ticket. Exit `0` = all complete (planifiable with `--planifiable`), `1` = gaps listed per ticket.
 
 **Rules × criteria.** Once the last lot is judged, before `done backlog`:
 
@@ -95,7 +98,7 @@ It lists each criterion of a `todo` ticket that another ticket of the same exige
 
 ## Step 1: Scope
 
-List every `stable` `Exigence` (`kb_query.py .hosa/kb --type Exigence --where status=stable`), except those tagged `nfr` (Step 1b). For each one, `kb_query.py .hosa/kb --type Ticket --grep "cdc/<slug>.md"` lists the tickets that link to it — check every existing `Ticket` in `kb/tickets/` for a markdown link pointing back to that `Exigence`'s file — if one already links to it, skip it; a re-run of `backlog` only fills gaps, it never recreates or overwrites a ticket. Also collect every `state: todo` ticket with no `sprint` whose notes miss the Grounding Rule below — free prose instead of the bullets (a security note that only lists rule names), a bullet without a real reference, an abuse case or legal constraint with no `→ CAn`, a missing legal note, or a fallback line whose stage now exists: it is **refined** (those sections rewritten, the criteria they need appended, nothing else). The checker lists them all. Nothing left to create or refine → say so and stop.
+List every `stable` `Exigence` (`kb_query.py .hosa/kb --type Exigence --where status=stable`), except those tagged `nfr` (Step 1b). For each one, `kb_query.py .hosa/kb --type Ticket --grep "cdc/<slug>.md"` lists the tickets that link to it — check every existing `Ticket` in `kb/tickets/` for a markdown link pointing back to that `Exigence`'s file — if one already links to it, skip it; a re-run of `backlog` only fills gaps, it never recreates or overwrites a ticket. A `state: todo` ticket whose story or criteria the checker refuses (`--planifiable`) is **refined**: those parts rewritten, nothing else. Its notes are `sprint`'s. Nothing left to create or refine → say so and stop.
 
 ## Step 1b: Definition of Done
 
@@ -124,28 +127,27 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 
 A target still "pas encore de chiffre" → the item says so; `qa-plan` then tests nothing for it, and the report says it. An `nfr` exigence that also needs something built (a data export for the right of access, a backup job) → its feature part gets a ticket, like any other exigence. Update this file in place on a re-run; log it to `kb/rules/design/log.md`.
 
-## Steps 2-5c: Write the Tickets
+## Step 2: Write the Tickets
 
-What each ticket holds — the split, the story, the criteria, the Grounding Rule and the five notes — is in `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md`, the one file the writing agents read (give them its path, never this skill):
-- Steps 2-5, `hosa-product-owner`, one `stories-<k>` pass of 8 tickets at most: split, story and criteria, technical note (senior dev role), architecture placement, interface placement. Each pass gets its exigence paths, the slugs already written (for `depends_on`) and, from the second pass of an exigence on, the `## Reprise` split of the first.
-- Step 5b, `hosa-security` (Mode 5 — Notes de tickets), `securite-<k>` with the lot's ticket paths: security note, each abuse case a criterion.
-- Step 5c, `hosa-legal` (Mode 3 — Notes de tickets), `juridique-<k>`, same lot: legal note, each legal constraint a criterion.
+What each ticket holds is in `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md`, the one file the writing agents read (give them its path, never this skill). Here, `hosa-product-owner` runs its Step 2 only, one `stories-<k>` pass of 8 tickets at most: the split, the story, the criteria, `depends_on` and `estimate`. Each pass gets its exigence paths, the slugs already written (for `depends_on`), the architecture's module map (`kb/infra/` `## Documentation d'architecture`: a ticket that needs another one's table, module or screen depends on it) and, from the second pass of an exigence on, the `## Reprise` split of the first. Steps 3-5c (the five notes) run in `sprint`, and in Single-Ticket Mode below.
 
 ## Step 6: Priority and Estimate
 
-Once every ticket for this run is written, propose an order and ask the user once: "Je propose cet ordre pour ces N tickets ; je l'applique ? (oui, un autre ordre, ou 'pas encore' pour laisser sans priorité)". The proposal puts the main persona journey first, end to end, one thin ticket per step (rieki: after three sprints, import → nettoyage → run → résultats had no run yet, while polish of the Résultats screen ranked 9). Variants, polish and secondary screens come after the journey step they improve. It puts every ticket after the tickets in its `depends_on`, and the security and compliance mechanisms (Step 2) right after the first slice that makes them usable — never in a block at the end. An order from the user that ranks a ticket before one of its dependencies is harmless: the roadmap builds from the graph, the rank only breaks ties. Given an order, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. Then copy each ticket's `Complexité` (written by the `stories-<k>` pass, `redaction-tickets.md`) into its `estimate` — a copy, no judgment of yours —, in points — the one unit `sprint`, `develop` and the sprint reviews count: `1` (≤ ½ day), `2` (about 1 day) or `3` (2-3 days). Show them in the report; the user can correct any. Bigger than 3 → split it, as in Step 2.
+Once every ticket for this run is written, propose an order and ask the user once: "Je propose cet ordre pour ces N tickets ; je l'applique ? (oui, un autre ordre, ou 'pas encore' pour laisser sans priorité)". The proposal puts the main persona journey first, end to end, one thin ticket per step (rieki: after three sprints, import → nettoyage → run → résultats had no run yet, while polish of the Résultats screen ranked 9). Variants, polish and secondary screens come after the journey step they improve. It puts every ticket after the tickets in its `depends_on`, and the security and compliance mechanisms (Step 2) right after the first slice that makes them usable — never in a block at the end. An order from the user that ranks a ticket before one of its dependencies is harmless: the roadmap builds from the graph, the rank only breaks ties. Given an order, write `priority: <rang>` (1 = le plus urgent) into each ticket's frontmatter in that order; tickets left unprioritized keep no `priority` field rather than an invented one — `sprint` treats those as lowest priority, after every explicitly ranked ticket. The `stories-<k>` pass wrote each ticket's `estimate` (`redaction-tickets.md`) — no judgment of yours —, in points — the one unit `sprint`, `develop` and the sprint reviews count: `1` (≤ ½ day), `2` (about 1 day) or `3` (2-3 days). Show them in the report; the user can correct any. Bigger than 3 → split it, as in Step 2.
 
-**Milestones and roadmap.** In the same question, propose the milestones: the tickets that end each step of the main persona journey, in order (rieki: import des ventes → nettoyage → run → graphique de prévision), each a result a persona sees at a demo. A ticket that must come by a given step (a security fix, a legal page) is a milestone too, placed there. Once the user validated them, compute every sprint:
+**Milestones and roadmap.** In the same question, propose the milestones. **The first one measures an objective** of `## Objectifs mesurables` (`kb/project/identity.md`): the ticket whose demo shows that objective's indicator, reached by the shortest path — the thinnest ticket of each step before it, no variant, no polish, no hardening the path doesn't need. rieki, « exploratoire : tester Timestral », O1 « Timestral bat la méthode simple sur 70 % des séries »: after 221 $ and three sprints its three milestones were all in Importer, and no forecast had run; the first milestone was « le WAPE de Timestral face à la référence, à l'écran ». The next ones are the tickets that end each step of the main persona journey, in order (rieki: import des ventes → nettoyage → run → graphique de prévision), each a result a persona sees at a demo. A ticket that must come by a given step (a security fix, a legal page) is a milestone too, placed there. Once the user validated them, compute every sprint:
 
 ```bash
-<hosa> graphe_tickets .hosa/kb feuille --jalons <slug>,<slug>,… --ecrire
+<hosa> graphe_tickets .hosa/kb feuille --jalons <slug>,<slug>,… --mesure <On> --ecrire
 ```
 
-It writes `kb/project/feuille-de-route.md`: `## Jalons` as validated, then each sprint computed from the graph (each milestone's whole path in order, cut at whole sub-paths over the bounds, then the tickets no milestone needs by priority), the blocked milestones and the tickets to complete. `sprint` takes the next one and recomputes it; the user validates the milestones once, not each sprint. A blocked milestone or a ticket to complete → the refinement of Step 1, at once.
+`--mesure` names the objective the first milestone measures; `feuille` refuses `--jalons` without it while the identity has objectives, and `done sprint` refuses a roadmap whose first milestone measures none.
+
+It writes `kb/project/feuille-de-route.md`: `## Jalons` as validated, then each sprint computed from the graph (each milestone's whole path in order, cut at whole sub-paths over the bounds, then the tickets no milestone needs by priority), the blocked milestones and the tickets to complete. `sprint` takes the next one, recomputes it and details its tickets; the user validates the milestones once, not each sprint. A blocked milestone or a ticket to complete → the refinement of Step 1, at once.
 
 ## Step 7: Log and Check
 
-Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9. Then run the checker (see **Ticket complet**) on the tickets just written and report any gap it lists.
+Log each ticket created (and its `priority`/`estimate` once set) to `kb/tickets/log.md` (create if missing) — chronological, most recent date first, per OKF §9. Then run the checker with `--planifiable` on the tickets just written and report any gap it lists.
 
 ## Step 8: Checkpoint
 
@@ -153,12 +155,12 @@ Every structuration skill ends with its `hosa-git` checkpoint, so the foundation
 
 ## Single-Ticket Mode
 
-Not a stage: no `start`, no `done` — the `backlog` stage stays as it is. Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already meets the Grounding Rule.
+Not a stage: no `start`, no `done` — the `backlog` stage stays as it is. Run on one existing `Ticket` — created by `hosa-product-owner` from `qa`, `recette`, `debug`, `qualite`, `changement`, `bilan-sprint`, by the `hosa` free-form flow, or by hand. Fills only what's missing; never rewrites a section that already meets the Grounding Rule. It makes the ticket complete, notes included: a ticket born from a finding is usually built next.
 
 1. Run the checker on the ticket. Already complete → say so and stop.
 2. Story, `Lié à :` or `## Critères d'acceptation` missing → dispatch `hosa-product-owner` (Responsibility 4) to add them, with the concept that surfaced the ticket. It returns an Open Question instead of guessing a persona or a scenario — ask the user and redispatch.
 2b. A checker line with one fix — a `depends_on` to add, a criterion to move to the ticket it names, one behaviour in two tickets, a table's first writer — → dispatch `hosa-product-owner` (Responsibility 4, Graph fixes) with those exact lines, on every ticket they name. No question: the line is the decision. Then `graphe_tickets … feuille --ecrire` recomputes the roadmap.
-3. Each of the five notes missing, still on its fallback line or failing the checker → write it as in Steps 3-5c (`hosa-security` and `hosa-legal` for theirs, with the criteria they append). A ticket born from an audit finding keeps the finding's `fichier:ligne` in its technical note, and its security note names the rule the finding broke. If the stage a note depends on still hasn't run (no `Stack Decision`, no architecture or interface doc, no security or legal analysis), keep the fallback line and say which stage is missing — that's the only case where a ticket legitimately stays incomplete.
+3. Each of the five notes missing, still on its fallback line or failing the checker → write it as in `redaction-tickets.md` Steps 3-5c (`hosa-product-owner` for the first three, `hosa-security` and `hosa-legal` for theirs, with the criteria they append; none for a stage the plan marks `non applicable`). A ticket born from an audit finding keeps the finding's `fichier:ligne` in its technical note, and its security note names the rule the finding broke. If the stage a note depends on still hasn't run (no `Stack Decision`, no architecture or interface doc, no security or legal analysis), keep the fallback line and say which stage is missing — that's the only case where a ticket legitimately stays incomplete.
 4. No `priority` → propose a rank in the current backlog — after its `depends_on`, and a security or compliance fix before the tickets that build on the flawed code — and ask the user ("je le place en N, avant <ticket> ?", or "pas encore"). Given a rank, write it and shift every other `todo` ticket at that rank or below by one, so ranks stay unique and whole. Then set its `estimate`, same rules as Step 6.
 5. If the ticket was created during an `active` sprint, ask whether it joins that sprint now or waits for the next one; only write `sprint: <slug>` (and add it to the sprint's `## Tickets`) on an explicit yes — `sprint`'s readiness guard is what this mode just satisfied. Then run `qa-plan` for it: a ticket joins a sprint with its tests, like every other.
 6. Log every change to `kb/tickets/log.md` (and `kb/sprints/log.md` if Step 5 added it), then rerun the checker and report its line for this ticket.

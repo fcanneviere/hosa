@@ -345,3 +345,35 @@ dialog::backdrop { background: rgba(10, 10, 8, .4); }
   input, select, textarea, .flt select, .tcard select, textarea.fm, .editor textarea { font-size: 16px; }
   .crumbs a, .lnk, .tcard a.tt, .rem .row a, .list a, td a, .card-h a { display: inline-block; min-height: 24px; padding: 3px 0; }
 }
+
+/* --- graphe des tickets ------------------------------------------------------------- */
+.tg-cols { grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr); }
+.tg-wrap { overflow: auto; max-height: 74vh; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.tg { display: block; }
+.tg .e { fill: none; stroke: var(--line-2); stroke-width: 1.3; }
+.tg .e.hl { stroke: var(--accent); stroke-width: 2.2; }
+.tg marker path { fill: var(--line-2); }
+.tg .n { cursor: pointer; }
+.tg .n:focus { outline: none; }
+.tg .n rect { fill: var(--surface-2); stroke: var(--line-2); stroke-width: 1.2; }
+.tg .n.done rect { fill: var(--ok-soft); stroke: var(--ok); }
+.tg .n.sprint rect { fill: var(--accent-soft); stroke: var(--accent-line); }
+.tg .n.bad rect { fill: var(--bad-soft); stroke: var(--bad); }
+.tg .n.det rect { stroke: var(--warn); stroke-dasharray: 5 3; }
+.tg .n.jalon rect { stroke-width: 2.6; }
+.tg .n.match rect { stroke: var(--act); stroke-width: 2.6; }
+.tg .n.sel rect, .tg .n:focus-visible rect { stroke: var(--act); stroke-width: 3.4; }
+.tg .n text { fill: var(--ink); font: 600 12.5px var(--sans); }
+.tg .n text.sub { fill: var(--muted); font: 500 11px var(--sans); }
+.tg .n:hover rect { stroke: var(--accent); }
+.tg.has-sel .n:not(.hl) { opacity: .3; }
+.tg.has-sel .e:not(.hl) { opacity: .14; }
+.tg-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 14px; font-size: 12.5px; color: var(--muted); }
+.tg-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.tg-legend .sw { width: 14px; height: 10px; border-radius: 3px; border: 1.5px solid var(--line-2); background: var(--surface-2); }
+.tg-legend .sw.done { background: var(--ok-soft); border-color: var(--ok); }
+.tg-legend .sw.sprint { background: var(--accent-soft); border-color: var(--accent-line); }
+.tg-legend .sw.bad { background: var(--bad-soft); border-color: var(--bad); }
+.tg-legend .sw.det { border-color: var(--warn); border-style: dashed; }
+@media (max-width: 1100px) { .tg-cols { grid-template-columns: minmax(0, 1fr); } .tg-wrap { max-height: 60vh; } }
+.tg .n:focus-visible { outline: 3px solid var(--act); outline-offset: 3px; }

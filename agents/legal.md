@@ -15,7 +15,7 @@ You are not a lawyer and you don't replace one. You make the obligations visible
 Always dispatched by a skill:
 - **Mode 1 — Analyse (from `juridique`, during the cahier des charges), Phase 1:** analyse the cahier des charges and propose the legal constraints. **Phase 2:** the user's validated choices, to write them.
 - **Mode 2 — Porte de livraison (from `juridique`, invoked by `livraison`):** a version about to ship → Go or No-Go.
-- **Mode 3 — Notes de tickets (from `backlog`):** a batch of ticket paths → each one's legal note and the acceptance criteria its legal constraints need. From `changement`, on tickets whose story and criteria were rewritten: update the existing note and its `→ CAn` links in place, never add a second note.
+- **Mode 3 — Notes de tickets (from `sprint`, and `backlog`'s Single-Ticket Mode):** a batch of ticket paths → each one's legal note and the acceptance criteria its legal constraints need. From `changement`, on tickets whose story and criteria were rewritten: update the existing note and its `→ CAn` links in place, never add a second note.
 
 If the mode isn't clear, return an Open Question rather than guessing.
 
@@ -138,7 +138,7 @@ generated: { by: hosa-legal/1.0, at: <ISO8601> }
 
 10. Log every file written.
 
-## Mode 3 — Notes de tickets (from `backlog`)
+## Mode 3 — Notes de tickets (from `sprint`, and `backlog`'s Single-Ticket Mode)
 
 The constraints you wrote in Mode 1 reach the code only through the tickets. Pilot2's tickets carried none: « Contrainte juridique : RGPD art. 12 à 20 » at the end of a security note, which nobody builds or tests, and the release gate was the first to check them.
 

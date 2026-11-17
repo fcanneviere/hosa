@@ -28,8 +28,17 @@ A ticket is complete when it has, in its body:
     `- CA2 [IN1] — …`) in force in an exigence of its `Lié à :` line, and a
     criterion citing an indicator stating its expected value (a number).
 
-Run:  python ticket_check.py <kb-dir> [ticket.md ...]
+A ticket whose notes are all still absent is *planifiable*: `backlog` writes the story, the criteria,
+`depends_on` and `estimate` of every ticket, and `sprint` writes the notes of the tickets it takes. The
+absent notes come back as `(à détailler)` lines; a stage the plan marks `non applicable` needs no note.
+An abuse case of the security note may say `— différé : usage exploratoire` instead of `→ CAn` while
+kb/project/identity.md says `## Usage` : exploratoire.
+
+Run:  python ticket_check.py <kb-dir> [--planifiable] [ticket.md ...]
       No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
+      `--planifiable`: the `(à détailler)` lines don't count (`backlog`'s proof, the roadmap).
+      python ticket_check.py <kb-dir> --differes
+      Every deferred abuse case, done tickets included; exit 1 when `## Usage` is no longer exploratoire.
       python ticket_check.py <kb-dir> --ecartees [ticket.md ...]
       First writes that `Non applicable` line in the tickets whose security or
       legal note is absent, empty or on its fallback line while the plan marks
@@ -62,6 +71,12 @@ SECTIONS = {
     "## Note juridique (expert conformité)": "Analyse juridique pas encore faite",
 }
 
+
+# The five notes: written when the ticket enters a sprint (`sprint`, tasks `notes-<k>` → `securite-<k>`,
+# `juridique-<k>` → `juge-<k>`), not by `backlog`. A ticket without them is planned (`--planifiable`), not built:
+# rieki wrote 128 tickets' notes up front (≈ 61 $, 27 % of the project) and used 22 of them after 3 sprints.
+NOTES = tuple(list(SECTIONS)[1:])
+TO_DETAIL = "(à détailler)"
 
 BULLETS = {
     "## Note technique (senior dev)": ("Contrat", "Règles et validations", "Tests à écrire", "Complexité"),
@@ -275,21 +290,57 @@ def bullet_items(content: str, label: str) -> list[str]:
     return items
 
 
-def untraced(heading: str, content: str) -> list[str]:
+# An abuse case set aside while the project is only explored (`## Usage` : exploratoire, kb/project/identity.md): no
+# criterion yet, built before real use. rieki, a local single-user test of a forecasting model: 6 of its first 26
+# tickets hardened the import, and after 3 sprints no forecast had run.
+DEFERRED = re.compile(r"—\s*différé\s*:\s*usage exploratoire", re.I)
+EXPLORATORY = "exploratoire"
+
+
+def usage(kb: Path) -> str:
+    """The project's `## Usage` (kb/project/identity.md): `exploratoire` or `réel`. Absent → `réel`: full security."""
+    ident = kb / "project" / "identity.md"
+    content = section(split(ident.read_text(encoding="utf-8"))[1], "## Usage") if ident.is_file() else None
+    first = next((x.strip().strip("*").strip().lower() for x in (content or "").splitlines() if x.strip()), "")
+    return EXPLORATORY if first.startswith(EXPLORATORY) else "réel"
+
+
+def untraced(heading: str, content: str, exploratory: bool = False) -> list[str]:
     label = TRACED.get(heading)
     if not label:
         return []
-    return [f"`{heading[3:]}` : « {item[:60]} » sans critère (`→ CAn`)"
-            for item in bullet_items(content, label)
-            if not re.match(r"aucun", item, re.I) and not CA_REF.search(item)]
+    out = []
+    for item in bullet_items(content, label):
+        if re.match(r"aucun", item, re.I) or CA_REF.search(item):
+            continue
+        if DEFERRED.search(item) and heading == "## Note sécurité (expert cybersécurité)":
+            if not exploratory:
+                out.append(f"`{heading[3:]}` : « {item[:60]} » différé alors que l'usage est réel (`## Usage`, "
+                           "identity.md) : son critère (`→ CAn`)")
+            continue
+        out.append(f"`{heading[3:]}` : « {item[:60]} » sans critère (`→ CAn`)")
+    return out
 
 
-def grounding(heading: str, content: str) -> list[str]:
+def deferred_cases(kb: Path) -> list[str]:
+    """Every abuse case deferred for exploratory use, done tickets included: what real use must build first."""
+    out = []
+    for f in sorted((kb / "tickets").glob("*.md")) if (kb / "tickets").is_dir() else []:
+        front, body = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") != "Ticket":
+            continue
+        note = section(body, "## Note sécurité (expert cybersécurité)") or ""
+        out += [f"{f.stem} ({field(front, 'state') or 'todo'}) : {item}"
+                for item in bullet_items(note, "Cas d'abus") if DEFERRED.search(item)]
+    return out
+
+
+def grounding(heading: str, content: str, exploratory: bool = False) -> list[str]:
     out = []
     for label in BULLETS.get(heading, ()):
         if not re.search(rf"^\s*[-*]\s+\*\*{re.escape(label)}\*\*\s*:", content, re.M):
             out.append(f"`{heading[3:]}` : puce « {label} » absente")
-    out += untraced(heading, content)
+    out += untraced(heading, content, exploratory)
     for line in content.splitlines():
         if re.search(r"\binconnu\s+—", line):
             out.append(f"`{heading[3:]}` : « {line.strip()[:60]} » encore inconnu")
@@ -623,13 +674,18 @@ def gaps(path: Path) -> list[str]:
     if field(front, "type") != "Ticket":
         return ["pas un `Ticket` (type manquant ou différent)"]
     missing, skipped = [], skipped_stages(path.parent.parent)
+    exploratory = usage(path.parent.parent) == EXPLORATORY
     if not re.search(r"^En tant qu(?:e\b|['’])", body, re.M):  # « En tant qu'administrateur » is a story too (rieki)
         missing.append("story « En tant que … » absente")
     if not re.search(r"^Lié à\s*:", body, re.M):
         missing.append("ligne « Lié à : » absente")
     for heading, fallback in SECTIONS.items():
         content = section(body, heading)
-        if content is None:
+        if content is None and STAGE.get(heading) in skipped:
+            continue  # a stage the user set aside needs no note at all (rieki: 44 KB of « Non applicable » lines)
+        if content is None and heading in NOTES:
+            missing.append(f"{TO_DETAIL} section `{heading}` absente")
+        elif content is None:
             missing.append(f"section `{heading}` absente")
         elif not content:
             missing.append(f"section `{heading}` vide")
@@ -644,7 +700,7 @@ def gaps(path: Path) -> list[str]:
         elif fallback is None and not re.search(r"^\s*[-*] \S", content, re.M):
             missing.append(f"section `{heading}` sans aucun scénario")
         else:
-            missing += grounding(heading, content)
+            missing += grounding(heading, content, exploratory)
     criteria = {c[2:] for c in criteria_ids(section(body, "## Critères d'acceptation"))}
     for heading in list(SECTIONS)[1:]:
         cited = (n for tail in re.findall(r"(?:→|->)(.*)", section(body, heading) or "")
@@ -703,11 +759,13 @@ def late_dependencies(path: Path, front: str) -> list[str]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
-        print("usage: ticket_check.py <kb-dir> [--ecartees] [ticket.md ...] | <kb-dir> --regles | <kb-dir> --repetes",
+        print("usage: ticket_check.py <kb-dir> [--ecartees] [--planifiable] [ticket.md ...] | <kb-dir> --regles"
+              " | <kb-dir> --repetes | <kb-dir> --differes",
               file=sys.stderr)
         return 2
     fill = "--ecartees" in argv
-    argv = [a for a in argv if a != "--ecartees"]
+    plannable = "--planifiable" in argv
+    argv = [a for a in argv if a not in ("--ecartees", "--planifiable")]
     kb = Path(argv[0])
     if not kb.is_dir():
         print(f"error: {kb} is not a directory", file=sys.stderr)
@@ -716,6 +774,12 @@ def main(argv: list[str]) -> int:
         lacking = rule_coverage(kb)
         print("\n".join(lacking) if lacking else "Règles : chaque règle numérotée d'une exigence découpée est citée par un critère.")
         return 1 if lacking else 0
+    if "--differes" in argv:
+        found = deferred_cases(kb)
+        print("\n".join(f"✗ {x}" for x in found) if found else "Différés : aucun cas d'abus différé.")
+        print(f"Usage : {usage(kb)} — {len(found)} cas d'abus différé(s)")
+        # real use with a deferred case left: each one is built before the release (`livraison`, security gate)
+        return 1 if found and usage(kb) != EXPLORATORY else 0
     if "--repetes" in argv:
         repeated = repeated_criteria(kb)
         print("\n".join(repeated) if repeated else "Répétitions : aucun critère d'un ticket `todo` ne répète un autre ticket de son exigence.")
@@ -738,13 +802,15 @@ def main(argv: list[str]) -> int:
             incomplete += 1
             continue
         found = gaps(p)
-        blocking = [g for g in found if not g.startswith("(info)")]
+        blocking = [g for g in found if not g.startswith("(info)") and not (plannable and g.startswith(TO_DETAIL))]
         if blocking:
             incomplete += 1
             print(f"✗ {p.name} — incomplet : " + " ; ".join(found))
+        elif plannable and any(g.startswith(TO_DETAIL) for g in found):
+            print(f"✓ {p.name} — planifiable, notes à détailler au sprint")
         else:
             print(f"✓ {p.name} — complet" + (f" ({found[0]})" if found else ""))
-    print(f"{len(paths) - incomplete}/{len(paths)} ticket(s) complet(s)")
+    print(f"{len(paths) - incomplete}/{len(paths)} ticket(s) " + ("planifiable(s)" if plannable else "complet(s)"))
     return 1 if incomplete else 0
 
 

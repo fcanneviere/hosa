@@ -98,7 +98,7 @@ Ask the user for the version number (semver or the managed project's own scheme)
 
 ## Step 3b: Security Gate
 
-Invoke `securite` in Livraison mode with the version, the target's type, the previous release's date (same type) and the security audit reports reused in Step 3 with their audited commits. Test: the code checks, and the target holds no real data and no production secret; the production configuration is checked at production. Promotion: the production part only. **Go** → continue. **No-Go** → `securite` asks the user: fix first (stop here; each blocking finding is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `securite`; continue and say so in the Output).
+First `<hosa> ticket_check .hosa/kb --differes`: the abuse cases deferred while `## Usage` (`kb/project/identity.md`) was `exploratoire`. Exit 1 (usage now `réel`, a case left) → No-Go before any agent: each one is a ticket built in a sprint (`done livraison` refuses it too). Still `exploratoire` → name their count in the Output: this release is not for real use. Invoke `securite` in Livraison mode with the version, the target's type, the previous release's date (same type) and the security audit reports reused in Step 3 with their audited commits. Test: the code checks, and the target holds no real data and no production secret; the production configuration is checked at production. Promotion: the production part only. **Go** → continue. **No-Go** → `securite` asks the user: fix first (stop here; each blocking finding is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `securite`; continue and say so in the Output).
 
 ## Step 3c: Legal Gate
 

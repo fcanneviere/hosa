@@ -458,7 +458,11 @@ def dependances(root, objectif=None):
     if feuille:
         feuille["titres"] = {s: graph[s]["title"] for sp in feuille["sprints"] for s in sp["tickets"] + sp["jalons"]}
         feuille["titres"].update({b["jalon"]: graph[b["jalon"]]["title"] for b in feuille["bloques"] if b["jalon"] in graph})
-    return {"pret": [graph[s] for s in gt.ready(graph)], "composition": comp, "feuille": feuille,
+    # the whole graph, for the page that walks it: each ticket with its dependencies and its roadmap sprint
+    rang = {s: i for i, sp in enumerate(feuille["sprints"], 1) for s in sp["tickets"]} if feuille else {}
+    jalons_set = set(jalons or [])
+    tickets = [{**t, "feuille": rang.get(s), "jalon": s in jalons_set} for s, t in sorted(graph.items())]
+    return {"pret": [graph[s] for s in gt.ready(graph)], "composition": comp, "feuille": feuille, "tickets": tickets,
             "objectifs": [{"slug": t["slug"], "title": t["title"], "priority": t["priority"]} for t in todo]}
 
 

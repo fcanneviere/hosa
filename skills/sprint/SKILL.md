@@ -1,15 +1,15 @@
 ---
 name: sprint
-description: "Use to compose the next sprint: the next one of the roadmap computed from the tickets' dependency graph (milestones validated once by the user, up to 20 tickets and 15 demo tests), complete tickets only, gaps with one fix applied, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
+description: "Use to compose the next sprint: the next one of the roadmap computed from the tickets' dependency graph (milestones validated once, the first measuring an objective; up to 20 tickets and 15 demo tests), gaps with one fix applied, its tickets' notes written and judged, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
 ---
 
 # Sprint
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start sprint --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block sprint --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done sprint --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
-**Tâches.** Before Step 3, `avancement.py task add sprint ecriture --sprint <slug> --agent hosa-sprint-planner`; on its return, `task done sprint ecriture --sprint <slug> --sortie kb/sprints/<slug>.md`. Phase 1 writes nothing: no task. A gap with one fix (Step 1) → `task add sprint graphe-<ticket> --sprint <slug> --agent hosa-product-owner` before the dispatch, `task done … --sortie kb/tickets/<the tickets it changed>.md` on its return; a moved criterion whose ticket has a plan → `task add sprint cas-<ticket> --agent hosa-qa-lead` for its case. Stopped on an Open Question → `task block sprint ecriture --sprint <slug> --detail "<la question>"`, and `task add` it again once answered.
+**Tâches.** Before Step 3, `avancement.py task add sprint ecriture --sprint <slug> --agent hosa-sprint-planner`; on its return, `task done sprint ecriture --sprint <slug> --sortie kb/sprints/<slug>.md`. Phase 1 writes nothing: no task. A gap with one fix (Step 1) → `task add sprint graphe-<ticket> --sprint <slug> --agent hosa-product-owner` before the dispatch, `task done … --sortie kb/tickets/<the tickets it changed>.md` on its return; a moved criterion whose ticket has a plan → `task add sprint cas-<ticket> --agent hosa-qa-lead` for its case. Stopped on an Open Question → `task block sprint ecriture --sprint <slug> --detail "<la question>"`, and `task add` it again once answered. The notes of the sprint's tickets (Step 2b) are lots of four tasks, the judge last: `notes-<k>` → `securite-<k>` and `juridique-<k>` → `juge-<k>`, each refused at `task add` before the ones it comes after are done or skipped (`after`, pipeline.json).
 
-Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, and interface placement have all been actually evaluated, not left on `backlog`'s fallback line. This skill is the only one that talks to the user — the actual scoping, classification, and write is `hosa-sprint-planner`'s.
+Turns the Product Backlog (`kb/tickets/`) into a concrete sprint — a bounded set of tickets whose technical feasibility, architecture placement, interface placement, security and legal notes are written now, against the code as it is, for these tickets only (`backlog` planned every ticket on its story, criteria and graph). This skill is the only one that talks to the user — the actual scoping, classification, and write is `hosa-sprint-planner`'s.
 
 ## Flow
 
@@ -22,6 +22,11 @@ recalculée (graphe_tickets feuille), son Sprint 1
         ↓ étape manquante (stack/architecture/interface) → proposée
 Annonce le sprint (jalons, taille) — pas de question tant
 qu'il suit la feuille de route validée
+        ↓
+Détaille ses tickets « à détailler », par lot de 8 :
+notes-<k> (hosa-product-owner : technique, architecture,
+interface) → securite-<k> (hosa-security) et juridique-<k>
+(hosa-legal) → juge-<k> (hosa-juge) ; puis recalcul
         ↓
 Redispatch hosa-sprint-planner (Phase 2) → écrit le Sprint
         ↓
@@ -41,7 +46,7 @@ Manual: `/sprint [nombre de tickets au plus]`. Auto: immediately after `backlog`
 
 First, `kb/infra/environnement-docker.md` must have `## Outillage qualité` with a test command (and the migration command, or "Aucune base de données"): otherwise the project isn't ready for a sprint — say so, invoke `infra` to install them, and stop. Same for security: `kb/securite/modele-menaces.md` must exist once the architecture is documented — otherwise run `securite` (Menaces) first. Its abuse cases become the `[sécurité]` tests of every ticket; written after the code, they only find what must be redone.
 
-Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`). **The sprint is the next one of the roadmap** (`kb/project/feuille-de-route.md`, its milestones validated once by the user): the planner recomputes it from the graph (`<hosa> graphe_tickets … feuille --ecrire`) and takes its first sprint — the milestones' paths in build order, up to 20 tickets and 15 demo tests (5 % over to keep a milestone whole). No roadmap yet (a backlog made before it) → the planner proposes the milestones (the steps of the main persona journey, in order) and the bounds: one question to the user, once; then the roadmap is written. A sprint is sized by its milestones, not by a developer's week.
+Dispatch `hosa-sprint-planner` (Phase 1, `agents/sprint-planner.md`). **The sprint is the next one of the roadmap** (`kb/project/feuille-de-route.md`, its milestones validated once by the user): the planner recomputes it from the graph (`<hosa> graphe_tickets … feuille --ecrire`) and takes its first sprint — the milestones' paths in build order, up to 20 tickets and 15 demo tests (5 % over to keep a milestone whole). No roadmap yet (a backlog made before it), or a roadmap whose first milestone measures no objective of the identity (`done sprint` refuses it) → the planner proposes the milestones (first the shortest path to what an objective measures, then the steps of the main persona journey, in order) and the bounds: one question to the user, once; then the roadmap is written with `--mesure <On>`. A sprint is sized by its milestones, not by a developer's week.
 
 Reopened by `qa-plan` (loop `qa-plan` → `sprint`, an `Écart de composition`): give the planner the loop's exact lines; it recomputes the roadmap with that sprint's tickets free again (`feuille --sprint <slug> --ecrire`). The user validates only what changes.
 
@@ -54,6 +59,15 @@ If it returns an Open Question (empty backlog, no priority order) — relay it t
 Present `## Tickets prêts`, in the build order of the roadmap, and `## Tickets écartés` with what was already fixed (above). A ticket set aside for a missing stage → offer that stage (`stack`/`architecture`/`interface`, or a direct opinion from `hosa-senior-dev`/`hosa-architect`/`hosa-ux-designer`), then redispatch Phase 1 fresh. **The roadmap's milestones validated, the sprint is announced, not asked** (`## Proposition de sprint`: name, milestones, size), and Step 3 runs in the same turn; the user can still say « retire le ticket 3 ». A question only when the sprint differs from the validated roadmap's next sprint by a milestone (blocked, moved): « Q1 a » validates, « Q1 b, … » amends.
 
 If `## Tickets prêts` is empty and the user has no gap to fill, stop here — report the tickets écartés and their Open Questions, don't write a `Sprint`.
+
+## Step 2b: Detail the Sprint's Tickets
+
+`feuille` lists `À détailler avant le Sprint 1`: the sprint's tickets planned on their story, criteria and graph, whose five notes `backlog` left to this moment. Write them now, by lots of 8 tickets at most, with `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md` (give its path to each agent, never this skill):
+- `task add sprint notes-<k> --sprint <slug> --agent hosa-product-owner --objet "<tickets>"`: Steps 3-5 (technical note, architecture and interface placements), with the Grounding Rule; `task done … --sortie <the ticket paths>`.
+- Then `securite-<k>` (`hosa-security`, Mode 5) and `juridique-<k>` (`hosa-legal`, Mode 3), dispatched together, on the same lot; `task done … --sortie <the ticket paths>`. A security or legal analysis still missing (fallback line) → `task skip sprint securite-<k> --sprint <slug> --detail "pas encore d'analyse"`. A stage the plan marks `non applicable` → no agent: `task skip sprint juridique-<k> --sprint <slug> --detail "étape écartée"`; the checker needs no note then.
+- Then `task add sprint juge-<k> --sprint <slug> --agent hosa-juge --objet "lot <k>"`, dispatch `hosa-juge` with `sprint juge-<k> --sprint <slug>` and the lot's slugs, and `task done sprint juge-<k> --sprint <slug> --sortie <the verdict path>`. Refused by `juge-Qn` → each Non reopens its task (`notes-<k>`, `securite-<k>` or `juridique-<k>`) with its exact lines: a fresh agent of that task on its refused tickets only, then the judge on them only. At the bound (2 rounds of one question, or a ticket judged 3 times) stop and show the user what each round refused.
+
+`budget.js` applies pipeline.json's `dispatch` for `sprint`: 2 Hosa agents at once, `hosa-security` and `hosa-legal` on `model: "sonnet"`. Then recompute (`feuille --ecrire`): the notes can add a `depends_on` (a `Corrections uniques` line) or split a ticket over 10 criteria. A ticket that enters `Sprint 1` gets its notes in one more lot; one that leaves it keeps them. `done sprint` refuses a sprint ticket still `(à détailler)` (`avancement.py check sprint`).
 
 ## Step 3: Dispatch to Write
 
@@ -86,7 +100,7 @@ None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git chec
 [Si rien : "None"]
 
 ## Suite
-Sprint prêt, tests compris. Une fois démarré, je lance `develop lot` sur son premier lot de tickets.
+Sprint prêt, tickets détaillés et tests compris. Une fois démarré, je lance `develop lot` sur son premier lot de tickets.
 
 Suite : `qa-plan`, puis démarrage du sprint (`git` Mode 1), lancé sans attendre.
 ```

@@ -524,6 +524,29 @@ def concept(kb: Path, rel: str, ctype: str, heading: str | None = None) -> str |
     return None
 
 
+# What `infra` ran in the container before it closed, each with its exit code (rieki: `main` red on lint and format
+# before sprint 1, a container serving stale code, 15 tests that only ran on the host, a browser suite of 799 s —
+# half of sprint 2 and the « recette et test très lourde » of sprint 3). Each line: `- **<item>** : <commande> —
+# exit 0 — <durée> s — <date>`, or `- **<item>** : aucun — <raison>` (no mounted code, no browser).
+EXIT_ITEMS = ("Lint", "Format", "Tests", "Rechargement", "Navigateur")
+
+
+def infra_exit(kb: Path) -> list[str]:
+    found = [(p, t) for p, t in concepts(kb, "infra", "Infra") if section(t, "Preuve de sortie") is not None]
+    if not found:
+        return ["aucune entrée `Infra` n'a de section `## Preuve de sortie` (lint, format, tests, rechargement du code "
+                "monté, navigateur : chacun lancé dans le conteneur, `exit 0`)"]
+    p, text = found[0]
+    proof, gaps = section(text, "Preuve de sortie") or "", []
+    for item in EXIT_ITEMS:
+        m = re.search(rf"^\s*[-*]\s+\*\*{item}\*\*\s*:\s*(.*)$", proof, re.M)
+        if not m:
+            gaps.append(f"`kb/infra/{p.name}` `## Preuve de sortie` : ligne **{item}** absente")
+        elif not re.match(r"aucun\s+—\s+\S", m[1], re.I) and not re.search(r"\bexit 0\b", m[1]):
+            gaps.append(f"`kb/infra/{p.name}` `## Preuve de sortie` : **{item}** sans `exit 0` — {m[1][:80]}")
+    return gaps
+
+
 def infra_with(kb: Path, heading: str) -> str | None:
     if any(re.search(rf"^## {re.escape(heading)}", t, re.M) for _, t in concepts(kb, "infra", "Infra")):
         return None
@@ -655,6 +678,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
             gaps.append("aucune `Stack Decision` dans `kb/stack/`")
     elif stage == "infra":
         gaps.append(infra_with(kb, "Outillage qualité"))
+        gaps += infra_exit(kb)
     elif stage == "donnees":
         for p, t in stable:
             lines = [x for h in ("Données en entrée", "Données en sortie")
@@ -683,7 +707,14 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         if not concepts(kb, "tickets", "Ticket"):
             gaps.append("aucun `Ticket` dans `kb/tickets/`")
         gaps.append(concept(kb, "rules/design/definition-de-termine.md", "Design Rule"))
-        gaps += script("backlog/scripts/ticket_check.py", kb)
+        # planned, not detailed: the notes are written when a ticket enters a sprint (`sprint`, `notes-<k>`…)
+        gaps += script("backlog/scripts/ticket_check.py", kb, "--planifiable")
+        # every sprint planned before the first one: the roadmap, its first milestone measuring an objective
+        if read(kb / "project" / "feuille-de-route.md") is None:
+            gaps.append("pas de `kb/project/feuille-de-route.md` : jalons validés, puis `graphe_tickets feuille "
+                        "--jalons … [--mesure <On>] --ecrire` (étape 6)")
+        else:
+            gaps += roadmap_objective(kb)
         # the rules × criteria matrix: a rule no ticket took is in no ticket the judge reads
         gaps += script("backlog/scripts/ticket_check.py", kb, "--regles")
         # one behaviour, one ticket: a criterion restated by two tickets of one exigence (HOSA_REPETES=0 skips it)
@@ -780,7 +811,27 @@ def composition(kb: Path, tickets: list[str]) -> list[str]:
                 where = "placé après lui" if dep in tickets else "hors du sprint"
                 gaps.append(f"{t} : attend `{dep}`, ni fait ni avant lui dans le sprint ({where})")
         gaps += [f"{t} : {g}" for g in tc.unbuilt_labels(path, front, body) + tc.hidden_dependencies(path, front, body)]
-    return gaps
+        if (field(front, "state") or "todo") == "todo":  # planned without its notes: `sprint` details it first
+            gaps += [f"{t} : {g} — tâches `notes-<k>`, `securite-<k>`, `juridique-<k>`, `juge-<k>` de `sprint`"
+                     for g in tc.gaps(path) if g.startswith(tc.TO_DETAIL)]
+    return list(dict.fromkeys(gaps))
+
+
+def roadmap_objective(kb: Path) -> list[str]:
+    """The first milestone measures an objective of the identity (rieki: three milestones in Importer, an
+    exploratory project whose one question — does Timestral beat the baseline — had no answer after 3 sprints)."""
+    ident = read(kb / "project" / "identity.md")
+    objs = re.findall(r"^\|\s*(O\d+)\s*\|", section(ident, "Objectifs mesurables") or "", re.M)
+    if not objs:
+        return []
+    first = next((x for x in (section(read(kb / "project" / "feuille-de-route.md"), "Jalons") or "").splitlines()
+                  if x.strip().startswith(("-", "*"))), "")
+    m = re.search(r"—\s*mesure\s+(O\d+)\b", first)
+    if m and m[1] in objs:
+        return []
+    return [f"le premier jalon de `kb/project/feuille-de-route.md` ne mesure aucun objectif ({', '.join(objs)}) : "
+            "`graphe_tickets feuille --jalons <chemin le plus court vers l'indicateur>,… --mesure <On> --ecrire`, "
+            "jalons validés par l'utilisateur"]
 
 
 def backlog_fixes(kb: Path, tickets: list[str]) -> list[str]:
@@ -804,7 +855,7 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     tickets = re.findall(r"\(\.\./tickets/([^)]+)\.md\)", section(s, "Tickets") or "")
     gaps = [] if tickets else ["`## Tickets` ne liste aucun ticket"]
     if stage == "sprint":
-        gaps += composition(kb, tickets) + backlog_fixes(kb, tickets)
+        gaps += composition(kb, tickets) + backlog_fixes(kb, tickets) + roadmap_objective(kb)
     # the merge (`git` Mode 2) removes `worktree`: a `merge_commit` proves the start too
     if stage == "git-demarrage" and not field(s, "worktree") and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `worktree` (`git` Mode 1)")
@@ -817,6 +868,8 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
                                     for f in ("derniere-livraison.md", "derniere-livraison-test.md")):
         gaps.append("pas de fiche `kb/infra/derniere-livraison.md` ni `derniere-livraison-test.md` avec sa section "
                     "`## Version` (`livraison` étape 7)")
+    if stage == "livraison":  # real use: every abuse case deferred while the project was explored is built first
+        gaps += script("backlog/scripts/ticket_check.py", kb, "--differes")
     tests = sorted(p.name for p in (kb / "test").glob("*.md")) if (kb / "test").is_dir() else []
     for t in tickets:
         text = read(kb / "tickets" / f"{t}.md")
@@ -1598,7 +1651,8 @@ def juge_extract(kb: Path, slugs: list[str]) -> str:
     they link, then each section those exigences cite by `voir [..](..) § <section>`, numbered as in the files (rieki: whole tickets, 5 notes each, read again per ticket, up to
     198 k tokens for one pass)."""
     out, exigences = ["## Extrait — les seules lignes à lire ; une preuve cite `<fichier>:<n>` d'ici"], []
-    keep = lambda h: h in (None, "Critères d'acceptation") or h.startswith(("Note sécurité", "Note juridique"))  # noqa: E731
+    # the technical note too: the `notes-*` question reads the means of each platform capability there
+    keep = lambda h: h in (None, "Critères d'acceptation") or h.startswith(("Note technique", "Note sécurité", "Note juridique"))  # noqa: E731
     for s in slugs:
         rel = f"tickets/{s}.md"
         out += numbered(kb, rel, keep)

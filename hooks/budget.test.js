@@ -166,10 +166,9 @@ test('an agent idle past its cache with a heavy context is not resumed, once', (
   assert.equal(pre('SendMessage', 's9', { to: 'light' }), null);
 });
 
-test('during backlog: two Hosa agents at once, the security and legal notes on sonnet', () => {
+test('during backlog: two Hosa agents at once', () => {
   fs.writeFileSync(plan, '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n' +
-    '|---|---|---|---|---|---|---|---|\n| stories-2 | `backlog` | hosa-product-owner |  | à faire |  |  |  |\n' +
-    '| securite-1 | `backlog` | hosa-security |  | à faire |  |  |  |\n\n' +
+    '|---|---|---|---|---|---|---|---|\n| stories-2 | `backlog` | hosa-product-owner |  | à faire |  |  |  |\n\n' +
     '## Structuration\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
     '| `interface` | fait |  |  |\n| `backlog` | en cours |  |  |\n');
   setContext(10000);
@@ -180,11 +179,19 @@ test('during backlog: two Hosa agents at once, the security and legal notes on s
   assert.equal(pre('Agent', 's10', { subagent_type: 'Explore' }), null);        // not a Hosa agent
   processPayload({ hook_event_name: 'SubagentStop', session_id: 's10', agent_id: 'b1' });
   assert.equal(po(), null);
-  assert.match(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security' }).hookSpecificOutput.permissionDecisionReason,
+});
+
+test('during sprint: the notes of its tickets, two agents at once, security and legal on sonnet', () => {
+  fs.writeFileSync(plan, '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n' +
+    '|---|---|---|---|---|---|---|---|\n| securite-1 | `sprint` (s4) | hosa-security |  | à faire |  |  |  |\n\n' +
+    '## Sprint s4\n| Étape | Statut | Mis à jour | Détail |\n|---|---|---|---|\n' +
+    '| `sprint` | en cours |  |  |\n');
+  setContext(10000);
+  assert.match(pre('Agent', 's12', { subagent_type: 'hosa:hosa-security' }).hookSpecificOutput.permissionDecisionReason,
     /model: "sonnet"/);
-  assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security', model: 'sonnet' }), null);
-  setPlan(3);                                                                    // backlog no longer under way
-  assert.equal(pre('Agent', 's10', { subagent_type: 'hosa:hosa-security' }), null);
+  assert.equal(pre('Agent', 's12', { subagent_type: 'hosa:hosa-security', model: 'sonnet' }), null);
+  setPlan(3);                                                                    // sprint no longer under way
+  assert.equal(pre('Agent', 's12', { subagent_type: 'hosa:hosa-security' }), null);
 });
 
 test('during qa-plan: two test-plan lots at once, a sprint of 20 tickets is 5 lots', () => {

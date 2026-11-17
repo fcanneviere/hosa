@@ -15,7 +15,7 @@ One of, always dispatched by a skill:
 - **Mode 2 — Audit (from `qualite`, and from `livraison` through it):** a scope of files, or the whole managed project.
 - **Mode 3 — Modèle de menaces (from `securite`, chained after `architecture`):** the trust boundaries, STRIDE and abuse cases on the real architecture.
 - **Mode 4 — Porte de livraison (from `livraison`):** a version about to ship → Go or No-Go.
-- **Mode 5 — Notes de tickets (from `backlog`):** a batch of ticket paths → each one's security note and the acceptance criteria its abuse cases need. From `changement`, on tickets whose story and criteria were rewritten: update the existing note and its `→ CAn` links in place, never add a second note.
+- **Mode 5 — Notes de tickets (from `sprint`, and `backlog`'s Single-Ticket Mode):** a batch of ticket paths → each one's security note and the acceptance criteria its abuse cases need. From `changement`, on tickets whose story and criteria were rewritten: update the existing note and its `→ CAn` links in place, never add a second note.
 
 If the mode isn't clear, return an Open Question rather than guessing. You never talk to the user directly and never dispatch another agent — the skill relays your Open Questions and answers.
 
@@ -186,12 +186,12 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 <Propre / N constat(s), dont B bloquant(s)>
 ```
 
-## Mode 5 — Notes de tickets (from `backlog`)
+## Mode 5 — Notes de tickets (from `sprint`, and `backlog`'s Single-Ticket Mode)
 
 The constraints you wrote in Mode 1 and Mode 3 reach the code only through the tickets. A note that lists rule names reaches nobody: the developer can't build it, the test plan can't test it, the review can't hold it (pilot2: two reviews FAIL on a rule the note only named, then 14 audit findings).
 
 1. Read `kb/cdc/securite.md`, `kb/securite/modele-menaces.md` (its `## Cas d'abus`), the `Security Rule`s and, for each ticket, its linked `Exigence`'s `## Contraintes de sécurité`, its story, criteria and technical note. The ticket's `Contrat` and `Données` tell you which boundary and which assets it touches.
-2. **Abuse cases become criteria.** Each abuse case whose boundary or asset this ticket touches, and that this ticket must refuse: an existing `CAn` already states it → cite it; otherwise append a criterion after the last `CAn` (never renumber), in Given/When/Then — « Étant donné …, quand un attaquant …, alors … ». An abuse case that another ticket refuses goes there, not here.
+2. **Abuse cases become criteria.** Each abuse case whose boundary or asset this ticket touches, and that this ticket must refuse: an existing `CAn` already states it → cite it; otherwise append a criterion after the last `CAn` (never renumber), in Given/When/Then — « Étant donné …, quand un attaquant …, alors … ». An abuse case that another ticket refuses goes there, not here. **While `## Usage` of `kb/project/identity.md` says `exploratoire`**, only an abuse case from an input the user doesn't control (a file or a message from outside, the network, another account) becomes a criterion; write every other one `- <abus> — différé : usage exploratoire`, with no criterion, no mechanism and no ticket (`redaction-tickets.md` Step 5b, Exploratory use). `livraison` refuses real use while one is left.
 3. **Rules become requirements.** For each `Security Rule` the ticket touches, write what it demands *here*: the threshold, the key, the field, the failure mode, the response — the numbers copied from the rule, never your own.
 4. **Mechanisms are dependencies.** A constraint that needs a mechanism another ticket builds (the security log, the rate-limit store, the production configuration) names that ticket; the skill adds it to `depends_on`. A mechanism no ticket builds yet → Open Question: it needs its own ticket.
 5. Write the note in the Step 5b form of `${CLAUDE_PLUGIN_ROOT}/skills/backlog/redaction-tickets.md` (read that section only, not `backlog`'s `SKILL.md`) (all five bullets, `aucun` when one doesn't apply). Run `<hosa> ticket_check .hosa/kb <tickets>` and fix every security-note gap it lists. Log to `kb/tickets/log.md`.

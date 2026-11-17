@@ -83,6 +83,7 @@ Ask one question at a time, in order, waiting for an answer before moving on. Th
 3. Ton niveau en développement : débutant / intermédiaire / expert
 4. Ton niveau en infrastructure (serveurs, Docker, déploiement) : débutant / intermédiaire / expert
 5. Taille du projet : petit (quelques écrans, un ou deux personas, un usage principal) / standard — propose "petit" when the objective says so ("minuscule", "simple", "perso")
+5b. Usage : exploratoire (on teste une idée, en local ou entre soi, sans données exposées à d'autres) / réel (des utilisateurs, des données à protéger) — propose "exploratoire" when the context says "tester", "explorer", "prototype". Exploratoire: the abuse cases of inputs the user controls wait for real use, and `livraison` refuses real use until they are built.
 6. Descriptif (texte libre, plus long)
 7. Contexte et enjeux : comment ça se passe aujourd'hui, ce qui rate, ce que ça coûte, pourquoi maintenant
 8. Public cible
@@ -166,9 +167,12 @@ Neuf | Existant
 
 ## Taille
 petit | standard
+
+## Usage
+exploratoire | réel
 ```
 
-`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. Exigences cite objectives by their `Id` (`objectifs: [O1]`): keep the ids stable, a new objective takes the next number. `## Contexte et enjeux`, `## Objectifs mesurables` and `## Hypothèses, dépendances et risques` open the readable cahier des charges (`cdc assemble`, § 1, 2, 9, 10). `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. Every skill reads `## Niveau de l'utilisateur` before asking a technical question (`using-hosa`, "Fit the user and the project").
+`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. Exigences cite objectives by their `Id` (`objectifs: [O1]`): keep the ids stable, a new objective takes the next number. `## Contexte et enjeux`, `## Objectifs mesurables` and `## Hypothèses, dépendances et risques` open the readable cahier des charges (`cdc assemble`, § 1, 2, 9, 10). `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. `hosa-security` reads `## Usage` when it writes a ticket's security note: `exploratoire` defers the abuse cases of inputs the user controls (`— différé : usage exploratoire`), absent means `réel`. `backlog` and `sprint` make the first milestone the shortest path to an objective of `## Objectifs mesurables` (`feuille --mesure On`). Every skill reads `## Niveau de l'utilisateur` before asking a technical question (`using-hosa`, "Fit the user and the project").
 
 ### Writing personas
 

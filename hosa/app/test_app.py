@@ -526,6 +526,15 @@ class DependancesApiTest(unittest.TestCase):
         self.assertEqual(f["bloques"][0]["jalon"], "supprimer")  # bare tickets: incomplete, the milestone waits
         self.assertEqual(f["titres"]["supprimer"], "supprimer")
 
+    def test_the_whole_graph_comes_for_the_page_that_walks_it(self):
+        (self.kbroot / "project" / "feuille-de-route.md").write_text(
+            "---\ntype: Feuille de route\n---\n## Jalons\n- [Supprimer](../tickets/supprimer.md)\n", encoding="utf-8")
+        tickets = {t["slug"]: t for t in self.call("GET", "/api/dependances")[1]["tickets"]}
+        self.assertEqual(set(tickets), {"socle", "run", "supprimer"})  # done tickets too: the page can show them
+        self.assertEqual((tickets["run"]["depends_on"], tickets["socle"]["state"]), (["socle"], "done"))
+        self.assertEqual((tickets["supprimer"]["jalon"], tickets["run"]["jalon"]), (True, False))
+        self.assertIsNone(tickets["run"]["feuille"])  # incomplete: placed in no sprint of the roadmap
+
     def test_a_button_added_to_the_code_counts_at_the_next_computation(self):
         tc, root = kb.gt.ticket_check(), str(self.kbroot.parent.parent)
         self.assertNotIn("Supprimer", tc.source_text(root))

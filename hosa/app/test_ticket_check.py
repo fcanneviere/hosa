@@ -232,7 +232,7 @@ class SecurityAndLegalNotes(unittest.TestCase):
         body = "## Critères d'acceptation\n- CA1 — nominal\n- CA2 — refus\n" + SECURITE.replace(
             "l'adresse réelle compte", "l'adresse réelle compte → CA1")
         gaps = tc.gaps(self.write("connexion", "", body))
-        self.assertIn("section `## Note juridique (expert conformité)` absente", gaps)
+        self.assertIn("(à détailler) section `## Note juridique (expert conformité)` absente", gaps)
         self.assertFalse(any("sans critère" in g for g in gaps))
         gaps = tc.gaps(self.write("connexion", "", body + JURIDIQUE.replace("- **Hors logiciel** : aucun\n", "")))
         self.assertIn("`Note juridique (expert conformité)` : puce « Hors logiciel » absente", gaps)
@@ -280,6 +280,53 @@ class SecurityAndLegalNotes(unittest.TestCase):
             "Utilisateur : usage de test\n"))
         real = self.write("reel", "", JURIDIQUE)
         self.assertEqual(tc.write_skipped(real, skipped), [])  # a real note is never touched
+
+    def test_a_stage_set_aside_needs_no_note_at_all(self):
+        """rieki: `juridique` set aside, 44 KB of « Non applicable » lines over 148 tickets."""
+        plan = self.tickets.parent / "project" / "avancement.md"
+        plan.parent.mkdir()
+        plan.write_text("| Étape | Statut | Date | Détail |\n|---|---|---|---|\n"
+                        "| `juridique` | non applicable | 2026-11-01T11:50:34Z | usage de test |\n", encoding="utf-8")
+        gaps = tc.gaps(self.write("sans", "", "## Critères d'acceptation\n- CA1 — nominal\n"))
+        self.assertFalse(any("Note juridique" in g for g in gaps), gaps)
+        self.assertTrue(any("(à détailler) section `## Note sécurité" in g for g in gaps))
+
+    def test_a_ticket_without_notes_is_planned_not_complete(self):
+        """`backlog` writes story, criteria and graph; `sprint` the notes of the tickets it takes."""
+        p = self.write("plan", "", "En tant que analyste,\nLié à : [x](../cdc/x.md)\n## Critères d'acceptation\n- CA1 — a\n")
+        self.assertEqual(sorted(g.split("`")[1] for g in tc.gaps(p) if not g.startswith("(info)")), sorted(tc.NOTES))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(tc.main([str(self.tickets.parent), str(p)]), 1)
+            self.assertEqual(tc.main([str(self.tickets.parent), "--planifiable", str(p)]), 0)
+        self.assertIn("✓ plan.md — planifiable, notes à détailler au sprint", out.getvalue())
+        half = self.write("moitie", "", "En tant que analyste,\nLié à : [x](../cdc/x.md)\n## Critères d'acceptation\n"
+                                        "- CA1 — a\n## Note technique (senior dev)\nStack pas encore choisie\n")
+        with contextlib.redirect_stdout(io.StringIO()):  # a note on its fallback line is a gap, planned or not
+            self.assertEqual(tc.main([str(self.tickets.parent), "--planifiable", str(half)]), 1)
+
+    def test_an_abuse_case_is_deferred_only_while_the_project_is_explored(self):
+        """rieki, a local single-user test of a model: 6 of 26 tickets hardened the import before any forecast."""
+        kb = self.tickets.parent
+        (kb / "project").mkdir()
+        ident = kb / "project" / "identity.md"
+        deferred = SECURITE.replace("l'adresse réelle compte", "l'adresse réelle compte — différé : usage exploratoire")
+        body = "## Critères d'acceptation\n- CA1 — nominal\n- CA2 — refus\n" + deferred + JURIDIQUE
+        p = self.write("connexion", "", body)
+        self.assertTrue(any("différé alors que l'usage est réel" in g for g in tc.gaps(p)))  # no `## Usage`: réel
+        ident.write_text("---\ntype: Project\n---\n## Usage\nexploratoire — tester le modèle sur de vraies ventes\n",
+                         encoding="utf-8")
+        self.assertEqual(tc.usage(kb), "exploratoire")
+        self.assertFalse(any("Note sécurité" in g for g in tc.gaps(p)), tc.gaps(p))
+        self.write("fait", "state: done\n", deferred)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(tc.main([str(kb), "--differes"]), 0)  # listed, not refused while explored
+        self.assertIn("Usage : exploratoire — 2 cas d'abus différé(s)", out.getvalue())
+        self.assertIn("fait (done) :", out.getvalue())  # done tickets too: real use builds them first
+        ident.write_text("---\ntype: Project\n---\n## Usage\nréel\n", encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kb), "--differes"]), 1)
 
     def test_non_applicable_note_refused_when_the_plan_keeps_the_stage(self):
         p = self.write("import", "", "## Note sécurité (expert cybersécurité)\nNon applicable — étape `securite` écartée\n")

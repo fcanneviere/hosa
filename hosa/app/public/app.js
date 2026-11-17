@@ -359,7 +359,7 @@ function vPlanification() {
       h('ul', { style: 'flex-basis:100%' }, f.bloques.map((b) => h('li', {}, tt(b.jalon))))) : null,
     f.a_completer.length ? h('p', { class: 'hint' }, `${plural(f.a_completer.length, 'ticket à compléter', 'tickets à compléter')}, ${plural(f.en_attente.length, 'ticket en attente', 'tickets en attente')} derrière eux.`) : null)
     : card('Feuille de route', none('Pas encore de jalons validés : le prochain /sprint les propose, une fois.'));
-  return [...head, roadmap, h('div', { class: 'filters' }, pick),
+  return [...head, roadmap, h('div', { class: 'filters' }, pick, h('a', { class: 'btn o s', href: '#/planification/graphe' }, 'Naviguer dans le graphe des tickets')),
     c.obstacles && c.obstacles.length ? h('div', { class: 'alert err', role: 'alert' }, h('span', {}, h('b', {}, 'Objectif inatteignable pour l’instant. '), 'À régler d’abord :'),
       h('ul', { style: 'flex-basis:100%' }, c.obstacles.map((o) => h('li', { class: 'mono' }, o)))) : null,
     h('div', { class: 'kpis' },
@@ -379,6 +379,136 @@ function vPlanification() {
         : none('Aucun ticket à construire.'))),
     card('Prêts maintenant', d.pret.length ? table(['Ticket', 'Priorité', 'Points'], d.pret.map((t) => h('tr', {}, td(depLink(t)), td(t.priority == null ? '—' : String(t.priority), 'num r'), td(String(t.points), 'num r'))), { caption: 'Tickets dont les dépendances sont faites' })
       : none('Aucun ticket prêt : chaque ticket à faire attend un autre, ou il est incomplet.'))];
+}
+
+// --- graphe des tickets : naviguer dans les dépendances (`depends_on`), le même graphe que la feuille de route ----------
+const SVGNS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs = {}, ...kids) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k.startsWith('on')) el.addEventListener(k.slice(2), v); else el.setAttribute(k, v);
+  }
+  el.append(...kids.flat(Infinity).filter((c) => c != null && c !== false));
+  return el;
+}
+const cut = (s, n) => s.length > n ? `${s.slice(0, n - 1)}…` : s;
+const tgState = (t) => t.state === 'done' ? ['fait', 'f', '✓', 'done'] : t.manques.length ? ['incomplet', 'b', '✕', 'bad']
+  : t.sprint ? [`sprint ${t.sprint}`, 'e', '◐', 'sprint'] : t.a_detailler ? ['à détailler', 'w', '◌', 'det'] : ['à faire', 'a', '○', 'todo'];
+const tgGo = (slug) => { location.hash = `#/planification/graphe/${encodeURIComponent(slug)}`; };
+
+// tout ce qu'un ticket attend (ancêtres) et tout ce qui l'attend (descendants), dans le graphe entier
+function tgClosure(by, slug) {
+  const up = new Set(), down = new Set(), kids = {};
+  for (const t of Object.values(by)) for (const d of t.depends_on) (kids[d] = kids[d] || []).push(t.slug);
+  const walk = (s, next, seen) => { for (const x of next(s)) if (!seen.has(x) && by[x]) { seen.add(x); walk(x, next, seen); } };
+  walk(slug, (s) => (by[s] ? by[s].depends_on : []), up);
+  walk(slug, (s) => kids[s] || [], down);
+  return { up, down, kids };
+}
+
+// colonnes : un ticket se place une colonne après la plus lointaine de ses dépendances visibles
+function tgLayout(by, shown) {
+  const col = {}, busy = new Set();
+  const colOf = (s) => {
+    if (col[s] != null) return col[s];
+    if (busy.has(s)) return 0;  // une boucle : ticket_check la signale, le dessin continue
+    busy.add(s);
+    const deps = by[s].depends_on.filter((d) => shown.has(d));
+    col[s] = deps.length ? 1 + Math.max(...deps.map(colOf)) : 0;
+    busy.delete(s);
+    return col[s];
+  };
+  shown.forEach(colOf);
+  const cols = [];
+  for (const s of shown) (cols[col[s]] = cols[col[s]] || []).push(s);
+  const rank = (s) => [by[s].feuille ?? 999, by[s].priority ?? 9999, s];
+  const cmp = (a, b) => { const x = rank(a), y = rank(b); return x[0] - y[0] || x[1] - y[1] || (x[2] < y[2] ? -1 : 1); };
+  const row = {};
+  cols.forEach((c, i) => {  // première colonne : ordre de la feuille ; ensuite, près de ses dépendances
+    if (i === 0) c.sort(cmp);
+    else {
+      const bary = (s) => { const r = by[s].depends_on.filter((d) => row[d] != null).map((d) => row[d]); return r.length ? r.reduce((a, b) => a + b, 0) / r.length : 1e6; };
+      c.sort((a, b) => bary(a) - bary(b) || cmp(a, b));
+    }
+    c.forEach((s, j) => { row[s] = j; });
+  });
+  return { col, row, cols };
+}
+
+function vGraphe(sel) {
+  const head = [crumbs(['Planification', '/planification'], ['Graphe des tickets']),
+    pageH('Pilotage', 'Graphe des tickets', 'Chaque ticket après ce qu’il attend. Choisissez un ticket : ce qu’il attend et ce qui l’attend restent visibles, le reste s’efface.')];
+  if (S.depFor !== (F.objectif || '')) { loadDep(); return [...head, none('Calcul du graphe…')]; }
+  const d = S.dep;
+  if (!d) return [...head, none('Calcul du graphe…')];
+  if (d.error) return [...head, errBox(`Graphe indisponible : ${plain(d.error)}.`, true)];
+  const all = d.tickets || [];
+  if (!all.length) return [...head, empty('Aucun ticket.', h('p', {}, '/backlog crée les tickets à partir du cahier des charges.'), cmdBox('backlog'))];
+  const by = Object.fromEntries(all.map((t) => [t.slug, t]));
+  const cur = sel && by[sel] ? sel : null;
+  const { up, down, kids } = cur ? tgClosure(by, cur) : { up: new Set(), down: new Set(), kids: {} };
+  const near = new Set(cur ? [cur, ...up, ...down] : []);
+  const showDone = F.gFaits === '1', focus = cur && F.gAutour === '1';
+  const shown = new Set(all.filter((t) => (showDone || t.state !== 'done' || t.slug === cur) && (!focus || near.has(t.slug))).map((t) => t.slug));
+  const q = norm(F.gq || ''), match = new Set(q ? [...shown].filter((s) => norm(`${by[s].title} ${s}`).includes(q)) : []);
+
+  const W = 236, H = 42, GX = 84, GY = 12, P = 16;
+  const { col, row, cols } = tgLayout(by, shown);
+  const width = P * 2 + cols.length * W + Math.max(0, cols.length - 1) * GX;
+  const height = P * 2 + Math.max(1, ...cols.map((c) => c.length)) * (H + GY);
+  const xy = (s) => [P + col[s] * (W + GX), P + row[s] * (H + GY)];
+  const edges = [];
+  for (const s of shown) for (const dep of by[s].depends_on) if (shown.has(dep)) {
+    const [x1, y1] = xy(dep), [x2, y2] = xy(s), a = x1 + W, b = y1 + H / 2, c = x2, e = y2 + H / 2, m = (c - a) / 2;
+    const on = cur && near.has(s) && near.has(dep) && (s === cur || dep === cur || (up.has(s) || s === cur) && up.has(dep) || down.has(s) && (down.has(dep) || dep === cur));
+    edges.push(sv('path', { class: `e${on ? ' hl' : ''}`, d: `M${a},${b} C${a + m},${b} ${c - m},${e} ${c},${e}`, 'marker-end': 'url(#tg-arr)' }));
+  }
+  const nodes = [...shown].map((s) => {
+    const t = by[s], [x, y] = xy(s), [label, , sym, cls] = tgState(t);
+    const sub = [t.feuille ? `feuille S${t.feuille}` : null, `${t.points} pt${t.points > 1 ? 's' : ''}`, t.priority != null ? `prio ${t.priority}` : null].filter(Boolean).join(' · ');
+    const go = () => tgGo(s);
+    return sv('g', { class: `n ${cls}${t.jalon ? ' jalon' : ''}${s === cur ? ' sel' : ''}${near.has(s) ? ' hl' : ''}${match.has(s) ? ' match' : ''}`,
+      transform: `translate(${x},${y})`, tabindex: '0', role: 'button', 'data-slug': s,
+      'aria-label': `${t.title} — ${label}${t.jalon ? ', jalon' : ''}${t.feuille ? `, sprint ${t.feuille} de la feuille de route` : ''}`,
+      onclick: go, onkeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } } },
+      sv('title', {}, `${t.title} (${s})`),
+      sv('rect', { width: W, height: H, rx: 7 }),
+      sv('text', { x: 10, y: 17, class: 't' }, `${t.jalon ? '◆ ' : ''}${sym} ${cut(t.title, t.jalon ? 29 : 31)}`),
+      sv('text', { x: 10, y: 33, class: 'sub' }, sub));
+  });
+  const svg = sv('svg', { class: `tg${cur ? ' has-sel' : ''}`, width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': `Graphe de ${shown.size} tickets` },
+    sv('defs', {}, sv('marker', { id: 'tg-arr', viewBox: '0 0 8 8', refX: '7', refY: '4', markerWidth: '7', markerHeight: '7', orient: 'auto' }, sv('path', { d: 'M0,0 L8,4 L0,8 z' }))),
+    edges, nodes);
+  if (cur) requestAnimationFrame(() => { const n = document.querySelector(`.tg .n[data-slug="${CSS.escape(cur)}"]`); if (n) n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+
+  const counts = all.reduce((k, t) => { const c = tgState(t)[3]; k[c] = (k[c] || 0) + 1; return k; }, {});
+  const legend = h('div', { class: 'tg-legend' }, [['todo', 'à faire'], ['det', 'à détailler'], ['sprint', 'dans un sprint'], ['bad', 'incomplet'], ['done', 'fait']]
+    .map(([c, l]) => h('span', {}, h('span', { class: `sw ${c}`, 'aria-hidden': 'true' }), `${l} (${counts[c] || 0})`)), h('span', {}, '◆ jalon de la feuille de route'));
+  const check = (key, label) => h('label', { class: 'flt' }, h('input', { type: 'checkbox', checked: F[key] === '1' ? '' : null, onchange: (e) => setF(key, e.target.checked ? '1' : '') }), label);
+  const filters = h('div', { class: 'filters' },
+    h('input', { type: 'search', id: 'search', placeholder: 'Chercher un ticket…', value: F.gq || '', 'aria-label': 'Chercher un ticket',
+      oninput: (e) => setF('gq', e.target.value), onkeydown: (e) => { if (e.key === 'Enter' && match.size) tgGo([...match][0]); } }),
+    check('gFaits', 'Montrer les tickets faits'), cur ? check('gAutour', 'Seulement autour du ticket choisi') : null,
+    cur ? h('a', { class: 'btn o s', href: '#/planification/graphe' }, 'Tout le graphe') : null,
+    q ? h('span', { class: 'muted' }, `${plural(match.size, 'ticket trouvé', 'tickets trouvés')}${match.size ? ' — Entrée pour le choisir' : ''}`) : null);
+
+  const t = cur && by[cur];
+  const item = (s) => by[s] ? h('li', {}, h('a', { href: `#/planification/graphe/${encodeURIComponent(s)}` }, by[s].title), ' ', st(...tgState(by[s]).slice(0, 3))) : h('li', { class: 'mono' }, `${s} (introuvable)`);
+  const panel = t ? card(t.title,
+    h('p', {}, st(...tgState(t).slice(0, 3)), t.jalon ? [' ', st('jalon', 'r', '◆')] : null),
+    h('ul', { class: 'list' },
+      h('li', {}, `Feuille de route : ${t.feuille ? `sprint ${t.feuille}` : t.state === 'done' ? 'livré' : t.sprint ? `sprint composé ${t.sprint}` : 'pas encore placé'}`),
+      h('li', {}, `${plural(t.points, 'point', 'points')} · priorité ${t.priority ?? '—'}`),
+      h('li', {}, `Attend ${plural(up.size, 'ticket', 'tickets')} au total, ${plural(down.size, 'ticket attend', 'tickets attendent')} celui-ci`)),
+    h('h3', {}, `Attend directement (${t.depends_on.length})`), t.depends_on.length ? h('ul', { class: 'list' }, t.depends_on.map(item)) : none('Rien : il peut partir dès qu’il est complet.'),
+    h('h3', {}, `Attendu directement par (${(kids[cur] || []).length})`), (kids[cur] || []).length ? h('ul', { class: 'list' }, kids[cur].map(item)) : none('Aucun ticket.'),
+    t.manques.length ? [h('h3', {}, 'À compléter'), h('ul', {}, t.manques.map((m) => h('li', { class: 'mono' }, m)))] : null,
+    t.a_detailler && t.state !== 'done' ? h('p', { class: 'hint' }, 'Notes à écrire quand il entre dans un sprint (technique, architecture, interface, sécurité, juridique).') : null,
+    h('p', {}, h('a', { class: 'btn o s', href: ticketHref(`tickets/${cur}.md`) }, 'Ouvrir le ticket')))
+    : card('Choisir un ticket', none('Cliquez un ticket du graphe, ou cherchez-le. Entrée ou Espace le choisit au clavier.'));
+
+  return [...head, filters, legend, h('div', { class: 'cols w tg-cols' }, h('div', { class: 'tg-wrap' }, shown.size ? svg : none('Aucun ticket à montrer avec ces filtres.')), panel)];
 }
 
 // --- tickets : tableau, glisser-déposer ou menu ---------------------------------------------------
@@ -831,7 +961,8 @@ const NAV = [
 const ROUTES = [
   [/^\/$/, home, 'Vue d’ensemble'], [/^\/avancement$/, vAvancement, 'Plan d’avancement'],
   [/^\/tickets$/, vTickets, 'Tickets'], [/^\/gestion\/tickets$/, vTickets, 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
-  [/^\/sprints$/, vSprints, 'Sprints'], [/^\/planification$/, vPlanification, 'Planification'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(decodeURIComponent(m[1])), 'Sprint'],
+  [/^\/sprints$/, vSprints, 'Sprints'], [/^\/planification$/, vPlanification, 'Planification'],
+  [/^\/planification\/graphe(?:\/([^/]+))?$/, (m) => vGraphe(m[1] ? decodeURIComponent(m[1]) : null), 'Graphe des tickets'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(decodeURIComponent(m[1])), 'Sprint'],
   [/^\/exigences$/, vExigences, 'Cahier des charges'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(decodeURIComponent(m[1])), 'Exigence'],
   [/^\/personas$/, () => vPersonas(), 'Personas'], [/^\/personas\/([^/]+)$/, (m) => vPersonas(decodeURIComponent(m[1])), 'Persona'],
   [/^\/recettes$/, vRecettes, 'Recettes et qualité'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
