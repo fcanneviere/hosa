@@ -445,9 +445,33 @@ function tgLayout(by, shown) {
   return { col, row, cols };
 }
 
+// colonnes : les sprints — livrés, composés, puis ceux que la feuille de route calcule, puis les tickets qu'elle ne
+// place pas ; dans une colonne, l'ordre de construction (profondeur dans le graphe, puis priorité)
+function tgSprintLayout(by, shown) {
+  const depth = tgLayout(by, shown).col;
+  const composed = [...new Set([...shown].filter((s) => by[s].state !== 'done' && by[s].sprint).map((s) => by[s].sprint))].sort();
+  const key = (t) => t.state === 'done' ? ['0', 'Livrés']
+    : t.sprint ? [`1${t.sprint}`, `Sprint en cours · ${t.sprint}`]
+    : t.feuille ? [`2${String(t.feuille).padStart(3, '0')}`, `Feuille de route · S${t.feuille}`]
+    : ['3', t.manques.length ? 'Non placés · à compléter' : 'Non placés · en attente'];
+  const groups = {};
+  for (const s of shown) { const [k, label] = key(by[s]); (groups[k] = groups[k] || { label, items: [] }).items.push(s); }
+  const keys = Object.keys(groups).sort();
+  if (groups['3']) groups['3'].label = 'Non placés';
+  const col = {}, row = {}, cols = [], labels = [];
+  keys.forEach((k, i) => {
+    const items = groups[k].items.sort((a, b) => depth[a] - depth[b] || (by[a].priority ?? 9999) - (by[b].priority ?? 9999) || (a < b ? -1 : 1));
+    items.forEach((s, j) => { col[s] = i; row[s] = j; });
+    cols.push(items);
+    const pts = items.reduce((n, s) => n + by[s].points, 0);
+    labels.push([groups[k].label, `${plural(items.length, 'ticket', 'tickets')} · ${pts} pts`]);
+  });
+  return { col, row, cols, labels, composed };
+}
+
 function vGraphe(sel) {
   const head = [crumbs(['Planification', '/planification'], ['Graphe des tickets']),
-    pageH('Pilotage', 'Graphe des tickets', 'Chaque ticket après ce qu’il attend. Choisissez un ticket : ce qu’il attend et ce qui l’attend restent visibles, le reste s’efface.')];
+    pageH('Pilotage', 'Graphe des tickets', 'Par sprint : une colonne par sprint, livrés, en cours, puis ceux que la feuille de route calcule. Par dépendance : chaque ticket après ce qu’il attend. Choisissez un ticket : ce qu’il attend et ce qui l’attend restent visibles, le reste s’efface.')];
   if (S.depFor !== (F.objectif || '')) { loadDep(); return [...head, none('Calcul du graphe…')]; }
   const d = S.dep;
   if (!d) return [...head, none('Calcul du graphe…')];
@@ -462,17 +486,26 @@ function vGraphe(sel) {
   const shown = new Set(all.filter((t) => (showDone || t.state !== 'done' || t.slug === cur) && (!focus || near.has(t.slug))).map((t) => t.slug));
   const q = norm(F.gq || ''), match = new Set(q ? [...shown].filter((s) => norm(`${by[s].title} ${s}`).includes(q)) : []);
 
-  const W = 236, H = 42, GX = 84, GY = 12, P = 16;
-  const { col, row, cols } = tgLayout(by, shown);
+  const bySprint = F.gAxe !== 'dependances';
+  const W = 236, H = 42, GX = bySprint ? 96 : 84, GY = 12, P = 16, TOP = bySprint ? 46 : 0;
+  const { col, row, cols, labels } = bySprint ? tgSprintLayout(by, shown) : tgLayout(by, shown);
   const width = P * 2 + cols.length * W + Math.max(0, cols.length - 1) * GX;
-  const height = P * 2 + Math.max(1, ...cols.map((c) => c.length)) * (H + GY);
-  const xy = (s) => [P + col[s] * (W + GX), P + row[s] * (H + GY)];
+  const height = P * 2 + TOP + Math.max(1, ...cols.map((c) => c.length)) * (H + GY);
+  const xy = (s) => [P + col[s] * (W + GX), P + TOP + row[s] * (H + GY)];
   const edges = [];
   for (const s of shown) for (const dep of by[s].depends_on) if (shown.has(dep)) {
-    const [x1, y1] = xy(dep), [x2, y2] = xy(s), a = x1 + W, b = y1 + H / 2, c = x2, e = y2 + H / 2, m = (c - a) / 2;
+    const [x1, y1] = xy(dep), [x2, y2] = xy(s);
     const on = cur && near.has(s) && near.has(dep) && (s === cur || dep === cur || (up.has(s) || s === cur) && up.has(dep) || down.has(s) && (down.has(dep) || dep === cur));
-    edges.push(sv('path', { class: `e${on ? ' hl' : ''}`, d: `M${a},${b} C${a + m},${b} ${c - m},${e} ${c},${e}`, 'marker-end': 'url(#tg-arr)' }));
+    let d;
+    if (x1 < x2) { const a = x1 + W, b = y1 + H / 2, c = x2, e = y2 + H / 2, m = (c - a) / 2; d = `M${a},${b} C${a + m},${b} ${c - m},${e} ${c},${e}`; }
+    else {  // même colonne (axe des sprints) : une anse à gauche, de la dépendance au ticket qui l'attend
+      const b = y1 + H / 2, e = y2 + H / 2, k = Math.min(GX - 14, 18 + Math.abs(e - b) / 6);
+      d = `M${x1},${b} C${x1 - k},${b} ${x2 - k},${e} ${x2},${e}`;
+    }
+    edges.push(sv('path', { class: `e${on ? ' hl' : ''}`, d, 'marker-end': 'url(#tg-arr)' }));
   }
+  const heads = (labels || []).map(([l, sub], i) => sv('g', { class: 'ch', transform: `translate(${P + i * (W + GX)},${P})` },
+    sv('text', { x: 0, y: 12, class: 'ct' }, cut(l, 34)), sv('text', { x: 0, y: 28, class: 'cs' }, sub), sv('line', { x1: 0, y1: 36, x2: W, y2: 36 })));
   const nodes = [...shown].map((s) => {
     const t = by[s], [x, y] = xy(s), [label, , sym, cls] = tgState(t);
     const sub = [t.feuille ? `feuille S${t.feuille}` : null, `${t.points} pt${t.points > 1 ? 's' : ''}`, t.priority != null ? `prio ${t.priority}` : null].filter(Boolean).join(' · ');
@@ -488,14 +521,19 @@ function vGraphe(sel) {
   });
   const svg = sv('svg', { class: `tg${cur ? ' has-sel' : ''}`, width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': `Graphe de ${shown.size} tickets` },
     sv('defs', {}, sv('marker', { id: 'tg-arr', viewBox: '0 0 8 8', refX: '7', refY: '4', markerWidth: '7', markerHeight: '7', orient: 'auto' }, sv('path', { d: 'M0,0 L8,4 L0,8 z' }))),
-    edges, nodes);
-  if (cur) requestAnimationFrame(() => { const n = document.querySelector(`.tg .n[data-slug="${CSS.escape(cur)}"]`); if (n) n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+    heads, edges, nodes);
+  // le ticket choisi au centre du cadre du graphe, sans faire défiler la page (sur téléphone, le titre sortait)
+  if (cur) requestAnimationFrame(() => { const w = document.querySelector('.tg-wrap'); if (!w || !shown.has(cur)) return;
+    const [x, y] = xy(cur); w.scrollLeft = Math.max(0, x + W / 2 - w.clientWidth / 2); w.scrollTop = Math.max(0, y + H / 2 - w.clientHeight / 2); });
 
   const counts = all.reduce((k, t) => { const c = tgState(t)[3]; k[c] = (k[c] || 0) + 1; return k; }, {});
   const legend = h('div', { class: 'tg-legend' }, [['todo', 'à faire'], ['det', 'à détailler'], ['sprint', 'dans un sprint'], ['bad', 'incomplet'], ['done', 'fait']]
     .map(([c, l]) => h('span', {}, h('span', { class: `sw ${c}`, 'aria-hidden': 'true' }), `${l} (${counts[c] || 0})`)), h('span', {}, '◆ jalon de la feuille de route'));
   const check = (key, label) => h('label', { class: 'flt' }, h('input', { type: 'checkbox', checked: F[key] === '1' ? '' : null, onchange: (e) => setF(key, e.target.checked ? '1' : '') }), label);
-  const filters = h('div', { class: 'filters' },
+  const axe = h('div', { class: 'seg', role: 'group', 'aria-label': 'Axe des colonnes' },
+    [['', 'Par sprint'], ['dependances', 'Par dépendance']].map(([v, l]) =>
+      h('button', { type: 'button', 'aria-pressed': String((F.gAxe || '') === v), onclick: () => setF('gAxe', v) }, l)));
+  const filters = h('div', { class: 'filters' }, axe,
     h('input', { type: 'search', id: 'search', placeholder: 'Chercher un ticket…', value: F.gq || '', 'aria-label': 'Chercher un ticket',
       oninput: (e) => setF('gq', e.target.value), onkeydown: (e) => { if (e.key === 'Enter' && match.size) tgGo([...match][0]); } }),
     check('gFaits', 'Montrer les tickets faits'), cur ? check('gAutour', 'Seulement autour du ticket choisi') : null,
