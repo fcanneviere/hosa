@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 .hosa/graph/
 .venv/
+.hosa/kb/code/
