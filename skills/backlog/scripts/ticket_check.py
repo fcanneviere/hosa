@@ -24,6 +24,9 @@ A ticket is complete when it has, in its body:
   - every « label » a criterion cites present in the code, or brought by this
     ticket or one of its `depends_on` (the tickets whose criteria click it),
     and no criterion conditional on another ticket (« dès qu'il existe »),
+  - every `CAn` of another ticket its criteria and notes cite (`CA11 de <ticket>`,
+    `[t](t.md) CA5`) a criterion that ticket has, every KB file its notes link
+    present, and no decision cited from an agent's report (« Q2 du rapport »),
   - every rule, error case or indicator a criterion cites (`- CA1 [RG2, CE1] — …`,
     `- CA2 [IN1] — …`) in force in an exigence of its `Lié à :` line, and a
     criterion citing an indicator stating its expected value (a number).
@@ -609,6 +612,81 @@ def hidden_dependencies(path: Path, front: str, body: str) -> list[str]:
     return out
 
 
+CA_LIST = r"CA\d+(?:\s*(?:,|et|à|-)\s*CA\d+)*"
+# `[x](x.md) CA5`, `[x](../tickets/x.md) (CA1, CA2)`, `x (CA5)` with a slug of 3 words at least
+REF_AFTER = re.compile(r"(?:\[[^\]]*\]\((?:\.\./tickets/)?([\w-]+)\.md\)|`?\b([a-z0-9]+(?:-[a-z0-9]+){2,})\b`?)"
+                       r"\s*\(?\s*(" + CA_LIST + r")\b")
+# `CA11 de lancer-un-nettoyage`, `CA9 de [lister](lister.md)`
+REF_BEFORE = re.compile(r"\b(" + CA_LIST + r")\s+(?:de|du ticket)\s+(?:\[[^\]]*\]\((?:\.\./tickets/)?([\w-]+)\.md\)"
+                        r"|`?([a-z0-9]+(?:-[a-z0-9]+)+)`?)")
+KB_LINK = re.compile(r"\]\(((?!https?:)[\w./-]+\.md)(?:#[^)]*)?\)")
+REPORT = re.compile(r"\bQ\d+(?:\s*/\s*Q\d+)*\s+du rapport\b[^)\];,.]*")
+
+
+def resolve_ticket(name: str, tickets: Path) -> str | None:
+    """A slug, or the unique ticket whose slug starts with it (« lancer-un-nettoyage » for
+    `lancer-un-nettoyage-et-enregistrer-une-version`)."""
+    if (tickets / f"{name}.md").is_file():
+        return name
+    found = [f.stem for f in tickets.glob(f"{name}-*.md")]
+    return found[0] if len(found) == 1 else None
+
+
+def cross_references(path: Path, body: str) -> list[str]:
+    """What a ticket's criteria and notes cite elsewhere exists: the other ticket has that `CAn`, the KB file is there,
+    a decision is a KB file, never an agent's report (rieki sprint-4: « CA11 de lancer-un-nettoyage » and « CA9 de
+    lister » that didn't exist, « Q2/Q3 du rapport de sécurité » found nowhere — each seen only at qa-plan).
+    `HOSA_RENVOIS=0`: off."""
+    if os.environ.get("HOSA_RENVOIS") == "0" or path.parent.name != "tickets":
+        return []
+    out = []
+    for heading in SECTIONS:
+        text = section(body, heading) or ""
+        name = heading[3:]
+        refs = [(m[3], m[1] or m[2]) for m in REF_AFTER.finditer(text)]
+        refs += [(m[1], m[2] or m[3]) for m in REF_BEFORE.finditer(text)]
+        for cas, target in refs:
+            slug = resolve_ticket(target, path.parent)
+            if not slug or slug == path.stem:
+                continue
+            theirs = ticket_index(path.parent).get(slug, {}).get("links", {})
+            for ca in dict.fromkeys(re.findall(r"CA\d+", cas)):
+                if ca not in theirs:
+                    gap = f"`{name}` cite {ca} de `{slug}`, qui n'a pas ce critère → corriger le renvoi"
+                    if gap not in out:
+                        out.append(gap)
+        if heading == "## Critères d'acceptation":
+            continue
+        for link in dict.fromkeys(KB_LINK.findall(text)):
+            if not (path.parent / link).resolve().is_file():
+                out.append(f"`{name}` cite `{link}`, absent de la KB → lien à corriger")
+        for cite in dict.fromkeys(REPORT.findall(text)):
+            out.append(f"`{name}` cite « {cite.strip()} », introuvable dans la KB → citer le fichier de la KB "
+                       "qui porte la décision")
+    return out
+
+
+def note_tickets(path: Path, body: str) -> list[str]:
+    """The tickets still to build that a note cites, outside its `Hors périmètre` bullet, and that neither come before
+    this one (`depends_on`) nor after it (they depend on it): what the note uses from them doesn't exist when this
+    ticket is built — unless the sprint holds them (`avancement.py check sprint`)."""
+    if path.parent.name != "tickets":
+        return []
+    index, me = ticket_index(path.parent), path.stem
+    before, out = closure(me, path.parent), []
+    for heading in list(SECTIONS)[1:]:
+        for line in (section(body, heading) or "").splitlines():
+            if "Hors périmètre" in line:
+                continue
+            for x in TICKET_LINK.findall(line):
+                if x == me or x in out or x in before or x not in index or index[x]["done"]:
+                    continue
+                if me in closure(x, path.parent):
+                    continue
+                out.append(x)
+    return out
+
+
 def in_code(label: str, code: str) -> bool:
     """The label as a whole literal: `"Confirmer"`, `>Confirmer<`, `:red[Confirmer]`, « Confirmer » in a comment —
     never a word of a sentence (« Supprimer une version supprime ses filles »)."""
@@ -722,6 +800,9 @@ def gaps(path: Path) -> list[str]:
     missing += phantom_paths(path, front, body)
     missing += unbuilt_labels(path, front, body)
     missing += hidden_dependencies(path, front, body)
+    missing += cross_references(path, body)
+    missing += [f"(info) une note cite `{x}` (à faire), ni dans `depends_on` ni après ce ticket : le sprint doit "
+                "le prendre avant lui" for x in note_tickets(path, body)]
     missing += late_dependencies(path, front)
     loop = cycle_from(path.stem, path.parent)
     if loop:

@@ -408,3 +408,60 @@ class SecurityAndLegalNotes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CrossReferences(unittest.TestCase):
+    """rieki sprint-4: renvois `CAn` vers un critère absent, « Q2/Q3 du rapport de sécurité », un ticket cité par
+    une note sans être une dépendance — tous vus seulement au `qa-plan`, six passages de hosa-qa-lead."""
+
+    def setUp(self):
+        self.tickets = Path(tempfile.mkdtemp()) / ".hosa" / "kb" / "tickets"
+        self.tickets.mkdir(parents=True)
+        (self.tickets.parent / "securite").mkdir()
+        (self.tickets.parent / "securite" / "modele-menaces.md").write_text("x", encoding="utf-8")
+        self.write("lancer-un-nettoyage-et-enregistrer-une-version", crit="- CA1 — a\n- CA2 — b\n")
+        self.write("lister-les-versions", crit="- CA1 — a\n")
+
+    def write(self, slug, front="", crit="- CA1 — a\n", note=""):
+        p = self.tickets / f"{slug}.md"
+        p.write_text(f"---\ntype: Ticket\nstate: todo\n{front}---\n## Critères d'acceptation\n{crit}"
+                     f"## Note technique (senior dev)\n{note}", encoding="utf-8")
+        return p
+
+    def refs(self, p):
+        return tc.cross_references(p, tc.split(p.read_text(encoding="utf-8"))[1])
+
+    def test_a_criterion_cited_in_another_ticket_exists_there(self):
+        p = self.write("t", note="- **Règles** : comme le CA11 de lancer-un-nettoyage ; voir "
+                                 "[l](lister-les-versions.md) CA9 ; et [l](../tickets/lister-les-versions.md) (CA1)\n")
+        self.assertEqual(self.refs(p), [
+            "`Note technique (senior dev)` cite CA9 de `lister-les-versions`, qui n'a pas ce critère → corriger le renvoi",
+            "`Note technique (senior dev)` cite CA11 de `lancer-un-nettoyage-et-enregistrer-une-version`, qui n'a pas "
+            "ce critère → corriger le renvoi"])
+        p = self.write("t", crit="- CA1 — comme CA2 de lancer-un-nettoyage, et CA1 à CA2 de lister-les-versions\n")
+        self.assertEqual(len(self.refs(p)), 1)  # CA2 of lister is missing, CA2 of the cleaning exists
+        self.assertIn("CA2 de `lister-les-versions`", self.refs(p)[0])
+
+    def test_a_note_links_kb_files_and_never_an_agent_report(self):
+        p = self.write("t", note="- **Source** : [m](../securite/modele-menaces.md) ; [x](../securite/absent.md) "
+                                 "(Q2/Q3 du rapport de sécurité)\n")
+        self.assertEqual(self.refs(p), [
+            "`Note technique (senior dev)` cite `../securite/absent.md`, absent de la KB → lien à corriger",
+            "`Note technique (senior dev)` cite « Q2/Q3 du rapport de sécurité », introuvable dans la KB → citer le "
+            "fichier de la KB qui porte la décision"])
+        os.environ["HOSA_RENVOIS"] = "0"
+        try:
+            self.assertEqual(self.refs(p), [])
+        finally:
+            del os.environ["HOSA_RENVOIS"]
+
+    def test_a_ticket_a_note_uses_comes_before_it(self):
+        self.write("mettre-en-file", "depends_on: [lancer]\n")
+        self.write("verrou")
+        p = self.write("lancer", note="- **Contrat** : appelle `demarrer` de [m](mettre-en-file.md) et le "
+                                      "message de [v](verrou.md)\n- **Hors périmètre** : [l](lister-les-versions.md)\n")
+        body = tc.split(p.read_text(encoding="utf-8"))[1]
+        self.assertEqual(tc.note_tickets(p, body), ["verrou"])  # one coming after it is the planner's, not a gap
+        self.assertIn("(info) une note cite `verrou`", " ".join(tc.gaps(p)))
+        p = self.write("lancer", "depends_on: [verrou]\n", note="- le message de [v](verrou.md)\n")
+        self.assertEqual(tc.note_tickets(p, tc.split(p.read_text(encoding="utf-8"))[1]), [])

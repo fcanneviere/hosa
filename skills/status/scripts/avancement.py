@@ -810,7 +810,12 @@ def composition(kb: Path, tickets: list[str]) -> list[str]:
             if dep not in tickets[:i] and field(read(kb / "tickets" / f"{dep}.md"), "state") != "done":
                 where = "placé après lui" if dep in tickets else "hors du sprint"
                 gaps.append(f"{t} : attend `{dep}`, ni fait ni avant lui dans le sprint ({where})")
-        gaps += [f"{t} : {g}" for g in tc.unbuilt_labels(path, front, body) + tc.hidden_dependencies(path, front, body)]
+        gaps += [f"{t} : {g}" for g in tc.unbuilt_labels(path, front, body) + tc.hidden_dependencies(path, front, body)
+                 + tc.cross_references(path, body)]
+        # a note uses what another ticket brings: that ticket comes first in the sprint, or is done (rieki sprint-4)
+        gaps += [f"{t} : une note cite `{x}` (à faire), ni dans `depends_on` ni avant lui dans le sprint → "
+                 f"`depends_on: [{x}]`, ou retirer de la note ce qu'elle en attend"
+                 for x in tc.note_tickets(path, body) if x not in tickets[:i]]
         if (field(front, "state") or "todo") == "todo":  # planned without its notes: `sprint` details it first
             gaps += [f"{t} : {g} — tâches `notes-<k>`, `securite-<k>`, `juridique-<k>`, `juge-<k>` de `sprint`"
                      for g in tc.gaps(path) if g.startswith(tc.TO_DETAIL)]

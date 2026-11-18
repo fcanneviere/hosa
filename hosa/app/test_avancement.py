@@ -1850,3 +1850,29 @@ def section_rows(text, heading):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CompositionBeforeQaPlan(unittest.TestCase):
+    """`check sprint` sees the composition gaps rieki's qa-plan found one by one (sprint-4, 6 passes on one ticket)."""
+
+    def test_a_note_citing_a_ticket_outside_the_sprint_and_a_wrong_criterion_block_the_sprint(self):
+        t = "---\ntype: Ticket\nstate: planned\n{}---\n## Critères d'acceptation\n- CA1 — a\n" \
+            "## Note technique (senior dev)\n{}"
+        k = kb({"sprints/s1.md": "---\ntype: Sprint\n---\n## Tickets\n- [V](../tickets/verrou.md)\n"
+                                 "- [L](../tickets/lancer.md)\n",
+                "tickets/verrou.md": t.format("", "- rien\n"),
+                "tickets/hors.md": t.format("", "- rien\n"),
+                "tickets/lancer.md": t.format("", "- message de [v](verrou.md) et de [h](hors.md) ; CA4 de [v](verrou.md)\n")})
+        gaps = av.composition(k, ["verrou", "lancer"])
+        self.assertEqual(gaps, [
+            "lancer : `Note technique (senior dev)` cite CA4 de `verrou`, qui n'a pas ce critère → corriger le renvoi",
+            "lancer : une note cite `hors` (à faire), ni dans `depends_on` ni avant lui dans le sprint → "
+            "`depends_on: [hors]`, ou retirer de la note ce qu'elle en attend"])
+
+    def test_the_judge_asks_what_no_regex_sees(self):
+        qs = " ".join(av.juge_questions("sprint", "juge-1"))
+        for words in ("`**Contrat**`", "table ou vue", "« existe »", "verrou ou statut", "mesure pas encore faite"):
+            self.assertIn(words, qs)
+        qs = " ".join(av.juge_questions("backlog", "juge-1"))
+        self.assertIn("verrou ou statut", qs)
+        self.assertIn("mesure pas encore faite", qs)
