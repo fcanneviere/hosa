@@ -629,3 +629,19 @@ class RulesWithoutIds(unittest.TestCase):
         with contextlib.redirect_stdout(out):
             self.assertEqual(tc.main([str(kbd), "--regles"]), 0)
         self.assertIn("(info) cdc/e.md", out.getvalue())
+
+
+class Slicing(unittest.TestCase):
+    def test_more_tickets_than_rules_is_shown_never_refused(self):
+        kbd = Path(tempfile.mkdtemp()) / ".hosa" / "kb"
+        (kbd / "cdc").mkdir(parents=True)
+        (kbd / "tickets").mkdir()
+        (kbd / "cdc" / "e.md").write_text("---\ntype: Exigence\n---\n## Règles de gestion\n- **RG1** — a\n"
+                                          "## Cas d'erreur\n- **CE1** — b\n", encoding="utf-8")
+        for i in range(3):
+            (kbd / "tickets" / f"t{i}.md").write_text("---\ntype: Ticket\n---\nLié à : [e](../cdc/e.md)\n", encoding="utf-8")
+        self.assertEqual(tc.slicing(kbd), [])  # 3 tickets: 2 rules + the main path
+        (kbd / "tickets" / "t3.md").write_text("---\ntype: Ticket\n---\nLié à : [e](../cdc/e.md)\n", encoding="utf-8")
+        self.assertEqual([x[:46] for x in tc.slicing(kbd)], ["(info) cdc/e.md — 4 tickets pour 2 règle(s) et"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kbd), "--decoupage"]), 0)

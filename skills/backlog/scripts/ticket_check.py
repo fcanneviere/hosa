@@ -51,6 +51,8 @@ Run:  python ticket_check.py <kb-dir> [--planifiable] [ticket ...]
       The rules × criteria matrix, over every ticket: each `RGn`/`CEn`/`INn` of an
       exigence is cited by a criterion of one of its tickets (exit 1 otherwise).
       An exigence whose tickets cite no rule at all predates the ids: skipped.
+      python ticket_check.py <kb-dir> --decoupage
+      Each exigence cut into more tickets than its rules and error cases plus one: shown, exit 0 (the user decides).
       python ticket_check.py <kb-dir> --repetes
       The criteria a `todo` ticket restates from another ticket of the same exigence
       (70 % of their words in common): one ticket owns a behaviour (exit 1 otherwise).
@@ -243,6 +245,28 @@ def measure_dependencies(path: Path, front: str, body: str) -> list[str]:
                            f"{m[1]} cite {rid}, qui attend la mesure {mid} : aucun ticket ne la fait → créer le "
                            f"ticket qui la mesure (`mesure: {mid}`), ou porter ce critère dans un ticket après lui")
     return list(dict.fromkeys(out))
+
+
+def slicing(kb: Path) -> list[str]:
+    """Each exigence cut into more tickets than it has rules and error cases, plus its main path: each ticket adds
+    about 7 criteria, their tests and their cross-references (rieki: 7 rules gave 22 tickets, 29 gave 41; pilot2
+    about one ticket per rule). Shown to the user before the roadmap, never refused: the split is the user's."""
+    count: dict[str, int] = {}
+    for f in sorted((kb / "tickets").glob("*.md")) if (kb / "tickets").is_dir() else []:
+        front, body = split(f.read_text(encoding="utf-8"))
+        if field(front, "type") == "Ticket":
+            for slug in linked_exigences(body):
+                count[slug] = count.get(slug, 0) + 1
+    out = []
+    for slug, n in sorted(count.items(), key=lambda x: -x[1]):
+        f = kb / "cdc" / f"{slug}.md"
+        if cdc() is None or not f.is_file():
+            continue
+        rules = len(cdc().rule_lines(f.read_text(encoding="utf-8")))
+        if n > rules + 1:
+            out.append(f"(info) cdc/{slug}.md — {n} tickets pour {rules} règle(s) et cas d'erreur : découpage à "
+                       "confirmer avec l'utilisateur (un ticket par écran, rôle ou variante, pas par règle)")
+    return out
 
 
 def rule_coverage(kb: Path) -> list[str]:
@@ -1008,7 +1032,7 @@ def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
         print("usage: ticket_check.py <kb-dir> [--ecartees] [--planifiable] [ticket.md ...] | <kb-dir> --regles"
-              " | <kb-dir> --repetes | <kb-dir> --differes",
+              " | <kb-dir> --repetes | <kb-dir> --differes | <kb-dir> --decoupage",
               file=sys.stderr)
         return 2
     fill = "--ecartees" in argv
@@ -1027,6 +1051,10 @@ def main(argv: list[str]) -> int:
                 print(x)
         print("\n".join(lacking) if lacking else "Règles : chaque règle numérotée d'une exigence découpée est citée par un critère.")
         return 1 if lacking else 0
+    if "--decoupage" in argv:
+        found = slicing(kb)
+        print("\n".join(found) if found else "Découpage : aucune exigence n'a plus de tickets que de règles.")
+        return 0
     if "--differes" in argv:
         found = deferred_cases(kb)
         print("\n".join(f"✗ {x}" for x in found) if found else "Différés : aucun cas d'abus différé.")
