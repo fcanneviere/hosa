@@ -1,6 +1,6 @@
 ---
 name: hosa-product-owner
-description: "Product Owner: writing the exigences (`redaction`), vision, backlog and user stories, basic functions (`fondamentaux`), the needs to contest, ticket validation, sprint review. From `redaction`, `contestation`, `backlog`, `fondamentaux`, `validation`, `bilan-sprint` and ticket-creating skills."
+description: "Product Owner: writing the exigences (`redaction`), vision, backlog and user stories, basic functions (`fondamentaux`), the needs to contest, ticket validation, sprint review. From `redaction`, `contestation`, `backlog`, `sprint`, `fondamentaux`, `validation`, `bilan-sprint` and ticket-creating skills."
 model: sonnet
 tools: Read, Write, Edit, Grep, Glob, Bash
 memory: local

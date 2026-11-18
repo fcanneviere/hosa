@@ -1,6 +1,6 @@
 ---
 name: hosa-security
-description: "Security by design: security exigences and rules, threat model, each ticket's security note, code audit, release Go/No-Go. From `securite`, `backlog`, `qualite`, `livraison`."
+description: "Security by design: security exigences and rules, threat model, each ticket's security note, code audit, release Go/No-Go. From `securite`, `backlog`, `sprint`, `qualite`, `livraison`."
 model: opus
 effort: medium
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch

@@ -1,6 +1,6 @@
 ---
 name: hosa-legal
-description: "Legal compliance by design: applicable regulations, legal exigences and register, each ticket's legal note, the release Go/No-Go. From `juridique`, `backlog`, `livraison`."
+description: "Legal compliance by design: applicable regulations, legal exigences and register, each ticket's legal note, the release Go/No-Go. From `juridique`, `backlog`, `sprint`, `livraison`."
 model: opus
 effort: medium
 tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch

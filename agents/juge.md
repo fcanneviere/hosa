@@ -1,6 +1,6 @@
 ---
 name: hosa-juge
-description: "Answers a task's closed questions from pipeline.json, Oui or Non per ticket with its proof line, and writes the verdict. From `backlog` (juge-<k>)."
+description: "Answers a task's closed questions from pipeline.json, Oui or Non per ticket with its proof line, and writes the verdict. From `backlog` and `sprint` (juge-<k>)."
 model: haiku
 effort: low
 tools: Read, Grep, Glob, Bash, Write
