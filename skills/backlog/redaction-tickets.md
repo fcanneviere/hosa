@@ -24,6 +24,8 @@ For each `Exigence` left after Step 1, **split it into tickets** first. A ticket
 
 **The graph is read from the text.** `sprint` plans from `depends_on`, and `ticket_check` checks it against what each ticket says: a criterion that links another ticket still to build needs it in `depends_on` (or moves to it; two tickets citing each other hold one behaviour: one keeps it); a table the architecture placement's `Données` reads needs a ticket that writes it, done or in `depends_on`. Write each table of `Données` with its verb — « `ventes`.`date`, … écrits ; `clients`.`circuit` lu » — the checker reads « écrit(e)(s) » and « lu(e)(s) » (rieki: the cleaning read `ventes`, whose import nothing put before it).
 
+**A measure before its rule.** A rule of the exigence that ends with `[à mesurer M1 : … — étape …]` and that `decisions.md` doesn't record yet: the measure is its own ticket (`mesure: M1` in its frontmatter, the criterion « the value is measured on … and written in `decisions.md` »), and every ticket whose criterion cites that rule lists it in `depends_on`. `ticket_check` refuses a criterion on a rule still waiting for its measure.
+
 **Production setup is a ticket, not a release surprise.** A `## Documents à produire hors logiciel` line or a production prerequisite (least-privilege accounts, encrypted backups with a tested restore, proxy configuration) that needs code or configuration gets its ticket here, not from the audit (pilot2: three database Blocking findings and four production-setup tickets created after sprint 1). The document itself stays the user's.
 
 **Exigences tagged `socle-comptes`** are not re-sliced: take the split of `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md` § Découpage en tickets, the tickets the variants keep, with its `depends_on`. Rate limiting is in `connexion`'s criteria, never a later ticket (pilot2: login shipped without it). In Step 6, propose these tickets first, in the split's order.
@@ -39,6 +41,7 @@ tags: []
 state: todo
 depends_on: []          # tickets à livrer avant celui-ci — retiré si vide
 estimate: <1|2|3>       # 1 ≤ ½ jour, 2 ≈ 1 jour, 3 = 2-3 jours ; plus → découper
+mesure: M1              # seulement pour le ticket qui fait une mesure `[à mesurer M1 …]` du cahier des charges
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 En tant que [persona],

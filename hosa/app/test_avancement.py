@@ -2012,3 +2012,17 @@ class SmallPoints(unittest.TestCase):
                                      "- **États** : succès — « Exécution 12 lancée »\n"})
         self.assertEqual(av.composition(k, ["lancer"]), [
             "lancer : « Exécution 12 lancée » : « Exécution » au lieu de « Run » (kb/interface/lexique.md)"])
+
+
+class Measures(unittest.TestCase):
+    def test_the_stage_a_measure_names_waits_for_its_value(self):
+        k = kb({"cdc/lancer.md": "---\ntype: Exigence\n---\n## Règles de gestion\n"
+                                 "- **RG4** — Repli. [à mesurer M1 : temps du 209M — étape stack]\n",
+                "cdc/decisions.md": "---\ntype: Journal des décisions\n---\n## Décisions\n",
+                "stack/t.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n"})
+        self.assertEqual(len(av.proofs(k, "stack", None)), 1)
+        self.assertIn("mesure M1 attendue à cette étape (cdc/lancer.md) : temps du 209M", av.proofs(k, "stack", None)[0])
+        self.assertEqual(av.measure_gaps(k, "infra"), [])
+        (k / "cdc" / "decisions.md").write_text("---\ntype: Journal des décisions\n---\n## Décisions\n"
+                                                "- 2026-11-18 — human:x — M1 : 42 s\n", encoding="utf-8")
+        self.assertEqual(av.proofs(k, "stack", None), [])

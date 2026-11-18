@@ -502,3 +502,29 @@ class Room(unittest.TestCase):
         self.assertTrue(gap.endswith("→ porter ce critère dans `supprimer-un-run` (`supprimer-un-run` : 10/10 "
                                      "critères — plein : découper le ticket d'abord)"), gap)
         self.assertTrue(tc.one_fix(gap.replace(" — plein : découper le ticket d'abord", "").replace("10/10", "4/10")))
+
+
+class MeasureFirst(unittest.TestCase):
+    def test_a_criterion_on_a_rule_waiting_for_a_measure_needs_the_measuring_ticket(self):
+        kbd = Path(tempfile.mkdtemp()) / ".hosa" / "kb"
+        (kbd / "cdc").mkdir(parents=True)
+        (kbd / "tickets").mkdir()
+        (kbd / "cdc" / "lancer.md").write_text("---\ntype: Exigence\n---\n## Règles de gestion\n"
+                                               "- **RG4** — Repli de taille. [à mesurer M1 : temps du 209M — étape stack]\n",
+                                               encoding="utf-8")
+        (kbd / "cdc" / "decisions.md").write_text("---\ntype: Journal des décisions\n---\n## Décisions\n", encoding="utf-8")
+        ticket = lambda front: (f"---\ntype: Ticket\nstate: todo\n{front}---\nLié à : [e](../cdc/lancer.md)\n"  # noqa: E731
+                                "## Critères d'acceptation\n- CA12 [RG4] — propose une taille plus petite\n")
+        p = kbd / "tickets" / "lancer-un-run.md"
+        p.write_text(ticket(""), encoding="utf-8")
+        gaps = lambda: tc.measure_dependencies(p, *tc.split(p.read_text(encoding="utf-8")))  # noqa: E731
+        self.assertIn("aucun ticket ne la fait → créer le ticket qui la mesure (`mesure: M1`)", gaps()[0])
+        (kbd / "tickets" / "mesurer.md").write_text("---\ntype: Ticket\nstate: todo\nmesure: M1\n---\n", encoding="utf-8")
+        self.assertEqual(gaps(), ["CA12 cite RG4, qui attend la mesure M1 → `depends_on: [mesurer]`"])
+        self.assertTrue(tc.one_fix(gaps()[0]))
+        p.write_text(ticket("depends_on: [mesurer]\n"), encoding="utf-8")
+        self.assertEqual(gaps(), [])
+        p.write_text(ticket(""), encoding="utf-8")
+        (kbd / "cdc" / "decisions.md").write_text("---\ntype: Journal des décisions\n---\n## Décisions\n"
+                                                  "- 2026-11-18 — M1 : 42 s\n", encoding="utf-8")
+        self.assertEqual(gaps(), [])  # measured: the rule has its value

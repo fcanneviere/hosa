@@ -883,8 +883,36 @@ def backlog_fixes(kb: Path, tickets: list[str]) -> list[str]:
             f"Graph fixes) — {g}" for s, g in ticket_check().single_fixes(kb / "tickets") if s not in tickets]
 
 
+@functools.cache
+def cdc_module():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "redaction" / "scripts" / "cdc.py"
+    spec = importlib.util.spec_from_file_location("cdc", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def measure_gaps(kb: Path, stage: str) -> list[str]:
+    """A value the cahier des charges leaves to a measure (`[à mesurer M1 : … — étape <stage>]`) is taken by that
+    stage: it can't close while `decisions.md` doesn't record M1 (rieki: « le temps du modèle 209M, mesuré à l'étape
+    stack » — never measured, the criterion built on it reopened sprint 4)."""
+    try:
+        cdc = cdc_module()
+        done = cdc.measured(kb)
+        return [f"mesure {m['id'] or '(sans id)'} attendue à cette étape ({m['fiche']}) : {m['quoi']} — "
+                f"l'écrire dans `kb/cdc/decisions.md` § Décisions (`- <date> — {m['id'] or 'Mn'} : <valeur> …`)"
+                for m in cdc.measures(kb) if m["etape"] == stage and m["id"] not in done]
+    except Exception:  # never this check's own failure
+        return []
+
+
 def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     """The files and checkers that prove a stage done."""
+    return stage_proofs(kb, stage, sprint) + measure_gaps(kb, stage)
+
+
+def stage_proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     if stage not in SPRINT:
         return upstream_check(kb, stage)
     if not sprint:

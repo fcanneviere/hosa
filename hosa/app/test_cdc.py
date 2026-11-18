@@ -313,3 +313,32 @@ class Assemble(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Pending(unittest.TestCase):
+    """rieki: « Repli de taille » signed with « mesure à prendre ; aucun chiffre n'est fixé avant », and a
+    « Question ouverte (non décidée) » inside a rule — both became criteria nobody could test."""
+
+    def test_a_line_waiting_for_a_choice_is_a_hole(self):
+        for words in ("Question ouverte : la durée minimale.", "Le seuil reste à définir.",
+                      "Le temps cible : mesure à prendre ; aucun chiffre n'est fixé avant."):
+            with tempfile.TemporaryDirectory() as d:
+                found = holes(kb(d, cdc__envoyer_la_liste=EXIGENCE.replace("- **RG1** — Une seule notification.",
+                                                                            f"- **RG1** — {words}")))
+                self.assertEqual(len(found), 1, words)
+                self.assertIn("décider (`decisions.md`)", found[0])
+
+    def test_a_measure_is_numbered_then_taken_by_its_stage(self):
+        rule = "- **RG1** — Si le calcul dépasse le temps cible, Rieki propose moins. [à mesurer : temps du modèle — étape stack]"
+        with tempfile.TemporaryDirectory() as d:
+            root = kb(d, cdc__envoyer_la_liste=EXIGENCE.replace("- **RG1** — Une seule notification.", rule))
+            self.assertEqual(holes(root), ["mesure sans identifiant : `cdc numerote` lui donne son `Mn`"])
+            self.assertEqual(cdc.numerote_mesures(root), 1)
+            self.assertEqual(holes(root), [])
+            self.assertEqual([(m["id"], m["etape"]) for m in cdc.measures(root)], [("M1", "stack")])
+            self.assertEqual(cdc.rule_measures((root / "cdc" / "envoyer-la-liste.md").read_text(encoding="utf-8")),
+                             {"RG1": ["M1"]})
+            self.assertEqual(cdc.measured(root), set())
+            (root / "cdc" / "decisions.md").write_text(DECISIONS + "- 2026-11-18 — human:x — M1 : 42 s sur le poste.\n",
+                                                       encoding="utf-8")
+            self.assertEqual(cdc.measured(root), {"M1"})

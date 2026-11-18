@@ -247,6 +247,69 @@ def numerote(path: Path) -> int:
     return added
 
 
+# A line of a signed fiche that still waits for a decision (rieki: « Repli de taille » with « mesure à prendre ;
+# aucun chiffre n'est fixé avant », and a « Question ouverte (non décidée) » inside a rule — both signed, both
+# reopened the sprint as criteria nobody could test). A value that can only come from a measure is written
+# `[à mesurer M1 : <quoi> — étape <étape>]`: that stage refuses `done` until `decisions.md` records M1.
+PENDING = re.compile(r"question ouverte|non décidée?s?\b|à trancher|mesure à prendre|aucun chiffre n.est fixé"
+                     r"|à définir\b|à fixer plus tard|\bTBD\b|\bTODO\b", re.I)
+MEASURE = re.compile(r"\[à mesurer(?:\s+(M\d+))?\s*:\s*([^\]]+?)\s*—\s*étape\s+`?([\w-]+)`?\s*\]", re.I)
+
+
+def measures(kb: Path) -> list[dict[str, str]]:
+    """Each `[à mesurer Mn : … — étape x]` of the exigences: {id, quoi, etape, fiche}."""
+    out = []
+    for f in sorted((kb / "cdc").glob("*.md")) if (kb / "cdc").is_dir() else []:
+        for m in MEASURE.finditer(f.read_text(encoding="utf-8")):
+            out.append({"id": m[1] or "", "quoi": m[2], "etape": m[3], "fiche": f"cdc/{f.name}"})
+    return out
+
+
+def measured(kb: Path) -> set[str]:
+    """The measures `decisions.md` records under `## Décisions` (a line naming `M1` and its value)."""
+    f = kb / "cdc" / "decisions.md"
+    if not f.is_file():
+        return set()
+    return set(re.findall(r"\b(M\d+)\b", get(section_map(split(f.read_text(encoding="utf-8"))[1]), "Décisions")))
+
+
+def rule_measures(text: str) -> dict[str, list[str]]:
+    """{rule id: the `Mn` its line and sub-bullets wait for}."""
+    lines, out = text.splitlines(), {}
+    for i, _, rid in rule_lines(text):
+        block = [lines[i]]
+        for nxt in lines[i + 1:]:
+            if not re.match(r"^\s+\S", nxt):
+                break
+            block.append(nxt)
+        ids = [m[1] for m in MEASURE.finditer("\n".join(block)) if m[1]]
+        if rid and ids:
+            out[rid] = ids
+    return out
+
+
+def numerote_mesures(kb: Path) -> int:
+    """Give each `[à mesurer : …]` without an id the next free `Mn`, over the whole cahier des charges."""
+    files = sorted((kb / "cdc").glob("*.md"))
+    last = max([int(m["id"][1:]) for m in measures(kb) if m["id"]] or [0])
+    added = 0
+    for f in files:
+        with f.open(encoding="utf-8", newline="") as fh:
+            text = fh.read()
+        def give(m: re.Match) -> str:
+            nonlocal last, added
+            if m[1]:
+                return m[0]
+            last += 1
+            added += 1
+            return m[0].replace("[à mesurer", f"[à mesurer M{last}", 1)
+        new = MEASURE.sub(give, text)
+        if new != text:
+            with f.open("w", encoding="utf-8", newline="") as fh:
+                fh.write(new)
+    return added
+
+
 def table_rows(text: str) -> list[list[str]]:
     rows = []
     for line in text.splitlines():
@@ -342,6 +405,18 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
         n = sum(1 for line in c.body.splitlines() if A_CONFIRMER in line.lower())
         if n:
             hole("recueil", c.rel, f"{n} ligne(s) `{A_CONFIRMER}` : déduite(s), jamais confirmée(s) par l'utilisateur")
+
+    # Décisions en suspens : une ligne qui attend encore un choix, dans une fiche qu'on va signer
+    for c in [*exigences, *(x for x in (d["modele"], d["glossaire"]) if x)]:
+        for line in c.body.splitlines():
+            if MEASURE.search(line):
+                if not MEASURE.search(line)[1]:
+                    hole("décisions en suspens", c.rel, "mesure sans identifiant : `cdc numerote` lui donne son `Mn`")
+                continue
+            m = PENDING.search(line)
+            if m:
+                hole("décisions en suspens", c.rel, f"« {m[0]} » : {line.strip()[:110]} — décider (`decisions.md`), "
+                     "ou écrire `[à mesurer : <quoi> — étape <étape>]` si seule une mesure le dira")
 
     # Règles : chaque règle et chaque cas d'erreur a son identifiant, celui que les critères des tickets citent
     for e in exigences:
@@ -681,8 +756,9 @@ def main(argv: list[str]) -> int:
         return 0
     if a.command == "numerote":
         done = [(e.rel, n) for e in d["exigences"] if (n := numerote(e.path))]
+        m = numerote_mesures(kb)
         print(f"{sum(n for _, n in done)} règle(s) et cas d'erreur numéroté(s) dans {len(done)} fiche(s)"
-              + "".join(f"\n- {rel} : {n}" for rel, n in done))
+              + "".join(f"\n- {rel} : {n}" for rel, n in done) + (f"\n{m} mesure(s) numérotée(s) (`Mn`)" if m else ""))
         return 0
     found = holes(d, kb)
     if a.command == "assemble":

@@ -206,6 +206,45 @@ def unknown_rules(kb: Path, body: str) -> list[str]:
             for r in sorted(cited - {r for ids in known for r in ids})]
 
 
+def measure_dependencies(path: Path, front: str, body: str) -> list[str]:
+    """A criterion citing a rule that waits for a measure (`[à mesurer M1 : …]` in the exigence) can't be tested
+    before the measure: the ticket that makes it (`mesure: M1` in its frontmatter) comes first, unless
+    `decisions.md` already records M1 (rieki: CA12 « repli de taille », on a time nobody had measured)."""
+    kb = path.parent.parent
+    if cdc() is None or path.parent.name != "tickets":
+        return []
+    done, out = cdc().measured(kb), []
+    waits = {}
+    for slug in linked_exigences(body):
+        f = kb / "cdc" / f"{slug}.md"
+        if f.is_file():
+            waits.update(cdc().rule_measures(f.read_text(encoding="utf-8")))
+    if not waits:
+        return out
+    makers = {}
+    for f in path.parent.glob("*.md"):
+        m = re.search(r"^mesure:\s*\[?([\w, ]+)\]?\s*$", split(f.read_text(encoding="utf-8"))[0], re.M)
+        for mid in re.findall(r"M\d+", m[1]) if m else []:
+            makers.setdefault(mid, f.stem)
+    mine = set(re.findall(r"M\d+", (re.search(r"^mesure:.*$", front, re.M) or [""])[0]))
+    deps = closure(path.stem, path.parent)
+    for line in (section(body, "## Critères d'acceptation") or "").splitlines():
+        m = re.match(r"\s*[-*]\s+(CA\d+)\s*\[([^\]]*)\]", line)
+        if not m:
+            continue
+        for rid in re.findall(r"\b(?:RG|CE)\d+\b", m[2]):
+            for mid in waits.get(rid, []):
+                if mid in done or mid in mine:
+                    continue
+                by = makers.get(mid)
+                if by and by in deps:
+                    continue
+                out.append(f"{m[1]} cite {rid}, qui attend la mesure {mid} → `depends_on: [{by}]`" if by else
+                           f"{m[1]} cite {rid}, qui attend la mesure {mid} : aucun ticket ne la fait → créer le "
+                           f"ticket qui la mesure (`mesure: {mid}`), ou porter ce critère dans un ticket après lui")
+    return list(dict.fromkeys(out))
+
+
 def rule_coverage(kb: Path) -> list[str]:
     """Each numbered rule and error case of an exigence, cited by a criterion of one of its tickets — the cell
     the judge can't see: it reads one ticket at a time, and a rule no ticket took is in none of them.
@@ -811,6 +850,7 @@ def gaps(path: Path) -> list[str]:
     missing += unbuilt_labels(path, front, body)
     missing += hidden_dependencies(path, front, body)
     missing += cross_references(path, body)
+    missing += measure_dependencies(path, front, body)
     missing += [f"(info) une note cite `{x}` (à faire), ni dans `depends_on` ni après ce ticket : le sprint doit "
                 "le prendre avant lui" for x in note_tickets(path, body)]
     missing += late_dependencies(path, front)
