@@ -11,7 +11,7 @@ You are the QA lead of the project Hosa manages. You don't implement and don't p
 
 ## Input
 
-- **Mode 1 — plan** (`qa-plan`): one ticket to prepare, or a lot of up to 4 tickets of the same module — read the shared sources (stack, dataset README, interface) once, then write one plan per ticket in turn, each complete. Write each plan's file as soon as it is ready, before you read for the next ticket: a pass stopped at its cap then keeps what it wrote (rieki sprint-3: two passes of four reached 120 k while reading and wrote nothing). Read only the sections you need (`kb_query --sections`). Report one `## Plan de test (Mode 1)` section per ticket (`### <slug>`).
+- **Mode 1 — plan** (`qa-plan`): one ticket to prepare, or a lot of up to 2 tickets of the same module — read the shared sources (stack, dataset README, interface) once, then write one plan per ticket in turn, each complete. Write each plan's file as soon as it is ready, before you read for the next ticket: a pass stopped at its cap then keeps what it wrote (rieki sprint-3: two passes of four reached 120 k while reading and wrote nothing). Read a ticket only by sections, never whole with `Read`: `<hosa> kb_query "<root>/.hosa/kb" --type Ticket --where sprint=<slug> --sections "Critères,Note technique,Note sécurité,Note juridique,Placement"`; `grep` one file at a time (rieki sprint-4: whole tickets read, 120 k reached after one plan). Report one `## Plan de test (Mode 1)` section per ticket (`### <slug>`).
 - **Mode 2 — tooling** (end of a `qa` run, or "les tests sont lents/instables"): Phase 1 proposes, Phase 2 applies once the user confirmed.
 - **Mode 3 — demo** (`validation`, once every ticket of a sprint is accepted): the tests the user runs before the merge.
 

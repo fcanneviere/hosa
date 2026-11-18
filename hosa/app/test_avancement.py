@@ -1937,3 +1937,56 @@ class CheckOutput(unittest.TestCase):
         self.assertEqual(av.observation_gaps("## Observation\n- CA9 à CA12 — x — observé par : y\n", crit),
                          ["`## Observation` : CA11 n'est pas un critère du ticket",
                           "`## Observation` : CA12 n'est pas un critère du ticket"])
+
+
+class QaPlanTasks(unittest.TestCase):
+    """rieki sprint-4: lots of 4 wrote 1 or 2 plans; one data-engineer pass stopped before the load (125 k)."""
+
+    def setUp(self):
+        t = "---\ntype: Ticket\nstate: planned\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n- CA3 — c\n"
+        plan = ('---\ntype: Test Plan\ntitle: "T"\ndescription: "D."\ntags: [technique]\n'
+                "generated: { by: hosa-qa-lead/1.0, at: '2026-11-18T00:00:00Z' }\n---\n"
+                "## Cas de test\n- [CA1] x\n- [CA2] y\n- [CA3] z\n## Observation\nAucun\n")
+        self.k = kb({"sprints/s1.md": "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n"
+                                      "- [B](../tickets/b.md)\n- [C](../tickets/c.md)\n",
+                     **{f"tickets/{s}.md": t for s in "abc"}, **{f"test/{s}-technique.md": plan for s in "abc"}})
+        closed_until(self.k, "backlog")
+        run(self.k, "done", "sprint", "--sprint", "s1", "--force")
+        run(self.k, "start", "qa-plan", "--sprint", "s1")
+        self.readme = self.k.parent / f"{self.k.name}-jeu" / "README.md"
+        self.readme.parent.mkdir()
+
+    def task(self, *argv):
+        return run(self.k, "task", *argv[:1], "qa-plan", *argv[1:], "--sprint", "s1")
+
+    def test_a_plans_lot_holds_two_tickets(self):
+        self.task("add", "plans-1", "--agent", "hosa-qa-lead")
+        code, out = self.task("done", "plans-1", "--sortie", "kb/test/a-technique.md,kb/test/b-technique.md,"
+                                                              "kb/test/c-technique.md")
+        self.assertEqual(code, 1, out)
+        self.assertIn("lot de 3 tickets, 2 au plus", out)
+
+    def test_the_dataset_is_written_then_loaded_then_covers_every_criterion(self):
+        self.task("add", "jeu-ecriture", "--agent", "hosa-data-engineer")
+        self.assertEqual(self.task("add", "jeu-chargement", "--agent", "hosa-data-engineer")[0], 1)  # after writing
+        (self.readme.parent / "seed.sql").write_text("insert", encoding="utf-8")
+        self.assertEqual(self.task("done", "jeu-ecriture", "--sortie", str(self.readme.parent / "seed.sql"))[0], 0)
+        self.task("add", "jeu-chargement", "--agent", "hosa-data-engineer")
+        self.readme.write_text("# Jeu\n## Remise à zéro\nx\n## Vérification\ny\n", encoding="utf-8")
+        code, out = self.task("done", "jeu-chargement", "--sortie", str(self.readme))
+        self.assertEqual(code, 1)
+        self.assertIn("Dernier rechargement", out)
+        self.readme.write_text(self.readme.read_text(encoding="utf-8") + "Dernier rechargement : 2026-11-18 — OK\n",
+                               encoding="utf-8")
+        self.assertEqual(self.task("done", "jeu-chargement", "--sortie", str(self.readme))[0], 0)
+        self.task("add", "jeu-couverture", "--agent", "hosa-data-engineer")
+        self.readme.write_text(self.readme.read_text(encoding="utf-8") + "## Couverture des critères\n"
+                               "- a CA1, CA2 — deux ventes\n- b CA1 à CA3 — un run\n- c CA1 — Non observable : x\n",
+                               encoding="utf-8")
+        code, out = self.task("done", "jeu-couverture", "--sortie", str(self.readme))
+        self.assertEqual(code, 1)
+        self.assertIn("a : CA3 sans ligne", out)
+        self.assertIn("c : CA2, CA3 sans ligne", out)
+        self.readme.write_text(self.readme.read_text(encoding="utf-8") + "- a CA3 — x\n- c CA2-CA3 — y\n",
+                               encoding="utf-8")
+        self.assertEqual(self.task("done", "jeu-couverture", "--sortie", str(self.readme))[0], 0)

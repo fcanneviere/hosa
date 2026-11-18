@@ -1471,6 +1471,8 @@ def ctl_lot(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str
     """At most `lot` tickets per task: an agent's context, and the judge's after it, grow with each ticket
     (rieki: one pass wrote 39 tickets up to 273 k tokens)."""
     lot, tickets = control_value(t["stage"], t["id"], "lot"), tickets_of(kb, files)
+    if not tickets:  # a qa-plan lot outputs test plans, one per ticket (rieki sprint-4: lots of 4 wrote 1 or 2)
+        tickets = [f for _, f in files if f and (kb_rel(kb, f) or "").endswith("-technique.md")]
     if not lot or len(tickets) <= lot:
         return []
     return [f"lot de {len(tickets)} tickets, {lot} au plus : `task done` avec {lot} d'entre eux, "
@@ -1719,8 +1721,49 @@ def juge_groups(kb: Path, slugs: list[str]) -> list[list[str]]:
 
 # the controls a task's outputs pass at `task done`, in order: `sortie` and `okf` always, then the ones
 # pipeline.json's `tasks.controls` declares for the task; the first that fails is the round's cause
+def readme_of(files: list[tuple[str, Path | None]]) -> tuple[Path | None, str | None]:
+    f = next((f for _, f in files if f and f.is_file() and f.name.lower() == "readme.md"), None)
+    return f, read(f) if f else None
+
+
+def ctl_rechargement(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """The dataset loaded and checked (`qa-plan` Step 4, task `jeu-chargement`): its README with its reset, its check
+    and the line of the last load (rieki sprint-4: one pass for 21 plans and 4 000 rows stopped before loading)."""
+    f, text = readme_of(files)
+    if text is None:
+        return ["pas de `README.md` du jeu de données dans `--sortie`"]
+    gaps = [f"`{f.name}` sans `## {h}`" for h in ("Remise à zéro", "Vérification") if section(text, h) is None]
+    if not re.search(r"Dernier rechargement\s*:\s*\d{4}-\d{2}-\d{2}\S*\s*—\s*OK\b", text):
+        gaps.append(f"`{f.name}` sans ligne `Dernier rechargement : <AAAA-MM-JJ> — OK` (chargé et vérifié)")
+    return gaps
+
+
+def ctl_couverture(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """Every criterion of the sprint seen in the dataset (`qa-plan` Step 4b, task `jeu-couverture`): a line
+    `<ticket> CAn — …` under `## Couverture des critères`, lists and ranges counting for each."""
+    f, text = readme_of(files)
+    if text is None:
+        return ["pas de `README.md` du jeu de données dans `--sortie`"]
+    body = section(text, "Couverture des critères")
+    if body is None:
+        return [f"`{f.name}` sans `## Couverture des critères`"]
+    seen = set()
+    for line in body.splitlines():
+        m = re.match(r"\s*[-*]\s*`?([\w-]+)`?\s+(CA\d+(?:\s*(?:,|et|à|-)\s*CA\d+)*)", line)
+        if m:
+            seen |= {(m[1], ca) for ca in expand_criteria(m[2])}
+    s = read(kb / "sprints" / f"{t['scope']}.md") if t.get("scope") else None
+    missing = []
+    for slug in re.findall(r"\(\.\./tickets/([^)]+)\.md\)", section(s, "Tickets") or ""):
+        lacks = [ca for ca in criteria(read(kb / "tickets" / f"{slug}.md")) if (slug, ca) not in seen]
+        if lacks:
+            missing.append(f"{slug} : {', '.join(lacks)} sans ligne `{slug} CAn — <donnée>` ni `Non observable : …`")
+    return missing
+
+
 CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
-            "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix}
+            "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix,
+            "rechargement": ctl_rechargement, "couverture": ctl_couverture}
 # `refus 2/2 (okf ; sortie 1) — …`: the last refusal's cause and count, then the other causes' counts
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)((?: ; [\w-]+ \d+)*)\)(?: — )?")
 

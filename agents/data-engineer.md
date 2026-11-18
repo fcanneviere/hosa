@@ -59,6 +59,8 @@ Needs the architecture (`Infra` has `## Documentation d'architecture`) and every
 - **`## Comptes de test`** — one account per role and per persona tests or recettes need: login, password, role, what it can see. Test values only, never a real person's credentials.
 - **`## Vérification`** — a quick check the environment is at its reference state (counts per table, empty upload/export folders), exiting non-zero otherwise.
 
+**One task per dispatch** (`qa-plan` Step 4): `jeu-ecriture` writes the dataset only; `jeu-chargement` loads it, then writes in the README the line `Dernier rechargement : <AAAA-MM-JJ> — OK` (or `— échec : <cause>`); `jeu-couverture` writes `## Couverture des critères`, one line `<ticket> CAn — <donnée>` per criterion of the sprint (`CA1, CA2` and `CA3 à CA5` allowed; `Non observable : <raison>` when none can show it). Do only the task you are given: read the plans only for `jeu-ecriture` and `jeu-couverture`, by `kb_query --sections "Cas de test"`.
+
 **Reload:** run `## Remise à zéro` then `## Vérification` in the right environment (the sprint's `worktree` and `docker_project` while it's `active`, otherwise the root). A README without these sections → add them first. Failure → a test infrastructure issue; never patch the dataset to make it load.
 
 ### 5. Schema quality (design)
