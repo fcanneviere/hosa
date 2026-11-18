@@ -278,3 +278,34 @@ class Cli(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Ordonner(unittest.TestCase):
+    """rieki sprint-4: each `qa-plan` → `sprint` round sent `hosa-sprint-planner` back to move one line or recount."""
+
+    def setUp(self):
+        self.kb = Path(tempfile.mkdtemp())
+        (self.kb / "tickets").mkdir()
+        (self.kb / "sprints").mkdir()
+        for slug, est, deps in (("a", 2, ""), ("b", 3, "depends_on: [c]\n"), ("c", 1, ""), ("d", 5, "")):
+            (self.kb / "tickets" / f"{slug}.md").write_text(
+                f"---\ntype: Ticket\nestimate: {est}\n{deps}---\n", encoding="utf-8")
+        self.sprint = self.kb / "sprints" / "s1.md"
+        self.sprint.write_text('---\ntype: Sprint\ndescription: "Objectif. Taille : 3 tickets, 4 points."\n---\n'
+                               "## Tickets\n- [A](../tickets/a.md)\n- [B](../tickets/b.md)\n- [D](../tickets/d.md)\n"
+                               "- [C](../tickets/c.md)\n\n## Cas de test\nx\n", encoding="utf-8")
+
+    def test_a_dependency_moves_one_line_and_the_size_is_recounted(self):
+        self.assertEqual(gt.size_gaps(self.kb, "s1"), [
+            "« Taille : 3 tickets, 4 points » alors que les tickets font 4 tickets, 11 points → "
+            "`graphe_tickets <kb> ordonner --sprint s1 --ecrire`"])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(gt.main([str(self.kb), "ordonner", "--sprint", "s1", "--ecrire"]), 0)
+        text = self.sprint.read_text(encoding="utf-8")
+        self.assertIn("Taille : 4 tickets, 11 points.", text)
+        self.assertIn("## Tickets\n- [A](../tickets/a.md)\n- [D](../tickets/d.md)\n- [C](../tickets/c.md)\n"
+                      "- [B](../tickets/b.md)\n\n## Cas de test\nx\n", text)
+        self.assertEqual(gt.size_gaps(self.kb, "s1"), [])
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(gt.main([str(self.kb), "ordonner", "--sprint", "absent"]), 2)

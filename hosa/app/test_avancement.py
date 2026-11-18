@@ -1895,3 +1895,14 @@ class CompositionBeforeQaPlan(unittest.TestCase):
         qs = " ".join(av.juge_questions("backlog", "juge-1"))
         self.assertIn("verrou ou statut", qs)
         self.assertIn("mesure pas encore faite", qs)
+
+
+class SprintSize(unittest.TestCase):
+    def test_check_sprint_refuses_a_size_the_tickets_do_not_make(self):
+        k = kb({"sprints/s1.md": '---\ntype: Sprint\ndescription: "Taille : 1 tickets, 9 points."\n---\n'
+                                 "## Tickets\n- [T1](../tickets/t1.md)\n",
+                "tickets/t1.md": "---\ntype: Ticket\nstate: planned\nestimate: 3\n---\n"})
+        self.assertIn("« Taille : 1 tickets, 9 points » alors que les tickets font 1 tickets, 3 points",
+                      " ".join(av.proofs(k, "sprint", "s1")))
+        (k / "sprints" / "s1.md").write_text(av.graphe_tickets().ordered_sprint(k, "s1")[0], encoding="utf-8")
+        self.assertNotIn("Taille", " ".join(av.proofs(k, "sprint", "s1")))

@@ -384,6 +384,16 @@ def observation_gaps(plan: str, crit: list[str]) -> list[str]:
 
 
 @functools.cache
+def graphe_tickets():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "sprint" / "scripts" / "graphe_tickets.py"
+    spec = importlib.util.spec_from_file_location("graphe_tickets", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@functools.cache
 def ticket_check():
     import importlib.util
     path = Path(__file__).resolve().parents[2] / "backlog" / "scripts" / "ticket_check.py"
@@ -861,6 +871,7 @@ def proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
     gaps = [] if tickets else ["`## Tickets` ne liste aucun ticket"]
     if stage == "sprint":
         gaps += composition(kb, tickets) + backlog_fixes(kb, tickets) + roadmap_objective(kb)
+        gaps += graphe_tickets().size_gaps(kb, sprint)  # the size stated is the tickets' (`ordonner`, no agent)
     # the merge (`git` Mode 2) removes `worktree`: a `merge_commit` proves the start too
     if stage == "git-demarrage" and not field(s, "worktree") and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `worktree` (`git` Mode 1)")

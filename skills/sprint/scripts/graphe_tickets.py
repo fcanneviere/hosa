@@ -13,6 +13,9 @@
       A ticket whose notes are still absent is planned (`ticket_check --planifiable`): the next sprint's come
       back under `a_detailler`. `--jalons` needs `--mesure <On>` when kb/project/identity.md has measurable
       objectives: the first milestone is the one whose demo measures it.
+  python graphe_tickets.py <kb> ordonner --sprint <slug> [--ecrire]
+      The sprint's `## Tickets` in build order (a line moves only as far as a dependency asks) and its
+      « Taille : N tickets, P points » recomputed from `estimate` — no agent for a criterion moved by `qa-plan`.
   python graphe_tickets.py <kb> composer [--objectif <ticket>] [--plafond N] [--demo N] [--sprint <slug>]
                                          [--tolerance PCT] [--prolonger] [--remplir] [--json]
       A sprint: the whole path to the objective (default: the first ticket in priority order whose path can be
@@ -450,6 +453,66 @@ def report(c: dict) -> str:
     return "\n".join(lines)
 
 
+SPRINT_LINK = re.compile(r"\(\.\./tickets/([^)]+)\.md\)")
+SIZE = re.compile(r"Taille\s*:\s*(\d+)\s*tickets?,\s*(\d+)\s*points?")
+
+
+def ticket_points(kb: Path, slugs: list[str]) -> int:
+    tc = ticket_check()
+    total = 0
+    for s in slugs:
+        f = kb / "tickets" / f"{s}.md"
+        total += points(tc.field(tc.split(f.read_text(encoding="utf-8"))[0], "estimate") or "") if f.is_file() else 0
+    return total
+
+
+def ordered_sprint(kb: Path, slug: str) -> tuple[str, list[str], int] | None:
+    """The sprint file with `## Tickets` in build order — each line moved only as far as a dependency asks, the rest
+    in place — and every « Taille : N tickets, P points » recomputed from `estimate`. (text, order, points), or None
+    when the sprint has no file. A criterion moved or a `depends_on` added by the loop `qa-plan` → `sprint` needs
+    this, not `hosa-sprint-planner` again (rieki sprint-4: an agent per round to move one line or recount)."""
+    f = kb / "sprints" / f"{slug}.md"
+    if not f.is_file():
+        return None
+    text, tc = f.read_text(encoding="utf-8"), ticket_check()
+    m = re.search(r"^## Tickets[ \t]*\n((?:[ \t]*[-*].*\n?)*)", text, re.M)
+    if not m:
+        return text, [], 0
+    lines = [x for x in m[1].splitlines() if x.strip()]
+    by_slug = {}
+    for x in lines:
+        found = SPRINT_LINK.search(x)
+        if found:
+            by_slug.setdefault(found[1], x)
+    left, order = list(by_slug), []
+    deps = {}
+    for s in left:
+        t = kb / "tickets" / f"{s}.md"
+        deps[s] = set(tc.depends_on(tc.split(t.read_text(encoding="utf-8"))[0])) if t.is_file() else set()
+    while left:  # the first in the current order whose dependencies of the sprint are placed (a cycle: the first)
+        nxt = next((s for s in left if not deps[s] & set(left)), left[0])
+        order.append(nxt)
+        left.remove(nxt)
+    others = [x for x in lines if not SPRINT_LINK.search(x)]
+    block = "\n".join([by_slug[s] for s in order] + others) + "\n"
+    total = ticket_points(kb, order)
+    text = text[:m.start(1)] + block + text[m.end(1):]
+    text = SIZE.sub(f"Taille : {len(order)} tickets, {total} points", text)
+    return text, order, total
+
+
+def size_gaps(kb: Path, slug: str) -> list[str]:
+    """The size a sprint states is the one its tickets make (`check sprint`)."""
+    r = ordered_sprint(kb, slug)
+    if r is None:
+        return []
+    text = (kb / "sprints" / f"{slug}.md").read_text(encoding="utf-8")
+    want = f"{len(r[1])} tickets, {r[2]} points"
+    return [f"« Taille : {m[1]} tickets, {m[2]} points » alors que les tickets font {want} → "
+            f"`graphe_tickets <kb> ordonner --sprint {slug} --ecrire`"
+            for m in SIZE.finditer(text) if (int(m[1]), int(m[2])) != (len(r[1]), r[2])][:1]
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Graphe des dépendances entre tickets, pour planifier un sprint.")
     ap.add_argument("kb")
@@ -477,11 +540,24 @@ def main(argv: list[str]) -> int:
                                      "quand l'identité a des objectifs mesurables")
     fe.add_argument("--ecrire", action="store_true", help="écrire kb/project/feuille-de-route.md")
     fe.add_argument("--json", action="store_true")
+    od = sub.add_parser("ordonner", help="`## Tickets` du sprint dans l'ordre de construction, taille recalculée")
+    od.add_argument("--sprint", required=True)
+    od.add_argument("--ecrire", action="store_true", help="réécrire kb/sprints/<slug>.md")
     a = ap.parse_args(argv)
     kb = Path(a.kb)
     if not (kb / "tickets").is_dir():
         print(f"pas de dossier `tickets/` dans {kb}", file=sys.stderr)
         return 2
+    if a.cmd == "ordonner":  # no graph to load: the sprint's own tickets only
+        r = ordered_sprint(kb, a.sprint)
+        if r is None:
+            print(f"sprint `{a.sprint}` absent de kb/sprints/", file=sys.stderr)
+            return 2
+        if a.ecrire:
+            (kb / "sprints" / f"{a.sprint}.md").write_text(r[0], encoding="utf-8")
+        print("\n".join(f"{i}. `{s}`" for i, s in enumerate(r[1], 1)))
+        print(f"Taille : {len(r[1])} tickets, {r[2]} points" + (" — écrit" if a.ecrire else ""))
+        return 0
     graph = load(kb, getattr(a, "sprint", None))
     if a.cmd == "pret":
         rows = [graph[s] for s in ready(graph)]
