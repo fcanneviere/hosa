@@ -67,9 +67,9 @@ title: Modèle métier
 ---
 ## Liste
 ### Cycle de vie
-- (début) → en préparation : un parent crée la liste — [Envoyer la liste](envoyer-la-liste.md)
-- en préparation → envoyée : un parent l'envoie — [Envoyer la liste](envoyer-la-liste.md)
-- envoyée → (fin) : les courses sont terminées — [Envoyer la liste](envoyer-la-liste.md)
+- **TR1** — (début) → en préparation : un parent crée la liste — [Envoyer la liste](envoyer-la-liste.md)
+- **TR2** — en préparation → envoyée : un parent l'envoie — [Envoyer la liste](envoyer-la-liste.md)
+- **TR3** — envoyée → (fin) : les courses sont terminées — [Envoyer la liste](envoyer-la-liste.md)
 
 ### Droits
 | Rôle | Créer | Consulter | Modifier | Supprimer |
@@ -137,8 +137,8 @@ class Completeness(unittest.TestCase):
 
     def test_state_without_exit_and_transition_without_exigence(self):
         with tempfile.TemporaryDirectory() as d:
-            model = MODELE.replace("- envoyée → (fin) : les courses sont terminées — [Envoyer la liste](envoyer-la-liste.md)\n",
-                                   "- envoyée → archivée : les courses sont terminées\n")
+            model = MODELE.replace("- **TR3** — envoyée → (fin) : les courses sont terminées — [Envoyer la liste](envoyer-la-liste.md)\n",
+                                   "- **TR3** — envoyée → archivée : les courses sont terminées\n")
             found = holes(kb(d, cdc__modele_metier=model))
             self.assertIn("état « archivée » sans sortie (ni transition, ni `(fin)`)", found)
             self.assertIn("envoyée → archivée : aucune exigence ne porte cette transition", found)
@@ -342,3 +342,16 @@ class Pending(unittest.TestCase):
             (root / "cdc" / "decisions.md").write_text(DECISIONS + "- 2026-11-18 — human:x — M1 : 42 s sur le poste.\n",
                                                        encoding="utf-8")
             self.assertEqual(cdc.measured(root), {"M1"})
+
+
+class Transitions(unittest.TestCase):
+    def test_each_transition_has_an_id_that_never_moves(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = kb(d, cdc__modele_metier=MODELE.replace("**TR2** — ", "").replace("**TR3** — ", "**TR7** — "))
+            self.assertEqual(holes(root), ["1 transition(s) sans identifiant `TRn` : `cdc numerote` les numérote"])
+            self.assertEqual(cdc.numerote_transitions(root), 1)
+            self.assertEqual(holes(root), [])
+            got = cdc.model_transitions((root / "cdc" / "modele-metier.md").read_text(encoding="utf-8"))
+            self.assertEqual([(t["id"], t["de"], t["vers"]) for t in got],
+                             [("TR1", "(début)", "en préparation"), ("TR8", "en préparation", "envoyée"),
+                              ("TR7", "envoyée", "(fin)")])

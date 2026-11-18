@@ -598,7 +598,10 @@ def _ticket_index(tickets: str, _stamp: tuple) -> dict[str, dict]:
             if m:
                 links[m[1]] = [x for x in dict.fromkeys(TICKET_LINK.findall(line)) if x != f.stem]
         written, read = data_access(body)
-        out[f.stem] = {"done": field(front, "state") == "done", "links": links, "writes": written, "reads": read}
+        trs = {t for inside in RULE_REF.findall(section(body, "## Critères d'acceptation") or "")
+               for t in re.findall(r"\bTR\d+\b", inside)}
+        out[f.stem] = {"done": field(front, "state") == "done", "links": links, "writes": written, "reads": read,
+                       "trs": trs}
     return out
 
 
@@ -713,6 +716,72 @@ def cross_references(path: Path, body: str) -> list[str]:
             out.append(f"`{name}` cite « {cite.strip()} », introuvable dans la KB → citer le fichier de la KB "
                        "qui porte la décision")
     return out
+
+
+OBJECT_SKIP = {"des", "les", "une", "par", "pour", "sur", "avec", "dans", "aux", "son", "ses"}
+
+
+def model_of(kb: Path) -> list[dict[str, str]]:
+    f = kb / "cdc" / "modele-metier.md"
+    if cdc() is None or not f.is_file():
+        return []
+    return cdc().model_transitions(f.read_text(encoding="utf-8"))
+
+
+def state_dependencies(path: Path, front: str, body: str) -> list[str]:
+    """A criterion that observes an object in a state (« un run en cours ») needs the ticket that brings that state:
+    the one whose criterion cites the transition into it (`[TR3]`, `cdc/modele-metier.md`). rieki sprint-4: CA13 of
+    `lancer-un-run` tested a run « en cours », a state `mettre-un-run-en-file` brings, and that ticket depends on
+    `lancer-un-run` — seen at qa-plan only. Active once the tickets cite transitions. `HOSA_ETATS=0`: off."""
+    if os.environ.get("HOSA_ETATS") == "0" or path.parent.name != "tickets":
+        return []
+    model, index, me = model_of(path.parent.parent), ticket_index(path.parent), path.stem
+    owners: dict[str, set[str]] = {}
+    for slug, t in index.items():
+        for tr in t["trs"]:
+            owners.setdefault(tr, set()).add(slug)
+    if not owners:
+        return []
+    deps, out = closure(me, path.parent), []
+    for line in (section(body, "## Critères d'acceptation") or "").splitlines():
+        m = re.match(r"\s*[-*]\s+(CA\d+)", line)
+        if not m:
+            continue
+        text = line.lower()
+        for t in model:
+            words = [w for w in re.findall(r"[^\W\d_]{3,}", t["objet"].lower()) if w not in OBJECT_SKIP]
+            state = t["vers"]
+            if state in ("(fin)", "(début)") or not t["id"] or t["id"] not in owners:
+                continue
+            if not any(re.search(rf"\b{re.escape(w)}s?\b", text) for w in words):
+                continue
+            if not re.search(rf"(?<![\w-]){re.escape(state)}(?![\w-])", text):
+                continue
+            into = {tr["id"] for tr in model if tr["objet"] == t["objet"] and tr["vers"] == state and tr["id"]}
+            by = {s for tr in into for s in owners.get(tr, ()) if not index[s]["done"]}
+            if not by or me in by or by & deps or any(index[s]["done"] for tr in into for s in owners.get(tr, ())):
+                continue
+            x = sorted(by)[0]
+            gap = (f"{m[1]} observe « {state} » ({t['objet']}), qu'apporte `{x}` ({', '.join(sorted(into))}), qui vient "
+                   f"après ce ticket (il en dépend) → porter ce critère dans `{x}`" + room(index, x)
+                   if me in closure(x, path.parent) else
+                   f"{m[1]} observe « {state} » ({t['objet']}), qu'apporte `{x}` ({', '.join(sorted(into))}) → "
+                   f"`depends_on: [{x}]`, ou porter ce critère dans `{x}`" + room(index, x))
+            if gap not in out:
+                out.append(gap)
+    return out
+
+
+def transition_coverage(kb: Path) -> list[str]:
+    """Each numbered transition of the business model made by one ticket, once the tickets cite them: a state no
+    ticket brings is one a criterion will test anyway."""
+    model = [t for t in model_of(kb) if t["id"]]
+    tickets = ticket_index(kb / "tickets") if (kb / "tickets").is_dir() else {}
+    cited = {tr for t in tickets.values() for tr in t["trs"]}
+    if not model or not cited:
+        return []
+    return [f"✗ cdc/modele-metier.md — {t['id']} ({t['objet']} : {t['de']} → {t['vers']}) : aucun critère ne la cite "
+            f"(`- CAn [{t['id']}] — …` dans le ticket qui la fait)" for t in model if t["id"] not in cited]
 
 
 def note_tickets(path: Path, body: str) -> list[str]:
@@ -851,6 +920,11 @@ def gaps(path: Path) -> list[str]:
     missing += hidden_dependencies(path, front, body)
     missing += cross_references(path, body)
     missing += measure_dependencies(path, front, body)
+    missing += state_dependencies(path, front, body)
+    known = {t["id"] for t in model_of(path.parent.parent) if t["id"]}
+    for tr in sorted({t for inside in RULE_REF.findall(section(body, "## Critères d'acceptation") or "")
+                      for t in re.findall(r"\bTR\d+\b", inside)} - known):
+        missing.append(f"un critère cite `{tr}`, absent de `cdc/modele-metier.md`")
     missing += [f"(info) une note cite `{x}` (à faire), ni dans `depends_on` ni après ce ticket : le sprint doit "
                 "le prendre avant lui" for x in note_tickets(path, body)]
     missing += late_dependencies(path, front)
@@ -932,7 +1006,7 @@ def main(argv: list[str]) -> int:
               "(slug, path or the `tickets/` folder): `ticket_check <root>/.hosa/kb lancer-un-run`", file=sys.stderr)
         return 2
     if "--regles" in argv:
-        lacking = rule_coverage(kb)
+        lacking = rule_coverage(kb) + transition_coverage(kb)
         print("\n".join(lacking) if lacking else "Règles : chaque règle numérotée d'une exigence découpée est citée par un critère.")
         return 1 if lacking else 0
     if "--differes" in argv:

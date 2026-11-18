@@ -528,3 +528,60 @@ class MeasureFirst(unittest.TestCase):
         (kbd / "cdc" / "decisions.md").write_text("---\ntype: Journal des décisions\n---\n## Décisions\n"
                                                   "- 2026-11-18 — M1 : 42 s\n", encoding="utf-8")
         self.assertEqual(gaps(), [])  # measured: the rule has its value
+
+
+class States(unittest.TestCase):
+    """rieki sprint-4: CA13 of lancer-un-run tested a run « en cours », which mettre-un-run-en-file brings after it."""
+    MODELE = ("---\ntype: Modèle Métier\n---\n## Prévision (run)\n### Cycle de vie\n"
+              "- **TR1** — (début) → en attente : l'analyste lance — [e](e.md)\n"
+              "- **TR2** — en attente → en cours : le run démarre — [e](e.md)\n"
+              "- **TR3** — en cours → terminée : fini — [e](e.md)\n"
+              "## Version de données nettoyées\n### Cycle de vie\n"
+              "- **TR4** — (début) → en cours : le nettoyage démarre — [e](e.md)\n")
+
+    def setUp(self):
+        self.kb = Path(tempfile.mkdtemp()) / ".hosa" / "kb"
+        (self.kb / "cdc").mkdir(parents=True)
+        (self.kb / "tickets").mkdir()
+        (self.kb / "cdc" / "modele-metier.md").write_text(self.MODELE, encoding="utf-8")
+
+    def write(self, slug, front="", crit=""):
+        p = self.kb / "tickets" / f"{slug}.md"
+        p.write_text(f"---\ntype: Ticket\nstate: todo\n{front}---\n## Critères d'acceptation\n{crit}", encoding="utf-8")
+        return p
+
+    def gaps(self, p):
+        return tc.state_dependencies(p, *tc.split(p.read_text(encoding="utf-8")))
+
+    def test_a_state_comes_from_the_ticket_of_its_transition(self):
+        self.write("mettre-un-run-en-file", "depends_on: [lancer-un-run]\n",
+                   "- CA1 [TR2] — Étant donné un run en attente, quand rien ne tourne, alors il passe en cours\n")
+        p = self.write("lancer-un-run", "", "- CA1 [TR1] — le run est écrit en attente\n"
+                                            "- CA13 — Étant donné un run de prévision en cours, quand l'analyste importe, "
+                                            "alors l'import est refusé\n")
+        self.assertEqual(self.gaps(p), [
+            "CA13 observe « en cours » (Prévision (run)), qu'apporte `mettre-un-run-en-file` (TR2), qui vient après ce "
+            "ticket (il en dépend) → porter ce critère dans `mettre-un-run-en-file` (`mettre-un-run-en-file` : 1/10 "
+            "critères)"])
+        self.assertIn("CA13 observe « en cours »", " ".join(tc.gaps(p)))
+        q = self.write("importer", "", "- CA2 — Étant donné un run en cours, quand on importe, alors refusé\n")
+        self.assertEqual(self.gaps(q), ["CA2 observe « en cours » (Prévision (run)), qu'apporte `mettre-un-run-en-file` "
+                                        "(TR2) → `depends_on: [mettre-un-run-en-file]`, ou porter ce critère dans "
+                                        "`mettre-un-run-en-file` (`mettre-un-run-en-file` : 1/10 critères)"])
+        self.assertTrue(tc.one_fix(self.gaps(q)[0].split(", ou")[0]))
+        q = self.write("importer", "depends_on: [mettre-un-run-en-file]\n",
+                       "- CA2 — Étant donné un run en cours, quand on importe, alors refusé\n")
+        self.assertEqual(self.gaps(q), [])
+        # another object's state, or no object named: not this run's state
+        q = self.write("importer", "", "- CA2 — Étant donné une version en cours, quand on importe, alors refusé\n"
+                                       "- CA3 — le calcul en cours s'affiche\n")
+        self.assertEqual(self.gaps(q), [])
+
+    def test_every_transition_has_its_ticket_once_tickets_cite_them(self):
+        self.write("a", "", "- CA1 — rien\n")
+        self.assertEqual(tc.transition_coverage(self.kb), [])  # no ticket cites one yet: the project predates them
+        self.write("b", "", "- CA1 [TR1, TR2] — x\n- CA2 [TR9] — y\n")
+        self.assertEqual([x.split(" (")[0] for x in tc.transition_coverage(self.kb)],
+                         ["✗ cdc/modele-metier.md — TR3", "✗ cdc/modele-metier.md — TR4"])
+        self.assertIn("un critère cite `TR9`, absent de `cdc/modele-metier.md`", tc.gaps(self.kb / "tickets" / "b.md"))
+

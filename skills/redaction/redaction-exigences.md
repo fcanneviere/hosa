@@ -161,9 +161,9 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 <définition en une phrase, ou « voir le glossaire »>
 
 ### Cycle de vie
-- (début) → <état> : <qui ou quoi le fait passer> — [<exigence>](<slug>.md)
-- <état> → <état> : <…> — [<exigence>](<slug>.md)
-- <état> → (fin) : <suppression, effacement, purge> — [<exigence>](<slug>.md)
+- **TR1** — (début) → <état> : <qui ou quoi le fait passer> — [<exigence>](<slug>.md)
+- **TR2** — <état> → <état> : <…> — [<exigence>](<slug>.md)
+- **TR3** — <état> → (fin) : <suppression, effacement, purge> — [<exigence>](<slug>.md)
 
 ### Droits
 | Rôle | Créer | Consulter | Modifier | Supprimer |
@@ -176,7 +176,7 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 | <événement> | <qui> | <push, e-mail, badge, état affiché> | <quand> | [<exigence>](<slug>.md) |
 ```
 
-One `## <Objet>` per object of the glossary that has states (a list, an order, an account) — not for a plain value (a quantity). Every transition names the exigence that carries it. Write it from the exigences, not from imagination: each hole it shows — a state with no way out, a right no exigence decides (`?`), an event with no recipient or no moment — is a question for the user, recorded in `decisions.md`, never a guess. Every role of the matrix des rôles appears in each `### Droits` table.
+One `## <Objet>` per object of the glossary that has states (a list, an order, an account) — not for a plain value (a quantity). Every transition names the exigence that carries it, and has its id `TRn` (`cdc numerote` gives the missing ones, over the whole file; an id never moves, like a rule's): the ticket that makes the transition cites it, and `ticket_check` makes every criterion that observes a state wait for that ticket. Write it from the exigences, not from imagination: each hole it shows — a state with no way out, a right no exigence decides (`?`), an event with no recipient or no moment — is a question for the user, recorded in `decisions.md`, never a guess. Every role of the matrix des rôles appears in each `### Droits` table.
 
 ## Step 2d: Decision Log
 

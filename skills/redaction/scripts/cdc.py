@@ -180,14 +180,59 @@ def objectives(identity: Concept | None) -> list[dict[str, str]]:
     return rows
 
 
+# A transition carries an id like a rule (`- **TR3** — en attente → en cours : …`): the ticket whose criterion makes
+# it cites it (`- CA2 [TR3] — …`), and a criterion that observes the state it leads to needs that ticket first
+# (rieki: CA13 of `lancer-un-run` tested « un run en cours », a state `mettre-un-run-en-file` brings — after it).
+TRANSITION = re.compile(r"^\s*-\s+(?:\*\*(TR\d+)\*\*\s*—\s*)?(.+?)\s+→\s+(.+?)\s*:\s*(.+)$")
+
+
 def transitions(text: str) -> list[tuple[str, str, str]]:
-    """`- a → b : comment — [exigence](x.md)` lines of a `### Cycle de vie`."""
+    """`- a → b : comment — [exigence](x.md)` lines of a `### Cycle de vie` (an id `**TRn** —` before them)."""
     out = []
     for line in text.splitlines():
-        m = re.match(r"^\s*-\s+(.+?)\s+→\s+(.+?)\s*:\s*(.+)$", line)
+        m = TRANSITION.match(line)
         if m:
-            out.append((m.group(1).strip().lower(), m.group(2).strip().lower(), m.group(3)))
+            out.append((m.group(2).strip().lower(), m.group(3).strip().lower(), m.group(4)))
     return out
+
+
+def model_transitions(text: str) -> list[dict[str, str]]:
+    """Each transition of the business model: {id, objet, de, vers} — the objects are its `## ` headings."""
+    out = []
+    for name, sect in section_map(split(text)[1]).items():
+        if not name or name.lower().startswith("notifications"):
+            continue
+        for line in get(section_map(sect, 3), "Cycle de vie").splitlines():
+            m = TRANSITION.match(line)
+            if m:
+                out.append({"id": m[1] or "", "objet": name, "de": m[2].strip().lower(), "vers": m[3].strip().lower()})
+    return out
+
+
+def numerote_transitions(kb: Path) -> int:
+    """Give each transition of `cdc/modele-metier.md` without an id the next free `TRn`. An id never moves."""
+    f = kb / "cdc" / "modele-metier.md"
+    if not f.is_file():
+        return 0
+    with f.open(encoding="utf-8", newline="") as fh:
+        lines = fh.read().splitlines(keepends=True)
+    last = max([int(t["id"][2:]) for t in model_transitions("".join(lines)) if t["id"]] or [0])
+    added, inside = 0, False
+    for i, line in enumerate(lines):
+        if line.startswith("### "):
+            inside = line[4:].strip().lower().startswith("cycle de vie")
+        elif line.startswith("## "):
+            inside = False
+        elif inside:
+            m = TRANSITION.match(line)
+            if m and not m[1]:
+                last += 1
+                added += 1
+                lines[i] = re.sub(r"^(\s*-\s+)", rf"\g<1>**TR{last}** — ", line, count=1)
+    if added:
+        with f.open("w", encoding="utf-8", newline="") as fh:
+            fh.write("".join(lines))
+    return added
 
 
 def bullets(text: str) -> list[str]:
@@ -445,6 +490,9 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
             trans = transitions(get(sub, "Cycle de vie"))
             if not trans:
                 hole("cycles de vie", name, "aucune transition `- état → état : … — [exigence](…)`")
+            bare = sum(1 for x in get(sub, "Cycle de vie").splitlines() if TRANSITION.match(x) and not TRANSITION.match(x)[1])
+            if bare:
+                hole("cycles de vie", name, f"{bare} transition(s) sans identifiant `TRn` : `cdc numerote` les numérote")
             sources = {a for a, _, _ in trans}
             targets = {b for _, b, _ in trans}
             for state in sorted(targets - sources - {"(fin)"}):
@@ -757,8 +805,10 @@ def main(argv: list[str]) -> int:
     if a.command == "numerote":
         done = [(e.rel, n) for e in d["exigences"] if (n := numerote(e.path))]
         m = numerote_mesures(kb)
+        t = numerote_transitions(kb)
         print(f"{sum(n for _, n in done)} règle(s) et cas d'erreur numéroté(s) dans {len(done)} fiche(s)"
-              + "".join(f"\n- {rel} : {n}" for rel, n in done) + (f"\n{m} mesure(s) numérotée(s) (`Mn`)" if m else ""))
+              + "".join(f"\n- {rel} : {n}" for rel, n in done) + (f"\n{m} mesure(s) numérotée(s) (`Mn`)" if m else "")
+              + (f"\n{t} transition(s) numérotée(s) (`TRn`)" if t else ""))
         return 0
     found = holes(d, kb)
     if a.command == "assemble":
