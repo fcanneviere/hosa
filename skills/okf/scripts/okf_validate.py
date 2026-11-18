@@ -399,6 +399,8 @@ def check_log(path: Path, rel: str, report: Report) -> None:
         report.warn(rel, "§9 date headings must run newest first")
     if len(set(days)) < len(days):
         report.warn(rel, "§9 one heading per day: append under today's")
+    if any(line.lstrip().startswith("|") for line in text.splitlines()):  # rieki sprint-4: kb/test/log.md
+        report.warn(rel, "§9 a log is `## YYYY-MM-DD` headings and `- ` lines, never a table")
 
 
 def collect_link_targets(path: Path) -> list[str]:

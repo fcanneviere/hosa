@@ -67,6 +67,12 @@ class OkfValidate(unittest.TestCase):
         self.assertNotIn("cdc/old3.md: recommended", out)
         self.assertIn("cdc/old3.md: recommended", self.validate("--all").stdout)
 
+    def test_a_log_is_never_a_table(self):
+        (self.kb / "test").mkdir()
+        (self.kb / "test" / "log.md").write_text("# Log\n\n| Date | Qui |\n|---|---|\n| 2026-11-18 | x |\n",
+                                                 encoding="utf-8")
+        self.assertIn("never a table", self.validate("--all").stdout)
+
     def test_a_file_outside_a_kb_names_the_root_to_pass(self):
         r = subprocess.run([sys.executable, str(SCRIPT), str(self.root / "docs" / "adr.md")], capture_output=True,
                            text=True, encoding="utf-8")

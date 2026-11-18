@@ -24,6 +24,7 @@ test('gives every Hosa agent the shared rules once, in place of a copy in each a
   assert.match(ctx, /## Hosa agent rules/);
   assert.match(ctx, /Independent calls .* in one message/);
   assert.match(ctx, /Past 4,000, the hook refuses the report once/);
+  assert.match(ctx, /`log.md`:\*\* one `## AAAA-MM-JJ` per day, newest first, never a table/); // rieki sprint-4: 3 forms
   assert.match(ctx, /\| N° \| Page \| Action \| Résultat attendu \|/);       // a tester hands over manual tests
   const security = processPayload({ agent_type: 'hosa:hosa-security' }, 'linux').hookSpecificOutput.additionalContext;
   assert.doesNotMatch(security, /Résultat attendu/);                       // the others don't carry their format
