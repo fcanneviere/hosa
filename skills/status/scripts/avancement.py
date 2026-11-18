@@ -395,6 +395,16 @@ def observation_gaps(plan: str, crit: list[str]) -> list[str]:
 
 
 @functools.cache
+def lexique_check():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "interface" / "scripts" / "lexique_check.py"
+    spec = importlib.util.spec_from_file_location("lexique_check", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@functools.cache
 def graphe_tickets():
     import importlib.util
     path = Path(__file__).resolve().parents[2] / "sprint" / "scripts" / "graphe_tickets.py"
@@ -697,6 +707,9 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
     elif stage == "stack":
         if not concepts(kb, "stack", "Stack Decision"):
             gaps.append("aucune `Stack Decision` dans `kb/stack/`")
+        elif not any(re.search(r"\*\*Entrées forgées\*\*\s*:\s*\S", t) for _, t in concepts(kb, "stack", "Stack Decision")):
+            gaps.append("aucune `Stack Decision` ne nomme le transport des entrées forgées (`- **Entrées forgées** : "
+                        "<outil, ou testeur de page + point d'entrée du service>`, ou « Sans objet : … »)")
     elif stage == "infra":
         gaps.append(infra_with(kb, "Outillage qualité"))
         gaps += infra_exit(kb)
@@ -837,6 +850,7 @@ def composition(kb: Path, tickets: list[str]) -> list[str]:
         gaps += [f"{t} : une note cite `{x}` (à faire), ni dans `depends_on` ni avant lui dans le sprint → "
                  f"`depends_on: [{x}]`, ou retirer de la note ce qu'elle en attend"
                  for x in tc.note_tickets(path, body) if x not in tickets[:i]]
+        gaps += [f"{t} : {g}" for g in lexique_check().label_gaps(kb, body)]  # a label is the lexicon's word
         if (field(front, "state") or "todo") == "todo":  # planned without its notes: `sprint` details it first
             gaps += [f"{t} : {g} — tâches `notes-<k>`, `securite-<k>`, `juridique-<k>`, `juge-<k>` de `sprint`"
                      for g in tc.gaps(path) if g.startswith(tc.TO_DETAIL)]

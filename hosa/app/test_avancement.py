@@ -166,7 +166,7 @@ class Accepte(unittest.TestCase):
         k = kb({})
         self.assertEqual(av.check(k, "stack", None), ["aucune `Stack Decision` dans `kb/stack/`"])
         (k / "stack").mkdir()
-        (k / "stack" / "framework.md").write_text("---\ntype: Stack Decision\n---\n", encoding="utf-8")
+        (k / "stack" / "framework.md").write_text("---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n", encoding="utf-8")
         self.assertEqual(av.check(k, "stack", None), [])
 
     def test_hosa_needs_a_real_persona(self):
@@ -416,7 +416,7 @@ class Reponse(unittest.TestCase):
         self.assertEqual([w for w in json.loads(r.stdout)["warnings"] if "questions/log.md" in w], [])
 
 
-STACK = {"stack/s.md": "---\ntype: Stack Decision\n---\n"}
+STACK = {"stack/s.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n"}
 
 
 class Tasks(unittest.TestCase):
@@ -462,7 +462,7 @@ class Tasks(unittest.TestCase):
         self.assertIn("tâche `senior-dev-1` ajoutée à `stack` — `task done stack senior-dev-1` à son retour", out)
         (self.k / "stack").mkdir(exist_ok=True)
         for f in ("a.md", "b.md"):
-            (self.k / "stack" / f).write_text("---\ntype: Stack Decision\ntitle: t\n---\n", encoding="utf-8")
+            (self.k / "stack" / f).write_text("---\ntype: Stack Decision\ntitle: t\n---\n- **Entrées forgées** : AppTest\n", encoding="utf-8")
         self.assertEqual(run(self.k, "task", "done", "stack", "--sortie", "stack/a.md", "stack/b.md", "--force")[0], 0)
         self.assertIn("stack/a.md, stack/b.md", (self.k / "project" / "avancement.md").read_text(encoding="utf-8"))
         run(self.k, "task", "add", "stack", "--agent", "hosa-senior-dev")
@@ -513,7 +513,7 @@ class Tasks(unittest.TestCase):
                 "tickets/fait.md": "---\ntype: Ticket\nstate: done\n---\n## Critères d'acceptation\n- CA1 — [a](a.md)\n"})
         self.assertEqual(planned(av.proofs(k, "sprint", "s1")), [
             "lire : correction unique à appliquer sans question (`backlog` Single-Ticket Mode, `hosa-product-owner` "
-            "Graph fixes) — CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a`"])
+            "Graph fixes) — CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a` (`a` : 0/10 critères)"])
         (k / "tickets" / "lire.md").write_text("---\ntype: Ticket\nstate: todo\ndepends_on: [a]\n---\n"
                                                "## Critères d'acceptation\n- CA1 — voir [a](a.md)\n", encoding="utf-8")
         self.assertEqual(planned(av.proofs(k, "sprint", "s1")), [])
@@ -1990,3 +1990,25 @@ class QaPlanTasks(unittest.TestCase):
         self.readme.write_text(self.readme.read_text(encoding="utf-8") + "- a CA3 — x\n- c CA2-CA3 — y\n",
                                encoding="utf-8")
         self.assertEqual(self.task("done", "jeu-couverture", "--sortie", str(self.readme))[0], 0)
+
+
+class SmallPoints(unittest.TestCase):
+    """rieki sprint-4: no tool to send a forged WebSocket frame; a note's label against the lexicon."""
+
+    def test_the_stack_names_how_a_test_sends_forged_inputs(self):
+        sd = "---\ntype: Stack Decision\n---\n## Décision\n- **Tests** : pytest.\n"
+        k = kb({"stack/tests.md": sd})
+        self.assertIn("transport des entrées forgées", " ".join(av.upstream_check(k, "stack")))
+        (k / "stack" / "tests.md").write_text(sd + "- **Entrées forgées** : AppTest + `ServicePrevision.lancer`\n",
+                                              encoding="utf-8")
+        self.assertEqual(av.upstream_check(k, "stack"), [])
+
+    def test_a_quoted_label_uses_the_lexicon_s_word(self):
+        k = kb({"interface/lexique.md": "## Termes\n| Terme | Désigne | Où | Synonymes interdits |\n|---|---|---|---|\n"
+                                        "| Run | un lancement | Prévoir | Exécution, Job |\n",
+                "sprints/s1.md": "---\ntype: Sprint\n---\n## Tickets\n- [L](../tickets/lancer.md)\n",
+                "tickets/lancer.md": "---\ntype: Ticket\nstate: planned\n---\n## Critères d'acceptation\n"
+                                     "- CA1 — alors Rieki affiche « Run 12 lancé »\n## Note technique (senior dev)\n"
+                                     "- **États** : succès — « Exécution 12 lancée »\n"})
+        self.assertEqual(av.composition(k, ["lancer"]), [
+            "lancer : « Exécution 12 lancée » : « Exécution » au lieu de « Run » (kb/interface/lexique.md)"])

@@ -189,7 +189,7 @@ class Cli(unittest.TestCase):
     def test_the_roadmap_prints_every_one_fix_line_as_the_checker_wrote_it(self):
         (self.kb / "tickets" / "e.md").write_text("---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n"
                                                   "- CA1 — voir [a](a.md)\n", encoding="utf-8")
-        line = "CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a`"
+        line = "CA1 cite `a` (à faire), hors de ses dépendances → `depends_on: [a]`, ou porter ce critère dans `a` (`a` : 0/10 critères)"
         _, out = self.run_("feuille", "--jalons", "a")
         self.assertIn("Corrections uniques (1)", out)
         self.assertIn(f"- `e` : {line}", out)

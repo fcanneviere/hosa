@@ -120,7 +120,8 @@ class HiddenDependencies(unittest.TestCase):
         p = self.write("consulter-les-articles", crit="- CA5 — Étant donné un article supprimé par "
                        "[supprimer-un-article](supprimer-un-article.md), quand le tableau s'affiche, alors il n'y est plus.\n")
         self.assertEqual(self.gaps(p), ["CA5 cite `supprimer-un-article` (à faire), hors de ses dépendances → "
-                                        "`depends_on: [supprimer-un-article]`, ou porter ce critère dans `supprimer-un-article`"])
+                                        "`depends_on: [supprimer-un-article]`, ou porter ce critère dans `supprimer-un-article` "
+                                        "(`supprimer-un-article` : 0/10 critères)"])
         p = self.write("consulter-les-articles", "depends_on: [supprimer-un-article]\n", p.read_text(encoding="utf-8").split("\n## Critères d'acceptation\n")[1])
         self.assertEqual(self.gaps(p), [])
         self.write("supprimer-un-article", "state: done\n")
@@ -135,7 +136,7 @@ class HiddenDependencies(unittest.TestCase):
         self.write("afficher-la-cause", "depends_on: [suivre-le-statut]\n")
         s = self.write("suivre-le-statut", crit="- CA4 — la cause ([a](afficher-la-cause.md))\n")
         self.assertEqual(self.gaps(s), ["CA4 cite `afficher-la-cause`, qui vient après ce ticket (il en dépend) → "
-                                        "porter ce critère dans `afficher-la-cause`"])
+                                        "porter ce critère dans `afficher-la-cause` (`afficher-la-cause` : 0/10 critères)"])
 
     def test_a_table_read_needs_a_writer_done_or_among_its_dependencies(self):
         self.write("importer-les-ventes", donnees="`ventes`.`date`, `quantite` (DECIMAL) écrits ; `imports`.`id` écrit.")
@@ -208,7 +209,7 @@ class OneFix(unittest.TestCase):
         (tickets / "b.md").write_text("---\ntype: Ticket\nstate: todo\n---\n", encoding="utf-8")
         (tickets / "c.md").write_text(f"---\ntype: Ticket\nstate: done\n---\n{body}", encoding="utf-8")
         self.assertEqual(tc.single_fixes(tickets), [("a", "CA1 cite `b` (à faire), hors de ses dépendances → "
-                                                     "`depends_on: [b]`, ou porter ce critère dans `b`")])
+                                                     "`depends_on: [b]`, ou porter ce critère dans `b` (`b` : 0/10 critères)")])
 
 
 class SecurityAndLegalNotes(unittest.TestCase):
@@ -484,3 +485,20 @@ class Invocation(unittest.TestCase):
         self.assertIn("a slug (`lancer-un-run`)", out.getvalue())
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(tc.main([str(kb), "a"]), 1)  # read, found incomplete: not a bad invocation
+
+
+class Room(unittest.TestCase):
+    def test_moving_a_criterion_shows_the_receiver_s_free_room(self):
+        # rieki sprint-4: « porter ce critère » would have taken supprimer-un-run to 11 criteria
+        tickets = Path(tempfile.mkdtemp()) / ".hosa" / "kb" / "tickets"
+        tickets.mkdir(parents=True)
+        full = "".join(f"- CA{n} — x\n" for n in range(1, 11))
+        (tickets / "supprimer-un-run.md").write_text(
+            f"---\ntype: Ticket\nstate: todo\ndepends_on: [lister]\n---\n## Critères d'acceptation\n{full}", encoding="utf-8")
+        p = tickets / "lister.md"
+        p.write_text("---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n"
+                     "- CA1 — un run supprimé par [s](supprimer-un-run.md)\n", encoding="utf-8")
+        gap = tc.hidden_dependencies(p, *tc.split(p.read_text(encoding="utf-8")))[0]
+        self.assertTrue(gap.endswith("→ porter ce critère dans `supprimer-un-run` (`supprimer-un-run` : 10/10 "
+                                     "critères — plein : découper le ticket d'abord)"), gap)
+        self.assertTrue(tc.one_fix(gap.replace(" — plein : découper le ticket d'abord", "").replace("10/10", "4/10")))

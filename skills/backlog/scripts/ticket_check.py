@@ -567,6 +567,14 @@ def ticket_index(tickets: Path) -> dict[str, dict]:
     return _ticket_index(str(tickets), stamp(tickets))
 
 
+def room(index: dict, slug: str) -> str:
+    """The receiving ticket's free room: a moved criterion must not take it past the bound (rieki sprint-4:
+    supprimer-un-article and supprimer-un-run would have reached 11)."""
+    n = len(index.get(slug, {}).get("links", {}))
+    full = " — plein : découper le ticket d'abord" if n >= TOO_MANY_CRITERIA else ""
+    return f" (`{slug}` : {n}/{TOO_MANY_CRITERIA} critères{full})"
+
+
 def hidden_dependencies(path: Path, front: str, body: str) -> list[str]:
     """The dependencies a ticket's own text states that its `depends_on` misses — the edges `sprint` plans from.
     - A criterion that cites another ticket still to build: it can't be tested without it (rieki: « consulter les
@@ -589,10 +597,11 @@ def hidden_dependencies(path: Path, front: str, body: str) -> list[str]:
                 out.append(f"{ca} et `{x}` {', '.join(back)} portent le même comportement (chacun cite l'autre) : un "
                            "seul des deux le garde, l'autre le retire")
             elif me in closure(x, path.parent):  # x waits for this one: the criterion is x's
-                out.append(f"{ca} cite `{x}`, qui vient après ce ticket (il en dépend) → porter ce critère dans `{x}`")
+                out.append(f"{ca} cite `{x}`, qui vient après ce ticket (il en dépend) → porter ce critère dans `{x}`"
+                           + room(index, x))
             else:
                 out.append(f"{ca} cite `{x}` (à faire), hors de ses dépendances → `depends_on: [{x}]`, ou porter ce "
-                           f"critère dans `{x}`")
+                           f"critère dans `{x}`" + room(index, x))
     written, read = data_access(body)
     for table in sorted(read):
         writers = {s for s, t in index.items() if table in t["writes"] and s != me}
@@ -732,7 +741,7 @@ def unbuilt_labels(path: Path, front: str, body: str) -> list[str]:
 
 
 ONE_FIX = re.compile(r"→ (?:ajouter )?`depends_on: \[[\w-]+\]`"  # one ticket to add
-                     r"|→ porter ce critère dans `[\w-]+`$"  # one criterion to move
+                     r"|→ porter ce critère dans `[\w-]+`(?: \(`[\w-]+` : \d+/\d+ critères\))?$"  # one criterion to move
                      r"|portent le même comportement"  # one behaviour in two tickets: the mechanism's keeps it
                      r"|livré par `[\w-]+` \(à faire\)")  # one ticket brings the label
 

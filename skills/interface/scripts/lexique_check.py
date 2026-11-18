@@ -89,6 +89,22 @@ def scan(root: Path, folders: list[str], terms: dict[str, list[str]]) -> list[st
     return out
 
 
+QUOTED = re.compile(r"« ([^»]+?) »")
+
+
+def label_gaps(kb: Path, text: str) -> list[str]:
+    """A label a ticket quotes (« … ») uses a forbidden synonym of the lexicon: the screen would say it too
+    (rieki sprint-4: notes citing a label against the lexicon). No lexicon: nothing to check."""
+    terms, _, _ = lexicon(kb)
+    out = []
+    for label in dict.fromkeys(QUOTED.findall(text)):
+        for term, syns in terms.items():
+            for syn in syns:
+                if re.search(rf"(?<![\w-]){re.escape(syn)}(?![\w-])", label, re.I):
+                    out.append(f"« {label} » : « {syn} » au lieu de « {term} » (kb/interface/lexique.md)")
+    return out
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2 or not Path(argv[0]).is_dir() or not Path(argv[1]).is_dir():
         print("usage: lexique_check.py <kb-dir> <project-root>", file=sys.stderr)
