@@ -1283,14 +1283,33 @@ class Loops(unittest.TestCase):
         k = kb({})
         for s in ("sprint", "qa-plan"):
             run(k, "done", s, "--sprint", "s1", "--force")
-        back = lambda c: run(k, "back", "qa-plan", "sprint", "--sprint", "s1", "--cause", c,  # noqa: E731
-                             "--detail", "hierarchie CA4 cite « Supprimer », livré par supprimer-un-run")
+        back = lambda c: run(k, "back", "qa-plan", "sprint", "--sprint", "s1", "--ticket", c.split()[0],  # noqa: E731
+                             "--cause", c, "--detail", "hierarchie CA4 cite « Supprimer », livré par supprimer-un-run")
         self.assertEqual(back("hierarchie CA4")[0], 0)
         rows = {r[0]: r[1] for r in av.load(k / "project" / "avancement.md")[0]["Sprint s1"]}
         self.assertEqual((rows["sprint"], rows["qa-plan"]), (av.TODO, av.TODO))
         self.assertEqual(back("hierarchie CA4")[0], 0)
         self.assertEqual(back("hierarchie CA4")[0], 1)   # the bound: the user decides
         self.assertEqual(back("lire-un-csv CA2")[0], 0)  # another cause: its own count
+
+    def test_qa_plan_loop_is_bounded_per_ticket_whatever_the_cause(self):
+        # rieki sprint-4: lancer-un-run sent back 6 times, each gap under another cause; the per-cause bound never fell
+        k = kb({})
+        for s in ("sprint", "qa-plan"):
+            run(k, "done", s, "--sprint", "s1", "--force")
+        back = lambda t, c, *f: run(k, "back", "qa-plan", "sprint", "--sprint", "s1", "--ticket", t,  # noqa: E731
+                                    "--cause", f"{t} {c}", "--detail", f"{c} manque", *f)
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(run(k, "back", "qa-plan", "sprint", "--sprint", "s1", "--detail", "x")[0], 2)  # no ticket
+        for c in ("CA13", "CA12", "nb_series"):
+            self.assertEqual(back("lancer", c)[0], 0)
+        code, out = back("lancer", "ventes_hebdo")
+        self.assertEqual(code, 1)
+        self.assertIn("déjà 3 tour(s) pour `lancer`, toutes causes confondues", out)
+        for c in ("CA13", "CA12", "nb_series"):
+            self.assertIn(f"lancer {c} — 1 tour(s) — {c} manque", out)
+        self.assertEqual(back("lister", "CA2")[0], 0)                     # another ticket: its own count
+        self.assertEqual(back("lancer", "ventes_hebdo", "--force")[0], 0)  # the user's word
 
     def test_unknown_loop_is_a_bad_invocation(self):
         k = kb({})

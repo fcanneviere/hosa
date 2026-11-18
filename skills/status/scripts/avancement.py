@@ -1906,7 +1906,19 @@ def back(sections: dict, loops: list[dict], a) -> tuple[int, str]:
     inner = a.stage in INNER
     if inner and not a.objet:
         return 2, f"error: `back {a.stage} {a.to}` needs --objet (what the loop reworks: the exigence's slug)"
+    per_ticket = e.get("par_ticket")
+    if per_ticket and not a.ticket:
+        return 2, (f"error: `back {a.stage} {a.to}` needs --ticket (the loop is bounded per ticket, "
+                   f"{per_ticket} rounds all causes together)")
     scope = a.objet if inner else ", ".join(x for x in (a.sprint, a.ticket) if x)
+    # per ticket, all causes together: rieki sprint-4 sent one ticket back 6 times, each gap under a new cause
+    rows = [x for x in loops if (x["from"], x["to"], x["scope"]) == (a.stage, a.to, scope) and x["etat"] == OPEN]
+    if per_ticket and not a.force and sum(x["tours"] for x in rows) >= per_ticket:
+        tried = "\n".join(f"  - {x['cause'] or '(sans cause)'} — {x['tours']} tour(s) — {x['detail']}" for x in rows)
+        return 1, (f"✗ boucle {loop_name({'from': a.stage, 'to': a.to, 'scope': scope})} : déjà {per_ticket} tour(s) "
+                   f"pour `{a.ticket}`, toutes causes confondues :\n{tried}\n"
+                   "Arrête la boucle : montre à l'utilisateur ces tours et ce qui reste, et demande s'il faut un tour "
+                   "de plus (relance avec --force), sortir le ticket du sprint ou changer d'approche.")
     # one row per cause: with one row per loop, two causes in turn (A, B, A…) restarted the count at each
     # round and the bound never fell. No --cause: the round goes to the loop's latest open row.
     a.cause = cell(a.cause)
