@@ -219,6 +219,8 @@ def _full(root, target, fm, body):
         "body": body,
         "bodyHtml": render(body),
         "trustTier": trust_tier(fm.get("verified")),
+        "protege": protection(_rel(root, target), fm),
+        "validable": validable(_rel(root, target), fm),
     }
 
 
@@ -238,10 +240,46 @@ def append_log(root, bundle_dir, line, today=None):
     log.write_text(text, encoding="utf-8")
 
 
+# Ce que l'app n'écrit jamais : un fichier tenu par un script de Hosa, une preuve d'étape, un champ qu'un skill
+# écrit sur preuve. Le corriger passe par une remarque pour Claude. Une seule définition : le serveur refuse,
+# l'app lit `protege` pour cacher le bouton (CLAUDE.md, « Appliquées par du code »).
+GENERATED = {"project/avancement.md": "le plan d'avancement est tenu par Hosa",
+             "project/cahier-des-charges.md": "le cahier des charges est assemblé par Hosa depuis ses exigences",
+             "sommaire.md": "le sommaire est écrit par Hosa"}
+PROOF_DIRS = {"code": "la carte du code est régénérée par Hosa",
+              "test": "un plan de test ou une recette est une preuve d'étape",
+              "jugements": "un verdict du juge est une preuve d'étape",
+              "sprints": "un sprint porte ses preuves (audit, démo, suite de tests)",
+              "remarques": "une remarque se ferme par la réponse de Claude"}
+PROOF_FIELDS = {"Ticket": {"state": "l'état d'un ticket suit ses preuves : Claude le change quand tests, revue et recette passent",
+                           "verified": "un ticket est accepté par la validation du sprint"},
+                "Exigence": {"status": "une exigence devient stable quand vous signez le cahier des charges (étape contestation)",
+                             "verified": "une exigence est signée avec le cahier des charges entier (étape contestation)"}}
+ASK_CLAUDE = " : écrivez une remarque pour Claude"
+
+
+def protection(rel, fm):
+    """Pourquoi l'app ne modifie pas ce fichier, ou None."""
+    if rel in GENERATED:
+        return GENERATED[rel]
+    if rel.split("/", 1)[0] in PROOF_DIRS and "/" in rel:
+        return PROOF_DIRS[rel.split("/", 1)[0]]
+    if fm.get("type") == "Exigence" and fm.get("status") == "stable":
+        return "une exigence stable change par l'étape changement"
+    return None
+
+
+def validable(rel, fm):
+    """L'utilisateur peut-il signer ce document depuis l'app ? Pas un fichier protégé, pas un champ `verified`
+    qu'un skill écrit sur preuve (exigence, ticket)."""
+    return protection(rel, fm) is None and "verified" not in PROOF_FIELDS.get(fm.get("type"), {})
+
+
 def update(root, rel_path, frontmatter=None, body=None, merge=True, baseline=None):
     """Met à jour un concept. merge=True fusionne le frontmatter (PATCH), sinon le remplace (édition complète).
     `type` est immuable : un concept ne change pas de nature. `baseline` : la `version` lue avant l'édition ;
-    si le fichier a changé depuis (un agent a écrit), ConflictError et rien n'est écrit."""
+    si le fichier a changé depuis (un agent a écrit), ConflictError et rien n'est écrit. Un fichier `protection`
+    ou un champ de PROOF_FIELDS : KbError, rien n'est écrit."""
     root, target = _safe_target(root, rel_path)
     if not target.is_file():
         return None
@@ -254,14 +292,18 @@ def update(root, rel_path, frontmatter=None, body=None, merge=True, baseline=Non
     patch = dict(frontmatter or {})
     if "type" in patch and patch["type"] != fm.get("type"):
         raise KbError("le type d'un concept ne change jamais")
-    if patch.get("state", "todo") not in TICKET_STATES and fm.get("type") == "Ticket":
-        raise KbError(f"state doit valoir : {', '.join(TICKET_STATES)}")
+    why = protection(_rel(root, target), fm)
+    if why:
+        raise KbError(why + ASK_CLAUDE)
     if merge:
         changed = [k for k in patch if fm.get(k) != patch[k]]
         new_fm = {**fm, **patch}
     else:
         new_fm = {"type": fm["type"], **{k: v for k, v in patch.items() if k != "type"}}
         changed = sorted({k for k in fm.keys() | new_fm.keys() if fm.get(k) != new_fm.get(k)})
+    for k, why in PROOF_FIELDS.get(fm.get("type"), {}).items():
+        if fm.get(k) != new_fm.get(k):
+            raise KbError(why + ASK_CLAUDE)
     new_body = old_body if body is None else body
     if new_body != old_body:
         changed.append("corps")
@@ -277,26 +319,6 @@ def update(root, rel_path, frontmatter=None, body=None, merge=True, baseline=Non
             target.write_text(serialize(new_fm, new_body), encoding="utf-8")
         append_log(root, target.parent, f"{ACTOR} a modifié `{target.stem}` ({', '.join(changed)})")
     return _full(root, target, new_fm, new_body)
-
-
-def create(root, bundle, slug, ctype, title):
-    root = Path(root).resolve()
-    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", slug or ""):
-        raise KbError("slug : minuscules, chiffres et tirets uniquement")
-    if not ctype or not title:
-        raise KbError("type et titre sont requis")
-    _, target = _safe_target(root, f"{bundle.strip('/')}/{slug}.md")
-    if target.exists():
-        raise FileExistsError(_rel(root, target))
-    target.parent.mkdir(parents=True, exist_ok=True)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    fm = {"type": ctype, "title": title, "description": "", "tags": [], "status": "draft",
-          "generated": {"by": ACTOR, "at": now}}
-    if ctype == "Ticket":
-        fm["state"] = "todo"
-    target.write_text(serialize(fm, "\n"), encoding="utf-8")
-    append_log(root, target.parent, f"{ACTOR} a créé `{slug}` ({ctype})")
-    return _full(root, target, fm, "\n")
 
 
 REMARK_NATURES = ("correction", "question", "idee")
@@ -433,6 +455,91 @@ def _graphe_tickets():
 
 
 gt = _graphe_tickets()
+
+
+def _cdc():
+    path = Path(__file__).resolve().parents[2] / "skills" / "redaction" / "scripts" / "cdc.py"
+    spec = importlib.util.spec_from_file_location("cdc", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+cdc = _cdc()
+DECISIONS = av.GRAPH.get("decisions", {})
+
+
+def cahier(root):
+    """Le cahier des charges vu par `cdc.py` : ses trous (`cdc check`), le document assemblé et sa signature,
+    les schémas pas encore validés, les anomalies et les questions qui attendent l'utilisateur."""
+    root = Path(root).resolve()
+    if not (root / "cdc").is_dir():
+        return None
+    try:
+        d = cdc.load(root)
+        trous = cdc.holes(d, root)
+        anomalies = [a for a in cdc.anomalies(d) if a["ouverte"] and a["route"] == "utilisateur"]
+    except (OSError, UnicodeDecodeError, ValueError, KeyError):
+        return {"erreur": "cahier des charges illisible"}
+    lines = (cdc.get(d["relecture"].secs, "Anomalies") if d["relecture"] else "").splitlines()
+    text = {m[1]: m[2].strip() for m in (re.match(r"^\s*-\s*(A\d+)\b\s*(?:\[[^\]]*\])?\s*—?\s*(.*)$", x) for x in lines) if m}
+    doc = root / OUT_CDC
+    fm = parse(_read(doc) or "")[0] if doc.is_file() else {}
+    return {
+        "trous": trous,
+        "schemas": [{"ou": t["où"], "manque": t["trou"]} for t in trous if t["matrice"] == "schémas"],
+        "questions": [{"id": t["où"], "texte": t["trou"]} for t in trous if t["matrice"] == "questions ouvertes"],
+        "anomalies": [{"id": a["id"], "texte": _plain_links(re.sub(r"\s*—\s*→\s*utilisateur\s*—\s*ouverte\s*$", "", text.get(a["id"], "")))}
+                      for a in anomalies],
+        "document": OUT_CDC if doc.is_file() else None,
+        "signe": fm.get("status") == "stable",
+    }
+
+
+OUT_CDC = "project/cahier-des-charges.md"
+
+
+def _plain_links(text):
+    """`[texte](cible.md)` → `texte` : une ligne de la KB lue par une personne, pas par un agent."""
+    return re.sub(r"\[([^\]]+)\]\([^)\s]+\)", r"\1", text)
+
+
+def a_vous(plan, cahier_):
+    """Ce que Hosa attend de l'utilisateur, lu dans le plan et la KB, jamais deviné : l'étape ou la tâche bloquée
+    sur ses questions, la décision que l'étape suivante lui demandera (`decisions` de pipeline.json), et ce que
+    le cahier des charges lui renvoie (anomalies, questions ouvertes, schémas à valider)."""
+    out = {"bloque": [], "decision": None, "anomalies": [], "questions": [], "schemas": []}
+    n = plan and plan["next"]
+    if n and n["status"] == av.BLOCKED:
+        lignes = [x for x in plan["resume"] if x and x != "Rien en cours."]
+        if n["detail"] and not any(n["detail"] in x for x in lignes):
+            lignes.insert(0, n["detail"])
+        out["bloque"].append({"stage": n["stage"], "section": n["section"], "agent": None, "lignes": lignes})
+    for t in (plan or {}).get("taches", []):
+        if t["statut"] == av.BLOCKED:
+            out["bloque"].append({"stage": t["stage"], "section": t["scope"], "agent": t["agent"],
+                                  "lignes": [x for x in (t["objet"], t["detail"]) if x]})
+    if n and n["stage"] in DECISIONS:
+        out["decision"] = {"stage": n["stage"], "section": n["section"], "texte": DECISIONS[n["stage"]]}
+    if cahier_ and "erreur" not in cahier_ and not cahier_["signe"]:
+        out["anomalies"], out["questions"], out["schemas"] = cahier_["anomalies"], cahier_["questions"], cahier_["schemas"]
+    out["total"] = len(out["bloque"]) + len(out["anomalies"]) + len(out["questions"]) + len(out["schemas"])
+    return out
+
+
+def livrer(sprints, board, recettes_, quality, security):
+    """« Peut-on livrer ? » : rien tant qu'aucun ticket n'est fait ; sinon ce qui bloque une release —
+    une recette échouée, un ticket bloqué, le dernier audit qualité ou sécurité en échec, un sprint pas fusionné."""
+    faits = [t for t in board if t["state"] == "done"]
+    if not faits:
+        return {"etat": "rien", "faits": 0, "bloquants": []}
+    b = [{"quoi": "recette", "texte": r["titre"], "path": r["path"]} for r in recettes_ if r["verdict"] == "FAIL"]
+    b += [{"quoi": "ticket", "texte": t["title"], "path": t["path"]} for t in board if t["state"] == "blocked"]
+    b += [{"quoi": "audit", "texte": f"dernier audit {nom} en échec", "path": a["path"]}
+          for nom, a in (("qualité", quality), ("sécurité", security)) if a and a["verdict"] == "FAIL"]
+    b += [{"quoi": "sprint", "texte": f"{s['title']} n'est pas encore fusionné", "path": s["path"]}
+          for s in sprints if s["state"] == "active"]
+    return {"etat": "non" if b else "oui", "faits": len(faits), "bloquants": b}
 
 
 def dependances(root, objectif=None):
@@ -719,23 +826,30 @@ def overview(root):
     exigences = _of(cs, "Exigence")
     projects = sorted(_of(cs, "Project"), key=lambda c: c["path"] != "project/identity.md")
     project = projects[0] if projects else None
+    pl, cdc_ = plan(root), cahier(root)
+    rows, rec = board(cs), recettes(cs)
+    quality, sec = _audit(audits[0] if audits else None), _audit(security[0] if security else None)
     return {
         "project": project and {"path": project["path"], "frontmatter": project["frontmatter"],
                                 "objectives": _section(project["body"], "Objectifs mesurables")},
-        "plan": plan(root),
+        "plan": pl,
         "tickets": counts,
-        "board": board(cs),
+        "board": rows,
         "exigences": {"stable": sum(c["frontmatter"].get("status") == "stable" for c in exigences),
                       "draft": sum(c["frontmatter"].get("status") != "stable" for c in exigences)},
         "sprints": sprints,
-        "quality": _audit(audits[0] if audits else None),
-        "security": _audit(security[0] if security else None),
+        "quality": quality,
+        "security": sec,
         "velocite": {"moyenne": moyenne, "ouverts": ouverts,
                      "restants": round(ouverts / moyenne, 1) if moyenne else None},
         "illisibles": illisibles,
         "activity": activity(root, 12, cs),
-        "recettes": recettes(cs),
+        "recettes": rec,
         "remarques": remarques(cs),
+        "cahier": cdc_,
+        "aVous": a_vous(pl, cdc_),
+        "decisions": DECISIONS,
+        "livrer": livrer(sprints, rows, rec, quality, sec),
     }
 
 

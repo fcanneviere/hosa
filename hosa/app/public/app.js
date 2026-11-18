@@ -67,7 +67,6 @@ const td = (x, cls) => h('td', { class: cls || null }, x);
 const secOf = (body, name) => ((String(body || '').split(new RegExp(`^## ${name}`, 'm'))[1] || '').split(/^## /m)[0] || '').trim();
 const meter = (value, max, label, ok) => h('div', { class: 'meter', role: 'progressbar', 'aria-valuenow': value, 'aria-valuemin': 0, 'aria-valuemax': max || 0, 'aria-label': label },
   h('i', { class: ok && max && value >= max ? 'ok' : null, style: `width:${max ? Math.min(100, 100 * value / max) : 0}%` }));
-const cmdBox = (skill) => h('div', { class: 'cmdbox' }, h('code', {}, `/${skill}`), h('button', { class: 'btn s', type: 'button', onclick: () => copy(`/${skill}`) }, 'Copier'));
 
 // statut : toujours un mot, un symbole et une couleur
 const ST = { 'à faire': ['a', '○'], 'en cours': ['e', '◐'], fait: ['f', '✓'], 'bloqué': ['b', '✕'], 'non applicable': ['a', '—'], ouverte: ['r', '◷'], 'fermée': ['f', '✓'] };
@@ -106,15 +105,16 @@ function kbPath(from, href) {
   for (const seg of href.replace(/#.*$/, '').split('/')) { if (seg === '..') { if (!out.length) return null; out.pop(); } else if (seg && seg !== '.') out.push(seg); }
   return out.join('/');
 }
-const trustWord = (c) => c.trust === 'human' ? 'validé par vous' : c.trust === 'machine' ? 'contrôlé automatiquement' : 'à valider';
-const trustSt = (c) => c.trust === 'human' ? st('validé par vous', 'f', '✓') : c.trust === 'machine' ? st('contrôlé automatiquement', 'e', '✓') : st('à valider', 'r', '○');
+// « non relu » est neutre : Hosa ne demande pas de relire chaque fichier, seulement les décisions de « À vous »
+const trustWord = (c) => c.trust === 'human' ? 'validé par vous' : c.trust === 'machine' ? 'contrôlé automatiquement' : 'non relu';
+const trustSt = (c) => c.trust === 'human' ? st('validé par vous', 'f', '✓') : c.trust === 'machine' ? st('contrôlé automatiquement', 'e', '✓') : st('non relu', 'a', '○');
 const byDate = (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
-const isAgent = (c) => c.status !== 'deprecated' && c.fm.generated && c.fm.generated.by && !String(c.fm.generated.by).startsWith('human:');
-const waitsForYou = (c) => isAgent(c) && (c.trust !== 'human' || c.status !== 'stable');
-const toValidate = () => S.concepts.filter(waitsForYou).sort(byDate);
-const validated = () => S.concepts.filter((c) => isAgent(c) && c.trust === 'human' && c.status === 'stable').sort(byDate);
+const canValidate = (c) => c.validable && c.trust !== 'human';
+const validated = () => S.concepts.filter((c) => c.trust === 'human' && c.fm.verified && c.fm.verified.at).sort((a, b) => String(b.fm.verified.at).localeCompare(String(a.fm.verified.at)));
 const isStable = (c) => c.fm.status === 'stable';
-const statusSt = (c) => isStable(c) ? st('finalisée', 'f', '✓') : st('brouillon', 'a', '○');
+const statusSt = (c) => isStable(c) ? st('stable', 'f', '✓') : st('brouillon', 'a', '○');
+const aVous = () => (S.ov && S.ov.aVous) || { bloque: [], anomalies: [], questions: [], schemas: [], total: 0 };
+const cmdText = (text) => h('div', { class: 'cmdbox' }, h('code', {}, text), h('button', { class: 'btn s', type: 'button', onclick: () => copy(text) }, 'Copier'));
 const remarques = () => (S.ov && S.ov.remarques) || [];
 const openRemarks = () => remarques().filter((r) => r.etat === 'ouverte');
 const remarksOf = (path) => remarques().filter((r) => r.cible === path);
@@ -200,15 +200,23 @@ const seg = (label, options, value, onpick) => h('div', { class: 'seg', role: 'g
   options.map(([v, l]) => h('button', { type: 'button', 'aria-pressed': String(v === value), onclick: () => onpick(v) }, l)));
 
 // --- vue d'ensemble -------------------------------------------------------------------------
+// La prochaine étape se reprend toujours par « reprends » : la fiche de reprise donne à Claude l'action exacte
+// (start, tâche à relancer, questions en attente). Lancer le skill nu la sauterait.
+const sectionName = (t) => /^Sprint /.test(t) ? `Sprint · ${sprintName(t.slice(7))}` : t;
 function hero() {
-  const p = S.ov.plan, n = next();
-  const box = (eyebrow, title, detail, skill, extra) => h('section', { class: 'hero', 'aria-label': 'Prochaine étape' },
-    h('div', {}, h('div', { class: 'eyebrow' }, eyebrow), h('h2', {}, title), detail ? h('p', {}, detail) : null), cmdBox(skill), extra);
-  if (!p) return box('Pour commencer', 'Pas encore de plan d’avancement', 'Lancez cette commande dans Claude Code : elle écrit le plan depuis la KB.', 'status');
-  if (!n) return box('Prochaine étape', 'Toutes les étapes connues sont faites', 'Composez le sprint suivant à partir du backlog.', 'sprint');
-  const g = n.gaps || [];
-  return box(`Prochaine étape · ${n.section}`, n.stage, n.detail ? `Point de reprise : ${n.detail}` : 'Copiez la commande, puis collez-la dans Claude Code.', n.skill,
-    g.length ? h('ul', { 'aria-label': 'Preuves manquantes' }, g.slice(0, 5).map((x) => h('li', {}, `Preuve manquante : ${x}`)), g.length > 5 ? h('li', {}, h('a', { href: '#/avancement', style: 'color:inherit' }, `et ${g.length - 5} autres`)) : null) : null);
+  const p = S.ov.plan, n = next(), a = aVous();
+  const box = (eyebrow, title, detail, cmd, extra, cls) => h('section', { class: `hero${cls ? ` ${cls}` : ''}`, 'aria-label': 'Prochaine étape' },
+    h('div', {}, h('div', { class: 'eyebrow' }, eyebrow), h('h2', {}, title), detail ? h('p', {}, detail) : null), cmdText(cmd), extra);
+  if (!p) return box('Pour commencer', 'Pas encore de plan d’avancement', 'Lancez cette commande dans Claude Code : elle écrit le plan depuis la KB.', '/status');
+  if (!n) return box('Prochaine étape', 'Toutes les étapes connues sont faites', 'Dites « reprends » dans Claude Code : Claude compose le sprint suivant.', 'reprends');
+  if (n.status === 'bloqué' || a.bloque.length) {
+    return box(`Claude attend votre réponse · ${sectionName(n.section)}`, `Étape « ${n.stage} » bloquée`, 'Lisez les questions dans « À vous », puis dites « reprends » dans Claude Code et répondez-y.', 'reprends',
+      h('p', {}, h('a', { href: '#/a-vous', style: 'color:inherit' }, `Voir ${plural(a.total, 'point qui vous attend', 'points qui vous attendent')}`)), 'wait');
+  }
+  const dec = a.decision;
+  return box(`Prochaine étape · ${sectionName(n.section)}`, n.stage, n.status === 'en cours' ? 'En cours. Si la session est coupée, dites « reprends » dans Claude Code : il repart du point exact.'
+    : 'Dites « reprends » dans Claude Code : Claude lance cette étape.', 'reprends',
+    dec ? h('p', {}, h('b', {}, 'Ce que Claude vous demandera : '), dec.texte) : null);
 }
 const kpi = ({ label, value, unit, cmp, href, bar }) => h('a', { class: 'kpi', href },
   h('span', { class: 'l' }, label), h('span', { class: 'v' }, value, unit ? h('small', {}, ` ${unit}`) : null), bar || null, h('span', { class: 'c' }, cmp));
@@ -219,13 +227,13 @@ function delta(cur, prev, days) {
   return `${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)} % sur les ${days} jours d’avant`;
 }
 function kpis() {
-  const ex = ofType('Exigence'), okEx = ex.filter((c) => c.trust === 'human').length, board = S.ov.board || [], sp = activeSprint(), u = S.usage;
-  const done = board.filter((t) => t.state === 'done').length, blocked = board.filter((t) => t.state === 'blocked').length;
+  const ex = ofType('Exigence').filter((c) => c.status !== 'deprecated'), okEx = ex.filter(isStable).length, board = S.ov.board || [], sp = activeSprint(), u = S.usage;
+  const done = board.filter((t) => t.state === 'done').length, blocked = board.filter((t) => t.state === 'blocked').length, cdc = S.ov.cahier;
   return h('div', { class: 'kpis' },
-    kpi({ label: 'Exigences validées', value: ex.length ? `${okEx}` : '—', unit: ex.length ? `/ ${ex.length}` : '', bar: ex.length ? meter(okEx, ex.length, 'Exigences validées', true) : null,
-      cmp: ex.length ? `${ex.filter((c) => !isStable(c)).length} en brouillon` : 'pas encore rédigées', href: '#/exigences' }),
+    kpi({ label: 'Exigences stables', value: ex.length ? `${okEx}` : '—', unit: ex.length ? `/ ${ex.length}` : '', bar: ex.length ? meter(okEx, ex.length, 'Exigences stables', true) : null,
+      cmp: !ex.length ? 'pas encore rédigées' : cdc && cdc.signe ? '✓ cahier des charges signé' : cdc && cdc.trous ? `${plural(cdc.trous.length, 'trou', 'trous')} à combler avant signature` : `${ex.length - okEx} en brouillon`, href: '#/exigences' }),
     kpi({ label: 'Tickets faits', value: board.length ? `${done}` : '—', unit: board.length ? `/ ${board.length}` : '', bar: board.length ? meter(done, board.length, 'Tickets faits', true) : null,
-      cmp: board.length ? (blocked ? `✕ ${plural(blocked, 'ticket bloqué', 'tickets bloqués')}` : 'aucun bloqué') : 'écrits par /backlog', href: '#/tickets' }),
+      cmp: board.length ? (blocked ? `✕ ${plural(blocked, 'ticket bloqué', 'tickets bloqués')}` : 'aucun bloqué') : 'écrits à l’étape backlog', href: '#/tickets' }),
     kpi({ label: sp ? `Sprint · ${sp.title}` : 'Sprint actif', value: sp ? `${sp.faits}` : '—', unit: sp ? `/ ${sp.engages} points` : '', bar: sp ? meter(sp.faits, sp.engages, 'Points faits du sprint', true) : null,
       cmp: sp ? `${sp.done} / ${sp.total} tickets faits` : 'aucun sprint en cours', href: sp ? `#/sprints/${sp.slug}` : '#/sprints' }),
     kpi({ label: `Consommation · ${F.periode || 7} j`, value: !u ? '…' : u.error ? '—' : fmtUsd(u.total ? u.total.usd : 0), unit: '',
@@ -237,7 +245,7 @@ function pipeline(compact) {
   const cls = (x) => x.status === 'fait' ? 'f' : x.status === 'en cours' ? 'e' : x.status === 'bloqué' ? 'b' : x.status === 'non applicable' ? 'n' : '';
   return h('div', { class: 'pipe' }, p.sections.map((s) => {
     const d = s.stages.filter(isClosed).length;
-    return h('div', {}, h('div', { class: 'phase-h' }, h('b', {}, s.title), h('span', { class: 'muted num' }, s.stages.length ? `${d} / ${s.stages.length}` : 'pas commencé')),
+    return h('div', {}, h('div', { class: 'phase-h' }, h('b', {}, sectionName(s.title)), h('span', { class: 'muted num' }, s.stages.length ? `${d} / ${s.stages.length}` : 'pas commencé')),
       compact ? meter(d, s.stages.length, s.title, true) : null,
       h('div', { class: 'steps', style: compact ? 'margin-top:8px' : null }, s.stages.map((x) => {
         const [, sym] = ST[x.status] || ST['à faire'];
@@ -245,22 +253,36 @@ function pipeline(compact) {
       })));
   }));
 }
+const LIVRER_KIND = { recette: 'recette échouée', ticket: 'ticket bloqué', audit: 'audit', sprint: 'sprint' };
 function livrerCard() {
-  const fails = recettes().filter((r) => r.verdict === 'FAIL'), blocked = ofType('Ticket').filter((t) => t.state === 'blocked'), g = (next() && next().gaps) || [];
-  const nb = fails.length + blocked.length + g.length;
-  return h('section', { class: `card verdict${nb ? ' no' : ''}` }, h('div', { class: 'eyebrow' }, 'Peut-on livrer ?'),
-    h('h3', {}, nb ? `Non — ${plural(nb, 'point bloque', 'points bloquent')}` : 'Oui — rien ne bloque'),
-    nb ? h('ul', { class: 'list' }, fails.map((r) => h('li', {}, verdict('FAIL'), h('div', {}, 'Recette « ', recetteName(r), ' »'))),
-      blocked.map((t) => h('li', {}, st('bloqué'), h('div', {}, h('a', { href: ticketHref(t.path) }, t.title)))),
-      g.slice(0, 4).map((x) => h('li', {}, st('manquante', 'b', '✕'), h('div', {}, `Preuve : ${x}`))))
-      : h('p', { class: 'muted' }, 'Aucune recette échouée, aucun ticket bloqué, aucune preuve manquante.'));
+  const l = S.ov.livrer || { etat: 'rien', bloquants: [] };
+  if (l.etat === 'rien') return h('section', { class: 'card verdict' }, h('div', { class: 'eyebrow' }, 'Peut-on livrer ?'), h('h3', {}, 'Rien à livrer pour l’instant'),
+    h('p', { class: 'muted' }, 'Aucun ticket n’est encore fait. La question se pose après le premier sprint.'));
+  const b = l.bloquants;
+  return h('section', { class: `card verdict${b.length ? ' no' : ''}` }, h('div', { class: 'eyebrow' }, 'Peut-on livrer ?'),
+    h('h3', {}, b.length ? `Pas encore — ${plural(b.length, 'point bloque', 'points bloquent')}` : `Oui — ${plural(l.faits, 'ticket fait', 'tickets faits')}, rien ne bloque`),
+    b.length ? h('ul', { class: 'list' }, b.map((x) => h('li', {}, st(LIVRER_KIND[x.quoi] || x.quoi, 'b', '✕'), h('div', {}, h('a', { href: routeOf(x.path) }, x.texte)))))
+      : h('p', { class: 'muted' }, 'Aucune recette échouée, aucun ticket bloqué, aucun audit en échec, aucun sprint en cours. Dites « livre le projet » dans Claude Code.'));
 }
+// les points de « À vous », dans l'ordre où ils bloquent le travail ; `max` : la vue d'ensemble n'en montre que quelques-uns
+function aVousList(max) {
+  const a = aVous(), items = [];
+  for (const b of a.bloque) items.push(h('li', {}, st('Claude attend', 'r', '◷'), h('div', {}, h('b', {}, `Étape « ${b.stage} »${b.agent ? ` · ${b.agent}` : ''}`),
+    b.lignes.map((l) => h('div', { class: 'm pre' }, l)))));
+  for (const x of a.anomalies) items.push(h('li', {}, st('à trancher', 'r', '?'), h('div', {}, h('b', {}, `Anomalie ${x.id}`), h('div', { class: 'm' }, x.texte))));
+  for (const x of a.questions) items.push(h('li', {}, st('question', 'r', '?'), h('div', {}, h('b', {}, x.id), h('div', { class: 'm' }, x.texte))));
+  if (a.schemas.length) items.push(h('li', {}, st('à valider', 'r', '◎'), h('div', {}, h('b', {}, plural(a.schemas.length, 'schéma de processus à valider', 'schémas de processus à valider')),
+    h('div', { class: 'm' }, 'Claude vous les montre dessinés pendant la rédaction du cahier des charges.'), h('ul', { class: 'flat' }, a.schemas.slice(0, max || 99).map((s) => h('li', {}, h('a', { href: routeOf(s.ou) }, docTitle(s.ou)), h('span', { class: 'muted' }, ` — ${s.manque}`)))))));
+  return items;
+}
+const docTitle = (path) => { const c = S.concepts.find((x) => x.path === path); return c ? c.title : path; };
 function yourTurn() {
-  const v = toValidate(), open = openRemarks(), answered = remarques().filter((r) => r.etat === 'traitee').sort((a, b) => String(b.traiteeAt).localeCompare(String(a.traiteeAt))).slice(0, 3);
-  return cardH('À vous', h('a', { href: '#/gestion/validation' }, 'Tout voir'),
+  const a = aVous(), open = openRemarks(), answered = remarques().filter((r) => r.etat === 'traitee').sort((x, y) => String(y.traiteeAt).localeCompare(String(x.traiteeAt))).slice(0, 2);
+  const all = aVousList(3), items = all.slice(0, 3);
+  return cardH(`À vous${a.total ? ` · ${a.total}` : ''}`, h('a', { href: '#/a-vous' }, 'Tout voir'),
     h('ul', { class: 'list' },
-      h('li', {}, h('span', { class: `badge${v.length ? '' : ' q'}`, style: 'margin:0' }, String(v.length)), h('div', {}, h('a', { class: 't', href: '#/gestion/validation' }, plural(v.length, 'document à valider', 'documents à valider')),
-        h('div', { class: 'm' }, v.length ? `Le plus récent : ${v[0].title}` : 'Tout ce que Claude a écrit est validé.'))),
+      items.length ? items : h('li', {}, st('rien', 'f', '✓'), h('div', {}, 'Claude n’attend rien de vous.', a.decision ? h('div', { class: 'm' }, `À l’étape « ${a.decision.stage} », il vous demandera : ${a.decision.texte}`) : null)),
+      all.length > items.length ? h('li', {}, h('span'), h('a', { href: '#/a-vous' }, `et ${plural(all.length - items.length, 'autre point', 'autres points')}`)) : null,
       h('li', {}, h('span', { class: 'badge q', style: 'margin:0' }, String(open.length)), h('div', {}, h('a', { class: 't', href: '#/remarques' }, plural(open.length, 'remarque en attente de Claude', 'remarques en attente de Claude')),
         h('div', { class: 'm' }, open.length ? 'Claude les lit à la prochaine « reprends ».' : 'Une correction, une question ? Bouton « Remarque pour Claude ».'))),
       answered.map((r) => h('li', {}, st('réponse', 'f', '✓'), h('div', {}, h('a', { class: 't', href: '#/remarques' }, r.title), h('div', { class: 'm' }, `Claude : ${r.reponse || '—'}`))))));
@@ -279,30 +301,26 @@ function sprintCard() {
 function home() {
   const p = S.ov.plan, n = next(), sec = n && p ? p.sections.find((s) => s.title === n.section) : null;
   const where = !p ? 'Pas encore de plan d’avancement.' : !n ? 'Toutes les étapes connues sont faites.'
-    : sec ? `${n.section} — étape ${sec.stages.findIndex((x) => x.stage === n.stage) + 1} sur ${sec.stages.length}.` : `${n.section}.`;
-  return [pageH('Vue d’ensemble', `Où en est ${projectTitle()} ?`, where), hero(), kpis(),
-    h('div', { class: 'cols w' }, h('div', { class: 'stack' }, cardH('Plan d’avancement', h('a', { href: '#/avancement' }, 'Détail'), pipeline(true)), sprintCard()),
-      h('div', { class: 'stack' }, yourTurn(), livrerCard())),
-    h('div', { class: 'cols' }, activityCard(), remarksCard())];
-}
-function remarksCard() {
-  const l = remarques().slice(0, 4);
-  return cardH('Vos remarques', h('a', { href: '#/remarques' }, 'Toutes'), l.length ? h('div', { class: 'stack', style: 'gap:10px' }, l.map((r) => remarkItem(r, true)))
-    : none('Aucune remarque. Sur chaque écran, le bouton « Remarque pour Claude » en écrit une.'));
+    : sec ? `${sectionName(n.section)} — étape ${sec.stages.findIndex((x) => x.stage === n.stage) + 1} sur ${sec.stages.length}.` : `${sectionName(n.section)}.`;
+  return [pageH('Aujourd’hui', `Où en est ${projectTitle()} ?`, where), hero(),
+    h('div', { class: 'cols w' }, h('div', { class: 'stack' }, yourTurn(), cardH('Plan d’avancement', h('a', { href: '#/avancement' }, 'Détail'), pipeline(true))),
+      h('div', { class: 'stack' }, livrerCard(), sprintCard(), activityCard())),
+    kpis()];
 }
 
 // --- plan d'avancement ------------------------------------------------------------------------
 function vAvancement() {
   const p = S.ov.plan, n = next();
-  if (!p) return [pageH('Pilotage', 'Plan d’avancement'), hero()];
+  if (!p) return [pageH('Suivi', 'Plan d’avancement'), hero()];
   const g = (n && n.gaps) || [];
-  return [pageH('Pilotage', 'Plan d’avancement', 'Les étapes de la méthode, leurs preuves et le travail des agents. Le plan est tenu par Claude ; il se lit ici.'), hero(),
+  return [pageH('Suivi', 'Plan d’avancement', 'Les étapes de la méthode, leurs preuves et le travail des agents. Le plan est tenu par Claude ; il se lit ici.'), hero(),
     h('div', { class: 'cols w' },
       h('div', { class: 'stack' }, card('Toutes les étapes', pipeline(false)),
-        ...p.sections.map((s) => h('details', { class: 'card' }, h('summary', {}, h('b', {}, s.title), ` · ${s.stages.filter(isClosed).length} / ${s.stages.length}`),
-          h('div', { style: 'margin-top:12px' }, table(['Étape', 'Statut', 'Date', 'Détail'], s.stages.map((x) => h('tr', { class: x.status === 'bloqué' ? 'fail' : null }, td(x.stage), td(st(x.status)), td(fmtDate(x.at), 'num'), td(x.detail || '', 'muted')))))))),
+        ...p.sections.map((s) => h('details', { class: 'card' }, h('summary', {}, h('b', {}, sectionName(s.title)), ` · ${s.stages.filter(isClosed).length} / ${s.stages.length}`),
+          h('div', { style: 'margin-top:12px' }, stagesTable(s))))),
       h('div', { class: 'stack' },
-        card(`Preuves manquantes · ${g.length}`, g.length ? h('ul', { class: 'list' }, g.map((x) => h('li', {}, st('manquante', 'b', '✕'), h('div', {}, x)))) : none('Aucune preuve manquante pour l’étape en cours.')),
+        card(`Ce qui reste à prouver · ${g.length}`, h('p', { class: 'muted' }, 'Ce que Claude doit encore produire pour clore l’étape en cours. Rien à faire de votre côté.'),
+          g.length ? h('ul', { class: 'list' }, g.map((x) => h('li', {}, st('à prouver', 'a', '○'), h('div', { class: 'mono' }, x)))) : none('Rien : l’étape en cours a toutes ses preuves.')),
         card('Point de reprise', (p.resume.length ? p.resume : ['Aucun point de reprise.']).map((l) => h('p', {}, l))))),
     (p.taches || []).length ? card('Tâches des agents', table(['Étape', 'Agent', 'Objet', 'Statut', 'Sortie ou détail'], p.taches.map((t) => h('tr', { class: t.statut === 'bloqué' ? 'fail' : null },
       td(`${t.stage}${t.scope ? ` (${t.scope})` : ''}`), td(t.agent), td(t.objet || ''), td(st(t.statut)), td(t.sortie || t.detail || '', 'muted'))))) : null,
@@ -311,12 +329,35 @@ function vAvancement() {
         td(`${b.from} → ${b.to}${b.scope ? ` (${b.scope})` : ''}`), td(`${b.tours} / ${b.max}`, 'num r'), td(st(b.etat)), td(b.detail || '', 'muted'))))) : null];
 }
 
+// les étapes d'une section du plan, avec la décision que chacune vous demandera (`decisions` de pipeline.json)
+function stagesTable(s) {
+  const dec = S.ov.decisions || {};
+  return table(['Étape', 'Statut', 'Date', 'Votre décision', 'Détail'], s.stages.map((x) => h('tr', { class: x.status === 'bloqué' ? 'fail' : null },
+    td(x.stage), td(st(x.status)), td(fmtDate(x.at), 'num'), td(dec[x.stage] || '—', dec[x.stage] ? null : 'muted'), td(x.detail || '', 'muted'))), { caption: `Étapes · ${sectionName(s.title)}` });
+}
+function phaseCard(title) {
+  const s = S.ov.plan && S.ov.plan.sections.find((x) => x.title === title);
+  return s ? cardH(`Étapes · ${s.stages.filter(isClosed).length} / ${s.stages.length}`, h('a', { href: '#/avancement' }, 'Plan d’avancement'), stagesTable(s))
+    : card('Étapes', none('Pas encore de plan d’avancement : dites « reprends » ou lancez /status dans Claude Code.'));
+}
+const docList = (docs, emptyText) => docs.length ? h('ul', { class: 'list' }, docs.map((c) => h('li', {}, h('i', { class: `dot ${c.trust}`, style: 'margin-top:8px', title: trustWord(c) }),
+  h('div', {}, h('a', { class: 't', href: routeOf(c.path) }, c.title), h('div', { class: 'm' }, `${c.type} · ${folderOf(c)}`))))) : none(emptyText);
+
+// --- structuration : stack, données, architecture, menaces, interface ----------------------------------
+function vStructuration() {
+  const docs = (g) => S.concepts.filter((c) => groupOf(c) === g && c.status !== 'deprecated').sort(docOrder);
+  return [pageH('Structuration', 'Structuration', 'Après la signature du cahier des charges : la stack, l’installation, les données, l’architecture, les menaces, l’interface, puis le backlog.'),
+    phaseCard('Structuration'),
+    h('div', { class: 'cols' }, card('Socle technique', docList(docs('Socle technique'), 'Rien encore : l’étape stack l’écrit.')),
+      card('Conception', docList(docs('Conception'), 'Rien encore : les étapes architecture, menaces et interface l’écrivent.')))];
+}
+
 // --- sprints ------------------------------------------------------------------------------------
 const sprintSt = (s) => s.state === 'done' ? st('terminé', 'f', '✓') : s.state === 'active' ? st('actif', 'e', '◐') : st('prévu', 'a', '○');
 function vSprints() {
   const sp = S.ov.sprints || [], v = S.ov.velocite || {};
-  if (!sp.length) return [pageH('Pilotage', 'Sprints'), empty('Aucun sprint pour l’instant.', h('p', {}, '/sprint en compose un à partir du backlog.'), cmdBox('sprint'))];
-  return [pageH('Pilotage', 'Sprints', 'Un sprint est un groupe de tickets construits ensemble, puis montrés et fusionnés.'),
+  if (!sp.length) return [pageH('Sprints', 'Sprints'), empty('Aucun sprint pour l’instant.', h('p', {}, 'Après le backlog, dites « reprends » dans Claude Code : il compose le premier sprint.'), cmdText('reprends'))];
+  return [pageH('Sprints', 'Sprints', 'Un sprint est un groupe de tickets construits ensemble, puis montrés et fusionnés.'),
     h('div', { class: 'kpis' },
       kpi({ label: 'Vitesse moyenne', value: v.moyenne == null ? '—' : fmtNum(v.moyenne), unit: v.moyenne == null ? '' : 'points / sprint', cmp: v.moyenne == null ? 'pas encore de sprint terminé' : 'sur les sprints terminés', href: '#/sprints' }),
       kpi({ label: 'Points ouverts', value: String(v.ouverts ?? '—'), cmp: 'dans le backlog et les sprints', href: '#/tickets' }),
@@ -347,12 +388,12 @@ function loadDep() {
 }
 const depLink = (t) => h('a', { href: ticketHref(`tickets/${t.slug}.md`) }, t.title);
 function vPlanification() {
-  const head = [pageH('Pilotage', 'Planification', 'Les dépendances entre tickets : ce qui peut se construire maintenant, et le chemin jusqu’à un objectif. Le même calcul compose les sprints.')];
+  const head = [pageH('Sprints', 'Planification', 'Les dépendances entre tickets : ce qui peut se construire maintenant, et le chemin jusqu’à un objectif. Le même calcul compose les sprints.')];
   if (S.depFor !== (F.objectif || '')) { loadDep(); return [...head, none('Calcul du graphe…')]; }
   const d = S.dep;
   if (!d) return [...head, none('Calcul du graphe…')];
   if (d.error) return [...head, errBox(`Graphe indisponible : ${plain(d.error)}.`, true)];
-  if (!d.objectifs.length) return [...head, empty('Aucun ticket à faire hors sprint.', h('p', {}, '/backlog crée les tickets à partir du cahier des charges.'), cmdBox('backlog'))];
+  if (!d.objectifs.length) return [...head, empty('Aucun ticket à faire hors sprint.', h('p', {}, 'L’étape backlog crée les tickets à partir du cahier des charges : dites « reprends » dans Claude Code.'), cmdText('reprends'))];
   const c = d.composition || {}, inSprint = new Set((c.tickets || []).map((t) => t.slug));
   const pick = h('label', { class: 'flt' }, 'Objectif', h('select', { onchange: (e) => setF('objectif', e.target.value) },
     h('option', { value: '' }, 'le premier ticket atteignable'),
@@ -364,7 +405,7 @@ function vPlanification() {
     table(['Sprint', 'Jalons', 'Tickets', 'Points', 'Démo'], f.sprints.map((sp, i) => h('tr', {}, td(String(i + 1), 'num r'),
       td(sp.jalons.length ? sp.jalons.map(tt).join(' · ') : sp.nature === 'hors parcours' ? 'hors parcours' : 'partie d’un jalon', sp.jalons.length ? null : 'muted'),
       td(String(sp.tickets.length), 'num r'), td(String(sp.points), 'num r'), td(String(sp.demo), 'num r'))), { caption: 'Sprints à venir' }),
-    f.bloques.length ? h('div', { class: 'alert err', role: 'alert' }, h('span', {}, h('b', {}, `${plural(f.bloques.length, 'jalon bloqué', 'jalons bloqués')}. `), 'Un ticket de leur chemin est à compléter (/backlog).'),
+    f.bloques.length ? h('div', { class: 'alert err', role: 'alert' }, h('span', {}, h('b', {}, `${plural(f.bloques.length, 'jalon bloqué', 'jalons bloqués')}. `), 'Un ticket de leur chemin est à compléter : Claude le fait à l’étape backlog.'),
       h('ul', { style: 'flex-basis:100%' }, f.bloques.map((b) => h('li', {}, tt(b.jalon))))) : null,
     f.a_completer.length ? h('p', { class: 'hint' }, `${plural(f.a_completer.length, 'ticket à compléter', 'tickets à compléter')}, ${plural(f.en_attente.length, 'ticket en attente', 'tickets en attente')} derrière eux.`) : null)
     : card('Feuille de route', none('Pas encore de jalons validés : le prochain /sprint les propose, une fois.'));
@@ -471,13 +512,13 @@ function tgSprintLayout(by, shown) {
 
 function vGraphe(sel) {
   const head = [crumbs(['Planification', '/planification'], ['Graphe des tickets']),
-    pageH('Pilotage', 'Graphe des tickets', 'Par sprint : une colonne par sprint, livrés, en cours, puis ceux que la feuille de route calcule. Par dépendance : chaque ticket après ce qu’il attend. Choisissez un ticket : ce qu’il attend et ce qui l’attend restent visibles, le reste s’efface.')];
+    pageH('Sprints', 'Graphe des tickets', 'Par sprint : une colonne par sprint, livrés, en cours, puis ceux que la feuille de route calcule. Par dépendance : chaque ticket après ce qu’il attend. Choisissez un ticket : ce qu’il attend et ce qui l’attend restent visibles, le reste s’efface.')];
   if (S.depFor !== (F.objectif || '')) { loadDep(); return [...head, none('Calcul du graphe…')]; }
   const d = S.dep;
   if (!d) return [...head, none('Calcul du graphe…')];
   if (d.error) return [...head, errBox(`Graphe indisponible : ${plain(d.error)}.`, true)];
   const all = d.tickets || [];
-  if (!all.length) return [...head, empty('Aucun ticket.', h('p', {}, '/backlog crée les tickets à partir du cahier des charges.'), cmdBox('backlog'))];
+  if (!all.length) return [...head, empty('Aucun ticket.', h('p', {}, 'L’étape backlog crée les tickets à partir du cahier des charges : dites « reprends » dans Claude Code.'), cmdText('reprends'))];
   const by = Object.fromEntries(all.map((t) => [t.slug, t]));
   const cur = sel && by[sel] ? sel : null;
   const { up, down, kids } = cur ? tgClosure(by, cur) : { up: new Set(), down: new Set(), kids: {} };
@@ -560,7 +601,7 @@ function vGraphe(sel) {
 
 // --- documentation de Hosa : ses étapes et boucles (pipeline.json), ses skills et agents, le guide du README ----------
 function vAide() {
-  const head = [pageH('Hosa', 'Documentation de Hosa', 'Comment Hosa mène un projet : les étapes, ce que chacune produit, les retours en arrière possibles, les agents, et le guide complet.')];
+  const head = [pageH('Base de connaissance', 'Documentation de Hosa', 'Comment Hosa mène un projet : les étapes, ce que chacune produit, les retours en arrière possibles, les agents, et le guide complet.')];
   if (S.aide === undefined) { S.aide = null; api('aide').then((d) => { S.aide = d; route(); }, (e) => { S.aide = { error: e }; route(); }); }
   const d = S.aide;
   if (!d) return [...head, none('Chargement de la documentation…')];
@@ -585,40 +626,34 @@ function vAide() {
     parcours, card('Guide', guide), agents];
 }
 
-// --- tickets : tableau, glisser-déposer ou menu ---------------------------------------------------
-async function moveTicket(path, state) {
-  const t = (S.ov.board || []).find((x) => x.path === path); if (!t || t.state === state) return;
-  try { await api(`concepts/${enc(path)}`, { method: 'PATCH', json: { frontmatter: { state } } }); await load(); toast(`${t.title} : ${TICKET[state]}`); }
-  catch (e) { toast(`Rien n’a changé : ${plain(e)}.`); }
-  route();
-}
+// --- tickets : tableau en lecture seule — l'état d'un ticket suit ses preuves, Claude le change ----------
 const BACKLOG = '__backlog__';
-const VALIDATION = [['humain', 'validé par vous'], ['machine', 'contrôlé automatiquement'], ['aucune', 'à valider']];
+const VALIDATION = [['humain', 'validé par vous'], ['machine', 'contrôlé automatiquement'], ['aucune', 'non relu']];
 function tcard(t) {
-  return h('article', { class: 'tcard', draggable: 'true', ondragstart: (e) => { e.dataTransfer.setData('text/plain', t.path); e.currentTarget.classList.add('drag'); }, ondragend: (e) => e.currentTarget.classList.remove('drag') },
+  return h('article', { class: 'tcard' },
     h('a', { class: 'tt', href: ticketHref(t.path) }, t.title),
     h('div', { class: 'meta' }, t.priority == null ? h('span', {}, 'sans priorité') : h('span', { class: 'prio' }, `P${t.priority}`), h('span', {}, t.points > 0 ? `${t.estimate} · ${plural(t.points, 'pt', 'pts')}` : 'non estimé'),
       h('span', {}, sprintName(t.sprint)), h('span', {}, `critères ${proof(t)}`)),
-    h('div', { class: 'row', style: 'gap:6px' }, trustSt({ trust: { humain: 'human', machine: 'machine' }[t.validation] || 'none' }), t.origine === 'humain' ? st('écrit par vous', 'a', '✎') : null,
-      h('span', { class: 'sp' }), h('select', { 'aria-label': `Déplacer ${t.title} vers`, onchange: (e) => moveTicket(t.path, e.target.value) },
-        h('option', { value: '' }, 'Déplacer…'), STATES.filter((s) => s !== t.state).map((s) => h('option', { value: s }, stateName(s))))));
+    t.origine === 'humain' ? h('div', { class: 'row', style: 'gap:6px' }, st('écrit par vous', 'a', '✎')) : null);
 }
+// sans choix de l'utilisateur, le sprint en cours (ou le prochain prévu) : 149 tickets d'un coup ne se lisent pas
+const defaultSprint = () => { const sp = S.ov.sprints || [], a = sp.find((s) => s.state === 'active') || sp.find((s) => s.state === 'planned'); return a ? a.slug : ''; };
 function vTickets() {
   const all = (S.ov && S.ov.board) || [];
+  if (F.sprint === undefined) F.sprint = defaultSprint();
   const sprints = [...new Set(all.map((t) => t.sprint).filter(Boolean))].map((s) => [s, sprintName(s)]);
   const l = all.filter((t) => (!F.sprint || (F.sprint === BACKLOG ? !t.sprint : t.sprint === F.sprint)) && (!F.origine || t.origine === F.origine)
     && (!F.validation || t.validation === F.validation) && has(t.title + ' ' + t.path));
   const ill = (S.ov.illisibles || []);
   const col = (state) => {
     const list = l.filter((t) => t.state === state), pts = list.reduce((n, t) => n + t.points, 0);
-    return h('section', { class: 'col', 'aria-label': stateName(state), ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add('over'); }, ondragleave: (e) => e.currentTarget.classList.remove('over'),
-      ondrop: (e) => { e.preventDefault(); e.currentTarget.classList.remove('over'); moveTicket(e.dataTransfer.getData('text/plain'), state); } },
-    h('div', { class: 'col-h' }, st(stateName(state), ...ST[TICKET[state]]), h('span', { class: 'muted num' }, `${list.length} · ${plural(pts, 'pt', 'pts')}`)), list.map(tcard));
+    return h('section', { class: 'col', 'aria-label': stateName(state) },
+      h('div', { class: 'col-h' }, st(stateName(state), ...ST[TICKET[state]]), h('span', { class: 'muted num' }, `${list.length} · ${plural(pts, 'pt', 'pts')}`)), list.map(tcard));
   };
-  return [pageH('Pilotage', 'Tickets', 'Glissez un ticket d’une colonne à l’autre, ou utilisez « Déplacer… ». Chaque changement est écrit dans la KB et journalisé.'),
+  return [pageH('Sprints', 'Tickets', 'L’état d’un ticket suit ses preuves : Claude le passe à « fait » quand ses tests, sa revue et sa recette passent. Un désaccord ? Écrivez une remarque sur le ticket.'),
     filterBar(['q'], { sprint: [...sprints, [BACKLOG, 'Backlog non planifié']], origine: [['humain', 'vous'], ['agent', 'Claude']], validation: VALIDATION }, 'Rechercher un ticket'),
     all.length ? l.length ? h('div', { class: 'board' }, STATES.map(col)) : empty('Aucun ticket ne correspond.', clearBtn(['q', 'sprint', 'origine', 'validation']))
-      : empty('Aucun ticket pour l’instant : /backlog les crée à partir des exigences.', cmdBox('backlog')),
+      : empty('Aucun ticket pour l’instant : l’étape backlog les crée à partir des exigences.', cmdText('reprends')),
     ill.length ? card(`Fichiers illisibles · ${ill.length}`, h('p', { class: 'muted' }, 'Ces fichiers manquent dans les listes tant qu’ils ne sont pas réparés.'),
       table(['Fichier', 'Cause'], ill.map((x) => h('tr', {}, td(x.path, 'mono'), td(x.cause))))) : null];
 }
@@ -629,8 +664,7 @@ function vTicket(path) {
   const rv = reviewOf(c), notes = secOf(c.body, 'Revue').replace(/^.*(PASS-WITH-NOTES|PASS|FAIL).*\n?/m, '').trim();
   return [crumbs(['Tickets', '/tickets'], [c.title]),
     pageH(null, c.title, c.fm.description || null, h('div', { class: 'row' }, ticketSt(c), h('span', { class: 'muted' }, sprintName(c.fm.sprint)), h('span', {}, 'Revue : ', verdict(rv)), trustSt(c),
-      h('span', { class: 'sp' }), h('label', { class: 'flt' }, 'État', h('select', { onchange: (e) => moveTicket(c.path, e.target.value) }, STATES.map((s) => h('option', { value: s, selected: (c.fm.state || 'todo') === s }, stateName(s))))),
-      docActions(c))),
+      h('span', { class: 'sp' }), docActions(c))),
     h('div', { class: 'cols w' },
       h('div', { class: 'stack' },
         card(`Critères d’acceptation · ${proof(c)}`, !cv ? none(proof(c)) : cv.criteres.length ? h('ul', { class: 'list' }, cv.criteres.map((a) => h('li', {}, cv.couverts.includes(a) ? st('couvert', 'f', '✓') : cv.plan ? st('non couvert', 'b', '✕') : st('non testé', 'a', '○'), h('div', { class: 'mono' }, a)))) : none('Aucun critère CAn dans ce ticket.')),
@@ -645,28 +679,42 @@ function vTicket(path) {
 // --- cahier des charges : exigences et personas ------------------------------------------------------
 const serves = (c, persona) => kbLinks(c).includes(`personnas/${persona}.md`);
 const kbLinks = (c) => [...String(c.body || '').matchAll(/\]\(([^)\s]+\.md)/g)].map((m) => kbPath(c.path, m[1])).filter(Boolean);
+// la signature : un seul geste, à l'étape contestation, sur le cahier des charges entier — jamais exigence par exigence
+function signatureCard() {
+  const c = S.ov.cahier;
+  if (!c) return null;
+  if (c.erreur) return errBox(`Cahier des charges : ${c.erreur}.`);
+  const doc = c.document && S.concepts.find((x) => x.path === c.document);
+  const head = c.signe ? st('signé', 'f', '✓') : c.trous.length ? st(plural(c.trous.length, 'trou', 'trous'), 'b', '✕') : st('prêt à signer', 'r', '◎');
+  const byMat = {}; for (const t of c.trous) (byMat[t.matrice] ||= []).push(t);
+  return cardH('Le document', head,
+    h('p', {}, c.signe ? 'Vous avez signé le cahier des charges. Une exigence stable change par l’étape changement : dites-le à Claude, ou écrivez une remarque.'
+      : 'Vous le signerez une seule fois, en entier, à la fin de l’étape contestation. Claude comble d’abord chaque trou ci-dessous.'),
+    doc ? h('p', {}, h('a', { class: 'btn o s', href: routeOf(doc.path) }, 'Lire le cahier des charges assemblé')) : none('Pas encore assemblé : Claude l’assemble pendant la rédaction.'),
+    !c.signe && c.trous.length ? h('details', {}, h('summary', {}, `Les ${plural(c.trous.length, 'trou', 'trous')}, par rubrique`),
+      Object.entries(byMat).map(([m, l]) => [h('h3', {}, `${m} · ${l.length}`), h('ul', { class: 'flat' }, l.map((t) => h('li', {}, h('span', { class: 'mono' }, t['où']), ` — ${t.trou}`)))])) : null);
+}
 function vExigences() {
-  const ex = ofType('Exigence'), bad = (S.ov.illisibles || []).filter((x) => x.path.startsWith('cdc/'));
+  const ex = ofType('Exigence').filter((c) => c.status !== 'deprecated'), bad = (S.ov.illisibles || []).filter((x) => x.path.startsWith('cdc/'));
   const espaces = [...new Set(ex.map((c) => c.fm.espace).filter(Boolean))].sort().map((v) => [v, v]);
   const rows = ex.filter((c) => has(c.title + ' ' + (c.fm.description || '')) && (!F.statut || (F.statut === 'stable') === isStable(c)) && (!F.espace || c.fm.espace === F.espace) && (!F.persona || serves(c, F.persona)));
-  const glossaire = S.concepts.find((c) => c.path === 'cdc/glossaire.md'), okN = ex.filter((c) => c.trust === 'human').length;
+  const glossaire = S.concepts.find((c) => c.path === 'cdc/glossaire.md'), okN = ex.filter(isStable).length;
   const others = S.concepts.filter((c) => /^(cdc|juridique|project)\//.test(c.path) && c.type !== 'Exigence' && c.path !== 'cdc/glossaire.md').sort((a, b) => a.title.localeCompare(b.title));
-  return [pageH('Produit', 'Cahier des charges', 'Ce que l’application doit permettre de faire. Validez chaque exigence quand elle vous convient ; sinon, écrivez une remarque à Claude.'),
+  return [pageH('Cahier des charges', 'Cahier des charges', 'Ce que l’application doit permettre de faire. Une exigence qui ne vous convient pas : écrivez une remarque, Claude la corrige par la méthode.'),
     bad.map((x) => h('div', { class: 'alert', role: 'alert' }, h('span', {}, h('span', { class: 'mono' }, x.path), ` n’apparaît pas dans la liste : ${x.cause}.`))),
+    h('div', { class: 'cols w' }, phaseCard('Cahier des charges'), signatureCard()),
     ex.length ? [h('div', { class: 'kpis' },
-      kpi({ label: 'Validées par vous', value: String(okN), unit: `/ ${ex.length}`, bar: meter(okN, ex.length, 'Exigences validées', true), cmp: `${ex.length - okN} à valider`, href: '#/exigences' }),
-      kpi({ label: 'Finalisées', value: String(ex.filter(isStable).length), unit: `/ ${ex.length}`, cmp: `${ex.filter((c) => !isStable(c)).length} en brouillon`, href: '#/exigences' }),
+      kpi({ label: 'Stables', value: String(okN), unit: `/ ${ex.length}`, bar: meter(okN, ex.length, 'Exigences stables', true), cmp: `${ex.length - okN} en brouillon`, href: '#/exigences' }),
       kpi({ label: 'Personas', value: String(ofType('Persona').length), cmp: 'pour qui vous construisez', href: '#/personas' }),
       kpi({ label: 'Remarques ouvertes', value: String(openRemarks().filter((r) => /^cdc\//.test(r.cible || '')).length), cmp: 'sur le cahier des charges', href: '#/remarques' })),
-    filterBar(['q'], { statut: [['stable', 'finalisée'], ['draft', 'brouillon']], espace: espaces, persona: ofType('Persona').map((p) => [p.slug, p.title]) }, 'Rechercher une exigence'),
-    rows.length ? table(['Exigence', 'Statut', 'Validation', 'Remarques', ''], rows.map((c) => {
+    filterBar(['q'], { statut: [['stable', 'stable'], ['draft', 'brouillon']], espace: espaces, persona: ofType('Persona').map((p) => [p.slug, p.title]) }, 'Rechercher une exigence'),
+    rows.length ? table(['Exigence', 'Statut', 'Remarques', ''], rows.map((c) => {
       const rem = remarksOf(c.path).filter((r) => r.etat === 'ouverte').length;
       return h('tr', {}, td([h('a', { href: `#/exigences/${encodeURIComponent(c.slug)}` }, c.title), c.fm.description ? h('div', { class: 'muted', style: 'font-size:13px' }, c.fm.description) : null]),
-        td(statusSt(c)), td(trustSt(c)), td(rem ? st(`${rem} en attente`, 'r', '◷') : '—'),
-        td(h('div', { class: 'row', style: 'flex-wrap:nowrap' }, c.trust === 'none' || !isStable(c) ? h('button', { class: 'btn s', type: 'button', 'aria-label': `Valider ${c.title}`, onclick: () => validate(c) }, 'Valider') : null,
-          h('button', { class: 'btn o s', type: 'button', 'aria-label': `Remarque sur ${c.title}`, onclick: () => openDrawer({ path: c.path, title: c.title }) }, 'Remarque'))));
+        td(statusSt(c)), td(rem ? st(`${rem} en attente`, 'r', '◷') : '—'),
+        td(h('button', { class: 'btn o s', type: 'button', 'aria-label': `Remarque sur ${c.title}`, onclick: () => openDrawer({ path: c.path, title: c.title }) }, 'Remarque')));
     }), { caption: 'Exigences' }) : empty('Aucune exigence ne correspond.', clearBtn(['q', 'statut', 'espace', 'persona']))]
-      : empty('Le cahier des charges n’est pas encore rédigé.', cmdBox('interview')),
+      : empty('Le cahier des charges n’est pas encore rédigé. Dites « reprends » dans Claude Code.', cmdText('reprends')),
     others.length ? card('Autres documents du cahier des charges', h('ul', { class: 'list' }, others.map((c) => h('li', {}, h('i', { class: `dot ${c.trust}`, style: 'margin-top:8px', title: trustWord(c) }), h('div', {}, h('a', { class: 't', href: routeOf(c.path) }, c.title), h('div', { class: 'm' }, c.type)))))) : null,
     glossaire ? h('details', { class: 'card' }, h('summary', {}, h('b', {}, 'Glossaire'), ' — les termes du projet et leur sens'), docBox(glossaire)) : null];
 }
@@ -681,11 +729,11 @@ function vPersonas(slug) {
   const ps = ofType('Persona').filter((p) => !slug || p.slug === slug);
   if (slug && !ps.length) return v404();
   if (slug) S.target = { path: ps[0].path, title: ps[0].title };
-  return [slug ? crumbs(['Personas', '/personas'], [ps[0].title]) : null, pageH('Produit', slug ? ps[0].title : 'Personas', slug ? ps[0].fm.description : 'Les personnes pour qui vous construisez l’application.'),
+  return [slug ? crumbs(['Personas', '/personas'], [ps[0].title]) : null, pageH('Cahier des charges', slug ? ps[0].title : 'Personas', slug ? ps[0].fm.description : 'Les personnes pour qui vous construisez l’application.'),
     ps.length ? h('div', { class: slug ? 'stack' : 'cols' }, ps.map((p) => h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', {}, slug ? 'Profil' : h('a', { href: `#/personas/${encodeURIComponent(p.slug)}` }, p.title)), trustSt(p)),
       slug ? null : h('p', { class: 'muted' }, p.fm.description || ''),
       [['Objectifs', 'Objectifs'], ['Besoins', 'Besoins'], ['Difficultés', 'Pain points']].map(([label, name]) => [h('h3', { style: 'margin-top:12px' }, label), bullets(secOf(p.body, name))]),
-      h('div', { class: 'row', style: 'margin-top:12px' }, docActions(p))))) : empty('Aucun persona pour l’instant : /hosa les crée.', cmdBox('hosa')),
+      h('div', { class: 'row', style: 'margin-top:12px' }, docActions(p))))) : empty('Aucun persona pour l’instant : la première étape les crée. Dites « reprends » dans Claude Code.', cmdText('reprends')),
     slug ? targetRemarks(ps[0]) : null];
 }
 
@@ -695,7 +743,7 @@ function vRecettes() {
   const audit = (name, a) => h('div', { class: 'kpi', style: 'cursor:default' }, h('span', { class: 'l' }, `Dernier audit ${name}`), h('span', { class: 'v', style: 'font-size:20px' }, a ? (VERD[a.verdict] ? verdict(a.verdict) : a.verdict || 'sans verdict') : st('jamais audité', 'a', '○')),
     h('span', { class: 'c' }, a ? fmtDay(a.at) : 'lancez /qualite ou /securite'));
   const count = (v) => r.filter((x) => x.verdict === v).length;
-  return [pageH('Pilotage', 'Recettes et qualité', 'Une recette est un test de l’application, fait comme le ferait un utilisateur. Les audits vérifient le code.'),
+  return [pageH('Sprints', 'Recettes et qualité', 'Une recette est un test de l’application, fait comme le ferait un utilisateur. Les audits vérifient le code.'),
     h('div', { class: 'kpis' },
       kpi({ label: 'Recettes réussies', value: String(count('PASS') + count('PASS-WITH-NOTES')), unit: `/ ${r.length}`, bar: meter(count('PASS') + count('PASS-WITH-NOTES'), r.length, 'Recettes réussies', true), cmp: `${count('PASS-WITH-NOTES')} avec remarques`, href: '#/recettes' }),
       kpi({ label: 'Recettes échouées', value: String(count('FAIL')), cmp: count('FAIL') ? '✕ à corriger avant de livrer' : '✓ aucune', href: '#/recettes' }),
@@ -709,7 +757,7 @@ function vRecettes() {
 const EMPTY_USAGE = 'Aucune donnée de consommation trouvée pour ce projet';
 function vConsommation() {
   const u = S.usage, days = F.periode || '7';
-  const head = [pageH('Pilotage', 'Consommation', 'Ce que coûte le travail de Claude sur ce projet : par agent ou skill, par modèle. Coût estimé aux prix publics.'),
+  const head = [pageH('Suivi', 'Consommation', 'Ce que coûte le travail de Claude sur ce projet : par agent ou skill, par modèle. Coût estimé aux prix publics.'),
     seg('Période', [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']], days, (v) => setF('periode', v))];
   if (!u) return [...head, none('Chargement…')];
   if (u.error && plain(u.error) !== EMPTY_USAGE) return [...head, errBox(`Consommation indisponible : ${plain(u.error)}.`, true)];
@@ -763,7 +811,7 @@ function vTracabilite() {
       td(flat(e.tickets.map((x) => x.node)) || st('aucun ticket', 'a', '—')), td(String(n), 'num r'));
   })) : none('Aucune exigence dans le graphe.')),
   (e) => box.replaceChildren(/graphe absent/i.test(e.message) ? errBox(`${e.message}.`, true) : errBox(`Traçabilité indisponible : ${plain(e)}.`, true)));
-  return [pageH('Produit', 'Traçabilité', 'Le lien entre une exigence, ses tickets et les fichiers de code. Une exigence finalisée sans fichier est signalée.'), card('Exigences → tickets → code', box),
+  return [pageH('Suivi', 'Traçabilité', 'Le lien entre une exigence, ses tickets et les fichiers de code. Une exigence finalisée sans fichier est signalée.'), card('Exigences → tickets → code', box),
     h('div', { class: 'cols' }, card('Rechercher un élément', h('div', { class: 'filters', role: 'search' }, h('input', { id: 'search', type: 'search', 'aria-label': 'Rechercher un élément', placeholder: 'fichier, fonction, ticket, exigence ( / )', value: S.gq || '', oninput: (e) => { clearTimeout(timer); timer = setTimeout(() => search(e.target.value), 250); } })), h('div', { style: 'margin-top:12px' }, results)), panel)];
 }
 
@@ -771,7 +819,7 @@ function vTracabilite() {
 function vJournal() {
   const l = S.activity.filter((a) => has(a.text + ' ' + a.bundle) && (!F.acteur || a.acteur === F.acteur) && (!F.dossier || a.bundle === F.dossier));
   const days = [...new Set(l.map((a) => a.date))];
-  return [pageH('Vos actions', 'Journal', 'Chaque écriture dans la KB, par Claude, par vous ou par l’application.'),
+  return [pageH('Suivi', 'Journal', 'Chaque écriture dans la KB, par Claude, par vous ou par l’application.'),
     filterBar(['q'], { acteur: Object.entries(ACTEUR), dossier: [...new Set(S.activity.map((a) => a.bundle))].sort().map((b) => [b, b || 'racine']) }, 'Rechercher dans le journal'),
     !S.activity.length ? empty('Aucune entrée dans les journaux de la KB.') : !l.length ? empty('Aucune entrée ne correspond.', clearBtn(['q', 'acteur', 'dossier']))
       : days.map((d) => cardH(isoDay(d), h('span', { class: 'muted' }, plural(l.filter((a) => a.date === d).length, 'entrée', 'entrées')),
@@ -779,20 +827,16 @@ function vJournal() {
           h('div', {}, actText(a), h('div', { class: 'm' }, `${a.bundle || 'racine'} · ${a.acteurNom}`)))))))];
 }
 
-// --- à valider ----------------------------------------------------------------------------------------------------
-function vValidation() {
-  const l = toValidate(), done = validated();
-  return [pageH('Vos actions', 'À valider', 'Ce que Claude a écrit et que vous n’avez pas encore validé, du plus récent au plus ancien. Lisez, puis validez — ou écrivez une remarque pour que Claude corrige.'),
-    l.length ? table(['Document', 'Produit', 'Actions'], l.map((c) => h('tr', {},
-      td([h('a', { href: routeOf(c.path) }, c.title), h('div', { class: 'muted', style: 'font-size:13px' }, `${c.type} · ${agentLabel(c.fm.generated.by)}`)]),
-      td(fmtDay(c.fm.generated.at), 'num'),
-      td(h('div', { class: 'row', style: 'flex-wrap:nowrap' }, h('button', { class: 'btn s', type: 'button', 'aria-label': `Valider ${c.title}`, onclick: () => validate(c) }, 'Valider'),
-        h('button', { class: 'btn o s', type: 'button', 'aria-label': `Remarque sur ${c.title}`, onclick: () => openDrawer({ path: c.path, title: c.title }) }, 'Remarque'))))), { caption: 'Documents à valider' })
-      : empty('Rien à valider : tout ce que Claude a écrit est validé.'),
-    h('details', { class: 'card' }, h('summary', {}, h('b', {}, `Déjà validé (${done.length})`)),
-      h('div', { style: 'margin-top:12px' }, done.length ? table(['Document', 'Validé le', 'Validé par', ''], done.map((c) => h('tr', {}, td([h('a', { href: routeOf(c.path), title: c.title }, c.title), h('div', { class: 'muted', style: 'font-size:13px' }, `Produit par ${agentLabel(c.fm.generated.by)}`)]),
-        td(fmtDay(c.fm.verified.at), 'num'), td(verifier(c.fm.verified.by)),
-        td(h('button', { class: 'lnk', type: 'button', 'aria-label': `Annuler la validation de ${c.title}`, onclick: () => { if (confirm(`Annuler la validation de « ${c.title} » ?`)) unvalidate(c); } }, 'Annuler la validation'))))) : none('Rien encore.')))];
+// --- à vous : ce que Hosa attend de vous, lu dans le plan et la KB ----------------------------------------------------
+function vAVous() {
+  const a = aVous(), items = aVousList(), done = validated();
+  return [pageH('Aujourd’hui', 'À vous', 'Ce que Claude attend de vous pour avancer : les questions d’une étape bloquée, les anomalies et les questions du cahier des charges, les schémas à valider. Vous répondez dans Claude Code : dites « reprends ».'),
+    items.length ? [cmdText('reprends'), h('ul', { class: 'list card' }, items)] : empty('Claude n’attend rien de vous pour l’instant.'),
+    a.decision ? card('À la prochaine étape', h('p', {}, `L’étape « ${a.decision.stage} » (${sectionName(a.decision.section)}) vous demandera : `, h('b', {}, a.decision.texte))) : null,
+    h('details', { class: 'card' }, h('summary', {}, h('b', {}, `Vos validations (${done.length})`)),
+      h('div', { style: 'margin-top:12px' }, done.length ? table(['Document', 'Validé le', ''], done.map((c) => h('tr', {}, td(h('a', { href: routeOf(c.path), title: c.title }, c.title)),
+        td(fmtDay(c.fm.verified.at), 'num'),
+        td(c.validable ? h('button', { class: 'lnk', type: 'button', 'aria-label': `Annuler la validation de ${c.title}`, onclick: () => { if (confirm(`Annuler la validation de « ${c.title} » ?`)) unvalidate(c); } }, 'Annuler la validation') : null)))) : none('Rien encore.')))];
 }
 
 // --- remarques pour Claude ------------------------------------------------------------------------------------------
@@ -812,7 +856,7 @@ function targetRemarks(c) {
 }
 function vRemarques() {
   const all = remarques(), l = all.filter((r) => (!F.etat || r.etat === F.etat) && (!F.nature || r.nature === F.nature) && has(r.texte + ' ' + (r.cible || '')));
-  return [pageH('Vos actions', 'Remarques pour Claude', 'Vos corrections, questions et idées sur ce que Claude a produit. Elles sont écrites dans la KB ; Claude les lit et y répond.'),
+  return [pageH('Aujourd’hui', 'Remarques pour Claude', 'Vos corrections, questions et idées sur ce que Claude a produit. Elles sont écrites dans la KB ; Claude les lit et y répond.'),
     h('div', { class: 'how' }, h('div', {}, 'Écrivez une remarque depuis n’importe quel écran : bouton « Remarque pour Claude ».'),
       h('div', {}, ['Dans Claude Code, dites « reprends ». ', h('button', { class: 'lnk', type: 'button', onclick: () => copy('reprends') }, 'Copier')]),
       h('div', {}, 'Claude traite chaque remarque, puis sa réponse s’affiche ici.')),
@@ -884,12 +928,15 @@ function docBox(c, body, done) {
   }, (e) => box.replaceChildren(errBox(`Rendu impossible : ${plain(e)}.`)));
   return box;
 }
+// Valider et Modifier seulement là où le serveur l'accepte (`validable`, `protege` de kb.py) ; sinon la raison
 function docActions(c) {
   return h('div', { class: 'row', style: 'gap:8px' },
-    waitsForYou(c) ? h('button', { class: 'btn', type: 'button', onclick: () => validate(c) }, '✓ Valider') : null,
-    h('a', { class: 'btn o', href: `#/gestion/concepts/${enc(c.path)}` }, 'Modifier'),
-    h('button', { class: 'btn o', type: 'button', onclick: () => openDrawer({ path: c.path, title: c.title }) }, '✎ Remarque'));
+    canValidate(c) ? h('button', { class: 'btn', type: 'button', onclick: () => validate(c) }, '✓ Valider') : null,
+    c.protege ? null : h('a', { class: 'btn o', href: editHref(c) }, 'Modifier'),
+    h('button', { class: c.protege ? 'btn act' : 'btn o', type: 'button', onclick: () => openDrawer({ path: c.path, title: c.title }) }, '✎ Remarque'),
+    c.protege ? h('span', { class: 'muted', style: 'font-size:13px' }, `Lecture seule : ${c.protege}.`) : null);
 }
+const editHref = (c) => `#/modifier/${enc(c.path)}`;
 function provenance(c) {
   const g = c.fm.generated || {}, v = c.fm.verified || {};
   return card('Provenance', h('ul', { class: 'list' },
@@ -907,14 +954,20 @@ function vKb(path) {
     const types = {}; for (const x of docs) (types[x.type] ||= []).push(x);
     return Object.entries(types).flatMap(([t, xs]) => xs.length > 6 ? [h('details', { class: 'dt', open: xs.includes(c) || !!F.q }, h('summary', {}, `${t} · ${xs.length}`), xs.map(link))] : xs.map(link));
   };
-  const aside = h('aside', { class: 'docnav', 'aria-label': 'Documents de la KB' }, filterBar(['q'], {}, 'Filtrer les documents'),
+  const aside = h('aside', { class: 'docnav', 'aria-label': 'Documents de la KB' }, c ? filterBar(['q'], {}, 'Filtrer les documents') : null,
     GROUPS.map((g) => { const docs = l.filter((x) => groupOf(x) === g); return docs.length ? h('details', { open: !c || groupOf(c) === g || !!F.q }, h('summary', {}, g, h('span', { class: 'muted' }, ` ${docs.length}`)), byType(docs)) : null; }),
     l.length ? null : none('Aucun document ne correspond.'));
   if (!c) {
-    return h('div', { class: 'reader-wrap' }, aside, h('article', { class: 'reader card' }, pageH('Produit', 'Base de connaissance', 'Tout ce que les agents ont écrit sur le projet. Choisissez un document pour le lire, le valider, le modifier ou le commenter.'),
-      h('div', { style: 'margin-top:18px' }, table(['Groupe', 'Documents', 'À valider'], GROUPS.map((g) => { const docs = S.concepts.filter((x) => groupOf(x) === g), f = docs.sort(docOrder)[0];
-        return docs.length ? h('tr', {}, td(f ? h('a', { href: readerHref(f) }, g) : g), td(String(docs.length), 'num'), td(String(docs.filter(waitsForYou).length), 'num')) : null; }))),
-      h('p', { class: 'muted', style: 'margin-top:14px' }, 'Pastilles : ', h('i', { class: 'dot human', style: 'display:inline-block' }), ' validé par vous · ', h('i', { class: 'dot machine', style: 'display:inline-block' }), ' contrôlé automatiquement · ', h('i', { class: 'dot none', style: 'display:inline-block' }), ' à valider')));
+    const cs = S.concepts, uniq = (f) => [...new Set(cs.flatMap(f).filter(Boolean))].sort().map((x) => [x, x]);
+    const rows = cs.filter((x) => has(x.title + ' ' + x.path) && (!F.dossier || folderOf(x) === F.dossier) && (!F.type || x.type === F.type)
+      && (!F.tag || (Array.isArray(x.fm.tags) && x.fm.tags.includes(F.tag))) && (!F.statut || x.fm.status === F.statut) && (!F.validation || TIER[x.trust] === F.validation)).sort(docOrder);
+    return h('div', { class: 'reader-wrap' }, aside, h('article', { class: 'reader card' }, pageH('Base de connaissance', 'Base de connaissance', 'Tout ce que Claude a écrit sur le projet. Ouvrez un document pour le lire ou le commenter. Les fichiers que Hosa tient lui-même sont en lecture seule.'),
+      filterBar(['q'], { dossier: uniq((x) => [folderOf(x)]), type: uniq((x) => [x.type]), tag: uniq((x) => Array.isArray(x.fm.tags) ? x.fm.tags.map(String) : []), statut: uniq((x) => [x.fm.status]), validation: VALIDATION }, 'Rechercher un document'),
+      h('p', { class: 'muted num' }, plural(rows.length, 'document', 'documents')),
+      rows.length ? table(['Document', 'Type', 'Dossier', 'Validation'], rows.map((x) => h('tr', {}, td(h('a', { href: readerHref(x) }, x.title)), td(x.type || '—'), td(folderOf(x) || 'racine', 'mono'),
+        td([trustSt(x), x.protege ? h('span', { class: 'muted', title: x.protege }, ' · lecture seule') : null]))), { caption: 'Documents de la KB' })
+        : empty('Aucun document ne correspond.', clearBtn(['q', 'dossier', 'type', 'tag', 'statut', 'validation'])),
+      h('p', { class: 'muted', style: 'margin-top:14px' }, 'Pastilles : ', h('i', { class: 'dot human', style: 'display:inline-block' }), ' validé par vous · ', h('i', { class: 'dot machine', style: 'display:inline-block' }), ' contrôlé automatiquement · ', h('i', { class: 'dot none', style: 'display:inline-block' }), ' non relu')));
   }
   const toc = h('nav', { class: 'toc', 'aria-label': 'Sommaire du document' });
   const fillToc = (box) => {
@@ -956,7 +1009,7 @@ function editor(c) {
   };
   const list = (l, empty) => l.length ? h('ul', { class: 'list' }, l.map((x) => h('li', {}, h('a', { href: routeOf(x.path) }, x.title)))) : none(empty);
   pv.replaceChildren(docBox(c, ta.value));
-  return [crumbs(['Concepts', '/gestion/concepts'], [h('a', { href: routeOf(c.path) }, m.title)], ['Modifier']),
+  return [crumbs(['Base de connaissance', '/kb'], [h('a', { href: routeOf(c.path) }, m.title)], ['Modifier']),
     pageH('Modifier', m.title, null, h('div', { class: 'row' }, h('span', { class: 'st a' }, c.frontmatter.type), trustSt(m), h('span', { class: 'mono muted' }, c.path))),
     h('div', { class: 'alert info' }, h('span', {}, 'Vous modifiez la KB directement. Pour que Claude fasse la correction lui-même, écrivez plutôt une remarque.'),
       h('button', { class: 'btn o s', type: 'button', onclick: () => openDrawer() }, '✎ Remarque pour Claude')),
@@ -966,42 +1019,14 @@ function editor(c) {
     h('div', { class: 'cols' }, h('div', { class: 'stack' }, card('Liens sortants', list(c.liens.sortants, 'Aucun lien.')), card('Liens entrants', list(c.liens.entrants, 'Aucun lien.'))),
       card('Historique', c.historique.length ? table(['Date', 'Qui', 'Quoi'], c.historique.map((x) => h('tr', {}, td(isoDay(x.date), 'num'), td(agentLabel(x.acteur)), td(x.texte)))) : none('Aucun historique.')))];
 }
-function createForm() {
-  const v = (id) => $(id).value.trim(), msg = h('div'), opts = (id, l) => h('datalist', { id }, l.map((x) => h('option', { value: x })));
-  const uniq = (f) => [...new Set(S.concepts.map(f).filter(Boolean))].sort();
-  const submit = async (e) => {
-    e.preventDefault(); const btn = e.submitter; if (btn) btn.disabled = true; msg.replaceChildren();
-    const body = { bundle: v('new-bundle'), type: v('new-type'), title: v('new-title'), slug: v('new-slug') };
-    const bad = !body.bundle || !body.type || !body.title ? 'dossier, type et titre sont requis' : !/^[a-z0-9][a-z0-9-]*$/.test(body.slug) ? 'identifiant : minuscules, chiffres et tirets uniquement' : null;
-    try {
-      if (bad) throw new Error(bad);
-      const r = await api('concepts', { method: 'POST', json: body });
-      await load(); toast(`« ${body.title} » créé.`); location.hash = `#/gestion/concepts/${enc(r.path)}`;
-    } catch (err) { msg.replaceChildren(errBox(`Rien n’a été créé : ${err.status === 409 ? `${body.slug} existe déjà dans ${body.bundle}` : err.status === 400 || bad ? err.message : plain(err)}.`)); }
-    if (btn) btn.disabled = false;
-  };
-  const field = (id, label, attrs = {}) => h('label', { class: 'f', for: id }, label, h('input', { id, required: true, ...attrs }));
-  return h('details', { class: 'card' }, h('summary', {}, h('b', {}, '+ Nouveau concept')), h('form', { class: 'kpis', style: 'margin-top:12px;align-items:end', onsubmit: submit },
-    field('new-bundle', 'Dossier', { list: 'dl-bundle', placeholder: 'tickets' }), opts('dl-bundle', uniq((c) => c.path.includes('/') ? c.path.split('/')[0] : '')),
-    field('new-type', 'Type', { list: 'dl-type', placeholder: 'Ticket' }), opts('dl-type', uniq((c) => c.type)),
-    field('new-title', 'Titre'), field('new-slug', 'Identifiant', { pattern: '[a-z0-9][a-z0-9\\-]*', placeholder: 'export-csv', title: 'minuscules, chiffres et tirets' }),
-    h('div', {}, h('button', { class: 'btn', title: 'Créer le concept' }, 'Créer')), msg));
-}
-function vConcepts(path) {
-  if (path) {
-    const box = h('div', { class: 'stack' }, none('Chargement…'));
-    api(`concepts/${enc(path)}`).then((c) => box.replaceChildren(...editor(c)), (e) => box.replaceChildren(e.status === 404 ? v404() : errBox(`Lecture impossible : ${plain(e)}.`)));
-    return box;
-  }
-  const cs = S.concepts, uniq = (f) => [...new Set(cs.flatMap(f).filter(Boolean))].sort().map((x) => [x, x]);
-  const l = cs.filter((c) => has(c.title + ' ' + c.path) && (!F.dossier || folderOf(c) === F.dossier) && (!F.type || c.type === F.type)
-    && (!F.tag || (Array.isArray(c.fm.tags) && c.fm.tags.includes(F.tag))) && (!F.statut || c.fm.status === F.statut) && (!F.validation || TIER[c.trust] === F.validation));
-  return [pageH('Vos actions', 'Concepts', 'Tous les fichiers de la KB, pour les modifier directement ou en créer un.'), createForm(),
-    filterBar(['q'], { dossier: uniq((c) => [folderOf(c)]), type: uniq((c) => [c.type]), tag: uniq((c) => Array.isArray(c.fm.tags) ? c.fm.tags.map(String) : []), statut: uniq((c) => [c.fm.status]), validation: VALIDATION }, 'Rechercher un concept'),
-    h('p', { class: 'muted num' }, plural(l.length, 'concept', 'concepts')),
-    l.length ? table(['Concept', 'Type', 'Dossier', 'Validation', ''], l.map((c) => h('tr', {}, td(h('a', { href: routeOf(c.path) }, c.title)), td(c.type || '—'), td(folderOf(c) || 'racine', 'mono'), td(trustSt(c)),
-      td(h('a', { class: 'btn o s', href: `#/gestion/concepts/${enc(c.path)}`, 'aria-label': `Modifier ${c.title}` }, 'Modifier')))))
-      : empty('Aucun concept ne correspond.', clearBtn(['q', 'dossier', 'type', 'tag', 'statut', 'validation']))];
+function vModifier(path) {
+  const box = h('div', { class: 'stack' }, none('Chargement…'));
+  api(`concepts/${enc(path)}`).then((c) => box.replaceChildren(...(c.protege
+    ? [crumbs(['Base de connaissance', '/kb'], [h('a', { href: routeOf(c.path) }, (c.frontmatter && c.frontmatter.title) || c.path)], ['Modifier']),
+      h('div', { class: 'alert info' }, h('span', {}, `Ce document est en lecture seule : ${c.protege}. Écrivez une remarque : Claude le corrige par la méthode.`),
+        h('button', { class: 'btn act s', type: 'button', onclick: () => openDrawer({ path: c.path, title: (c.frontmatter && c.frontmatter.title) || c.path }) }, '✎ Remarque pour Claude'))]
+    : editor(c))), (e) => box.replaceChildren(e.status === 404 ? v404() : errBox(`Lecture impossible : ${plain(e)}.`)));
+  return box;
 }
 const v404 = () => h('section', { class: 'card' }, h('h1', {}, 'Écran introuvable'), h('p', {}, 'Cet écran n’existe pas, ou le document a été déplacé.'), h('a', { class: 'btn', href: '#/' }, 'Retour à la vue d’ensemble'));
 
@@ -1027,35 +1052,41 @@ async function validate(c) {
 const unvalidate = (c) => setVerified(c, { by: null, at: null }, {}, `Validation de « ${c.title} » annulée.`);
 
 // --- coque, menu, palette, routes ---------------------------------------------------------------------------------------------
+// le menu suit le parcours de Hosa : ce qui vous attend, puis les phases de pipeline.json dans leur ordre
+// (hosa/app/docs/interface.md liste ces écrans ; test_app.py vérifie qu'ils restent les mêmes)
 const NAV = [
-  ['Pilotage', [['/', 'Vue d’ensemble', '⌂'], ['/avancement', 'Plan d’avancement', '▤'], ['/sprints', 'Sprints', '↻'], ['/planification', 'Planification', '⇶'], ['/tickets', 'Tickets', '▦'], ['/recettes', 'Recettes et qualité', '✓'], ['/consommation', 'Consommation', '◔']]],
-  ['Produit', [['/exigences', 'Cahier des charges', '☰'], ['/personas', 'Personas', '☺'], ['/kb', 'Base de connaissance', '❏'], ['/tracabilite', 'Traçabilité', '⇄']]],
-  ['Vos actions', [['/gestion/validation', 'À valider', '◎'], ['/remarques', 'Remarques pour Claude', '✎'], ['/journal', 'Journal', '≡'], ['/gestion/concepts', 'Concepts', '✐']]],
-  ['Hosa', [['/aide', 'Documentation de Hosa', '?']]],
+  ['Aujourd’hui', [['/', 'Vue d’ensemble', '⌂'], ['/a-vous', 'À vous', '◎'], ['/remarques', 'Remarques pour Claude', '✎']]],
+  ['Cahier des charges', [['/exigences', 'Exigences', '☰'], ['/personas', 'Personas', '☺']]],
+  ['Structuration', [['/structuration', 'Stack et conception', '▣']]],
+  ['Sprints', [['/sprints', 'Sprints', '↻'], ['/planification', 'Planification', '⇶'], ['/tickets', 'Tickets', '▦'], ['/recettes', 'Recettes et qualité', '✓']]],
+  ['Suivi', [['/avancement', 'Plan d’avancement', '▤'], ['/journal', 'Journal', '≡'], ['/consommation', 'Consommation', '◔'], ['/tracabilite', 'Traçabilité', '⇄']]],
+  ['Base de connaissance', [['/kb', 'Documents', '❏'], ['/aide', 'Documentation de Hosa', '?']]],
 ];
 const ROUTES = [
-  [/^\/$/, home, 'Vue d’ensemble'], [/^\/avancement$/, vAvancement, 'Plan d’avancement'],
-  [/^\/tickets$/, vTickets, 'Tickets'], [/^\/gestion\/tickets$/, vTickets, 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
+  [/^\/$/, home, 'Vue d’ensemble'], [/^\/a-vous$/, vAVous, 'À vous'], [/^\/avancement$/, vAvancement, 'Plan d’avancement'], [/^\/structuration$/, vStructuration, 'Stack et conception'],
+  [/^\/tickets$/, vTickets, 'Tickets'], [/^\/tickets\/(.+)$/, (m) => vTicket(decodeURIComponent(m[1])), 'Ticket'],
   [/^\/sprints$/, vSprints, 'Sprints'], [/^\/planification$/, vPlanification, 'Planification'],
   [/^\/planification\/graphe(?:\/([^/]+))?$/, (m) => vGraphe(m[1] ? decodeURIComponent(m[1]) : null), 'Graphe des tickets'], [/^\/sprints\/([^/]+)$/, (m) => vSprint(decodeURIComponent(m[1])), 'Sprint'],
-  [/^\/exigences$/, vExigences, 'Cahier des charges'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(decodeURIComponent(m[1])), 'Exigence'],
+  [/^\/exigences$/, vExigences, 'Exigences'], [/^\/exigences\/([^/]+)$/, (m) => vExigence(decodeURIComponent(m[1])), 'Exigence'],
   [/^\/personas$/, () => vPersonas(), 'Personas'], [/^\/personas\/([^/]+)$/, (m) => vPersonas(decodeURIComponent(m[1])), 'Persona'],
   [/^\/recettes$/, vRecettes, 'Recettes et qualité'], [/^\/consommation$/, vConsommation, 'Consommation'], [/^\/tracabilite$/, vTracabilite, 'Traçabilité'], [/^\/journal$/, vJournal, 'Journal'],
   [/^\/remarques$/, vRemarques, 'Remarques pour Claude'], [/^\/aide$/, vAide, 'Documentation de Hosa'],
-  [/^\/kb$/, () => vKb(), 'Base de connaissance'], [/^\/kb\/(.+)$/, (m) => vKb(decodeURIComponent(m[1])), 'Document'],
-  [/^\/gestion\/validation$/, vValidation, 'À valider'], [/^\/gestion\/concepts$/, () => vConcepts(), 'Concepts'], [/^\/gestion\/concepts\/(.+)$/, (m) => vConcepts(decodeURIComponent(m[1])), 'Modifier'],
+  [/^\/kb$/, () => vKb(), 'Documents'], [/^\/kb\/(.+)$/, (m) => vKb(decodeURIComponent(m[1])), 'Document'],
+  [/^\/modifier\/(.+)$/, (m) => vModifier(decodeURIComponent(m[1])), 'Modifier'],
 ];
+// les adresses d'avant la refonte du menu, gardées par un favori ou un lien d'une remarque
+const LEGACY = [[/^\/gestion\/validation$/, '/a-vous'], [/^\/gestion\/tickets$/, '/tickets'], [/^\/gestion\/concepts\/(.+)$/, '/modifier/$1'], [/^\/gestion\/concepts$/, '/kb']];
 const here = () => (location.hash.replace(/^#/, '') || '/').replace(/\/$/, '') || '/';
 const WIDE = /^\/kb/;
 
 function paintShell() {
   const p = here();
-  const cur = (to) => p === to || (to !== '/' && p.startsWith(to + '/')) || (to === '/tickets' && p === '/gestion/tickets') ? 'page' : null;
-  const counts = { '/gestion/validation': [toValidate().length, ''], '/remarques': [openRemarks().length, ' q'] };
+  const cur = (to) => p === to || (to !== '/' && p.startsWith(to + '/')) ? 'page' : null;
+  const counts = { '/a-vous': [aVous().total, ''], '/remarques': [openRemarks().length, ' q'] };
   $('nav').replaceChildren(...NAV.map(([g, items]) => h('div', { class: 'grp' }, h('div', { class: 'gt' }, g),
     items.map(([to, label, ic]) => { const [n, cls] = counts[to] || [0];
       return h('a', { href: `#${to}`, 'aria-current': cur(to) }, h('span', { class: 'ic', 'aria-hidden': 'true' }, ic), h('span', {}, label),
-        n ? h('span', { class: `badge${cls}`, 'aria-label': `${n} ${to === '/remarques' ? 'en attente' : 'à valider'}` }, String(n)) : null); }))));
+        n ? h('span', { class: `badge${cls}`, 'aria-label': `${n} ${to === '/remarques' ? 'en attente de Claude' : 'qui vous attendent'}` }, String(n)) : null); }))));
   const n = next();
   $('proj').replaceChildren(...(S.ov ? [h('b', {}, projectTitle()), h('div', { class: 'muted' }, n ? `${n.section} · ${n.stage}` : S.ov.plan ? 'Étapes connues faites' : 'Plan à créer')] : [h('span', { class: 'muted' }, 'Lecture de la KB…')]));
   const k = S.kbStatus;
@@ -1073,7 +1104,9 @@ function paintShell() {
 }
 function route() {
   // l'éditeur a des changements non enregistrés : « Relire » ou une remarque envoyée ne le reconstruisent pas
-  if (S.dirty && /^\/gestion\/concepts\/./.test(here())) { paintShell(); return; }
+  if (S.dirty && /^\/modifier\/./.test(here())) { paintShell(); return; }
+  const legacy = LEGACY.find(([re]) => re.test(here()));
+  if (legacy) { history.replaceState(null, '', `#${here().replace(legacy[0], legacy[1])}`); lastHash = location.hash; }
   S.target = null;
   paintShell();
   const p = here(), view = $('view');

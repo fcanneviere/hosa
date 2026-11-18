@@ -95,22 +95,22 @@ class AppTest(unittest.TestCase):
         mem.write_text("---\ntype: Ticket\n---\nmémoire d'agent\n", encoding="utf-8")
         self.assertNotIn(".claude/agent-memory/hosa-dev/note.md", {c["path"] for c in kb.walk(self.root)})
 
-    def test_patch_state_rewrites_file_and_logs(self):
-        status, c = self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": {"state": "doing"}})
-        self.assertEqual((status, c["frontmatter"]["state"]), (200, "doing"))
+    def test_patch_rewrites_file_and_logs(self):
+        status, c = self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": {"title": "Connexion v2"}})
+        self.assertEqual((status, c["frontmatter"]["title"]), (200, "Connexion v2"))
         fm, body = kb.parse((self.root / "tickets/connexion.md").read_text(encoding="utf-8"))
-        self.assertEqual((fm["state"], fm["generated"]["at"], body), ("doing", "2026-09-23T00:00:00Z", "Lié à : [exigence](../cdc/login.md)\n"))
+        self.assertEqual((fm["title"], fm["state"], fm["generated"]["at"], body), ("Connexion v2", "todo", "2026-09-23T00:00:00Z", "Lié à : [exigence](../cdc/login.md)\n"))
         log = (self.root / "tickets/log.md").read_text(encoding="utf-8")
-        self.assertIn(f"## {date.today().isoformat()}\n- process:hosa-app a modifié `connexion` (state)", log)
+        self.assertIn(f"## {date.today().isoformat()}\n- process:hosa-app a modifié `connexion` (title)", log)
 
-    def test_patch_state_changes_only_the_state_line(self):
-        raw = '---\ntype: Ticket\ntitle: "Recherche"\n# note\nstate: todo\ngenerated: { by: hosa-product-owner/1.0, at: 2026-09-23T00:00:00Z }\n---\nCorps\n'
+    def test_patch_changes_only_its_line(self):
+        raw = '---\ntype: Ticket\ntitle: "Recherche"\n# note\npriority: 3\nstate: todo\ngenerated: { by: hosa-product-owner/1.0, at: 2026-09-23T00:00:00Z }\n---\nCorps\n'
         for eol in ("\n", "\r\n"):
             with self.subTest(eol=repr(eol)):
                 path = self.root / "tickets/quote.md"
                 path.write_bytes(raw.replace("\n", eol).encode("utf-8"))
-                self.assertEqual(self.call("PATCH", "/api/concepts/tickets/quote.md", {"frontmatter": {"state": "doing"}})[0], 200)
-                self.assertEqual(path.read_bytes(), raw.replace("state: todo", "state: doing").replace("\n", eol).encode("utf-8"))
+                self.assertEqual(self.call("PATCH", "/api/concepts/tickets/quote.md", {"frontmatter": {"priority": 2}})[0], 200)
+                self.assertEqual(path.read_bytes(), raw.replace("priority: 3", "priority: 2").replace("\n", eol).encode("utf-8"))
 
     def test_rejects_bad_state_type_change_traversal_and_reserved(self):
         self.assertEqual(self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": {"state": "wip"}})[0], 400)
@@ -125,23 +125,61 @@ class AppTest(unittest.TestCase):
     def _ticket_file(self):
         return (self.root / "tickets/connexion.md").read_text(encoding="utf-8")
 
-    def test_patch_each_state_and_board_column(self):
-        for state in ("todo", "doing", "blocked", "done"):
-            status, c = self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": {"state": state}})
-            self.assertEqual((status, c["frontmatter"]["state"]), (200, state))
-            self.assertEqual(kb.parse(self._ticket_file())[0]["state"], state)
-            board = self.call("GET", "/api/overview")[1]["board"]
-            self.assertEqual([r["state"] for r in board if r["slug"] == "connexion"], [state])
-
-    def test_patch_bad_state_values(self):
+    def test_ticket_state_and_acceptance_follow_their_proofs(self):
+        """L'état d'un ticket et son acceptation s'écrivent sur preuve (`accepte`, le PO) : l'app les refuse,
+        par PATCH comme par l'éditeur, et renvoie vers une remarque."""
         before = self._ticket_file()
-        for bad in ("", None, 3, ["doing"], "doing\nowner: x"):
-            status, r = self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": {"state": bad}})
-            self.assertEqual(status, 400, bad)
-            self.assertIn("state doit valoir : todo, doing, blocked, done", r["error"])
-            self.assertEqual(self._ticket_file(), before)
-            self.assertNotIn("owner", self._ticket_file())
+        for patch in ({"state": "done"}, {"state": "doing"}, {"state": "wip"}, {"state": "doing\nowner: x"},
+                      {"verified": {"by": "human:fab", "at": "2026-10-01T00:00:00Z"}}):
+            status, r = self.call("PATCH", "/api/concepts/tickets/connexion.md", {"frontmatter": patch})
+            self.assertEqual(status, 400, patch)
+            self.assertIn("écrivez une remarque pour Claude", r["error"])
+        fm = kb.dump_frontmatter({k: v for k, v in kb.parse(before)[0].items() if k != "type"}).replace("state: todo", "state: done")
+        self.assertEqual(self.call("PUT", "/api/concepts/tickets/connexion.md", {"frontmatter": fm, "body": "x"})[0], 400)
+        self.assertEqual(self._ticket_file(), before)
         self.assertFalse((self.root / "tickets/log.md").exists())
+
+    def test_the_cahier_des_charges_is_signed_whole_never_one_exigence_at_a_time(self):
+        """Une exigence passe `stable` et signée à la contestation, sur le document entier ; stable, elle change
+        par `changement`. Un brouillon reste modifiable depuis l'app, sans toucher à son statut."""
+        draft = self.root / "cdc/brouillon.md"
+        draft.write_text("---\ntype: Exigence\ntitle: Brouillon\nstatus: draft\n---\nv1\n", encoding="utf-8")
+        for patch in ({"status": "stable"}, {"verified": {"by": "human:fab", "at": "2026-10-01T00:00:00Z"}}):
+            self.assertEqual(self.call("PATCH", "/api/concepts/cdc/brouillon.md", {"frontmatter": patch})[0], 400, patch)
+        self.assertEqual(self.call("PUT", "/api/concepts/cdc/brouillon.md", {"frontmatter": "title: Brouillon\nstatus: stable", "body": "v2\n"})[0], 400)
+        status, c = self.call("PUT", "/api/concepts/cdc/brouillon.md", {"frontmatter": "title: Brouillon v2\nstatus: draft", "body": "v2\n"})
+        self.assertEqual((status, c["frontmatter"]["status"], c["body"]), (200, "draft", "v2\n"))
+        stable = (self.root / "cdc/login.md").read_text(encoding="utf-8")
+        status, r = self.call("PUT", "/api/concepts/cdc/login.md", {"frontmatter": "title: Login\nstatus: stable", "body": "x"})
+        self.assertEqual(status, 400)
+        self.assertIn("changement", r["error"])
+        self.assertEqual(self.call("PATCH", "/api/concepts/cdc/login.md", {"frontmatter": {"verified": None}})[0], 400)
+        self.assertEqual((self.root / "cdc/login.md").read_text(encoding="utf-8"), stable)
+
+    def test_files_hosa_keeps_and_stage_proofs_are_read_only(self):
+        files = {"project/avancement.md": "---\ntype: Plan\n---\n## Cahier des charges\n",
+                 "project/cahier-des-charges.md": "---\ntype: Cahier des charges\n---\nx\n",
+                 "sommaire.md": "---\ntype: Sommaire\n---\nx\n",
+                 "code/app.md": "---\ntype: Code Map\n---\nx\n",
+                 "test/connexion-martine.md": "---\ntype: Test Plan\n---\n## Verdict\nFAIL\n",
+                 "jugements/backlog-1.md": "---\ntype: Jugement\n---\n- Q1 — Non\n",
+                 "sprints/s2.md": "---\ntype: Sprint\n---\n## Audit\nBloquant : 1\n",
+                 "remarques/20261001-000000-general.md": "---\ntype: Remarque\netat: ouverte\n---\nx\n"}
+        for rel, text in files.items():
+            (self.root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / rel).write_text(text, encoding="utf-8")
+        listed = {c["path"]: c for c in self.call("GET", "/api/concepts")[1]}
+        for rel, text in files.items():
+            with self.subTest(rel=rel):
+                self.assertEqual(self.call("PATCH", "/api/concepts/" + rel, {"frontmatter": {"title": "x"}})[0], 400)
+                self.assertEqual(self.call("PUT", "/api/concepts/" + rel, {"frontmatter": "title: x", "body": "PASS"})[0], 400)
+                self.assertEqual((self.root / rel).read_text(encoding="utf-8"), text)
+                self.assertTrue(listed[rel]["protege"])
+                self.assertFalse(listed[rel]["validable"])
+        self.assertIsNone(listed["project/identity.md"]["protege"])
+        self.assertTrue(listed["project/identity.md"]["validable"])
+        self.assertFalse(listed["tickets/connexion.md"]["validable"])  # acceptée par la validation du sprint
+        self.assertIsNone(listed["tickets/connexion.md"]["protege"])  # son texte reste modifiable
 
     def test_patch_type_is_immutable(self):
         before = self._ticket_file()
@@ -173,16 +211,16 @@ class AppTest(unittest.TestCase):
         self.assertEqual((self.root / "index.md").read_text(encoding="utf-8"), "# Index\n")
 
     def test_put_replaces_frontmatter_and_body(self):
-        status, c = self.call("PUT", "/api/concepts/cdc/login.md", {"frontmatter": "title: Login v2\nstatus: draft", "body": "# Hé\n<script>x</script>"})
+        status, c = self.call("PUT", "/api/concepts/project/identity.md", {"frontmatter": "title: Démo v2\nstatus: draft", "body": "# Hé\n<script>x</script>"})
         self.assertEqual(status, 200)
-        self.assertEqual(c["frontmatter"], {"type": "Exigence", "title": "Login v2", "status": "draft"})
+        self.assertEqual(c["frontmatter"], {"type": "Project", "title": "Démo v2", "status": "draft"})
         self.assertNotIn("<script", c["bodyHtml"])
 
-    def test_create_then_conflict(self):
-        status, c = self.call("POST", "/api/concepts", {"bundle": "tickets", "slug": "export", "type": "Ticket", "title": "Export"})
-        self.assertEqual((status, c["path"], c["frontmatter"]["state"]), (201, "tickets/export.md", "todo"))
-        self.assertEqual(self.call("POST", "/api/concepts", {"bundle": "tickets", "slug": "export", "type": "Ticket", "title": "X"})[0], 409)
-        self.assertEqual(self.call("POST", "/api/concepts", {"bundle": "../x", "slug": "a", "type": "T", "title": "X"})[0], 400)
+    def test_the_app_creates_no_concept(self):
+        """Un ticket naît complet (`backlog`), une exigence par la rédaction : l'app ne crée rien, une idée
+        devient une remarque pour Claude."""
+        self.assertEqual(self.call("POST", "/api/concepts", {"bundle": "tickets", "slug": "export", "type": "Ticket", "title": "Export"})[0], 404)
+        self.assertFalse((self.root / "tickets/export.md").exists())
 
     def test_overview_sprints_activity(self):
         status, ov = self.call("GET", "/api/overview")
@@ -874,12 +912,12 @@ class ValidationProvenanceTest(unittest.TestCase):
 
     def test_patch_verified_writes_file_and_logs_without_content(self):
         at = "2026-10-12T10:00:00Z"
-        status, _ = self.call("PATCH", "/api/concepts/cdc/export.md",
+        status, _ = self.call("PATCH", "/api/concepts/personnas/martine.md",
                               {"frontmatter": {"verified": {"by": "human:fabien", "at": at}}})
         self.assertEqual(status, 200)
-        self.assertEqual(kb.get(self.root, "cdc/export.md")["frontmatter"]["verified"], {"by": "human:fabien", "at": at})
-        log = (self.root / "cdc/log.md").read_text(encoding="utf-8")
-        self.assertIn("process:hosa-app a modifié `export` (verified)", log)
+        self.assertEqual(kb.get(self.root, "personnas/martine.md")["frontmatter"]["verified"], {"by": "human:fabien", "at": at})
+        log = (self.root / "personnas/log.md").read_text(encoding="utf-8")
+        self.assertIn("process:hosa-app a modifié `martine` (verified)", log)
         self.assertNotIn(at, log)
 
     def test_patch_plain_text_refused_file_unchanged(self):
@@ -891,10 +929,10 @@ class ValidationProvenanceTest(unittest.TestCase):
         self.assertEqual(self.f.read_bytes(), before)
 
     def test_patch_null_verified_cancels_validation(self):
-        path = "/api/concepts/cdc/login.md"
+        path = "/api/concepts/personnas/karim.md"
         self.assertEqual(self.call("PATCH", path, {"frontmatter": {"verified": {"by": None, "at": None}}})[0], 200)
         # le serveur fusionne : verified devient {by: None, at: None}, le niveau retombe à unverified
-        self.assertEqual(kb.get(self.root, "cdc/login.md")["frontmatter"]["verified"], {"by": None, "at": None})
+        self.assertEqual(kb.get(self.root, "personnas/karim.md")["frontmatter"]["verified"], {"by": None, "at": None})
         self.assertEqual(self.call("GET", path)[1]["trustTier"], "unverified")
 
 
@@ -1108,33 +1146,23 @@ class BacklogApiTest(unittest.TestCase):
 
     # concepts-edition-garde-fous
     def test_put_with_baseline_and_conflict(self):
-        c = self.call("GET", "/api/concepts/cdc/login.md")[1]
-        status, c2 = self.call("PUT", "/api/concepts/cdc/login.md", {"frontmatter": c["frontmatterYaml"], "body": "v2\n", "baseline": c["version"]})
+        rel = "project/identity.md"
+        c = self.call("GET", f"/api/concepts/{rel}")[1]
+        status, c2 = self.call("PUT", f"/api/concepts/{rel}", {"frontmatter": c["frontmatterYaml"], "body": "v2\n", "baseline": c["version"]})
         self.assertEqual((status, c2["body"]), (200, "v2\n"))  # CA1
-        self.assertIn("`login` (corps)", (self.root / "cdc/log.md").read_text(encoding="utf-8").split("\n")[3])  # plus récente en tête
-        self.put("cdc/login.md", (self.root / "cdc/login.md").read_text(encoding="utf-8") + "agent\n")  # un agent écrit
-        before = (self.root / "cdc/login.md").read_text(encoding="utf-8")
-        status, r = self.call("PUT", "/api/concepts/cdc/login.md", {"frontmatter": c["frontmatterYaml"], "body": "v3\n", "baseline": c2["version"]})
+        self.assertIn("`identity` (corps)", (self.root / "project/log.md").read_text(encoding="utf-8").split("\n")[3])  # plus récente en tête
+        self.put(rel, (self.root / rel).read_text(encoding="utf-8") + "agent\n")  # un agent écrit
+        before = (self.root / rel).read_text(encoding="utf-8")
+        status, r = self.call("PUT", f"/api/concepts/{rel}", {"frontmatter": c["frontmatterYaml"], "body": "v3\n", "baseline": c2["version"]})
         self.assertEqual(status, 409)  # CA5
         self.assertIn("modifié entre-temps", r["error"])
-        self.assertEqual((self.root / "cdc/login.md").read_text(encoding="utf-8"), before)
+        self.assertEqual((self.root / rel).read_text(encoding="utf-8"), before)
 
     def test_put_invalid_yaml_points_at_the_field(self):  # concepts-edition-garde-fous CA3
-        before = (self.root / "cdc/login.md").read_text(encoding="utf-8")
-        status, r = self.call("PUT", "/api/concepts/cdc/login.md", {"frontmatter": "type: Exigence\ntitle: [oops", "body": "x"})
+        before = (self.root / "project/identity.md").read_text(encoding="utf-8")
+        status, r = self.call("PUT", "/api/concepts/project/identity.md", {"frontmatter": "type: Project\ntitle: [oops", "body": "x"})
         self.assertEqual((status, r["champ"], r["error"]), (400, "frontmatter", "l'en-tête est mal écrit (ligne 2)"))
-        self.assertEqual((self.root / "cdc/login.md").read_text(encoding="utf-8"), before)
-
-    # concepts-creation
-    def test_create_refusals(self):
-        for body in ({"bundle": "tickets", "slug": "Été 2", "type": "Ticket", "title": "X"},  # CA3
-                     {"bundle": "tickets", "slug": "ok", "type": "", "title": "X"},  # CA4
-                     {"bundle": "tickets", "slug": "ok", "type": "Ticket", "title": ""},
-                     {"bundle": "../..", "slug": "ok", "type": "Ticket", "title": "X"}):  # CA5
-            self.assertEqual(self.call("POST", "/api/concepts", body)[0], 400, body)
-        self.assertFalse((self.root / "tickets/ok.md").exists())
-        self.call("POST", "/api/concepts", {"bundle": "tickets", "slug": "neuf", "type": "Ticket", "title": "Neuf"})
-        self.assertIn("a créé `neuf` (Ticket)", (self.root / "tickets/log.md").read_text(encoding="utf-8"))  # CA1
+        self.assertEqual((self.root / "project/identity.md").read_text(encoding="utf-8"), before)
 
     # concepts-lecture-liens-historique
     def test_concept_links_and_history(self):
@@ -1160,6 +1188,88 @@ class BacklogApiTest(unittest.TestCase):
             idx.return_value.nodes = {}
             status, r = self.call("GET", "/api/graph/node?id=src%2Fx.py")
         self.assertEqual((status, r["error"]), (404, "Élément introuvable"))
+
+
+class AVousTest(unittest.TestCase):
+    """« À vous » et « Peut-on livrer ? » : ce que Hosa attend de l'utilisateur, lu dans le plan et la KB."""
+    setUp, tearDown, call = AppTest.setUp, AppTest.tearDown, AppTest.call
+
+    def av(self, *args):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            kb.av.main([str(self.root), *args])
+
+    def test_without_a_plan_nothing_is_blocked_nor_decided(self):
+        a = self.call("GET", "/api/overview")[1]["aVous"]
+        self.assertEqual((a["bloque"], a["decision"], a["anomalies"], a["questions"]), ([], None, [], []))
+        self.assertEqual([x["ou"] for x in a["schemas"]], ["cdc/login.md"])  # un processus sans schéma : seul point
+        self.assertEqual(a["total"], 1)
+
+    def test_a_blocked_stage_gives_its_questions_and_the_next_stage_its_decision(self):
+        self.av("start", "hosa")
+        a = self.call("GET", "/api/overview")[1]["aVous"]
+        self.assertEqual(a["decision"], {"stage": "hosa", "section": "Cahier des charges", "texte": kb.DECISIONS["hosa"]})
+        self.assertEqual(a["bloque"], [])
+        self.av("block", "hosa", "--detail", "Q1 — Qui décide du budget ? a) vous b) le client")
+        a = self.call("GET", "/api/overview")[1]["aVous"]
+        self.assertEqual([b["stage"] for b in a["bloque"]], ["hosa"])
+        self.assertTrue(any("Q1 — Qui décide du budget ?" in line for line in a["bloque"][0]["lignes"]))
+        self.assertEqual(a["total"], 1 + len(a["schemas"]))
+
+    def test_the_cahier_des_charges_hands_the_user_its_anomalies_questions_and_diagrams(self):
+        (self.root / "cdc/relecture.md").write_text(
+            "---\ntype: Relecture\n---\n## Anomalies\n"
+            "- A1 [p1, bloquante, texte] — [login](login.md) : la durée de session ? — → utilisateur — ouverte\n"
+            "- A2 [p1, bloquante, texte] — trou — → redaction — ouverte\n"
+            "- A3 [p1, mineure, texte] — tranchée — → utilisateur — corrigée\n", encoding="utf-8")
+        (self.root / "cdc/decisions.md").write_text(
+            "---\ntype: Decisions\n---\n## Questions ouvertes\n- **Q4** — Faut-il un export ?\n", encoding="utf-8")
+        (self.root / "cdc/parcours.md").write_text(
+            "---\ntype: Exigence\ntitle: Parcours\nstatus: draft\nnature: processus\n---\n## Schéma du processus\n```mermaid\nflowchart LR\n  a --> b\n```\n",
+            encoding="utf-8")
+        ov = self.call("GET", "/api/overview")[1]
+        a, c = ov["aVous"], ov["cahier"]
+        self.assertEqual(a["anomalies"], [{"id": "A1", "texte": "login : la durée de session ?"}])
+        self.assertEqual(a["questions"], [{"id": "Q4", "texte": "Faut-il un export ?"}])
+        self.assertIn("cdc/parcours.md", [s["ou"] for s in a["schemas"]])
+        self.assertFalse(c["signe"])
+        self.assertTrue(c["trous"])
+        (self.root / "project/cahier-des-charges.md").write_text("---\ntype: Cahier des charges\nstatus: stable\n---\n", encoding="utf-8")
+        a = self.call("GET", "/api/overview")[1]["aVous"]
+        self.assertEqual((a["anomalies"], a["questions"], a["schemas"]), ([], [], []))  # signé : plus rien à trancher
+
+    def test_nothing_to_ship_before_a_done_ticket_then_what_blocks_the_release(self):
+        self.assertEqual(self.call("GET", "/api/overview")[1]["livrer"], {"etat": "rien", "faits": 0, "bloquants": []})
+        t = self.root / "tickets/connexion.md"
+        t.write_text(t.read_text(encoding="utf-8").replace("state: todo", "state: done"), encoding="utf-8")
+        l = self.call("GET", "/api/overview")[1]["livrer"]
+        self.assertEqual((l["etat"], l["faits"], [b["quoi"] for b in l["bloquants"]]), ("non", 1, ["sprint"]))  # s1 pas fusionné
+        s1 = self.root / "sprints/s1.md"
+        s1.write_text(s1.read_text(encoding="utf-8").replace("state: active", "state: done"), encoding="utf-8")
+        self.assertEqual(self.call("GET", "/api/overview")[1]["livrer"]["etat"], "oui")
+        (self.root / "test").mkdir()
+        (self.root / "test/connexion-martine.md").write_text("---\ntype: Test Plan\n---\n## Verdict\nFAIL\n", encoding="utf-8")
+        l = self.call("GET", "/api/overview")[1]["livrer"]
+        self.assertEqual((l["etat"], [b["quoi"] for b in l["bloquants"]]), ("non", ["recette"]))
+
+
+class GrapheEtEcransTest(unittest.TestCase):
+    def test_each_decision_is_a_stage_of_the_graph(self):
+        stages = {s for _, ss in kb.av.PIPELINES for s in ss} | set(kb.av.SPRINT)
+        self.assertTrue(kb.DECISIONS)
+        self.assertLessEqual(set(kb.DECISIONS), stages)
+
+    def test_the_interface_doc_lists_the_screens_of_the_menu(self):
+        """`docs/interface.md` décrit le menu de `app.js` (NAV), sa seule définition : un écran ajouté ou
+        retiré sans la doc fait échouer ce test."""
+        import re
+        app = (Path(__file__).parent / "public" / "app.js").read_text(encoding="utf-8")
+        nav = app[app.index("const NAV = ["):app.index("const ROUTES = [")]
+        groups = re.findall(r"\['([^']+)', \[(.*?)\]\]\]?,?\n", nav)
+        menu = [(g, route, label) for g, items in groups for route, label in re.findall(r"\['(/[^']*)', '([^']+)'", items)]
+        doc = (Path(__file__).parent / "docs" / "interface.md").read_text(encoding="utf-8")
+        rows = [(g.strip(), r, l.strip()) for g, r, l in re.findall(r"^\| ([^|`]+) \| `(/[^`]*)`[^|]* \| ([^|]+) \|$", doc, re.M)]
+        self.assertTrue(menu)
+        self.assertEqual(rows, menu)
 
 
 if __name__ == "__main__":

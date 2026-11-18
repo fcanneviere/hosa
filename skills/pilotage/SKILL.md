@@ -5,7 +5,7 @@ description: "Use when the user wants to see the project in the browser — the 
 
 # Pilotage
 
-Opens the Hosa dashboard on the managed project's `.hosa/kb/`: follow the project, read and edit the KB, validate, write remarks for Claude. It only reads and edits the KB files: it never calls Claude.
+Opens the Hosa dashboard on the managed project's `.hosa/kb/`: see what Claude waits for, follow the project, read the KB, write remarks for Claude. It never calls Claude, and never writes a stage's proof: a ticket's state, an exigence's status or signature, the files Hosa keeps and the proofs are read-only there.
 
 From the managed project's root, run in the background (`run_in_background: true`), never in the foreground — the server keeps running:
 
@@ -17,7 +17,7 @@ CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}" python "${CLAUDE_PLUGIN_ROOT}/run.py"
 
 The link is the address of the server's `Hosa — http://127.0.0.1:<port>` line: read the background output once for that line before answering. Never give an address you didn't read there — 3000 may be another project's KB. No such line, or `[exited …]` → give the error line instead.
 
-Then answer in two lines: the link read there, and what to look at first — the **Vue d'ensemble** shows the next step and its command, and the button « Remarque pour Claude » sends feedback on any screen. Remarks are files of `kb/remarques/`: the resume card lists the open ones; close each with `<hosa> avancement "<kb>" remarque <chemin> --detail "<réponse>"`.
+Then answer in two lines: the link read there, and what to look at first — **À vous** lists what Claude waits for (the questions of a blocked stage, the anomalies and questions sent to the user, the diagrams to validate), the **Vue d'ensemble** the next step, resumed by « reprends », and the button « Remarque pour Claude » sends feedback on any screen. Remarks are files of `kb/remarques/`: the resume card lists the open ones; close each with `<hosa> avancement "<kb>" remarque <chemin> --detail "<réponse>"`.
 
 The Hosa pane (`/hosa-panneau`) has the same thing as a button, « Ouvrir le tableau de bord »: suggest it when the pane is open.
 

@@ -9,37 +9,64 @@ Lancement : `python hosa/app/server.py` (port 3000). `HOSA_KB_ROOT=.hosa/kb` dé
 Recette locale : `python fixtures/jeu.py`, puis `HOSA_KB_ROOT="$TMP/hosa-ui-recette/.hosa/kb" python server.py`.
 
 ## Ce que l'interface permet
-- **Suivre** : prochaine étape et commande à copier, plan d'avancement, sprints, tickets, recettes et audits, consommation.
-- **Lire** : cahier des charges, personas, toute la KB, traçabilité exigence → ticket → code, journal.
-- **Agir** : valider ce que Claude a écrit, modifier un document, déplacer un ticket, écrire une remarque pour Claude.
+- **Savoir ce que Claude attend de vous** : « À vous », lu dans le plan et la KB, jamais deviné.
+- **Suivre** : la prochaine étape (on la reprend toujours par « reprends »), le plan d'avancement, les sprints, les tickets, les recettes, les audits, la consommation.
+- **Lire** : le cahier des charges, les personas, toute la KB, la traçabilité exigence → ticket → code, le journal.
+- **Agir** : écrire une remarque pour Claude. Modifier un document que Hosa ne tient pas lui-même. Valider un document que l'app peut signer.
+
+## Ce que l'interface n'écrit jamais
+Une preuve d'étape ne s'écrit pas à la main. Le serveur refuse (`kb.protection`, `kb.PROOF_FIELDS`), l'app cache le bouton et dit pourquoi :
+- l'état et l'acceptation d'un ticket (`accepte`, le PO) ;
+- le statut et la signature d'une exigence (la signature porte sur le cahier des charges entier, à `contestation`) ; une exigence stable change par `changement` ;
+- les fichiers que Hosa tient : `project/avancement.md`, `project/cahier-des-charges.md`, `sommaire.md`, `code/` ;
+- les preuves : `test/`, `jugements/`, `sprints/` ; les remarques, fermées par la réponse de Claude.
+
+L'app ne crée aucun document : un ticket naît complet dans `backlog`. Une idée devient une remarque.
 
 ## Écrans
-Un seul utilisateur, aucun rôle. Menu latéral en trois groupes (un tiroir sous 900 px).
+Un seul utilisateur, aucun rôle. Le menu suit le parcours de Hosa (un tiroir sous 900 px). Sa seule définition est `NAV` dans `app.js` ; un test vérifie que ce tableau la suit.
 
 | Groupe | Route | Écran |
 |---|---|---|
-| Pilotage | `/` | Vue d'ensemble |
-| Pilotage | `/avancement` | Plan d'avancement |
-| Pilotage | `/sprints`, `/sprints/<sprint>` | Sprints |
-| Pilotage | `/tickets`, `/tickets/<chemin>` | Tickets (tableau à 4 colonnes) ; `/gestion/tickets` y mène aussi |
-| Pilotage | `/recettes` | Recettes et qualité |
-| Pilotage | `/consommation` | Consommation |
-| Produit | `/exigences`, `/exigences/<slug>` | Cahier des charges |
-| Produit | `/personas`, `/personas/<slug>` | Personas |
-| Produit | `/kb`, `/kb/<chemin>` | Base de connaissance (lecteur) |
-| Produit | `/tracabilite` | Traçabilité |
-| Vos actions | `/gestion/validation` | À valider (compteur dans le menu) |
-| Vos actions | `/remarques` | Remarques pour Claude (compteur des remarques en attente) |
-| Vos actions | `/journal` | Journal |
-| Vos actions | `/gestion/concepts`, `/gestion/concepts/<chemin>` | Concepts, éditeur |
+| Aujourd’hui | `/` | Vue d’ensemble |
+| Aujourd’hui | `/a-vous` | À vous |
+| Aujourd’hui | `/remarques` | Remarques pour Claude |
+| Cahier des charges | `/exigences`, `/exigences/<slug>` | Exigences |
+| Cahier des charges | `/personas`, `/personas/<slug>` | Personas |
+| Structuration | `/structuration` | Stack et conception |
+| Sprints | `/sprints`, `/sprints/<sprint>` | Sprints |
+| Sprints | `/planification`, `/planification/graphe/<ticket>` | Planification |
+| Sprints | `/tickets`, `/tickets/<chemin>` | Tickets |
+| Sprints | `/recettes` | Recettes et qualité |
+| Suivi | `/avancement` | Plan d’avancement |
+| Suivi | `/journal` | Journal |
+| Suivi | `/consommation` | Consommation |
+| Suivi | `/tracabilite` | Traçabilité |
+| Base de connaissance | `/kb`, `/kb/<chemin>`, `/modifier/<chemin>` | Documents |
+| Base de connaissance | `/aide` | Documentation de Hosa |
 
-Page 404 « Écran introuvable ».
+Les anciennes adresses `/gestion/validation`, `/gestion/tickets` et `/gestion/concepts…` redirigent vers leur écran. Page 404 « Écran introuvable ».
 
 ## Vue d'ensemble
-Dans l'ordre : la question « Où en est <projet> ? » ; le bandeau de la prochaine étape (commande à copier, preuves manquantes) ;
-4 indicateurs (exigences validées, tickets faits, sprint actif, consommation de la période comparée à la période d'avant), chacun mène à son écran ;
-le plan d'avancement en frise ; « À vous » (documents à valider, remarques en attente, dernières réponses de Claude) ; « Peut-on livrer ? » ;
-le sprint en cours ; l'activité récente ; vos remarques.
+Dans l'ordre : la question « Où en est <projet> ? » ; le bandeau de la prochaine étape, avec « reprends » à copier.
+Une étape bloquée change le bandeau : « Claude attend votre réponse », couleur de l'action.
+Puis « À vous » (les trois premiers points, les remarques en attente, les dernières réponses de Claude) et le plan d'avancement en frise ;
+« Peut-on livrer ? », le sprint en cours et l'activité récente ; enfin 4 indicateurs, chacun mène à son écran.
+
+## À vous
+Ce que Claude attend de vous, dans l'ordre où cela bloque le travail :
+1. l'étape ou la tâche bloquée et ses questions (le point de reprise du plan) ;
+2. les anomalies de la relecture routées vers vous (`→ utilisateur — ouverte`) ;
+3. les questions ouvertes de `cdc/decisions.md` ;
+4. les schémas de processus pas encore validés (`cdc.py`).
+
+Les points 2 à 4 disparaissent une fois le cahier des charges signé. Le compteur du menu les additionne.
+Sous la liste : ce que l'étape suivante vous demandera (`decisions` de `pipeline.json`), et vos validations passées.
+Vous répondez dans Claude Code, en disant « reprends » : l'app ne réveille pas Claude.
+
+## Peut-on livrer ?
+« Rien à livrer » tant qu'aucun ticket n'est fait. Ensuite, « Pas encore » avec ce qui bloque :
+une recette échouée, un ticket bloqué, le dernier audit qualité ou sécurité en échec, un sprint pas fusionné. Sinon « Oui ».
 
 ## Remarques pour Claude
 - Le bouton « Remarque pour Claude » est sur chaque écran. Sur un document (ticket, exigence, persona, page de la KB, éditeur), la remarque le vise ; sinon elle est générale.
@@ -53,8 +80,9 @@ le sprint en cours ; l'activité récente ; vos remarques.
 - Nom : demandé une seule fois, à la première validation ou remarque, puis retenu (bas du menu, « Mon nom »). Il signe, il n'authentifie pas.
 - Recherche globale : `Ctrl K` ouvre la palette (écrans et documents) ; `/` place le curseur dans la recherche de l'écran, sinon ouvre la palette.
 - Filtres : pastilles que l'on retire d'un clic ; ils restent d'un écran à l'autre (stockage de session).
-- Tickets : glisser une carte vers une colonne, ou « Déplacer… » au clavier. Écrit `state` et une ligne de log.
-- Valider : écrit `verified: human:<nom>` (et `status: stable` pour une exigence). Annuler la validation demande confirmation.
+- Tickets : tableau à 4 colonnes en lecture seule, filtré d'abord sur le sprint en cours (ou le prochain prévu). Le filtre se retire d'un clic.
+- Valider : écrit `verified: human:<nom>` sur un document `validable` (ni exigence, ni ticket, ni fichier protégé). Annuler la validation demande confirmation.
+- Lecture seule : un document protégé montre sa raison et le bouton « Remarque » à la place de « Modifier ».
 - Éditeur : en-tête YAML repliable, Markdown et aperçu côte à côte, barre d'enregistrement collante, confirmation avant de quitter avec des changements. Un fichier modifié par Claude entre-temps est refusé (409).
 - Erreurs : un assainisseur retire chemins, routes et codes. Un « Réessayer » est proposé.
 - Thème : système, clair ou sombre (bas du menu), retenu sur ce poste.
@@ -67,7 +95,8 @@ Graphique : barres horizontales d'une seule série (coût par agent), valeurs é
 Variables CSS dans `style.css`, sur `:root`, redéfinies pour le mode sombre.
 
 ## Vocabulaire
-Recette : « réussi », « réussi avec remarques », « échoué ». Validation : « validé par vous », « contrôlé automatiquement », « à valider ».
+Recette : « réussi », « réussi avec remarques », « échoué ». Validation : « validé par vous », « contrôlé automatiquement », « non relu » (neutre : Hosa ne demande pas de relire chaque fichier).
+Exigence : « stable », « brouillon ».
 Remarque : « en attente de Claude », « traitée par Claude ».
 
 ## Limites connues

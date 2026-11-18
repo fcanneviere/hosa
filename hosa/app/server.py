@@ -76,8 +76,6 @@ def make_handler(root):
                 if method != "GET":
                     return self._error(405, "méthode non autorisée")
                 return self._static(path)
-            except FileExistsError as e:
-                self._error(409, f"existe déjà : {e}")
             except kb.ConflictError as e:
                 self._error(409, str(e))
             except graph.GraphError as e:
@@ -112,11 +110,8 @@ def make_handler(root):
                 concepts = kb.walk(root)
                 if "type" in query:
                     concepts = [c for c in concepts if c["frontmatter"].get("type") == query["type"][0]]
-                return self._send(200, concepts)
-            if method == "POST" and route == "concepts":
-                b = self._json_body()
-                return self._send(201, kb.create(root, str(b.get("bundle", "")), str(b.get("slug", "")),
-                                                 str(b.get("type", "")), str(b.get("title", ""))))
+                return self._send(200, [{**c, "protege": kb.protection(c["path"], c["frontmatter"]),
+                                        "validable": kb.validable(c["path"], c["frontmatter"])} for c in concepts])
             if method == "POST" and route == "remarques":
                 b = self._json_body()
                 return self._send(201, kb.remark(root, str(b.get("auteur", "")), str(b.get("texte", "")),

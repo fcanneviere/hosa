@@ -153,7 +153,14 @@ Les scripts de Hosa passent tous par une seule commande, `<hosa> <script>` (la s
 
 ## Le tableau de bord
 
-Une interface locale montre tout ce que Hosa produit sur le projet : la prochaine étape et la commande à copier, le plan d'avancement, les sprints, la planification et le graphe des tickets (une colonne par sprint de la feuille de route, ou par niveau de dépendance ; un ticket choisi montre ce qu'il attend et ce qui l'attend), le tableau des tickets (glisser-déposer), la documentation de Hosa (étapes, boucles, agents, ce guide), les recettes et les audits, la consommation (coût estimé, comparé à la période d'avant), le cahier des charges, les personas, la KB, la traçabilité et le journal. Tu y valides ce que Claude a écrit, tu modifies un document, ou tu écris une **remarque pour Claude** sur n'importe quel écran. Mode clair et sombre, recherche globale avec `Ctrl K`.
+Une interface locale montre tout ce que Hosa produit sur le projet. Son menu suit le parcours : Aujourd'hui, Cahier des charges, Structuration, Sprints, Suivi, Base de connaissance.
+
+- **À vous** : ce que Claude attend de toi. Les questions d'une étape bloquée, les anomalies de la relecture qui te reviennent, les questions ouvertes, les schémas à valider, et ce que l'étape suivante te demandera. Tu réponds dans Claude Code en disant « reprends ».
+- **Suivre** : la prochaine étape, le plan d'avancement, les sprints, la planification et le graphe des tickets (une colonne par sprint de la feuille de route, ou par niveau de dépendance), le tableau des tickets, « Peut-on livrer ? », les recettes et les audits, la consommation (coût estimé, comparé à la période d'avant).
+- **Lire** : le cahier des charges avec ses trous et sa signature, les personas, la stack et la conception, la KB, la traçabilité, le journal, la documentation de Hosa.
+- **Agir** : une **remarque pour Claude** sur n'importe quel écran. Tu modifies ou valides un document que Hosa ne tient pas lui-même.
+
+Une preuve ne s'écrit pas à la main. Le tableau de bord ne change jamais l'état d'un ticket ni le statut ou la signature d'une exigence. Il ne touche pas aux fichiers que Hosa tient (plan d'avancement, cahier des charges assemblé, carte du code) ni aux preuves (tests, jugements, sprints). Il ne crée aucun document. Pour tout cela, une remarque. Mode clair et sombre, recherche globale avec `Ctrl K`.
 
 Elle lit et modifie les fichiers de la KB, elle n'appelle jamais Claude. Une remarque est un fichier de `kb/remarques/`. À la prochaine « reprends », la fiche de reprise la donne à Claude. Il la traite par la méthode, puis il la ferme avec sa réponse (`avancement.py remarque <chemin> --detail "…"`). La réponse s'affiche dans le tableau de bord.
 
