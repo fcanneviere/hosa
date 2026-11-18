@@ -349,11 +349,13 @@ class SecurityAndLegalNotes(unittest.TestCase):
         self.assertIn("un critère cite `RG9`, absent de l'exigence liée (ou retiré)", gaps)
         self.assertFalse(any("`RG1`" in g or "`CE1`" in g for g in gaps))
         self.write("avant", "state: done\n", story.replace("envoi.md", "ancien.md") + "- CA1 — écrit avant les identifiants\n")
-        self.assertEqual(tc.rule_coverage(kb), ["✗ cdc/envoi.md — RG3 : aucun critère de ses tickets ne les cite (`- CAn [RG3] — …`)"])
+        self.assertEqual(tc.rule_coverage(kb), ["(info) cdc/ancien.md — découpée avant les identifiants : aucun de ses "
+                                                "tickets ne cite RG1",
+                                                "✗ cdc/envoi.md — RG3 : aucun critère de ses tickets ne les cite (`- CAn [RG3] — …`)"])
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(tc.main([str(kb), "--regles"]), 1)
         self.write("limite", "", story + "- CA1 [RG3] — 51e article refusé\n")   # another ticket of the exigence takes it
-        self.assertEqual(tc.rule_coverage(kb), [])
+        self.assertEqual([x for x in tc.rule_coverage(kb) if not x.startswith("(info)")], [])
 
     def test_a_behaviour_two_tickets_of_one_exigence_state_is_owned_by_one(self):
         kb = self.tickets.parent
@@ -603,3 +605,27 @@ class DataAtBacklog(unittest.TestCase):
         # the sprint's placement, once written, is the one read
         p.write_text(text + "## Placement architecture (architecte)\n- **Données** : `runs` écrit\n", encoding="utf-8")
         self.assertEqual(tc.data_access(p.read_text(encoding="utf-8")), ({"runs"}, set()))
+
+
+class RulesWithoutIds(unittest.TestCase):
+    def test_rules_without_ids_are_refused_and_an_old_slice_is_shown(self):
+        # rieki: no fiche had an id, `--regles` skipped them all and nobody checked the split of 29 rules
+        kbd = Path(tempfile.mkdtemp()) / ".hosa" / "kb"
+        (kbd / "cdc").mkdir(parents=True)
+        (kbd / "tickets").mkdir()
+        (kbd / "cdc" / "e.md").write_text("---\ntype: Exigence\n---\n## Règles de gestion\n- Un seul run à la fois.\n",
+                                          encoding="utf-8")
+        (kbd / "tickets" / "t.md").write_text("---\ntype: Ticket\nstate: todo\n---\nLié à : [e](../cdc/e.md)\n"
+                                              "## Critères d'acceptation\n- CA1 — x\n", encoding="utf-8")
+        self.assertEqual(len(tc.rule_coverage(kbd)), 1)
+        self.assertIn("règles sans identifiant : `<hosa> cdc numerote <kb>`", tc.rule_coverage(kbd)[0])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kbd), "--regles"]), 1)
+        (kbd / "cdc" / "e.md").write_text("---\ntype: Exigence\n---\n## Règles de gestion\n- **RG1** — Un seul run.\n",
+                                          encoding="utf-8")
+        self.assertEqual(tc.rule_coverage(kbd), ["(info) cdc/e.md — découpée avant les identifiants : aucun de ses "
+                                                 "tickets ne cite RG1"])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(tc.main([str(kbd), "--regles"]), 0)
+        self.assertIn("(info) cdc/e.md", out.getvalue())

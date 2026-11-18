@@ -248,7 +248,8 @@ def measure_dependencies(path: Path, front: str, body: str) -> list[str]:
 def rule_coverage(kb: Path) -> list[str]:
     """Each numbered rule and error case of an exigence, cited by a criterion of one of its tickets — the cell
     the judge can't see: it reads one ticket at a time, and a rule no ticket took is in none of them.
-    An exigence none of whose tickets cites a rule was sliced before the ids: left alone."""
+    An exigence whose rules have no id is refused (`cdc numerote`); one whose tickets cite none was sliced before
+    the ids: shown as `(info)`, not refused."""
     cited: dict[str, set[str]] = {}
     for f in sorted((kb / "tickets").glob("*.md")) if (kb / "tickets").is_dir() else []:
         front, body = split(f.read_text(encoding="utf-8"))
@@ -259,10 +260,20 @@ def rule_coverage(kb: Path) -> list[str]:
     out = []
     for slug, got in sorted(cited.items()):
         ids = rules_of(kb, slug) or []
+        f = kb / "cdc" / f"{slug}.md"
+        if not ids and cdc() is not None and f.is_file() and cdc().rule_lines(f.read_text(encoding="utf-8")):
+            # rules without ids: the matrix can't be read — never skipped in silence (rieki: no id in any fiche, so
+            # the split of its 29 rules over 41 tickets was checked by nobody)
+            out.append(f"✗ cdc/{slug}.md — règles sans identifiant : `<hosa> cdc numerote <kb>` les numérote "
+                       "(le texte et la signature ne changent pas), puis chaque critère cite la sienne")
+            continue
         lacking = [r for r in ids if r not in got]
         if lacking and got & set(ids):
             out.append(f"✗ cdc/{slug}.md — {', '.join(lacking)} : aucun critère de ses tickets ne les cite "
                        f"(`- CAn [{lacking[0]}] — …`)")
+        elif lacking:  # sliced before the ids: shown, not refused — its tickets cite them when next refined
+            out.append(f"(info) cdc/{slug}.md — découpée avant les identifiants : aucun de ses tickets ne cite "
+                       f"{', '.join(lacking[:6])}{' …' if len(lacking) > 6 else ''}")
     return out
 
 
@@ -1009,7 +1020,11 @@ def main(argv: list[str]) -> int:
               "(slug, path or the `tickets/` folder): `ticket_check <root>/.hosa/kb lancer-un-run`", file=sys.stderr)
         return 2
     if "--regles" in argv:
-        lacking = rule_coverage(kb) + transition_coverage(kb)
+        found = rule_coverage(kb) + transition_coverage(kb)
+        lacking = [x for x in found if not x.startswith("(info)")]
+        for x in found:
+            if x.startswith("(info)"):
+                print(x)
         print("\n".join(lacking) if lacking else "Règles : chaque règle numérotée d'une exigence découpée est citée par un critère.")
         return 1 if lacking else 0
     if "--differes" in argv:
