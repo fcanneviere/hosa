@@ -190,6 +190,31 @@ def cdc():
         return None
 
 
+@functools.cache
+def lexique():
+    """`lexique_check.py`, the one definition of the lexicon's forbidden synonyms — None when it can't be loaded."""
+    try:
+        path = Path(__file__).resolve().parents[2] / "interface" / "scripts" / "lexique_check.py"
+        spec = importlib.util.spec_from_file_location("lexique_check", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    except Exception:
+        return None
+
+
+def lexicon_labels(path: Path, body: str) -> list[str]:
+    """A label a ticket quotes (« … ») is the lexicon's word, from the backlog on: the criteria copy the cahier des
+    charges' messages, written before the lexicon existed. `HOSA_LEXIQUE=0`: off."""
+    kb = path.parent.parent
+    if os.environ.get("HOSA_LEXIQUE") == "0" or lexique() is None or not (kb / "interface" / "lexique.md").is_file():
+        return []
+    try:
+        return lexique().label_gaps(kb, body)
+    except Exception:  # never this check's own failure
+        return []
+
+
 def rules_of(kb: Path, slug: str) -> list[str] | None:
     """The `RGn`/`CEn` in force in `kb/cdc/<slug>.md`; None when the fiche or `cdc.py` can't be read."""
     f = kb / "cdc" / f"{slug}.md"
@@ -958,6 +983,7 @@ def gaps(path: Path) -> list[str]:
     missing += hidden_dependencies(path, front, body)
     missing += cross_references(path, body)
     missing += measure_dependencies(path, front, body)
+    missing += lexicon_labels(path, body)
     missing += state_dependencies(path, front, body)
     known = {t["id"] for t in model_of(path.parent.parent) if t["id"]}
     for tr in sorted({t for inside in RULE_REF.findall(section(body, "## Critères d'acceptation") or "")

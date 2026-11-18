@@ -645,3 +645,22 @@ class Slicing(unittest.TestCase):
         self.assertEqual([x[:46] for x in tc.slicing(kbd)], ["(info) cdc/e.md — 4 tickets pour 2 règle(s) et"])
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(tc.main([str(kbd), "--decoupage"]), 0)
+
+
+class LexiconLabels(unittest.TestCase):
+    def test_a_quoted_label_uses_the_lexicon_from_the_backlog_on(self):
+        kbd = Path(tempfile.mkdtemp()) / ".hosa" / "kb"
+        (kbd / "interface").mkdir(parents=True)
+        (kbd / "tickets").mkdir()
+        (kbd / "interface" / "lexique.md").write_text(
+            "## Termes\n| Terme | Désigne | Où | Synonymes interdits |\n|---|---|---|---|\n| Run | un lancement | Prévoir | Job |\n",
+            encoding="utf-8")
+        p = kbd / "tickets" / "t.md"
+        p.write_text("---\ntype: Ticket\nstate: todo\n---\n## Critères d'acceptation\n- CA1 — affiche « Job 12 lancé »\n",
+                     encoding="utf-8")
+        self.assertIn("« Job 12 lancé » : « Job » au lieu de « Run » (kb/interface/lexique.md)", tc.gaps(p))
+        os.environ["HOSA_LEXIQUE"] = "0"
+        try:
+            self.assertNotIn("« Job 12 lancé » : « Job » au lieu de « Run » (kb/interface/lexique.md)", tc.gaps(p))
+        finally:
+            del os.environ["HOSA_LEXIQUE"]
