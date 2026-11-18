@@ -51,7 +51,12 @@ je veux [besoin],
 afin de [valeur].
 
 Lié à : [persona](../personnas/xxx.md), [exigence](../cdc/xxx.md)
+
+## Données
+`<table>`.`<champ>`, `<champ>` écrits ; `<table>` lue — ou « aucune »
 ```
+
+**`## Données`** is one line, written now from the data dictionary (`schema-app` and `schema-db` ran before this stage): each table the ticket reads or writes, with its verb (« écrit(e)(s) », « lu(e)(s) »). `ticket_check` reads it until the sprint writes the architecture placement: a table read that no ticket done or in `depends_on` writes is a `depends_on` to add now, not a surprise of the sprint. `done backlog` refuses a planned ticket without it.
 
 **`estimate`** is yours, with the split: the criteria, the screens and the tables the ticket touches against the architecture's module map. The technical note's `Complexité` (Step 3, at the sprint) confirms it or corrects it, and says why.
 

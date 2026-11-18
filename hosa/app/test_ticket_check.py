@@ -585,3 +585,21 @@ class States(unittest.TestCase):
                          ["✗ cdc/modele-metier.md — TR3", "✗ cdc/modele-metier.md — TR4"])
         self.assertIn("un critère cite `TR9`, absent de `cdc/modele-metier.md`", tc.gaps(self.kb / "tickets" / "b.md"))
 
+
+class DataAtBacklog(unittest.TestCase):
+    def test_the_backlog_data_line_gives_the_graph_its_table_edges(self):
+        # rieki: no table edge before the sprint's placements; `ventes_hebdo` found at qa-plan
+        tickets = Path(tempfile.mkdtemp()) / ".hosa" / "kb" / "tickets"
+        tickets.mkdir(parents=True)
+        (tickets / "agreger.md").write_text("---\ntype: Ticket\nstate: todo\n---\n## Données\n"
+                                            "`ventes_hebdo`.`semaine`, `quantite` écrits ; `ventes` lue\n", encoding="utf-8")
+        p = tickets / "lancer.md"
+        p.write_text("---\ntype: Ticket\nstate: todo\n---\n## Données\n`ventes_hebdo` lue ; `runs` écrit\n", encoding="utf-8")
+        text = p.read_text(encoding="utf-8")
+        self.assertEqual(tc.data_access(text), ({"runs"}, {"ventes_hebdo"}))
+        self.assertEqual(tc.hidden_dependencies(p, *tc.split(text)),
+                         ["lit `ventes_hebdo`, qu'aucun ticket fait ni de ses dépendances n'écrit → "
+                          "`depends_on: [agreger]` (le premier à l'écrire)"])
+        # the sprint's placement, once written, is the one read
+        p.write_text(text + "## Placement architecture (architecte)\n- **Données** : `runs` écrit\n", encoding="utf-8")
+        self.assertEqual(tc.data_access(p.read_text(encoding="utf-8")), ({"runs"}, set()))

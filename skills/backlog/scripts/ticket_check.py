@@ -571,6 +571,9 @@ def data_access(body: str) -> tuple[set[str], set[str]]:
     """(tables written, tables read) from the architecture placement's `Données` bullet, as `backlog` writes it:
     « `ventes`.`date`, … écrits ; `imports`.`date_export` … écrits » — a verb closes the segments before it."""
     m = re.search(r"\*\*Données\*\*\s*:\s*(.*)", section(body, "## Placement architecture (architecte)") or "")
+    if not m:  # planned, not detailed yet: the line `backlog` writes from the data dictionary (rieki: the graph
+        # missed every table edge until the sprint wrote the placements, then the roadmap moved under it)
+        m = re.search(r"^\s*[-*]?\s*(?:\*\*Données\*\*\s*:\s*)?(\S.*)$", section(body, "## Données") or "", re.M)
     written, read, pending = set(), set(), set()
     for seg in (m[1].split(";") if m else []):
         seg = seg.strip()

@@ -743,6 +743,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps.append(concept(kb, "rules/design/definition-de-termine.md", "Design Rule"))
         # planned, not detailed: the notes are written when a ticket enters a sprint (`sprint`, `notes-<k>`…)
         gaps += script("backlog/scripts/ticket_check.py", kb, "--planifiable")
+        gaps += data_lines(kb)
         # every sprint planned before the first one: the roadmap, its first milestone measuring an objective
         if read(kb / "project" / "feuille-de-route.md") is None:
             gaps.append("pas de `kb/project/feuille-de-route.md` : jalons validés, puis `graphe_tickets feuille "
@@ -855,6 +856,20 @@ def composition(kb: Path, tickets: list[str]) -> list[str]:
             gaps += [f"{t} : {g} — tâches `notes-<k>`, `securite-<k>`, `juridique-<k>`, `juge-<k>` de `sprint`"
                      for g in tc.gaps(path) if g.startswith(tc.TO_DETAIL)]
     return list(dict.fromkeys(gaps))
+
+
+def data_lines(kb: Path) -> list[str]:
+    """Each planned ticket names the tables it reads and writes (`## Données`, from the data dictionary) before its
+    placements exist: the roadmap's graph then has its data edges (rieki: `ventes_hebdo`, `nb_series`, found by the
+    sprint's notes, each a round trip)."""
+    missing = []
+    for p, t in concepts(kb, "tickets", "Ticket"):
+        if (field(front(t), "state") or "todo") != "todo":
+            continue
+        if section(t, "Placement architecture (architecte)") is None and section(t, "Données") is None:
+            missing.append(p.stem)
+    return [f"{len(missing)} ticket(s) sans `## Données` (tables lues et écrites, du dictionnaire de données, ou "
+            f"« aucune ») : {', '.join(missing[:8])}" + (" …" if len(missing) > 8 else "")] if missing else []
 
 
 def roadmap_objective(kb: Path) -> list[str]:

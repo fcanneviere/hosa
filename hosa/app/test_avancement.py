@@ -2026,3 +2026,13 @@ class Measures(unittest.TestCase):
         (k / "cdc" / "decisions.md").write_text("---\ntype: Journal des décisions\n---\n## Décisions\n"
                                                 "- 2026-11-18 — human:x — M1 : 42 s\n", encoding="utf-8")
         self.assertEqual(av.proofs(k, "stack", None), [])
+
+
+class BacklogData(unittest.TestCase):
+    def test_a_planned_ticket_names_its_tables(self):
+        k = kb({"tickets/a.md": "---\ntype: Ticket\nstate: todo\n---\n## Données\naucune\n",
+                "tickets/b.md": "---\ntype: Ticket\nstate: todo\n---\n",
+                "tickets/c.md": "---\ntype: Ticket\nstate: done\n---\n",
+                "tickets/d.md": "---\ntype: Ticket\nstate: todo\n---\n## Placement architecture (architecte)\n- x\n"})
+        self.assertEqual(av.data_lines(k), ["1 ticket(s) sans `## Données` (tables lues et écrites, du dictionnaire "
+                                            "de données, ou « aucune ») : b"])
