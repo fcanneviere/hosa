@@ -596,7 +596,8 @@ def _force_utf8_stdio() -> None:
 def main() -> int:
     _force_utf8_stdio()
     ap = argparse.ArgumentParser(description=f"Validate an OKF v{OKF_VERSION} bundle.")
-    ap.add_argument("bundle", type=Path, help="path to the bundle directory")
+    ap.add_argument("bundle", type=Path, nargs="+",
+                    help="the bundle directory, or KB files: their bundle is validated, only their lines are shown")
     ap.add_argument("--strict", action="store_true", help="treat warnings as errors")
     ap.add_argument("--max-warnings", type=int, default=None, metavar="N",
                     help="fail if warnings exceed N (--strict is the N=0 case)")
@@ -607,16 +608,28 @@ def main() -> int:
                     help="list every warning; by default those on files without uncommitted changes are grouped")
     args = ap.parse_args()
 
-    if not args.bundle.is_dir():
-        # A file of the KB passed instead of its root (rieki sprint-3, a tester's brief): name the root to pass.
-        root = next((d for d in args.bundle.resolve().parents if (d / "index.md").is_file() and d.name == "kb"), None)
-        print(f"error: {args.bundle} is not a directory" + (f" — pass the KB root: okf_validate \"{root.as_posix()}\""
-                                                           if root else " — pass the KB root (`.hosa/kb`)"), file=sys.stderr)
-        return 2
+    only = None
+    if len(args.bundle) == 1 and args.bundle[0].is_dir():
+        args.bundle = args.bundle[0]
+    else:
+        # files of the KB (« valide les fichiers touchés », rieki sprint-4): their bundle, their lines only
+        roots = {next((d for d in f.resolve().parents if (d / "index.md").is_file() and d.name == "kb"), None)
+                 for f in args.bundle}
+        missing = [str(f) for f in args.bundle if not f.is_file()]
+        if missing or len(roots) != 1 or None in roots:
+            print("error: pass the KB root (`.hosa/kb`), or files of one KB that exist"
+                  + (f" — absent : {', '.join(missing)}" if missing else ""), file=sys.stderr)
+            return 2
+        root = roots.pop()
+        only = {f.resolve().relative_to(root).as_posix() for f in args.bundle}
+        args.bundle = root
 
     migrated = migrate(args.bundle) if args.migrate else []
 
     r = validate(args.bundle)
+    if only is not None:
+        r.errors = [x for x in r.errors if x.split(": ", 1)[0] in only]
+        r.warnings = [x for x in r.warnings if x.split(": ", 1)[0] in only]
     conformant = not r.errors
     max_warn = 0 if args.strict else args.max_warnings
     failed = bool(r.errors) or (max_warn is not None and len(r.warnings) > max_warn)

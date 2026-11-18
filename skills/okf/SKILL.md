@@ -67,6 +67,8 @@ After any KB write, run the validator on the KB root and fix every error before 
 <hosa> okf_validate <project>/.hosa/kb
 ```
 
+To see only the files you wrote: `<hosa> okf_validate <project>/.hosa/kb/tickets/a.md <project>/.hosa/kb/test/a-technique.md`. Their bundle is validated, and only their lines are shown.
+
 Then refresh the KB summary — one line per concept, the file every agent reads before opening anything else:
 
 ```bash

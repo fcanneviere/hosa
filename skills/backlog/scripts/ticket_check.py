@@ -37,8 +37,9 @@ absent notes come back as `(à détailler)` lines; a stage the plan marks `non a
 An abuse case of the security note may say `— différé : usage exploratoire` instead of `→ CAn` while
 kb/project/identity.md says `## Usage` : exploratoire.
 
-Run:  python ticket_check.py <kb-dir> [--planifiable] [ticket.md ...]
-      No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
+Run:  python ticket_check.py <kb-dir> [--planifiable] [ticket ...]
+      <kb-dir> is `<root>/.hosa/kb`. Each ticket is a slug (`lancer-un-run`), a path to its `.md`, or the
+      `tickets/` folder (its `todo` tickets). No ticket given → every `state: todo` ticket in <kb-dir>/tickets/.
       `--planifiable`: the `(à détailler)` lines don't count (`backlog`'s proof, the roadmap).
       python ticket_check.py <kb-dir> --differes
       Every deferred abuse case, done tickets included; exit 1 when `## Usage` is no longer exploratoire.
@@ -843,7 +844,30 @@ def late_dependencies(path: Path, front: str) -> list[str]:
     return out
 
 
+def todo_tickets(folder: Path) -> list[Path]:
+    return [p for p in sorted(folder.glob("*.md")) if p.name not in ("index.md", "log.md")
+            and field(split(p.read_text(encoding="utf-8"))[0], "state") == "todo"]
+
+
+def ticket_paths(kb: Path, args: list[str]) -> list[Path]:
+    """Each argument a ticket's path, its slug (`lancer-un-run`) or the `tickets/` folder (its `todo` tickets):
+    rieki sprint-4, three agents tried a slug or the folder and got « is not a directory »."""
+    out = []
+    for a in args:
+        p = Path(a)
+        if p.is_dir():
+            out += todo_tickets(p)
+        elif p.is_file() or a.endswith(".md") or "/" in a or "\\" in a:
+            out.append(p)
+        else:
+            out.append(kb / "tickets" / f"{a}.md")
+    return out
+
+
 def main(argv: list[str]) -> int:
+    if argv[:1] in (["-h"], ["--help"]):
+        print(__doc__.strip())
+        return 0
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
         print("usage: ticket_check.py <kb-dir> [--ecartees] [--planifiable] [ticket.md ...] | <kb-dir> --regles"
@@ -855,7 +879,8 @@ def main(argv: list[str]) -> int:
     argv = [a for a in argv if a not in ("--ecartees", "--planifiable")]
     kb = Path(argv[0])
     if not kb.is_dir():
-        print(f"error: {kb} is not a directory", file=sys.stderr)
+        print(f"error: {kb} is not a directory — the first argument is the KB (`<root>/.hosa/kb`), then tickets "
+              "(slug, path or the `tickets/` folder): `ticket_check <root>/.hosa/kb lancer-un-run`", file=sys.stderr)
         return 2
     if "--regles" in argv:
         lacking = rule_coverage(kb)
@@ -871,12 +896,7 @@ def main(argv: list[str]) -> int:
         repeated = repeated_criteria(kb)
         print("\n".join(repeated) if repeated else "Répétitions : aucun critère d'un ticket `todo` ne répète un autre ticket de son exigence.")
         return 1 if repeated else 0
-    if argv[1:]:
-        paths = [Path(p) for p in argv[1:]]
-    else:
-        paths = [p for p in sorted((kb / "tickets").glob("*.md"))
-                 if p.name not in ("index.md", "log.md")
-                 and field(split(p.read_text(encoding="utf-8"))[0], "state") == "todo"]
+    paths = ticket_paths(kb, argv[1:]) if argv[1:] else todo_tickets(kb / "tickets")
     if fill:
         skipped = skipped_stages(kb)
         filled = [p.name for p in paths if p.is_file() and write_skipped(p, skipped)]

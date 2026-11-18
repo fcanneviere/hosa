@@ -1906,3 +1906,34 @@ class SprintSize(unittest.TestCase):
                       " ".join(av.proofs(k, "sprint", "s1")))
         (k / "sprints" / "s1.md").write_text(av.graphe_tickets().ordered_sprint(k, "s1")[0], encoding="utf-8")
         self.assertNotIn("Taille", " ".join(av.proofs(k, "sprint", "s1")))
+
+
+class CheckOutput(unittest.TestCase):
+    def test_a_task_waiting_is_not_a_wrong_proof(self):
+        # rieki sprint-4: `check sprint` exited 1 for an `ecriture` task not run yet, read as a fault in the order
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET,
+                "test/t1-technique.md": "- [CA1] x\n- [CA2] y\n## Observation\nAucun\n"})
+        closed_until(k, "backlog")
+        run(k, "done", "sprint", "--sprint", "s1", "--force")
+        run(k, "start", "qa-plan", "--sprint", "s1")
+        run(k, "task", "add", "qa-plan", "jeu-de-donnees", "--sprint", "s1", "--agent", "hosa-data-engineer")
+        code, out = run(k, "check", "qa-plan", "--sprint", "s1")
+        self.assertEqual(code, 3, out)
+        self.assertIn("✓ `qa-plan` : preuves complètes\nTâches en attente :\n- tâche `jeu-de-donnees`", out)
+        (k / "test" / "t1-technique.md").write_text("- [CA1] x\n## Observation\nAucun\n", encoding="utf-8")
+        code, out = run(k, "check", "qa-plan", "--sprint", "s1")
+        self.assertEqual(code, 1)
+        self.assertIn("Preuves manquantes :\n- t1 : CA2 sans cas", out)
+
+    def test_observation_accepts_lists_ranges_agreement_and_a_dashed_none(self):
+        crit = [f"CA{n}" for n in range(1, 11)]
+        ok = ["- CA1, CA2 — panne — observé par : journal",
+              "- CA1 à CA10 — volume — observées par : commande",
+              "- CA3-CA5 — base — observés par : lecture de la base",
+              "- CA6 et CA7 — verrou — observée par : outil"]
+        self.assertEqual(av.observation_gaps("## Observation\n" + "\n".join(ok) + "\n", crit), [])
+        for none in ("- Aucun", "Aucune", "- Aucun critère invisible"):
+            self.assertEqual(av.observation_gaps(f"## Observation\n{none}\n", crit), [], none)
+        self.assertEqual(av.observation_gaps("## Observation\n- CA9 à CA12 — x — observé par : y\n", crit),
+                         ["`## Observation` : CA11 n'est pas un critère du ticket",
+                          "`## Observation` : CA12 n'est pas un critère du ticket"])

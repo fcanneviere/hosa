@@ -93,6 +93,14 @@ test('a sprint lands once its QA gate is met', () => {
   assert.equal(bash(r, 'git merge --no-ff sprint/s1 -m "Merge sprint s1"'), null);
 });
 
+test('a task still open keeps the sprint from landing (check exits 3)', () => {
+  const tasks = '## Tâches\n| Tâche | Étape | Agent | Objet | Statut | Mis à jour | Sortie | Détail |\n|---|---|---|---|---|---|---|---|\n' +
+    '| demo | `validation` (s1) | hosa-qa-lead |  | à faire | 2026-11-18T00:22:22Z |  |  |\n';
+  const r = project({ ...full, '.hosa/kb/project/avancement.md': tasks,
+    '.hosa/kb/sprints/s1.md': sprint('## Audit\nBloquant : 0\n## Démo\n- T1 OK\n') });
+  assert.match(denied(bash(r, 'git merge --no-ff sprint/s1')), /Tâches en attente :[\s\S]*demo/);
+});
+
 test('the merge lists every missing proof', () => {
   const r = project({
     ...full,

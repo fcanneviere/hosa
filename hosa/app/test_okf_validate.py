@@ -36,6 +36,20 @@ class OkfValidate(unittest.TestCase):
         return subprocess.run([sys.executable, str(SCRIPT), str(self.kb), *args], capture_output=True, text=True,
                               encoding="utf-8")
 
+    def test_files_of_the_kb_show_only_their_own_lines(self):
+        # rieki sprint-4: « valide les fichiers touchés » couldn't be followed, the validator took the bundle only
+        r = subprocess.run([sys.executable, str(SCRIPT), str(self.kb / "cdc" / "a.md"), "--all"], capture_output=True,
+                           text=True, encoding="utf-8")
+        self.assertIn("cdc/a.md", r.stdout)
+        self.assertNotIn("old0", r.stdout)
+        r = subprocess.run([sys.executable, str(SCRIPT), str(self.kb / "cdc" / "old0.md"), "--all"], capture_output=True,
+                           text=True, encoding="utf-8")
+        self.assertIn("old0", r.stdout)
+        self.assertNotIn("cdc/a.md", r.stdout)
+        r = subprocess.run([sys.executable, str(SCRIPT), str(self.kb / "cdc" / "absent.md")], capture_output=True,
+                           text=True, encoding="utf-8")
+        self.assertEqual(r.returncode, 2)
+
     def test_hidden_folder_is_skipped_and_outside_link_checked_on_disk(self):
         r = self.validate("--all")
         self.assertEqual(r.returncode, 0, r.stdout)
@@ -53,12 +67,11 @@ class OkfValidate(unittest.TestCase):
         self.assertNotIn("cdc/old3.md: recommended", out)
         self.assertIn("cdc/old3.md: recommended", self.validate("--all").stdout)
 
-    def test_a_file_names_the_root_to_pass(self):
-        # rieki sprint-3: a tester passed one KB file; the error now gives the call to make.
-        r = subprocess.run([sys.executable, str(SCRIPT), str(self.kb / "cdc" / "a.md")], capture_output=True,
+    def test_a_file_outside_a_kb_names_the_root_to_pass(self):
+        r = subprocess.run([sys.executable, str(SCRIPT), str(self.root / "docs" / "adr.md")], capture_output=True,
                            text=True, encoding="utf-8")
         self.assertEqual(r.returncode, 2)
-        self.assertIn(f'pass the KB root: okf_validate "{self.kb.resolve().as_posix()}"', r.stderr)
+        self.assertIn("pass the KB root (`.hosa/kb`)", r.stderr)
 
 
 if __name__ == "__main__":

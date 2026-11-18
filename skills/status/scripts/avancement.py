@@ -358,7 +358,17 @@ def criteria(text: str | None) -> list[str]:
     return ticket_check().criteria_ids(section(text, "Critères d'acceptation"))
 
 
-OBSERVATION = re.compile(r"^-\s*(CA\d+)\s*—\s*(.+?)\s*—\s*observé par\s*:\s*(\S.*)$")
+# `- CA3 — …`, `- CA1, CA2 — …`, `- CA1 à CA10 — …`, `- CA1-CA3 — …`; « observé(e)(s) par » (rieki sprint-4: six
+# plans refused for these forms)
+OBSERVATION = re.compile(r"^-\s*(CA\d+(?:\s*(?:,|et|à|-)\s*CA\d+)*)\s*—\s*(.+?)\s*—\s*observée?s?\s+par\s*:\s*(\S.*)$")
+
+
+def expand_criteria(text: str) -> list[str]:
+    """`CA1, CA3` → [CA1, CA3]; `CA1 à CA4`, `CA1-CA4` → CA1 … CA4."""
+    out = []
+    for m in re.finditer(r"CA(\d+)(?:\s*(?:à|-)\s*CA(\d+))?", text):
+        out += [f"CA{n}" for n in range(int(m[1]), int(m[2] or m[1]) + 1)]
+    return out
 
 
 def observation_gaps(plan: str, crit: list[str]) -> list[str]:
@@ -371,15 +381,16 @@ def observation_gaps(plan: str, crit: list[str]) -> list[str]:
     lines = [x.strip() for x in body.splitlines() if x.strip() and not x.lstrip().startswith("Lié à")]
     if not lines:
         return ["`## Observation` vide : une ligne par critère invisible à l'écran, ou « Aucun »"]
-    if len(lines) == 1 and lines[0].startswith("Aucun"):
+    if len(lines) == 1 and re.match(r"(?:[-*]\s*)?Aucune?\b", lines[0]):
         return []
     gaps = []
     for x in lines:
         m = OBSERVATION.match(x)
         if not m:
             gaps.append(f"`## Observation` : « {x[:80]} » n'a pas la forme `- CAn — <pourquoi invisible> — observé par : <moyen>`")
-        elif m[1] not in crit:
-            gaps.append(f"`## Observation` : {m[1]} n'est pas un critère du ticket")
+        else:
+            gaps += [f"`## Observation` : {ca} n'est pas un critère du ticket" for ca in expand_criteria(m[1])
+                     if ca not in crit]
     return gaps
 
 
@@ -2155,9 +2166,17 @@ def run(argv: list[str]) -> int:
         if not a.stage:
             print("error: check needs a stage", file=sys.stderr)
             return 2
-        gaps = check(a.kb, a.stage, a.sprint)
-        print("\n".join(f"- {g}" for g in gaps) if gaps else f"✓ `{a.stage}` : preuves complètes")
-        return 1 if gaps else 0
+        # a task still to do is no wrong proof: two lists, two codes (rieki sprint-4: exit 1 for an `ecriture`
+        # task not run yet, read as a fault in the order)
+        wrong = proofs(a.kb, a.stage, a.sprint)
+        pending = check(a.kb, a.stage, a.sprint)[len(wrong):]
+        if wrong:
+            print("Preuves manquantes :\n" + "\n".join(f"- {g}" for g in wrong))
+        else:
+            print(f"✓ `{a.stage}` : preuves complètes")
+        if pending:
+            print("Tâches en attente :\n" + "\n".join(f"- {g}" for g in pending))
+        return 1 if wrong else 3 if pending else 0
     if a.action == "reprise":
         if not a.stage:
             print("error: reprise needs the next action as text", file=sys.stderr)

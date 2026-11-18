@@ -465,3 +465,22 @@ class CrossReferences(unittest.TestCase):
         self.assertIn("(info) une note cite `verrou`", " ".join(tc.gaps(p)))
         p = self.write("lancer", "depends_on: [verrou]\n", note="- le message de [v](verrou.md)\n")
         self.assertEqual(tc.note_tickets(p, tc.split(p.read_text(encoding="utf-8"))[1]), [])
+
+
+class Invocation(unittest.TestCase):
+    """rieki sprint-4: three agents passed a slug or the folder and got « is not a directory »."""
+
+    def test_a_slug_a_path_or_the_folder(self):
+        kb = Path(tempfile.mkdtemp())
+        (kb / "tickets").mkdir()
+        (kb / "tickets" / "a.md").write_text("---\ntype: Ticket\nstate: todo\n---\n", encoding="utf-8")
+        (kb / "tickets" / "b.md").write_text("---\ntype: Ticket\nstate: done\n---\n", encoding="utf-8")
+        self.assertEqual(tc.ticket_paths(kb, ["a"]), [kb / "tickets" / "a.md"])
+        self.assertEqual(tc.ticket_paths(kb, [str(kb / "tickets" / "b.md")]), [kb / "tickets" / "b.md"])
+        self.assertEqual(tc.ticket_paths(kb, [str(kb / "tickets")]), [kb / "tickets" / "a.md"])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(tc.main(["--help"]), 0)
+        self.assertIn("a slug (`lancer-un-run`)", out.getvalue())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(tc.main([str(kb), "a"]), 1)  # read, found incomplete: not a bad invocation

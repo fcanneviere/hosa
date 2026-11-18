@@ -201,7 +201,8 @@ function mergeGate(call) {
   // One source of truth for a stage's proofs: avancement.py `check`.
   const r = spawnSync(python(), [AVANCEMENT, path.join(root, '.hosa', 'kb'), 'check', 'validation', '--sprint', slug],
     { encoding: 'utf8', timeout: 4000, windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
-  if (r.status !== 1) return null; // passed, or the check itself failed: fail-open
+  // 1: a proof is missing; 3: only tasks still open — both keep the sprint from landing. 0, 2 or a crash: fail-open
+  if (r.status !== 1 && r.status !== 3) return null;
   return `sprint ${slug} can't land, the QA gate fails:
 ${r.stdout.trim()}
 Fix each gap through its skill, then merge.`;
