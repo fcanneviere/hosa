@@ -6,7 +6,9 @@ What `redaction` writes in `kb/cdc/`, for the agent that writes it: `hosa-produc
 
 **Writing pass.** From the comptes rendus paths given: for each `### <Processus>` with no exigence yet, Step 2; then Steps 2b, 2c and 2d; then one entry in `kb/cdc/log.md` (OKF §9) per file written. Return the paths written, one line each: `` `<path>` — <titre> `` (`retours` §4: paths, not content).
 
-**Fixing pass** (anomalies of `kb/cdc/relecture.md` routed `→ redaction`, given by number). Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut pass restarts at the first one not marked. An anomaly that went through `interview` (its Complément mode) has its answer in `kb/cdc/interviews/*-complement.md` § `### A<n>`: read that section only, write the answer into the exigence. A fix that changes a value (threshold, list, message) changes it in its owner fiche, and replaces any copy with a link (« One source per fact », Step 2) — a copy left behind is the next pass's anomaly.
+**Fixing pass** (anomalies of `kb/cdc/relecture.md` routed `→ redaction`, given by number). Each anomaly names its exigence and section: Read that exigence only (no other file, no search) and Edit that section in place — never rewrite the file, and skip Steps 2 and 2b unless the fix adds a business term (then one Edit of the glossary). Group the anomalies by file: one Read and one Edit per file, however many anomalies it carries (a cross-cutting fix — a renamed term, a repeated rule — is one `replace_all`, not one edit per exigence). Mark the anomalies `corrigée` in `kb/cdc/relecture.md` with one Edit per 5 files fixed, not one per anomaly — a cut pass restarts at the first one not marked. An anomaly that went through `interview` (its Complément mode) has its answer in `kb/cdc/interviews/*-complement.md` § `### A<n>`: read that section only, write the answer into the exigence. A fix that changes a value (threshold, list, message) changes it in its owner fiche, and replaces any copy with a link (« One source per fact », Step 2) — a copy left behind is the next pass's anomaly. A fix that adds, removes or changes a step, a role, a branching rule or an error case changes `## Schéma du processus` in the same Edit: the user validates it again.
+
+**Diagram pass** (the user's corrections of diagrams, given as `<slug> : <ce qui change>`). Read each exigence named, Edit its `## Schéma du processus` — and the section the correction contradicts, when the user changed the process itself (a role, a rule, an error case). Return the paths, one line each.
 
 ## Step 2: Write One `Exigence` Per Process
 
@@ -56,7 +58,23 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 
 ## Besoin(s) persona répondu(s)
 - [<persona>](../personnas/<slug>.md) : <besoin précis>
+
+## Schéma du processus
+```mermaid
+flowchart TD
+  subgraph <rôle 1>
+    D([<déclencheur>]) --> E1[<action>]
+  end
+  subgraph <rôle 2>
+    E1 --> C{<RG1 : condition>}
+    C -- oui --> E2[<action>]
+    C -- non --> X1[/CE1 : <ce que voit l'utilisateur>/]
+  end
+  E2 --> F([<donnée en sortie>])
 ```
+```
+
+**The diagram** (`## Schéma du processus`) draws the process for the user, who validates it before it enters the cahier des charges. One ```mermaid `flowchart` per process: one `subgraph` per role of `## Qui fait quoi`, the trigger as start, each step as a box, each `RGn` that branches as a decision `{}` labelled with its id, each `CEn` as an exit labelled with its id, the outputs as end. Use the words of the glossary. It draws the fiche: no step, role or rule that the sections don't say. A `nfr` or `contrainte` exigence has none. `cdc check` counts a hole for a process without a diagram, without the user's validation, or changed since (`schema_valide` holds its fingerprint): never write `schema_valide` yourself — the skill stamps it on the user's word (`cdc valide`).
 
 `espace` says where the process lives: **front-office** (the application's end users — clients, citizens, members…), **back-office** (the people who run it — administrators, staff, operators, moderators), or both when a process has a user-facing side and a management side — or **hors-application**, alone, for a process with no screen (a scheduled job, an operator's script, a procedure): `interface` draws no page for it. Every front-office process implies back-office work (who creates, validates, moderates, corrects or deletes what end users see or submit): if the notes don't say who does it, ask — never leave the back-office side implicit.
 

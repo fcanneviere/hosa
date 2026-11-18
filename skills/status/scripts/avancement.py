@@ -686,6 +686,8 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
             gaps.append("aucune `Exigence` dans `kb/cdc/`")
         gaps.append(concept(kb, "project/cahier-des-charges.md", "Cahier des charges"))
         gaps += script("redaction/scripts/cdc.py", "revue", kb, "--route", "redaction")
+        # each process drawn, and the diagram validated by the user as it is (`cdc valide`)
+        gaps += script("redaction/scripts/cdc.py", "schemas", kb)
     elif stage == "fondamentaux":
         gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux", "Bilan"))
         gaps += espace_gaps(kb, exigences)
@@ -713,6 +715,8 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
     elif stage == "infra":
         gaps.append(infra_with(kb, "Outillage qualité"))
         gaps += infra_exit(kb)
+        # the infrastructure drawn and validated by the user; `cdc assemble` puts it in the cahier des charges
+        gaps += script("redaction/scripts/cdc.py", "schemas", kb, "--infra")
     elif stage == "donnees":
         for p, t in stable:
             lines = [x for h in ("Données en entrée", "Données en sortie")

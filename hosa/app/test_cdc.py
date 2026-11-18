@@ -2,8 +2,10 @@
 import contextlib
 import importlib.util
 import io
+import os
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[2] / "skills" / "redaction" / "scripts" / "cdc.py"
@@ -57,9 +59,16 @@ Parent.
 ## Besoin(s) persona répondu(s)
 - [Les parents](../personnas/les-parents.md) : envoyer la liste.
 
+## Schéma du processus
+```mermaid
+flowchart LR
+  A[Liste complète] --> B[Parent : envoyer] --> C[Ados notifiés]
+```
+
 ## Contraintes de sécurité
 - Rôle vérifié côté serveur.
 """
+EXIGENCE = EXIGENCE.replace("status: stable\n", f"status: stable\nschema_valide: \"2026-11-18 {cdc.empreinte(EXIGENCE)}\"\n")
 
 MODELE = """---
 type: Modèle Métier
@@ -242,6 +251,68 @@ class Completeness(unittest.TestCase):
 def review(tmp: str, lines: str, route: str | None = None) -> list[str]:
     root = kb(tmp, cdc__relecture=RELECTURE.replace("## Couverture", f"## Anomalies\n{lines}\n## Couverture"))
     return cdc.revue(cdc.anomalies(cdc.load(root)), route)
+
+
+class Diagrams(unittest.TestCase):
+    """Each process is drawn and the user validated the diagram as it is; so is the infrastructure."""
+
+    def test_a_process_without_a_validated_diagram_is_a_hole(self):
+        bare = EXIGENCE.split("## Schéma du processus")[0] + "## Contraintes de sécurité\n- x\n"
+        with tempfile.TemporaryDirectory() as t:
+            self.assertIn("`## Schéma du processus` absent ou sans bloc ```mermaid", holes(kb(t, cdc__envoyer_la_liste=bare)))
+        unstamped = "\n".join(x for x in EXIGENCE.splitlines() if not x.startswith("schema_valide")) + "\n"
+        with tempfile.TemporaryDirectory() as t:
+            root = kb(t, cdc__envoyer_la_liste=unstamped)
+            self.assertIn("schéma pas encore validé par l'utilisateur (`cdc valide`)", holes(root))
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cdc.main(["schemas", str(root)]), 1)
+                self.assertEqual(cdc.main(["valide", str(root), "envoyer-la-liste"]), 0)
+                self.assertEqual(cdc.main(["schemas", str(root)]), 0)
+            self.assertEqual(holes(root), [])
+            # changed after its validation: the user sees it again
+            f = root / "cdc" / "envoyer-la-liste.md"
+            f.write_text(f.read_text(encoding="utf-8").replace("Ados notifiés", "Ados prévenus"), encoding="utf-8")
+            self.assertTrue(any("modifié depuis sa validation" in h for h in holes(root)))
+
+    def test_valide_refuses_a_slug_or_a_diagram_that_is_not_there(self):
+        with tempfile.TemporaryDirectory() as t:
+            root = kb(t)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(cdc.main(["valide", str(root), "inconnu", "infra"]), 1)
+            self.assertIn("inconnu : aucune exigence", out.getvalue())
+            self.assertIn("infra : aucune entrée `Infra`", out.getvalue())
+
+    def test_nfr_needs_no_diagram_and_the_switch_turns_the_check_off(self):
+        nfr = ("---\ntype: Exigence\ntitle: Vite\ntags: [nfr]\npriorite: important\nlot: 1\ndomaine: x\n---\n"
+               "## Exigence\n- 1 s\n\n## Mesure\n- test\n")
+        with tempfile.TemporaryDirectory() as t:
+            self.assertFalse(any("Schéma" in h for h in holes(kb(t, cdc__vite=nfr))))
+        bare = EXIGENCE.split("## Schéma du processus")[0]
+        with tempfile.TemporaryDirectory() as t, unittest.mock.patch.dict(os.environ, {"HOSA_SCHEMAS": "0"}):
+            self.assertEqual(holes(kb(t, cdc__envoyer_la_liste=bare)), [])
+
+    def test_the_infrastructure_is_drawn_validated_and_put_in_the_document(self):
+        infra = ("---\ntype: Infra\ntitle: Environnement Docker\n---\n## Services\n- app\n\n## Schéma de l'infrastructure\n"
+                 "```mermaid\nflowchart LR\n  U[Navigateur] --> A[app :8000] --> D[(postgres 16)]\n```\n")
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t) / "kb"
+            kb(str(root))
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cdc.main(["schemas", str(root), "--infra"]), 1)  # nothing drawn yet
+                (root / "infra").mkdir()
+                (root / "infra" / "environnement-docker.md").write_text(infra, encoding="utf-8")
+                self.assertEqual(cdc.main(["schemas", str(root), "--infra", "--apercu"]), 1)  # drawn, not validated
+                self.assertTrue((root.parent / "schemas.html").is_file())
+                self.assertEqual(cdc.main(["valide", str(root), "infra"]), 0)
+                self.assertEqual(cdc.main(["schemas", str(root), "--infra"]), 0)
+                self.assertEqual(cdc.main(["assemble", str(root)]), 0)
+            doc = (root / "project" / "cahier-des-charges.md").read_text(encoding="utf-8")
+            annex = doc.split("### D. Schéma de l'infrastructure")[1]
+            self.assertIn("validé le", annex)
+            self.assertIn("D[(postgres 16)]", annex)
+            self.assertIn("schéma validé le 2026-11-18", doc)  # the process fiche says it too
+            self.assertIn("C[Ados notifiés]", doc)
 
 
 class Review(unittest.TestCase):

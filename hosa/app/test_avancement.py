@@ -37,6 +37,9 @@ def run(*argv) -> tuple[int, str]:
 
 
 SPRINT = "---\ntype: Sprint\n---\n## Tickets\n- [T1](../tickets/t1.md)\n"
+# a process's diagram and its fingerprint (`cdc valide` stamps it): `redaction` and `infra` need one validated
+DIAGRAM = "## Schéma du processus\n```mermaid\nflowchart LR\n  A --> B\n```\n"
+DIAGRAM_FP = av.cdc_module().empreinte(DIAGRAM)
 TICKET = "---\ntype: Ticket\nstate: doing\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n"
 
 
@@ -212,7 +215,8 @@ class Accepte(unittest.TestCase):
                "- A2 [p1, bloquante, texte] — [x](x.md) § Cas — manque — → redaction — ouverte\n"
                "- A3 [p1, bloquante, texte] — [y](y.md) — besoin — → interview — ouverte\n"
                "- A4 [p1, mineure, texte] — [x](x.md) § Glossaire — synonyme — → redaction — ouverte\n")
-        k = kb({"cdc/relecture.md": rel, "cdc/x.md": "---\ntype: Exigence\nstatus: draft\n---\n",
+        k = kb({"cdc/relecture.md": rel, "cdc/x.md": "---\ntype: Exigence\nstatus: draft\nschema_valide: \"2026-11-18 "
+                + DIAGRAM_FP + "\"\n---\n" + DIAGRAM,
                 "project/cahier-des-charges.md": "---\ntype: Cahier des charges\n---\n"})
         self.assertEqual(av.check(k, "relecture", None), ["`cdc` : anomalies bloquantes encore `ouverte` : A2, A3"])
         self.assertEqual(av.check(k, "redaction", None), ["`cdc` : anomalies bloquantes → redaction encore `ouverte` : A2"])
@@ -1524,10 +1528,21 @@ class Bounds(unittest.TestCase):
         self.assertEqual(av.upstream_check(k, "infra"), [
             "`kb/infra/environnement-docker.md` `## Preuve de sortie` : **Format** sans `exit 0` — "
             "ruff format --check . — exit 1 — 1 s — 2026-11-17",
-            "`kb/infra/environnement-docker.md` `## Preuve de sortie` : ligne **Rechargement** absente"])
+            "`kb/infra/environnement-docker.md` `## Preuve de sortie` : ligne **Rechargement** absente",
+            "`cdc` : infra/ — aucune entrée `Infra` de `kb/infra/` n'a de section `## Schéma de l'infrastructure`"])
         fixed = proof.replace("exit 1", "exit 0") + "- **Rechargement** : fichier monté modifié, page servie changée — exit 0\n"
         (k / "infra" / "environnement-docker.md").write_text(
             "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + fixed, encoding="utf-8")
+        self.assertEqual(av.upstream_check(k, "infra"),
+                         ["`cdc` : infra/ — aucune entrée `Infra` de `kb/infra/` n'a de section `## Schéma de l'infrastructure`"])
+        # the infrastructure drawn, then validated by the user (`cdc valide infra`)
+        drawn = fixed + DIAGRAM.replace("Schéma du processus", "Schéma de l'infrastructure")
+        (k / "infra" / "environnement-docker.md").write_text(
+            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + drawn, encoding="utf-8")
+        self.assertIn("pas encore validé", av.upstream_check(k, "infra")[0])
+        (k / "infra" / "environnement-docker.md").write_text(
+            "---\ntype: Infra\nschema_valide: \"2026-11-18 " + DIAGRAM_FP + "\"\n---\n## Outillage qualité\n- tests : pytest\n"
+            + drawn, encoding="utf-8")
         self.assertEqual(av.upstream_check(k, "infra"), [])
 
     def test_one_writer_of_the_plan_at_a_time(self):

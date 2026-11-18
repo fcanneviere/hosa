@@ -7,6 +7,13 @@
                                    tagged one or a `bloquante` still `ouverte` (routed → R when given)
   cdc.py mesure <kb-dir>           the anomalies counted by pass, gravity and origin
   cdc.py numerote <kb-dir>         give each rule and error case without an id its `RGn` / `CEn`
+  cdc.py schemas <kb-dir> [--infra] [--apercu]
+                                   the diagrams not yet validated by the user: each process's
+                                   `## Schéma du processus` (or, with --infra, the infrastructure's
+                                   `## Schéma de l'infrastructure` in kb/infra/); exit 1 on one;
+                                   --apercu writes them in <kb>/../schemas.html for the user to look at
+  cdc.py valide <kb-dir> <slug|infra>... | --tous
+                                   the user validated these diagrams: stamp `schema_valide: "<date> <empreinte>"`
 
 The fiches stay the source (kb/cdc/, kb/project/identity.md, kb/personnas/):
 the document is regenerated from them, never edited by hand. A hole is a cell of
@@ -27,11 +34,16 @@ its pass (`p<n>` relecture, `c<n>` contestation), its gravity (only a `bloquante
 holds a stage and sends work back) and its origin (`texte` was there at the first
 read, `correction` came with a fix, `regle-hosa` is Hosa's rule, not the project's).
 
-Exit: 0 complete (or document written), 1 holes (check, revue), 2 bad invocation. Stdlib only.
+A diagram is a ```mermaid block. The user validates it (`valide`): the stamp keeps the block's fingerprint,
+so a diagram changed after its validation is a hole again until the user sees it. HOSA_SCHEMAS=0 turns the
+diagram check off.
+
+Exit: 0 complete (or document written), 1 holes (check, revue, schemas), 2 bad invocation. Stdlib only.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -62,6 +74,12 @@ RETIRED = re.compile(r"^-\s+\*\*(?:RG|CE|IN)\d+\*\*\s*—\s*retirée?\b", re.I)
 # what an indicator line says besides its name and calculation — without one, nobody can build, test or act on it
 INDICATEUR_CHAMPS = ("source", "période", "cible ou seuil", "action")
 OUT = "project/cahier-des-charges.md"
+# each business process is drawn, and so is the infrastructure: a ```mermaid block the user validated
+SCHEMA = "Schéma du processus"
+SCHEMA_INFRA = "Schéma de l'infrastructure"
+MERMAID = re.compile(r"```mermaid[ \t]*\n(.*?)\n[ \t]*```", re.S)
+STAMP = re.compile(r"^(\d{4}-\d\d-\d\d)\s+([0-9a-f]{8})$")
+APERCU = "schemas.html"
 LINK = re.compile(r"\]\(([^)#\s:]+\.md)(#[^)]*)?\)")
 
 
@@ -518,6 +536,10 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
             if any(empty(c) for c in row[:4]):
                 hole("notifications", row[0] if row else "?", "destinataire, canal ou moment non décidé")
 
+    # Schémas : chaque processus dessiné, et validé par l'utilisateur tel qu'il est
+    for rel, gap in schema_gaps(d):
+        hole("schémas", rel, gap)
+
     # Décisions
     dec = d["decisions"]
     if not dec:
@@ -528,6 +550,144 @@ def holes(d: dict, kb: Path) -> list[dict[str, str]]:
             if m:
                 hole("questions ouvertes", m.group(1), m.group(2).lstrip("—: ")[:140])
     return found
+
+
+# --- diagrams ------------------------------------------------------------------
+
+def schemas_on() -> bool:
+    return os.environ.get("HOSA_SCHEMAS") != "0"
+
+
+def empreinte(text: str) -> str | None:
+    """The fingerprint of the first ```mermaid block: blank lines and indentation don't count."""
+    m = MERMAID.search(text or "")
+    if not m:
+        return None
+    lines = [x.strip() for x in m.group(1).splitlines() if x.strip()]
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()[:8] if lines else None
+
+
+def schema_state(c: Concept, heading: str) -> str | None:
+    """What the diagram of `c` still lacks: drawn, validated, unchanged since; None when it is all three."""
+    fp = empreinte(c.secs.get(heading, ""))
+    if fp is None:
+        return f"`## {heading}` absent ou sans bloc ```mermaid"
+    m = STAMP.match(c.fm.get("schema_valide", "").strip())
+    if not m:
+        return "schéma pas encore validé par l'utilisateur (`cdc valide`)"
+    if m.group(2) != fp:
+        return f"schéma modifié depuis sa validation du {m.group(1)} : à revalider (`cdc valide`)"
+    return None
+
+
+def processes(d: dict) -> list[Concept]:
+    return [e for e in d["exigences"] if e.nature == "processus"]
+
+
+def infra_concepts(kb: Path) -> list[Concept]:
+    """The `Infra` entries of kb/infra/ that draw the infrastructure."""
+    folder = kb / "infra"
+    out = []
+    for f in sorted(folder.glob("*.md")) if folder.is_dir() else []:
+        c = Concept(f, kb)
+        if c.fm.get("type") == "Infra" and SCHEMA_INFRA in c.secs:
+            out.append(c)
+    return out
+
+
+def schema_gaps(d: dict) -> list[tuple[str, str]]:
+    if not schemas_on():
+        return []
+    return [(e.rel, gap) for e in processes(d) if (gap := schema_state(e, SCHEMA))]
+
+
+def infra_schema_gaps(kb: Path) -> list[tuple[str, str]]:
+    if not schemas_on():
+        return []
+    found = infra_concepts(kb)
+    if not found:
+        return [("infra/", f"aucune entrée `Infra` de `kb/infra/` n'a de section `## {SCHEMA_INFRA}`")]
+    return [(c.rel, gap) for c in found[:1] if (gap := schema_state(c, SCHEMA_INFRA))]
+
+
+def stamp(path: Path, value: str) -> None:
+    """Write `schema_valide: "<value>"` in the frontmatter, replacing the old one."""
+    text = path.read_text(encoding="utf-8")
+    m = re.match(r"^(\ufeff?---\s*\n)(.*?)(\n---\s*(?:\n|$))", text, re.S)
+    if not m:
+        raise ValueError(f"{path.name} : pas de frontmatter")
+    lines = [x for x in m.group(2).splitlines() if not x.startswith("schema_valide:")]
+    lines.append(f'schema_valide: "{value}"')
+    path.write_text(m.group(1) + "\n".join(lines) + m.group(3) + text[m.end():], encoding="utf-8")
+
+
+def valide(d: dict, kb: Path, targets: list[str], tous: bool) -> tuple[list[str], list[str]]:
+    """Stamp each diagram named (`infra` for the infrastructure's): what was stamped, what was refused."""
+    by_slug = {e.slug: e for e in processes(d)}
+    chosen: list[tuple[Concept, str]] = []
+    refused: list[str] = []
+    if tous:
+        chosen += [(e, SCHEMA) for e in processes(d)]
+    for t in targets:
+        if t == "infra":
+            found = infra_concepts(kb)
+            if found:
+                chosen.append((found[0], SCHEMA_INFRA))
+            else:
+                refused.append(f"infra : aucune entrée `Infra` n'a de section `## {SCHEMA_INFRA}`")
+        elif t in by_slug:
+            chosen.append((by_slug[t], SCHEMA))
+        else:
+            refused.append(f"{t} : aucune exigence de nature processus de ce slug")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    done, seen = [], set()
+    for c, heading in chosen:
+        if c.rel in seen:
+            continue
+        seen.add(c.rel)
+        fp = empreinte(c.secs.get(heading, ""))
+        if fp is None:
+            refused.append(f"{c.rel} : `## {heading}` absent ou sans bloc ```mermaid — rien à valider")
+            continue
+        stamp(c.path, f"{today} {fp}")
+        done.append(c.rel)
+    return done, refused
+
+
+def apercu(d: dict, kb: Path, infra: bool) -> Path:
+    """One page with each diagram drawn (mermaid, from its CDN) and its source text, for the user to look at."""
+    import html
+    items = [(c, SCHEMA_INFRA) for c in infra_concepts(kb)[:1]] if infra else [(e, SCHEMA) for e in processes(d)]
+    blocks = []
+    for c, heading in items:
+        m = MERMAID.search(c.secs.get(heading, ""))
+        ok = STAMP.match(c.fm.get("schema_valide", "").strip())
+        state = schema_state(c, heading) or f"validé le {ok.group(1) if ok else '?'}"
+        src = html.escape(m.group(1)) if m else ""
+        body = (f'<pre class="mermaid">{src}</pre><details><summary>Texte du schéma</summary><pre>{src}</pre></details>'
+                if m else "<p>Pas de schéma.</p>")
+        blocks.append(f'<section><h2>{html.escape(c.title)}</h2>'
+                      f'<p class="etat">{html.escape(c.rel)} — {html.escape(state)}</p>{body}</section>')
+    title = "Schéma de l'infrastructure" if infra else "Schémas des processus"
+    page = f"""<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<style>
+:root {{ --bg:#fff; --fg:#1d1d1f; --mute:#666; --line:#ddd; }}
+@media (prefers-color-scheme: dark) {{ :root {{ --bg:#16161a; --fg:#eee; --mute:#aaa; --line:#333; }} }}
+body {{ background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; margin:0 auto; max-width:1100px; padding:16px; }}
+section {{ border-top:1px solid var(--line); padding:12px 0; }} .etat {{ color:var(--mute); }}
+pre.mermaid {{ background:#fff; color:#000; border-radius:6px; padding:8px; overflow-x:auto; }}
+</style></head><body><h1>{title}</h1>
+<p>Valide chaque schéma, ou dis ce qui change. Un schéma corrigé revient sur cette page.</p>
+{"".join(blocks) or "<p>Aucun schéma.</p>"}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({{ startOnLoad: true, theme: "default", securityLevel: "strict" }});</script>
+</body></html>
+"""
+    out = kb.parent / APERCU
+    out.write_text(page, encoding="utf-8")
+    return out
 
 
 # --- review anomalies ----------------------------------------------------------
@@ -642,10 +802,12 @@ def ordered(group: list[Concept]) -> list[Concept]:
 
 
 def fiche(e: Concept, dest: Path, level: int) -> str:
+    ok = STAMP.match(e.fm.get("schema_valide", "").strip())
     meta = " · ".join(x for x in (
         f"priorité **{e.fm.get('priorite', '?')}**", f"lot {e.fm.get('lot', '?')}",
         f"espace {e.fm.get('espace', '?').strip('[]')}", e.fm.get("status", ""),
-        ("objectifs " + ", ".join(as_list(e.fm["objectifs"]))) if e.fm.get("objectifs") else "") if x)
+        ("objectifs " + ", ".join(as_list(e.fm["objectifs"]))) if e.fm.get("objectifs") else "",
+        f"schéma validé le {ok.group(1)}" if ok else "") if x)
     parts = [f"{'#' * level} {e.title}", f"*{e.fm.get('description', '')}*", f"{meta} — fiche : {link(e, dest)}"]
     skipped = []
     for name, text in e.secs.items():
@@ -780,21 +942,52 @@ generated: {{ by: process:hosa-cdc, at: {now} }}
     out += [f"- {link(c, dest)} — {c.fm.get('description', '')}" for c in d["annexes"]] or ["- Aucune."]
     out.append("\n### C. Comptes rendus d'interview")
     out += [f"- {link(c, dest)} — {c.fm.get('description', '')}" for c in d["interviews"]] or ["- Aucun."]
+    out.append("\n### D. Schéma de l'infrastructure")
+    infra = infra_concepts(kb)
+    if infra:
+        c = infra[0]
+        state = schema_state(c, SCHEMA_INFRA)
+        ok = STAMP.match(c.fm.get("schema_valide", "").strip())
+        out.append(f"Source : {link(c, dest)} — " + (f"validé le {ok.group(1)}." if not state and ok else f"**{state}**."))
+        out.append(relink(demote(c.secs[SCHEMA_INFRA], 3), c.path, dest))
+    else:
+        out.append("_Pas encore dessiné : l'étape `infra` le dessine et le fait valider._")
     return "\n".join(out).rstrip() + "\n"
 
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Assemble the cahier des charges and check its completeness.")
-    ap.add_argument("command", choices=["check", "assemble", "revue", "mesure", "numerote"])
+    ap.add_argument("command", choices=["check", "assemble", "revue", "mesure", "numerote", "schemas", "valide"])
     ap.add_argument("kb", type=Path)
+    ap.add_argument("cibles", nargs="*", help="valide : les slugs des processus, `infra` pour l'infrastructure")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--route", choices=ROUTES)
+    ap.add_argument("--infra", action="store_true", help="schemas : le schéma de l'infrastructure")
+    ap.add_argument("--apercu", action="store_true", help="schemas : écrire la page qui les dessine")
+    ap.add_argument("--tous", action="store_true", help="valide : tous les schémas des processus")
     a = ap.parse_args(argv)
     kb = a.kb.resolve()
-    if not (kb / "cdc").is_dir():
+    infra_only = (a.command == "schemas" and a.infra) or (a.command == "valide" and a.cibles == ["infra"] and not a.tous)
+    if not (kb / "cdc").is_dir() and not (infra_only and kb.is_dir()):
         print(f"error: {a.kb} has no cdc/ bundle", file=sys.stderr)
         return 2
     d = load(kb)
+    if a.command == "schemas":
+        gaps = infra_schema_gaps(kb) if a.infra else schema_gaps(d)
+        if a.apercu:
+            print(f"Aperçu : {apercu(d, kb, a.infra).as_posix()}")
+        if gaps:
+            print("\n".join(f"✗ {rel} — {gap}" for rel, gap in gaps) + f"\n{len(gaps)} schéma(s) à dessiner ou à valider")
+            return 1
+        print("Schémas validés." if schemas_on() else "Contrôle des schémas coupé (HOSA_SCHEMAS=0).")
+        return 0
+    if a.command == "valide":
+        if not a.cibles and not a.tous:
+            print("error: valide attend des slugs, `infra` ou --tous", file=sys.stderr)
+            return 2
+        done, refused = valide(d, kb, a.cibles, a.tous)
+        print("\n".join([f"Validé : {r}" for r in done] + [f"✗ {r}" for r in refused]))
+        return 1 if refused else 0
     if a.command == "revue":
         gaps = revue(anomalies(d), a.route)
         print("\n".join(gaps) if gaps else "Revue conforme : aucune anomalie bloquante ouverte.")

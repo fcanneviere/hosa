@@ -79,7 +79,18 @@ generated: { by: hosa-infra/1.0, at: <ISO8601> }
 ## Comptes
 - <service> : `<compte>` — utilisé par <application / migrations / CI…> — droits <…> — secret dans <variable ou coffre>
 - Comptes d'administration (<superutilisateur, root…>) : détenus par l'administrateur, hors de l'application — <commande d'administration documentée>
+
+## Schéma de l'infrastructure
+```mermaid
+flowchart LR
+  U[<utilisateur : navigateur, mobile>] -->|HTTPS :<APP_PORT>| A[<service app> <image>:<version>]
+  A -->|<port>| D[(<base> <version>)]
+  A -.->|<API>| X[<service externe>]
+  CI[<CI : hôte>] -.->|tests, build| A
 ```
+```
+
+   **The diagram** (`## Schéma de l'infrastructure`) draws what runs and what it talks to, for the user, who validates it before it enters the cahier des charges (annex D). One ```mermaid `flowchart`: each service of the compose with its pinned image and its exposed port, each volume that holds data, each external service the `stable` exigences name (e-mail, payment, storage, identity…), the CI, and the deployment target when the `Stack Decision`s name it. It draws the compose and the KB: nothing they don't say. Never write `schema_valide`: the skill stamps it on the user's word (`cdc valide infra`). A later change that adds, removes or moves a service (Mode 2 too) updates the diagram in the same pass, and says so under `## Documentation à produire`: the user validates it again.
 
    Write `<hosa>` as is in the KB, never the command it stands for: that command carries machine paths and the plugin version.
 
