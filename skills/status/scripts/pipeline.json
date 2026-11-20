@@ -90,6 +90,7 @@
     "contestation": "Signer le cahier des charges complet.",
     "stack": "Choisir la stack parmi les options proposées.",
     "infra": "Valider le schéma de l'infrastructure.",
+    "schema-db": "Valider le schéma de la base de données : tables, relations, format des données.",
     "interface": "Choisir le style et la mise en page, puis valider les pages.",
     "sprint": "Valider les jalons de la feuille de route, une seule fois.",
     "validation": "Faire la démo : les tests T1, T2… sur l'application.",

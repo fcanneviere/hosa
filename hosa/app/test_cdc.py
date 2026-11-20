@@ -283,6 +283,43 @@ class Diagrams(unittest.TestCase):
             self.assertIn("inconnu : aucune exigence", out.getvalue())
             self.assertIn("infra : aucune entrée `Infra`", out.getvalue())
 
+    def test_the_database_is_drawn_with_its_formats_and_validated(self):
+        """The user validates the tables, their relations and each column's type and format before any migration."""
+        head = "---\ntype: Infra\ntitle: Schéma de la base\n---\n## Schéma de la base de données\n```mermaid\nerDiagram\n"
+        bare = head + "  famille ||--o{ ado : compte\n  famille {\n    uuid id PK\n  }\n  ado {\n    uuid id PK \"v4\"\n  }\n```\n"
+        full = (head + "  famille ||--o{ ado : compte\n  famille {\n    uuid id PK \"v4, généré\"\n"
+                "    varchar(254) email UK \"e-mail, minuscules\"\n  }\n  ado {\n    uuid id PK \"v4\"\n"
+                "    uuid famille_id FK \"famille.id, non nul\"\n    date naissance \"AAAA-MM-JJ\"\n  }\n```\n")
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t) / "kb"
+            (root / "infra").mkdir(parents=True)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(cdc.main(["schemas", str(root), "--db"]), 1)  # nothing drawn yet
+                f = root / "infra" / "schema-base-de-donnees.md"
+                f.write_text(bare, encoding="utf-8")
+                self.assertEqual(cdc.main(["valide", str(root), "db"]), 1)  # a column without its format
+            self.assertIn("`famille` : colonne sans type ou sans format", out.getvalue())
+            self.assertNotIn("schema_valide", f.read_text(encoding="utf-8"))
+            f.write_text(full, encoding="utf-8")
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cdc.main(["schemas", str(root), "--db", "--apercu"]), 1)  # drawn, not validated
+                self.assertIn("Schéma de la base de données", (root.parent / "schemas.html").read_text(encoding="utf-8"))
+                self.assertEqual(cdc.main(["valide", str(root), "db"]), 0)
+                self.assertEqual(cdc.main(["schemas", str(root), "--db"]), 0)
+            # a column changed after its validation: the user sees it again
+            f.write_text(f.read_text(encoding="utf-8").replace("AAAA-MM-JJ", "JJ/MM/AAAA"), encoding="utf-8")
+            self.assertTrue(any("modifié depuis sa validation" in g for _, g in cdc.db_schema_gaps(root)))
+
+    def test_the_database_diagram_needs_relations_between_its_tables(self):
+        two = ("```mermaid\nerDiagram\n  a {\n    int id PK \"auto\"\n  }\n  b {\n    int id PK \"auto\"\n  }\n```")
+        self.assertEqual(cdc.db_gaps(two), ["aucune relation entre les tables"])
+        # Mermaid draws no type with a comma: the precision goes in the format
+        comma = "```mermaid\nerDiagram\n  a {\n    numeric(10,2) prix \"euros\"\n  }\n```"
+        self.assertIn("colonne sans type ou sans format", cdc.db_gaps(comma)[0])
+        self.assertEqual(cdc.db_gaps("```mermaid\nflowchart LR\n  a --> b\n```"),
+                         ["le schéma de la base n'est pas un `erDiagram` (tables, colonnes, relations)"])
+
     def test_nfr_needs_no_diagram_and_the_switch_turns_the_check_off(self):
         nfr = ("---\ntype: Exigence\ntitle: Vite\ntags: [nfr]\npriorite: important\nlot: 1\ndomaine: x\n---\n"
                "## Exigence\n- 1 s\n\n## Mesure\n- test\n")

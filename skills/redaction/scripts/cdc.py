@@ -7,12 +7,14 @@
                                    tagged one or a `bloquante` still `ouverte` (routed → R when given)
   cdc.py mesure <kb-dir>           the anomalies counted by pass, gravity and origin
   cdc.py numerote <kb-dir>         give each rule and error case without an id its `RGn` / `CEn`
-  cdc.py schemas <kb-dir> [--infra] [--apercu]
+  cdc.py schemas <kb-dir> [--infra | --db] [--apercu]
                                    the diagrams not yet validated by the user: each process's
                                    `## Schéma du processus` (or, with --infra, the infrastructure's
-                                   `## Schéma de l'infrastructure` in kb/infra/); exit 1 on one;
-                                   --apercu writes them in <kb>/../schemas.html for the user to look at
-  cdc.py valide <kb-dir> <slug|infra>... | --tous
+                                   `## Schéma de l'infrastructure` in kb/infra/; with --db, the database's
+                                   `## Schéma de la base de données` in kb/infra/: an `erDiagram` whose
+                                   tables give every column's type and, in its comment, its format);
+                                   exit 1 on one; --apercu writes them in <kb>/../schemas.html for the user
+  cdc.py valide <kb-dir> <slug|infra|db>... | --tous
                                    the user validated these diagrams: stamp `schema_valide: "<date> <empreinte>"`
 
 The fiches stay the source (kb/cdc/, kb/project/identity.md, kb/personnas/):
@@ -74,9 +76,14 @@ RETIRED = re.compile(r"^-\s+\*\*(?:RG|CE|IN)\d+\*\*\s*—\s*retirée?\b", re.I)
 # what an indicator line says besides its name and calculation — without one, nobody can build, test or act on it
 INDICATEUR_CHAMPS = ("source", "période", "cible ou seuil", "action")
 OUT = "project/cahier-des-charges.md"
-# each business process is drawn, and so is the infrastructure: a ```mermaid block the user validated
+# each business process is drawn, and so are the infrastructure and the database: a ```mermaid block the user validated
 SCHEMA = "Schéma du processus"
 SCHEMA_INFRA = "Schéma de l'infrastructure"
+SCHEMA_DB = "Schéma de la base de données"
+# an erDiagram column: `<type> <name> [PK|FK|UK…] "<format>"` — the format is what the user validates with the type
+ER_COLUMN = re.compile(r'^[A-Za-z_][\w()\[\]-]*\s+\w+(?:\s+(?:PK|FK|UK)(?:\s*,\s*(?:PK|FK|UK))*)?\s+"[^"]*\S[^"]*"$')
+ER_TABLE = re.compile(r"^([\w-]+)\s*(?:\[[^\]]*\])?\s*\{$")
+ER_RELATION = re.compile(r"^[\w-]+\s+\S*(?:--|\.\.)\S*\s+[\w-]+\s*:")
 MERMAID = re.compile(r"```mermaid[ \t]*\n(.*?)\n[ \t]*```", re.S)
 STAMP = re.compile(r"^(\d{4}-\d\d-\d\d)\s+([0-9a-f]{8})$")
 APERCU = "schemas.html"
@@ -580,17 +587,46 @@ def schema_state(c: Concept, heading: str) -> str | None:
     return None
 
 
+def db_gaps(text: str) -> list[str]:
+    """What the database diagram lacks for the user to judge it: an erDiagram, its relations, each column's format."""
+    m = MERMAID.search(text or "")
+    lines = [x.strip() for x in m.group(1).splitlines() if x.strip() and not x.strip().startswith("%%")] if m else []
+    if not lines:
+        return []  # schema_state says it is missing
+    if lines[0] != "erDiagram":
+        return ["le schéma de la base n'est pas un `erDiagram` (tables, colonnes, relations)"]
+    gaps, table, columns, tables, relations = [], None, 0, 0, 0
+    for x in lines[1:]:
+        if table is None:
+            if (t := ER_TABLE.match(x)):
+                table, columns, tables = t.group(1), 0, tables + 1
+            elif ER_RELATION.match(x):
+                relations += 1
+        elif x == "}":
+            if not columns:
+                gaps.append(f"table `{table}` sans colonne")
+            table = None
+        else:
+            columns += 1
+            if not ER_COLUMN.match(x):
+                gaps.append(f"`{table}` : colonne sans type ou sans format (`<type> <nom> [PK|FK|UK] \"<format>\"`) : {x}")
+    if not tables:
+        gaps.append("aucune table avec ses colonnes")
+    elif tables > 1 and not relations:
+        gaps.append("aucune relation entre les tables")
+    return gaps
+
 def processes(d: dict) -> list[Concept]:
     return [e for e in d["exigences"] if e.nature == "processus"]
 
 
-def infra_concepts(kb: Path) -> list[Concept]:
-    """The `Infra` entries of kb/infra/ that draw the infrastructure."""
+def infra_concepts(kb: Path, heading: str = SCHEMA_INFRA) -> list[Concept]:
+    """The `Infra` entries of kb/infra/ that draw the infrastructure (or, by `heading`, the database)."""
     folder = kb / "infra"
     out = []
     for f in sorted(folder.glob("*.md")) if folder.is_dir() else []:
         c = Concept(f, kb)
-        if c.fm.get("type") == "Infra" and SCHEMA_INFRA in c.secs:
+        if c.fm.get("type") == "Infra" and heading in c.secs:
             out.append(c)
     return out
 
@@ -609,6 +645,16 @@ def infra_schema_gaps(kb: Path) -> list[tuple[str, str]]:
         return [("infra/", f"aucune entrée `Infra` de `kb/infra/` n'a de section `## {SCHEMA_INFRA}`")]
     return [(c.rel, gap) for c in found[:1] if (gap := schema_state(c, SCHEMA_INFRA))]
 
+def db_schema_gaps(kb: Path) -> list[tuple[str, str]]:
+    if not schemas_on():
+        return []
+    found = infra_concepts(kb, SCHEMA_DB)
+    if not found:
+        return [("infra/", f"aucune entrée `Infra` de `kb/infra/` n'a de section `## {SCHEMA_DB}`")]
+    c = found[0]
+    state = schema_state(c, SCHEMA_DB)
+    return [(c.rel, g) for g in db_gaps(c.secs[SCHEMA_DB]) + ([state] if state else [])]
+
 
 def stamp(path: Path, value: str) -> None:
     """Write `schema_valide: "<value>"` in the frontmatter, replacing the old one."""
@@ -622,19 +668,22 @@ def stamp(path: Path, value: str) -> None:
 
 
 def valide(d: dict, kb: Path, targets: list[str], tous: bool) -> tuple[list[str], list[str]]:
-    """Stamp each diagram named (`infra` for the infrastructure's): what was stamped, what was refused."""
+    """Stamp each diagram named (`infra` the infrastructure's, `db` the database's): what was stamped, what was refused."""
     by_slug = {e.slug: e for e in processes(d)}
     chosen: list[tuple[Concept, str]] = []
     refused: list[str] = []
     if tous:
         chosen += [(e, SCHEMA) for e in processes(d)]
     for t in targets:
-        if t == "infra":
-            found = infra_concepts(kb)
-            if found:
-                chosen.append((found[0], SCHEMA_INFRA))
+        if t in ("infra", "db"):
+            heading = SCHEMA_INFRA if t == "infra" else SCHEMA_DB
+            found = infra_concepts(kb, heading)
+            if not found:
+                refused.append(f"{t} : aucune entrée `Infra` n'a de section `## {heading}`")
+            elif t == "db" and (gaps := db_gaps(found[0].secs[heading])):
+                refused.append(f"db : schéma incomplet, rien à valider : {' ; '.join(gaps)}")
             else:
-                refused.append(f"infra : aucune entrée `Infra` n'a de section `## {SCHEMA_INFRA}`")
+                chosen.append((found[0], heading))
         elif t in by_slug:
             chosen.append((by_slug[t], SCHEMA))
         else:
@@ -654,10 +703,11 @@ def valide(d: dict, kb: Path, targets: list[str], tous: bool) -> tuple[list[str]
     return done, refused
 
 
-def apercu(d: dict, kb: Path, infra: bool) -> Path:
+def apercu(d: dict, kb: Path, infra: bool, db: bool = False) -> Path:
     """One page with each diagram drawn (mermaid, from its CDN) and its source text, for the user to look at."""
     import html
-    items = [(c, SCHEMA_INFRA) for c in infra_concepts(kb)[:1]] if infra else [(e, SCHEMA) for e in processes(d)]
+    items = ([(c, SCHEMA_DB) for c in infra_concepts(kb, SCHEMA_DB)[:1]] if db
+             else [(c, SCHEMA_INFRA) for c in infra_concepts(kb)[:1]] if infra else [(e, SCHEMA) for e in processes(d)])
     blocks = []
     for c, heading in items:
         m = MERMAID.search(c.secs.get(heading, ""))
@@ -668,7 +718,7 @@ def apercu(d: dict, kb: Path, infra: bool) -> Path:
                 if m else "<p>Pas de schéma.</p>")
         blocks.append(f'<section><h2>{html.escape(c.title)}</h2>'
                       f'<p class="etat">{html.escape(c.rel)} — {html.escape(state)}</p>{body}</section>')
-    title = "Schéma de l'infrastructure" if infra else "Schémas des processus"
+    title = SCHEMA_DB if db else SCHEMA_INFRA if infra else "Schémas des processus"
     page = f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
@@ -959,23 +1009,25 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Assemble the cahier des charges and check its completeness.")
     ap.add_argument("command", choices=["check", "assemble", "revue", "mesure", "numerote", "schemas", "valide"])
     ap.add_argument("kb", type=Path)
-    ap.add_argument("cibles", nargs="*", help="valide : les slugs des processus, `infra` pour l'infrastructure")
+    ap.add_argument("cibles", nargs="*", help="valide : les slugs des processus, `infra` pour l'infrastructure, `db` pour la base")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--route", choices=ROUTES)
     ap.add_argument("--infra", action="store_true", help="schemas : le schéma de l'infrastructure")
+    ap.add_argument("--db", action="store_true", help="schemas : le schéma de la base de données")
     ap.add_argument("--apercu", action="store_true", help="schemas : écrire la page qui les dessine")
     ap.add_argument("--tous", action="store_true", help="valide : tous les schémas des processus")
     a = ap.parse_args(argv)
     kb = a.kb.resolve()
-    infra_only = (a.command == "schemas" and a.infra) or (a.command == "valide" and a.cibles == ["infra"] and not a.tous)
+    infra_only = ((a.command == "schemas" and (a.infra or a.db))
+                  or (a.command == "valide" and a.cibles and set(a.cibles) <= {"infra", "db"} and not a.tous))
     if not (kb / "cdc").is_dir() and not (infra_only and kb.is_dir()):
         print(f"error: {a.kb} has no cdc/ bundle", file=sys.stderr)
         return 2
     d = load(kb)
     if a.command == "schemas":
-        gaps = infra_schema_gaps(kb) if a.infra else schema_gaps(d)
+        gaps = db_schema_gaps(kb) if a.db else infra_schema_gaps(kb) if a.infra else schema_gaps(d)
         if a.apercu:
-            print(f"Aperçu : {apercu(d, kb, a.infra).as_posix()}")
+            print(f"Aperçu : {apercu(d, kb, a.infra, a.db).as_posix()}")
         if gaps:
             print("\n".join(f"✗ {rel} — {gap}" for rel, gap in gaps) + f"\n{len(gaps)} schéma(s) à dessiner ou à valider")
             return 1
@@ -983,7 +1035,7 @@ def main(argv: list[str]) -> int:
         return 0
     if a.command == "valide":
         if not a.cibles and not a.tous:
-            print("error: valide attend des slugs, `infra` ou --tous", file=sys.stderr)
+            print("error: valide attend des slugs, `infra`, `db` ou --tous", file=sys.stderr)
             return 2
         done, refused = valide(d, kb, a.cibles, a.tous)
         print("\n".join([f"Validé : {r}" for r in done] + [f"✗ {r}" for r in refused]))

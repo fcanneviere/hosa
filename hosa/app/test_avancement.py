@@ -1545,6 +1545,18 @@ class Bounds(unittest.TestCase):
             + drawn, encoding="utf-8")
         self.assertEqual(av.upstream_check(k, "infra"), [])
 
+    def test_schema_db_closes_on_the_database_diagram_the_user_validated(self):
+        k = kb({"infra/base-de-donnees.md": "---\ntype: Infra\n---\n## Commandes\n- migrer : make migrate\n"})
+        self.assertEqual(av.upstream_check(k, "schema-db"), [
+            "`cdc` : infra/ — aucune entrée `Infra` de `kb/infra/` n'a de section `## Schéma de la base de données`"])
+        er = ("## Schéma de la base de données\n```mermaid\nerDiagram\n  famille {\n    uuid id PK \"v4\"\n  }\n```\n")
+        (k / "infra" / "schema-base-de-donnees.md").write_text("---\ntype: Infra\n---\n" + er, encoding="utf-8")
+        self.assertIn("pas encore validé", av.upstream_check(k, "schema-db")[0])
+        fp = av.cdc_module().empreinte(er)
+        (k / "infra" / "schema-base-de-donnees.md").write_text(
+            "---\ntype: Infra\nschema_valide: \"2026-11-20 " + fp + "\"\n---\n" + er, encoding="utf-8")
+        self.assertEqual(av.upstream_check(k, "schema-db"), [])
+
     def test_one_writer_of_the_plan_at_a_time(self):
         import threading
         k, order = kb({}), []
