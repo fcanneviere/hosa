@@ -18,7 +18,7 @@ const AGENT_RULES = `## Hosa agent rules (your own instructions win where they d
 - Independent calls (reads, greps, queries) go in one message: one call, not several.
 - Your brief's paths, excerpts and slugs first. KB: the root's \`.hosa/kb/\`, never \`.worktrees/…/.hosa/kb\`; \`sommaire.md\`, then \`<hosa> kb_query\` (\`--type\`, \`--where\`, \`--sections "<heading>"\`, \`--fields\`), not whole files.
 - Code: the project graph first (\`graph.py map|find|explain|affected|ticket\`, \`## Project graph\`), then its regions; Grep last.
-- Slices, not files; no lockfiles, generated or vendored files; no re-read; narrow output (\`| tail\`, \`| grep\`, quiet reporters).
+- Slices: \`<hosa> lire "<file>#<section>"\` or \`"<file>:<a>-<b>"\`, not \`cat\`; no lockfile, generated or vendored file; no re-read; quiet reporters.
 - Read a Hosa skill or agent file only when your brief or instructions name it, only the section named.
 **\`log.md\`:** one \`## AAAA-MM-JJ\` per day, newest first, never a table (OKF §9).
 **Report** (\`retours\`, summed up: don't read it):

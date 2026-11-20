@@ -37,7 +37,7 @@ function segments(cmd, ps = false) {
   const start = () => { seg = Object.assign([], { depth, open: 0, close: 0 }); segs.push(seg); };
   start();
   while ((m = re.exec(cmd))) {
-    if (m[3]) { start(); last = -1; continue; }
+    if (m[3]) { if (m[3] === '|') seg.pipeOut = true; start(); last = -1; continue; } // pipeOut: read-guard.js
     if (m[4] === '(') { if (seg.length) start(); depth++; seg.depth = depth; seg.open++; last = -1; continue; }
     if (m[4] === ')') { depth = Math.max(0, depth - 1); seg.close++; last = -1; continue; }
     const w = m[1] != null ? m[1].replace(/\\([$`"\\\n])/g, '$1') : m[2] != null ? m[2]
@@ -373,7 +373,7 @@ function processPayload(p) {
   return null;
 }
 
-module.exports = { processPayload, gitCalls };
+module.exports = { processPayload, gitCalls, walk, native };
 
 if (require.main === module) {
   let input = '';

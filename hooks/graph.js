@@ -204,5 +204,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { pythonBackground, processPayload, sessionStart, findUp, findKbRoot, commandLine, refreshSummary, python, VENV,
+module.exports = { pythonBackground, processPayload, sessionStart, guardGrep, queryGraph, IDENT_RE, findUp, findKbRoot, commandLine, refreshSummary, python, VENV,
   hosaCommand, writeShim, shimText, pluginRoot };
