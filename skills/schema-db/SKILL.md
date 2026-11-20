@@ -45,6 +45,7 @@ If it returns an Open Question:
 - **No `Stack Decision` for the database** — ask the user which engine to use, redispatch with the answer (the agent records the `Stack Decision` itself once it has it).
 - **No `Infra` entry** — ask the user for the managed project's root path, redispatch with the answer (the agent writes the `Infra` entry itself once it has it).
 - **An item still missing an origin annotation** — relay it, `back schema-db donnees --detail "<exigences>"` (it reopens `donnees`, then `schema-app`, then `schema-db`), and run `donnees` first; don't guess an origin yourself.
+- **A limit of the chosen database forces a workaround** (no keys, a single writer, no transactional DDL…) — never an ADR that works around it: relay it, `back schema-db stack --detail "<the limit and the exigence it breaks>"` (it reopens `stack`, then `infra`, then `schema-db`), and run `stack` first. Rieki: DuckDB without keys, an ADR « base sans clés » and 328 lines of invariants.
 
 ## Step 1a: The User Validates the Database Diagram
 

@@ -59,6 +59,7 @@ Note any quality issues that don't block the spec but would matter to a future m
 - Readability issues that would cause a future maintainer to misunderstand intent (not stylistic preferences — only genuine confusion risks)
 - Naming that breaks the developer's rule 2 (`agents/developer.md`): a synonym of a domain or entity word, a name that lies about what the function does, a boolean or a unit-bearing value you can't read as such
 - A hand-written piece an installed dependency, the stdlib or an existing function of the project already provides — name it
+- Hand-written code for a capability `kb/stack/bibliotheques.md` gives to a library — a FAIL gap: name the line and the library
 
 Outside a sprint (the generic `review`), also note security issues (injection, missing input validation, hardcoded secrets), performance visible from static reading (an N+1 query, an unindexed lookup on a large table, an unbounded loop — potential impact, never a made-up number) and architecture issues (a change outside its layer, a dependency between modules that shouldn't know each other).
 

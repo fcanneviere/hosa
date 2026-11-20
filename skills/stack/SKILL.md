@@ -18,7 +18,8 @@ Demande Q1 : open source ou SaaS payant (sauf si déjà dans
 kb/stack/orientation.md)
         ↓
 Dispatch hosa-senior-dev (Stack Process, Steps 1-4: find project,
-derive needs, check existing decisions, propose options)
+derive needs, check existing decisions, propose options,
+library inventory: Steps 1-4b)
         ↓ Open Questions (no stable Exigence, no project path) → relay to user, stop
         ↓ options returned
 Présente les options à l'utilisateur → il choisit
@@ -35,6 +36,8 @@ Enchaîne sur `infra`
 ## Trigger
 
 Manual: `/stack`. Auto: immediately after a clean `contestation` sign-off, or "choisis la stack technique", "quelle stack pour le projet".
+
+Reopened by a loop (`back develop stack`, `back schema-db stack`): skip Step 1, dispatch `hosa-senior-dev` with the loop's detail only (the capability missing from `kb/stack/bibliotheques.md`, or the database limit). It proposes for that item alone; the user picks; it writes that line or that decision; then `infra` installs it.
 
 ---
 
@@ -53,17 +56,17 @@ Pass the answer to `hosa-senior-dev` with the dispatch below.
 
 ## Step 2: Dispatch for Options
 
-Dispatch `hosa-senior-dev` (Stack Process, `agents/senior-dev.md`) with the orientation to find the managed project, derive technical needs from the stable cahier des charges, check `kb/stack/` and the managed project's existing code for decisions already fixed, and propose 2-3 options per still-open category.
+Dispatch `hosa-senior-dev` (Stack Process, `agents/senior-dev.md`) with the orientation to find the managed project, derive technical needs from the stable cahier des charges, check `kb/stack/` and the managed project's existing code for decisions already fixed, and propose 2-3 options per still-open category, then the library inventory (Step 4b): one library per technical capability the exigences need, chosen before any code. A « Fait maison » comes with its measurable reason and its cost in lines.
 
 If it returns an Open Question (no `stable` `Exigence` yet, no managed-project path) — relay it to the user, get the answer, and only redispatch once you have it. Never guess a path or proceed against a `draft` CDC yourself.
 
 ## Step 3: User Picks
 
-Present the options and trade-offs `hosa-senior-dev` returned. Wait for the user's choice per category.
+Present the options and trade-offs `hosa-senior-dev` returned, then its `## Bibliothèques proposées`. Wait for the user's choice per category; the inventory is validated as a whole (« Q2 a) l'inventaire tel quel (recommandé) »), the user changing only the lines they name.
 
 ## Step 4: Record the Decision
 
-Redispatch `hosa-senior-dev` with the user's choice for each category. It writes the `Stack Decision`(s) to `kb/stack/` and returns `## Documentation à produire`: the path of each `Stack Decision` written (it holds the choice, the justification and the options presented and rejected).
+Redispatch `hosa-senior-dev` with the user's choice for each category. It writes the `Stack Decision`(s) to `kb/stack/`, the validated inventory to `kb/stack/bibliotheques.md` (`done stack` refuses the stage without it), and returns `## Documentation à produire`: the path of each `Stack Decision` written (it holds the choice, the justification and the options presented and rejected).
 
 ## Step 5: Dispatch Documentation
 
@@ -81,6 +84,7 @@ You don't commit — neither in the managed project nor in Hosa's own KB. Report
 
 ## Stack retenue
 - `kb/stack/<slug>.md` — [décision]
+- `kb/stack/bibliotheques.md` — [N capacités, dont K fait maison]
 - ADR : `<path docs/decisions/ADR-...>`
 
 ## Open Questions

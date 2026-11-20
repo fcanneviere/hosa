@@ -37,6 +37,9 @@ def run(*argv) -> tuple[int, str]:
 
 
 SPRINT = "---\ntype: Sprint\n---\n## Tickets\n- [T1](../tickets/t1.md)\n"
+# The library inventory `done stack` needs (`avancement.library_gaps`).
+LIBS = ("---\ntype: Stack Decision\n---\n## Bibliothèques\n"
+        "- Lire un xlsx — [importer](../cdc/importer.md) — fastexcel\n")
 # a process's diagram and its fingerprint (`cdc valide` stamps it): `redaction` and `infra` need one validated
 DIAGRAM = "## Schéma du processus\n```mermaid\nflowchart LR\n  A --> B\n```\n"
 DIAGRAM_FP = av.cdc_module().empreinte(DIAGRAM)
@@ -170,7 +173,27 @@ class Accepte(unittest.TestCase):
         self.assertEqual(av.check(k, "stack", None), ["aucune `Stack Decision` dans `kb/stack/`"])
         (k / "stack").mkdir()
         (k / "stack" / "framework.md").write_text("---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n", encoding="utf-8")
+        self.assertEqual(av.check(k, "stack", None), ["pas de `kb/stack/bibliotheques.md` (`type: Stack Decision`) — "
+                                                      "l'inventaire des bibliothèques, une ligne par capacité technique "
+                                                      "(`hosa-senior-dev`, Stack)"])
+        (k / "stack" / "bibliotheques.md").write_text(LIBS, encoding="utf-8")
         self.assertEqual(av.check(k, "stack", None), [])
+
+    def test_stack_libraries_trace_their_exigence_and_price_hand_written_code(self):
+        """rieki: Pandera, structlog, calamine set aside for « une dépendance de plus », ~1 200 lines written by hand."""
+        k = kb({"stack/framework.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n",
+                "stack/bibliotheques.md": LIBS + "- Journal JSON — sans lien — structlog\n"
+                "- Valider un fichier — [importer](../cdc/importer.md) — Fait maison : une dépendance de plus\n"
+                "- Migrations — [donnees](../cdc/donnees.md) — Fait maison : aucun outil ne gère DuckDB — "
+                "Code à écrire : ~170 lignes, ~250 lignes de tests\n"})
+        self.assertEqual(av.check(k, "stack", None), [
+            "`kb/stack/bibliotheques.md` : « Journal JSON » sans le lien de son exigence (`[<exigence>](../cdc/<slug>.md)`)",
+            "`kb/stack/bibliotheques.md` : « Valider un fichier » fait maison sans raison mesurable (licence, sécurité, "
+            "performance mesurée, fonction absente) — « une dépendance de plus » ne suffit pas",
+            "`kb/stack/bibliotheques.md` : « Valider un fichier » fait maison sans son coût "
+            "(`Code à écrire : ~N lignes, ~M lignes de tests`)"])
+        (k / "stack" / "bibliotheques.md").write_text(LIBS.replace("- Lire", "Rien\n"), encoding="utf-8")
+        self.assertEqual(av.check(k, "stack", None), ["`kb/stack/bibliotheques.md` : `## Bibliothèques` sans ligne"])
 
     def test_hosa_needs_a_real_persona(self):
         k = kb({"project/identity.md": "---\ntype: Project\n---\n",
@@ -420,7 +443,8 @@ class Reponse(unittest.TestCase):
         self.assertEqual([w for w in json.loads(r.stdout)["warnings"] if "questions/log.md" in w], [])
 
 
-STACK = {"stack/s.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n"}
+STACK = {"stack/s.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n",
+         "stack/bibliotheques.md": LIBS}
 
 
 class Tasks(unittest.TestCase):
@@ -1236,6 +1260,25 @@ class Loops(unittest.TestCase):
         self.assertEqual(run(k, "start", "develop", "--sprint", "s1")[0], 0)
         self.assertEqual(run(k, "back", "develop", "interface", "--sprint", "s1", "--detail", "x")[0], 2)
 
+    def test_a_capability_missing_from_the_inventory_goes_back_to_stack(self):
+        """rieki: DuckDB alone forced a base without keys and 328 lines of invariants, never sent back to `stack`."""
+        k = kb({})
+        closed_until(k, "backlog")
+        with contextlib.redirect_stdout(io.StringIO()):
+            for s in ("sprint", "qa-plan", "git-demarrage"):
+                av.main([str(k), "done", s, "--sprint", "s1", "--force"])
+        code, out = run(k, "back", "develop", "stack", "--sprint", "s1", "--ticket", "t1",
+                        "--detail", "file de tâches absente de kb/stack/bibliotheques.md")
+        self.assertEqual(code, 0, out)
+        sections, _ = av.load(k / "project" / "avancement.md")
+        status = {r[0]: r[1] for title, rows in sections.items() for r in rows}
+        self.assertEqual([status[s] for s in ("stack", "infra", "donnees", "develop")],
+                         [av.TODO, av.TODO, av.DONE, av.TODO])
+        k2 = kb({})
+        closed_until(k2, "schema-db")
+        self.assertEqual(run(k2, "back", "schema-db", "stack", "--detail", "DuckDB : pas de clé étrangère")[0], 0)
+        self.assertIn("`stack`", run(k2, "next")[1])
+
     def test_back_reopens_the_target_and_the_source_and_counts_the_round(self):
         k = kb({})
         closed_until(k, "relecture")
@@ -2024,7 +2067,7 @@ class SmallPoints(unittest.TestCase):
 
     def test_the_stack_names_how_a_test_sends_forged_inputs(self):
         sd = "---\ntype: Stack Decision\n---\n## Décision\n- **Tests** : pytest.\n"
-        k = kb({"stack/tests.md": sd})
+        k = kb({"stack/tests.md": sd, "stack/bibliotheques.md": LIBS})
         self.assertIn("transport des entrées forgées", " ".join(av.upstream_check(k, "stack")))
         (k / "stack" / "tests.md").write_text(sd + "- **Entrées forgées** : AppTest + `ServicePrevision.lancer`\n",
                                               encoding="utf-8")
@@ -2046,7 +2089,8 @@ class Measures(unittest.TestCase):
         k = kb({"cdc/lancer.md": "---\ntype: Exigence\n---\n## Règles de gestion\n"
                                  "- **RG4** — Repli. [à mesurer M1 : temps du 209M — étape stack]\n",
                 "cdc/decisions.md": "---\ntype: Journal des décisions\n---\n## Décisions\n",
-                "stack/t.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n"})
+                "stack/t.md": "---\ntype: Stack Decision\n---\n- **Entrées forgées** : AppTest\n",
+                "stack/bibliotheques.md": LIBS})
         self.assertEqual(len(av.proofs(k, "stack", None)), 1)
         self.assertIn("mesure M1 attendue à cette étape (cdc/lancer.md) : temps du 209M", av.proofs(k, "stack", None)[0])
         self.assertEqual(av.measure_gaps(k, "infra"), [])

@@ -545,6 +545,37 @@ def concepts(kb: Path, folder: str, ctype: str) -> list[tuple[Path, str]]:
     return out
 
 
+# The libraries chosen before any code, one line per technical capability the stable exigences need (rieki: Pandera,
+# structlog, calamine set aside for « une dépendance de plus », ~1 200 lines written and tested by hand; DuckDB alone
+# without keys, 328 lines of invariants). `- <capacité> — [<exigence>](../cdc/<slug>.md) — <bibliothèque>`, or
+# `… — Fait maison : <raison> — Code à écrire : ~N lignes, ~M lignes de tests`.
+LIBRARIES = "stack/bibliotheques.md"
+ONLY_A_DEPENDENCY = re.compile(r"^(?:une?|1)?\s*(?:dépendance|dependance)s?\s*(?:de plus|en plus|supplémentaires?)?\W*$", re.I)
+
+
+def library_gaps(kb: Path) -> list[str]:
+    gap = concept(kb, LIBRARIES, "Stack Decision", "Bibliothèques")
+    if gap:
+        return [gap + " — l'inventaire des bibliothèques, une ligne par capacité technique (`hosa-senior-dev`, Stack)"]
+    rows = [x.strip() for x in (section(read(kb / LIBRARIES), "Bibliothèques") or "").splitlines() if re.match(r"\s*-\s", x)]
+    if not rows:
+        return [f"`kb/{LIBRARIES}` : `## Bibliothèques` sans ligne"]
+    gaps = []
+    for row in rows:
+        name = row.lstrip("- ").split(" — ")[0][:60]
+        if not re.search(r"\]\((?:\.\./)?cdc/[^)]+\.md\)", row):
+            gaps.append(f"`kb/{LIBRARIES}` : « {name} » sans le lien de son exigence (`[<exigence>](../cdc/<slug>.md)`)")
+        m = re.search(r"Fait maison\s*:\s*(.*?)\s*(?:—\s*Code à écrire|$)", row, re.I)
+        if m:
+            if not m.group(1) or ONLY_A_DEPENDENCY.match(m.group(1)):
+                gaps.append(f"`kb/{LIBRARIES}` : « {name} » fait maison sans raison mesurable (licence, sécurité, "
+                            "performance mesurée, fonction absente) — « une dépendance de plus » ne suffit pas")
+            if not re.search(r"Code à écrire\s*:\s*~?\s*\d+\s*lignes?.*?~?\s*\d+\s*lignes? de tests", row, re.I):
+                gaps.append(f"`kb/{LIBRARIES}` : « {name} » fait maison sans son coût "
+                            "(`Code à écrire : ~N lignes, ~M lignes de tests`)")
+    return gaps
+
+
 def concept(kb: Path, rel: str, ctype: str, heading: str | None = None) -> str | None:
     """Gap of one expected file: missing, wrong type, or without its `## <heading>`."""
     text = read(kb / rel)
@@ -712,6 +743,8 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         elif not any(re.search(r"\*\*Entrées forgées\*\*\s*:\s*\S", t) for _, t in concepts(kb, "stack", "Stack Decision")):
             gaps.append("aucune `Stack Decision` ne nomme le transport des entrées forgées (`- **Entrées forgées** : "
                         "<outil, ou testeur de page + point d'entrée du service>`, ou « Sans objet : … »)")
+        if concepts(kb, "stack", "Stack Decision"):
+            gaps += library_gaps(kb)
     elif stage == "infra":
         gaps.append(infra_with(kb, "Outillage qualité"))
         gaps += infra_exit(kb)

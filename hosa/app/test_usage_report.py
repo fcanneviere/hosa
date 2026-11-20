@@ -118,6 +118,32 @@ class SprintMeasures(unittest.TestCase):
         self.assertIn("Corrections : 4 (technique 3, fonctionnelle 1) — constats prouvés 3, non reproduits 2, preuves ajoutées 1", out)
         self.assertIn("2/6 constats de revue, d'audit ou de recette non reproduits", out)
 
+    def test_code_size_counts_tests_apart_and_the_hand_written_libraries(self):
+        """rieki: 12 700 lines of tests for 6 200 of code, ~1 200 of them a library's job."""
+        import subprocess
+        project = Path(tempfile.mkdtemp())
+        files = {"src/app.py": "a\nb\nc\nd\n", "tests/test_app.py": "x\n" * 8, "web/x.test.ts": "y\n" * 2,
+                 "README.md": "z\n" * 50, ".hosa/kb/stack/bibliotheques.md":
+                 "---\ntype: Stack Decision\n---\n## Bibliothèques\n- Journal — [j](../cdc/j.md) — structlog\n"
+                 "- Migrations — [d](../cdc/d.md) — Fait maison : aucun outil — Code à écrire : ~1 lignes, ~1 lignes de tests\n"}
+        for rel, text in files.items():
+            (project / rel).parent.mkdir(parents=True, exist_ok=True)
+            (project / rel).write_text(text, encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(project)], check=True)
+        subprocess.run(["git", "-C", str(project), "add", "src", "tests", "web", "README.md"], check=True)
+        size = ur.code_size(project)
+        self.assertEqual(size, {"code": 4, "tests": 10, "maison": 1})
+        stats = {"main_ctx": 0, "main_images": 0, "rewrites": [0, 0], "passes": {}}
+        out = "\n".join(ur.measures("s2", None, None, set(), [], {}, {}, stats, [], None, size, [1.5]))
+        self.assertIn("- Code : 4 lignes, tests : 10 lignes — ratio tests/code 2.50 — fait maison (kb/stack/bibliotheques.md) : 1", out)
+        self.assertIn("Ratio tests/code en hausse : 2.50 contre 1.50", out)
+        sprints = project / ".hosa" / "kb" / "sprints"
+        sprints.mkdir(parents=True)
+        (sprints / "s1.md").write_text("## Mesures\n" + ur.size_line(size) + "\n", encoding="utf-8")
+        self.assertEqual(ur.earlier_ratios(project, "s2"), [2.5])
+        self.assertNotIn("Ratio tests/code", "\n".join(ur.measures("s2", None, None, set(), [], {}, {}, stats, [], None, size, [2.5])))
+        self.assertEqual(ur.size_line(None), "- Code : non mesuré (aucun fichier de code suivi par git)")
+
     def test_merge_commit_must_be_a_sha(self):
         out = Path(tempfile.mkdtemp()) / "pwned"
         text = f"---\ngenerated: {{ by: x, at: 2026-10-17T07:00:00Z }}\nmerge_commit: --output={out}\n---\n"

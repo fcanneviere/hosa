@@ -307,7 +307,55 @@ def earlier_costs(project: Path, slug: str) -> list[float]:
     return out
 
 
-def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier, fixes=None) -> list[str]:
+# Code size, tests apart: a test-to-code ratio that rises flags hand-written code to test twice (rieki: 12 700 lines
+# of tests for 6 200 of code, ~1 200 of them a library's job).
+CODE_EXT = {".py", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".vue", ".svelte", ".go", ".rs", ".java", ".kt", ".cs",
+            ".rb", ".php", ".swift", ".dart", ".sql"}
+TEST_PATH = re.compile(r"(?:^|/)(?:tests?|__tests__|specs?)/|(?:^|/)test_[^/]+$|_test\.[^/.]+$|\.(?:test|spec)\.[^/.]+$")
+RATIO_RISE = 1.25
+
+
+def code_size(project: Path) -> dict | None:
+    """Lines of the tracked code files, tests apart, and the « Fait maison » lines of `kb/stack/bibliotheques.md`."""
+    try:
+        out = subprocess.run(["git", "-C", str(project), "ls-files", "-z"], capture_output=True, timeout=30, **NO_WINDOW).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    size = {"code": 0, "tests": 0}
+    for rel in (out or b"").decode("utf-8", "replace").split("\0"):
+        if not rel or rel.startswith((".hosa/", ".worktrees/")) or Path(rel).suffix.lower() not in CODE_EXT:
+            continue
+        try:
+            n = (project / rel).read_bytes().count(b"\n")
+        except OSError:
+            continue
+        size["tests" if TEST_PATH.search(rel) else "code"] += n
+    libs = project / ".hosa" / "kb" / "stack" / "bibliotheques.md"
+    text = libs.read_text(encoding="utf-8", errors="replace") if libs.is_file() else ""
+    size["maison"] = len(re.findall(r"^\s*-\s.*\bFait maison\s*:", text, re.M | re.I)) if text else None
+    return size if size["code"] else None
+
+
+def earlier_ratios(project: Path, slug: str) -> list[float]:
+    """`ratio tests/code` of the other sprints' `## Mesures`."""
+    out = []
+    for p in sorted((project / ".hosa" / "kb" / "sprints").glob("*.md")):
+        if p.stem != slug:
+            m = re.findall(r"^- Code :.*ratio tests/code ([\d.]+)", p.read_text(encoding="utf-8", errors="replace"), re.M)
+            out += [float(m[-1])] if m else []
+    return out
+
+
+def size_line(size: dict | None) -> str:
+    if not size:
+        return "- Code : non mesuré (aucun fichier de code suivi par git)"
+    maison = "pas d'inventaire `kb/stack/bibliotheques.md`" if size["maison"] is None else str(size["maison"])
+    return (f"- Code : {size['code']} lignes, tests : {size['tests']} lignes — ratio tests/code "
+            f"{size['tests'] / size['code']:.2f} — fait maison (kb/stack/bibliotheques.md) : {maison}")
+
+
+def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier, fixes=None,
+             size=None, ratios=None) -> list[str]:
     """`## Mesures` of a sprint: the figures, then what crossed a threshold, as proposals."""
     fixes = fixes or dict.fromkeys(("n", "technique", "fonctionnelle", "prouves", "non_reproduits", "preuves"), 0)
     fixes.setdefault("preuves", 0)
@@ -332,8 +380,15 @@ def measures(slug, since, until, tickets, sprint_tickets, by_model, verdicts, st
            wake_line(stats),
            "- Passages d'agent les plus longs : " + (", ".join(f"{r['kind'].split(':')[-1]} {r['tools']} appels ({fmt(r['ctx'])})" for r in passes[:3]) or "aucun"),
            f"- Sprints précédents : " + (f"coût par ticket médian {base:.2f} $ ({len(earlier)} sprint(s))" if base else "aucune mesure — ce sprint est la première, pas d'écart à commenter"),
+           size_line(size),
            "", "### Propositions"]
     props = []
+    ratio = size["tests"] / size["code"] if size else None
+    last = (ratios or [None])[-1]
+    if ratio and last and ratio > RATIO_RISE * last:
+        props.append(f"Ratio tests/code en hausse : {ratio:.2f} contre {last:.2f} — chercher le code maison qu'une "
+                     "bibliothèque remplace (`kb/stack/bibliotheques.md`, audit « Brique maison ») ; une capacité "
+                     "absente de l'inventaire : `back develop stack`.")
     if reviews >= 3 and fails / reviews >= 1 / 3 and any("haiku" in m for m in by_model):
         props.append(f"{fails}/{reviews} revues en échec avec des agents sur Haiku : essayer `HOSA_HAIKU=0` au prochain sprint et comparer.")
     if fixes["non_reproduits"] and fixes["non_reproduits"] * 3 >= found:
@@ -420,7 +475,7 @@ def main(argv: list[str]) -> int:
         _, by_model, _, verdicts, stats = scan(base, since, None, until)
         tickets = delivered(a.project, since, until) & set(sprint_tickets)
         out = measures(a.sprint, since, until, tickets, sprint_tickets, by_model, verdicts, stats, earlier_costs(a.project, a.sprint),
-                       corrections(a.project, sprint_tickets))
+                       corrections(a.project, sprint_tickets), code_size(a.project), earlier_ratios(a.project, a.sprint))
         if a.write:
             write_section(path, out)
         print("\n".join(out))

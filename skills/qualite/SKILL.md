@@ -49,6 +49,7 @@ Dispatch, on the same scope and in parallel, `hosa-senior-dev` (best practices a
 - Duplication : logique répétée qui devrait être factorisée
 - Gestion des erreurs : pas d'exception avalée silencieusement, retours cohérents
 - Dépendances : aucune ajoutée hors `hosa-infra`, aucune déclarée mais inutilisée (l'audit de vulnérabilités est celui de `hosa-security`)
+- Brique maison : du code qui refait ce qu'une bibliothèque de `kb/stack/bibliotheques.md`, ou une bibliothèque mûre et maintenue, fait déjà — la bibliothèque et les lignes qu'elle remplacerait
 - Profondeur des modules : un module passe-plat (interface presque aussi complexe que son implémentation, dont la suppression ne compliquerait rien chez ses appelants) est un constat
 
 **Performance**
