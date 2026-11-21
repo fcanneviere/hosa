@@ -236,23 +236,60 @@ function reportGate(p, file, s, type) {
     'then call SubagentHandback again. Nothing to move (the report is the deliverable)? Call it again unchanged: it will pass.');
 }
 
+// A tester that reads a whole lot before writing reaches AGENT_MAX with nothing written: its tools are then refused,
+// its `## Reprise` holds only reads, and the next pass reads them again (2026-11: a lot's tester stopped at its cap
+// with no test and four questions the tickets' `## Plan de tâches` answered). Its own refusals, once each:
+// past TESTER_READ of context with no file written, a read; a report with questions or a `## Reprise` and no file
+// written, while it can still write. Kill switch: HOSA_TESTER_ECRIT=0.
+// Measured on 107 testers (rieki, pilot2, 2026-11): healthy ones write their first file at 68 k (median, Écrire
+// d'abord), 91 k (p90); those that never wrote peaked at 101 k or more. At 90 k, 8 of 88 healthy ones are refused
+// once, 14 of the 19 that wrote nothing are caught (the 5 others stopped under 45 k), 30 k are left to write.
+const WRITES_FIRST = new Set(['hosa-tester']);
+const TESTER_READ = Number(process.env.HOSA_TESTER_LECTURE_MAX) || 90000;
+const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+const writesFirst = (type) => process.env.HOSA_TESTER_ECRIT !== '0' && WRITES_FIRST.has(type);
+const FIRST_TICKET = 'write the tests of the first ticket now (Exécuter: record its results), then the next ticket\'s: ' +
+  'each ticket\'s files are written before the next ticket is read. Its `## Plan de tâches (tech lead)` names the files, functions and placement: ' +
+  'a question it, the ticket or the test plan answers is not one.';
+
+function emptyReportGate(p, file, s) {
+  if (s.emptyRefused || s.writes) return null;
+  const msg = String((p.tool_input || {}).message || '');
+  const questions = (msg.match(/^## Open Questions\s*\n([\s\S]*?)(?=^## |(?![\s\S]))/m) || [])[1];
+  const asks = questions != null && !/^\s*(None|Aucune?)\.?\s*$/i.test(questions);
+  if (!asks && !/^## Reprise\b/m.test(msg)) return null;
+  if ((s.calls || 0) >= CAP || contextTokens(agentTranscript(p, p.agent_id), true) >= AGENT_MAX) return null;
+  save(file, { ...s, emptyRefused: true });
+  return deny(`this report hands back questions or a \`## Reprise\` and no test file written: ${FIRST_TICKET} ` +
+    'Then hand back. Nothing can be written (a blocking question on every ticket)? Call it again unchanged: it will pass.');
+}
+
 function agentGate(p) {
   const file = stateFile(p.session_id, p.agent_id);
   const s = load(file);
   const type = String(p.agent_type || s.type || '').split(':').pop();
   if (!/^hosa-/.test(type)) return null;
-  if (p.tool_name === 'SubagentHandback') return reportGate(p, file, s, type);
+  if (p.tool_name === 'SubagentHandback') {
+    return (writesFirst(type) && emptyReportGate(p, file, s)) || reportGate(p, file, load(file), type);
+  }
   const calls = (s.calls || 0) + 1;
   const cap = CAPS[type] || CAP;
   const ctx = contextTokens(agentTranscript(p, p.agent_id), true);
   const k = Math.round(ctx / 1000);
   const warn = !s.warned && (calls >= Math.floor(cap * WARN) || ctx >= AGENT_MAX * WARN);
-  save(file, { ...s, type, calls, warned: s.warned || warn });
+  const writes = (s.writes || 0) + (WRITE_TOOLS.has(p.tool_name) ? 1 : 0);
+  save(file, { ...s, type, calls, writes, warned: s.warned || warn });
   const report = 'write your final report with what is done, and under `## Reprise` what is left and the files to read';
   if (calls > cap || ctx >= AGENT_MAX) {
     return deny(`this ${type} pass reached its cap of ` + (calls > cap ? `${cap} tool calls` :
       `${Math.round(AGENT_MAX / 1000)} k tokens of context (${k} k)`) + `. Stop now: no more tools — ${report}, ` +
       'so a fresh dispatch continues.');
+  }
+  if (writesFirst(type) && !writes && !s.readRefused && ctx >= TESTER_READ) {
+    save(file, { ...load(file), readRefused: true });
+    return deny(`this ${type} pass has read ${k} k tokens of context and written no file (cap ` +
+      `${Math.round(AGENT_MAX / 1000)} k, past which no tool runs): ${FIRST_TICKET} Only if this read is needed ` +
+      'for the first test, call it again: it will pass.');
   }
   if (!warn) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: `[hosa budget] this ${type} pass has ` +

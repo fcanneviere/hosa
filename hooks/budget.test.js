@@ -116,6 +116,51 @@ test('a hosa- subagent is warned, then stopped, on the size of its own context',
   assert.equal(pre('SubagentHandback', 's7', {}, { agent_id: 'a7' }), null);
 });
 
+test('a tester that reads without writing is refused once, before its cap leaves it unable to write', () => {
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's13', agent_id: 't1', agent_type: 'hosa:hosa-tester' });
+  setAgentContext('t1', 85000);
+  assert.equal(pre('Read', 's13', {}, { agent_id: 't1' }), null);
+  setAgentContext('t1', 92000);
+  assert.match(pre('Read', 's13', {}, { agent_id: 't1' }).hookSpecificOutput.permissionDecisionReason,
+    /92 k tokens of context and written no file.*Plan de tâches/);
+  assert.equal(pre('Read', 's13', {}, { agent_id: 't1' }), null);      // the retry passes
+  // a tester that wrote a file early is never refused for its reads
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's13', agent_id: 't2', agent_type: 'hosa:hosa-tester' });
+  setAgentContext('t2', 20000);
+  assert.equal(pre('Write', 's13', {}, { agent_id: 't2' }), null);
+  setAgentContext('t2', 92000);
+  assert.equal(pre('Read', 's13', {}, { agent_id: 't2' }), null);
+  // another agent type reads as it likes
+  processPayload({ hook_event_name: 'SubagentStart', session_id: 's13', agent_id: 't3', agent_type: 'hosa:hosa-developer' });
+  setAgentContext('t3', 92000);
+  assert.equal(pre('Read', 's13', {}, { agent_id: 't3' }), null);
+});
+
+test('a tester report with questions and no file written is refused once', () => {
+  const back = (message, id) => pre('SubagentHandback', 's14', { message }, { agent_id: id });
+  const start = (id, n) => {
+    processPayload({ hook_event_name: 'SubagentStart', session_id: 's14', agent_id: id, agent_type: 'hosa:hosa-tester' });
+    setAgentContext(id, n);
+  };
+  start('q1', 40000);
+  const asks = '## En bref\nRien écrit.\n\n## Open Questions\n**Q1 — quel module ?**\n';
+  assert.match(back(asks, 'q1').hookSpecificOutput.permissionDecisionReason, /no test file written.*first ticket/);
+  assert.equal(back(asks, 'q1'), null);                                  // the retry passes
+  start('q2', 40000);
+  assert.ok(denied(back('## En bref\nLu.\n\n## Open Questions\nNone\n\n## Reprise\nÉcrire les tests.', 'q2')));
+  start('q3', 40000);                                                    // nothing asked, nothing left: an install request
+  assert.equal(back('## Installation nécessaire\npytest\n\n## Open Questions\nNone\n', 'q3'), null);
+  start('q4', 40000);                                                    // it wrote its tests
+  pre('Write', 's14', {}, { agent_id: 'q4' });
+  assert.equal(back(asks, 'q4'), null);
+  start('q5', 125000);                                                   // at its cap it can't write any more
+  assert.equal(back(asks, 'q5'), null);
+  process.env.HOSA_TESTER_ECRIT = '0';
+  start('q6', 40000);
+  assert.equal(back(asks, 'q6'), null);
+  delete process.env.HOSA_TESTER_ECRIT;
+});
+
 test('each Hosa agent records its KB and what its dispatch was for, for the resume card', () => {
   setPlan(0); setContext(10000);
   pre('Agent', 's12', { subagent_type: 'hosa:hosa-product-owner', description: 'Découpe tickets lot 5' });

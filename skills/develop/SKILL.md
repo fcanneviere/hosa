@@ -35,7 +35,7 @@ Clear plan: write `hosa-tech-lead`'s `Task Plan` and `Notes` as they are in the 
 
 ## Step 3a: Brief Once
 
-Take the ticket's sections once — `kb_query.py .hosa/kb --slug <ticket> --full` — and pass them, with the worktree, `docker_project` and the relevant `Security Rule`s, in every dispatch of this ticket (`hosa-tech-lead`, `hosa-tester`, `hosa-developer`), so no agent reopens the ticket.
+Take the ticket's sections once, after Step 3 wrote its `## Plan de tâches (tech lead)` — `kb_query.py .hosa/kb --slug <ticket> --full` — and pass them, with the worktree, `docker_project` and the relevant `Security Rule`s, in every dispatch of this ticket (`hosa-tech-lead`, `hosa-tester`, `hosa-developer`), so no agent reopens the ticket.
 
 ## Step 3b: Tests First
 
@@ -80,9 +80,9 @@ The default when the sprint has several tickets to do: a ticket alone pays each 
 **Compose the lot.** Take the sprint's `todo`/`doing` tickets in priority order and group the consecutive ones that touch the same module (`## Placement architecture`): at most 4 tickets and 8 points (the tickets' `estimate`), no ticket above 3 points (a big ticket stays alone, normal flow), no dependency (`depends_on`) on a ticket outside the lot or later in the lot. Announce the lot (slugs, points) and launch it, without a quiz.
 
 **Run it.** The steps of the normal flow, once for the lot:
-1. Steps 1-2 for each ticket (`state: doing`), then Brief Once (3a) for all: one read of the sections, passed to every dispatch.
-2. Step 3: **one** `hosa-tech-lead` dispatch with every slug → one plan per ticket; each is written in its ticket. A blocked ticket leaves the lot (it stays `doing`, its block is reported); the others go on.
-3. Step 3b: **one** `hosa-tester` dispatch (Écrire d'abord) with every slug.
+1. Steps 1-2 for each ticket (`state: doing`).
+2. Step 3: **one** `hosa-tech-lead` dispatch with every slug and their sections → one plan per ticket; each is written in its ticket. A blocked ticket leaves the lot (it stays `doing`, its block is reported); the others go on. Then Brief Once (3a) for all, **after** the plans: one read of the sections, `## Plan de tâches (tech lead)` included, passed to every later dispatch. A brief taken before the plans leaves the tester asking what they answer (2026-11: a lot's tester stopped at its context cap, no test written, four questions the plans answered).
+3. Step 3b: **one** `hosa-tester` dispatch (Écrire d'abord) with every slug, the tickets in the lot's order: it writes each ticket's tests before reading the next one's. It hands back with questions or a `## Reprise` and some tickets' tests written → those tickets go on; redispatch it with its `## Reprise` and the answers for the rest. A question the brief answers (ticket, test plan, `## Plan de tâches`) is not relayed: answer it from there and say so.
 4. Step 4: the task lots follow the tickets' order; the `dernier lot` of tasks is the last ticket's: the full suite and the checks run only once.
 5. Step 4b once on the lot's files; Step 4c: **one** lot review (`hosa-reviewer`, a verdict per ticket), one `## Revue` line written in each ticket. FAIL on a ticket → correction of that ticket alone, then review of that ticket alone.
 6. Step 5: **one** presentation and **one** confirmation for the lot, ticket by ticket.
