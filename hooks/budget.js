@@ -9,6 +9,8 @@
 // - PreToolUse, in a hosa- subagent: at WARN of its cap of tool calls, or of AGENT_MAX tokens of context,
 //   a reminder (the call itself runs); past either, every further call is refused but the final report
 //   (SubagentHandback), so the agent ends with it and `## Reprise`.
+// - SubagentHandback of a developer, tester or debugger naming a failure without its output (« à revérifier »,
+//   a temp file): refused once, so the next pass gets the exact gap.
 // - SendMessage to an agent idle past IDLE with a heavy context: refused once — its cache is gone, the
 //   message would write it all again; a fresh dispatch with its `## Reprise` costs less.
 // - Agent, while a stage pipeline.json's `dispatch` declares is under way: more Hosa agents running than its
@@ -264,13 +266,34 @@ function emptyReportGate(p, file, s) {
     'Then hand back. Nothing can be written (a blocking question on every ticket)? Call it again unchanged: it will pass.');
 }
 
+// A failure handed back without its output: « à revérifier », or the output left in a temp file. The next pass
+// gets no exact gap to work from, only a summary (rieki sprint-4: a browser test « à revérifier », its failure
+// « à relire dans /tmp/r3.txt »). Refused once; the retry passes. Kill switch: HOSA_ECHEC_CITE=0.
+const QUOTES_FAILURES = new Set(['hosa-developer', 'hosa-tester', 'hosa-debugger']);
+// `\b` is ASCII in JS: an accented word is bounded by a non-letter instead
+const FAILED = /\b\d+ (?:failed|errors?)\b|\bFAILED\b|\ben échec(?!\p{L})|(?<!\p{L})échou/iu;
+const VAGUE = /(?<!\p{L})à (?:re)?vérifier(?!\p{L})|(?<!\p{L})à relire dans\b|\bto re-?(?:check|verify)\b/iu;
+const TEMP = /(?:^|[\s`'"(])(?:\/tmp\/|[A-Za-z]:[\\/](?:[^\s`'"]*[\\/])?Temp[\\/]|\$TMPDIR|%TEMP%)/i;
+
+function failureGate(p, file, s, type) {
+  if (s.failureRefused || process.env.HOSA_ECHEC_CITE === '0' || !QUOTES_FAILURES.has(type)) return null;
+  const msg = String((p.tool_input || {}).message || '');
+  if (!FAILED.test(msg) || !(VAGUE.test(msg) || TEMP.test(msg))) return null;
+  if ((s.calls || 0) >= (CAPS[type] || CAP) || contextTokens(agentTranscript(p, p.agent_id), true) >= AGENT_MAX) return null;
+  save(file, { ...s, failureRefused: true });
+  return deny('this report names a failure without its output (« à revérifier », or a temp file the next pass may not ' +
+    'find). For each failing test, quote in the report its `file::test` and its error line (the assertion or the ' +
+    'exception). Then call SubagentHandback again; already quoted? Call it again unchanged: it will pass.');
+}
+
 function agentGate(p) {
   const file = stateFile(p.session_id, p.agent_id);
   const s = load(file);
   const type = String(p.agent_type || s.type || '').split(':').pop();
   if (!/^hosa-/.test(type)) return null;
   if (p.tool_name === 'SubagentHandback') {
-    return (writesFirst(type) && emptyReportGate(p, file, s)) || reportGate(p, file, load(file), type);
+    return (writesFirst(type) && emptyReportGate(p, file, s)) || failureGate(p, file, load(file), type)
+      || reportGate(p, file, load(file), type);
   }
   const calls = (s.calls || 0) + 1;
   const cap = CAPS[type] || CAP;

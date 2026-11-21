@@ -161,6 +161,32 @@ test('a tester report with questions and no file written is refused once', () =>
   delete process.env.HOSA_TESTER_ECRIT;
 });
 
+test('a failure handed back without its output is refused once', () => {
+  // rieki sprint-4: a browser test « à revérifier », its failure « à relire dans /tmp/r3.txt »
+  const back = (message, id) => pre('SubagentHandback', 's15', { message }, { agent_id: id });
+  const start = (id, type = 'hosa:hosa-developer') => {
+    processPayload({ hook_event_name: 'SubagentStart', session_id: 's15', agent_id: id, agent_type: type });
+    setAgentContext(id, 40000);
+    pre('Write', 's15', {}, { agent_id: id });
+  };
+  const vague = '## Checks\n- navigateur : 3 passed, 1 failed, 1 error, à relire dans /tmp/r3.txt\n';
+  start('f1');
+  assert.match(back(vague, 'f1').hookSpecificOutput.permissionDecisionReason, /`file::test` and its error line/);
+  assert.equal(back(vague, 'f1'), null);                                // the retry passes
+  start('f2');
+  assert.ok(denied(back('## Checks\n- `test_e2e` en échec, à revérifier après le teardown.\n', 'f2')));
+  start('f3');                                                          // quoted: passes
+  assert.equal(back('## Checks\n- 1 failed : `tests/t.py::test_a` — AssertionError: 3 != 4\n', 'f3'), null);
+  start('f4');                                                          // nothing fails: a temp path is no matter
+  assert.equal(back('## Checks\nsuite complète 120/120, sortie dans /tmp/r.txt\n', 'f4'), null);
+  start('f5', 'hosa:hosa-product-owner');                               // other agents: not theirs
+  assert.equal(back(vague, 'f5'), null);
+  process.env.HOSA_ECHEC_CITE = '0';
+  start('f6');
+  assert.equal(back(vague, 'f6'), null);
+  delete process.env.HOSA_ECHEC_CITE;
+});
+
 test('each Hosa agent records its KB and what its dispatch was for, for the resume card', () => {
   setPlan(0); setContext(10000);
   pre('Agent', 's12', { subagent_type: 'hosa:hosa-product-owner', description: 'Découpe tickets lot 5' });

@@ -579,6 +579,39 @@ class Tasks(unittest.TestCase):
         self.assertEqual(run(k, "task", "done", "develop", "t1.lot-1", "--sprint", "s1", "--sortie", "src/b.py")[0], 1)
         self.assertEqual(run(k, "task", "done", "develop", "t1.lot-1", "--sprint", "s1", "--sortie", "src/a.py")[0], 0)
 
+    def test_a_lot_leaves_the_tests_written_first_as_the_tester_handed_them(self):
+        # rieki sprint-4 (0.1.123): a lot rewrote four tests written first; the review was to find out.
+        wt = Path(tempfile.mkdtemp())
+        (wt / "tests").mkdir()
+        test, src = wt / "tests" / "test_a.py", wt / "a.py"
+        test.write_text("assert x == 3\n", encoding="utf-8")
+        src.write_text("", encoding="utf-8")
+        k = kb({"sprints/s1.md": SPRINT.replace("type: Sprint", f"type: Sprint\nworktree: {wt.as_posix()}"),
+                "tickets/t1.md": TICKET})
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+        import time
+
+        def task(op, tid, *rest):
+            return run(k, "task", op, "develop", tid, "--sprint", "s1", *rest)
+
+        task("add", "t1.tests", "--agent", "hosa-tester")
+        old = time.time() - 120
+        os.utime(test, (old, old))
+        with unittest.mock.patch.object(av, "now", return_value=time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                                               time.gmtime(old + 60))):
+            self.assertEqual(task("done", "t1.tests", "--sortie", "tests/test_a.py")[0], 0)
+        task("add", "t1.lot-1", "--agent", "hosa-developer")
+        self.assertEqual(task("done", "t1.lot-1", "--sortie", "a.py")[0], 0)  # the test untouched
+        task("add", "t1.lot-2", "--agent", "hosa-developer")
+        test.write_text("assert x == 4\n", encoding="utf-8")  # the developer « corrects » the test
+        code, out = task("done", "t1.lot-2", "--sortie", "a.py")
+        self.assertEqual(code, 1, out)
+        self.assertIn("refusée par `tests-ecrits`", out)
+        self.assertIn("`tests/test_a.py` modifié après la remise de `hosa-tester`", out)
+        task("add", "t1.tests-correction-1", "--agent", "hosa-tester")
+        self.assertEqual(task("done", "t1.tests-correction-1", "--sortie", "tests/test_a.py")[0], 0)
+        self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 0)  # the tester kept or fixed it
+
     def test_an_empty_md_output_is_refused_an_empty_code_file_is_not(self):
         (self.k / "stack" / "vide.md").write_text("\n", encoding="utf-8")
         (self.k / "stack" / "__init__.py").write_text("", encoding="utf-8")

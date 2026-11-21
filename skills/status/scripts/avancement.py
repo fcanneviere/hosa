@@ -1857,9 +1857,35 @@ def ctl_couverture(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> l
     return missing
 
 
+def ctl_tests_ecrits(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """A developer's lot leaves the tests `hosa-tester` wrote first as it handed them back: a file of a done tester
+    task of this sprint, changed since that task's `task done`, is refused. Only the tester changes them (rieki
+    sprint-4, 0.1.123: a lot rewrote four tests written first, a secret test's data among them, and the review was
+    to find out; 15 of 45 developer tasks of the project listed a tester's file). A tester task still open:
+    its files may be moving under it, nothing is refused."""
+    mine = [x for x in load_tasks(kb / "project" / "avancement.md")
+            if (x["stage"], x["scope"], x["agent"]) == (t["stage"], t["scope"], "hosa-tester")]
+    if any(x["statut"] not in CLOSED for x in mine):
+        return []
+    handed: dict[str, str] = {}
+    for x in mine:
+        for p in (p.strip() for p in x["sortie"].split(",") if x["statut"] == DONE):
+            if p and x["at"] > handed.get(p, ""):
+                handed[p] = x["at"]
+    gaps = []
+    for p, at in handed.items():
+        f = resolve(kb, p, t["scope"])
+        when = datetime.fromisoformat(at.replace("Z", "+00:00")).timestamp()
+        if f and f.is_file() and f.stat().st_mtime > when + 1:
+            gaps.append(f"`{p}` modifié après la remise de `hosa-tester` ({at}) : un test écrit d'abord ne change que "
+                        f"par lui. Donne-lui le `## Tests à revoir` du développeur (`task add {t['stage']} "
+                        f"<ticket>.tests-correction-<n>`) : il garde ou corrige ces tests, puis `task done` ce lot à nouveau")
+    return gaps
+
+
 CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
             "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix,
-            "rechargement": ctl_rechargement, "couverture": ctl_couverture}
+            "rechargement": ctl_rechargement, "couverture": ctl_couverture, "tests-ecrits": ctl_tests_ecrits}
 # `refus 2/2 (okf ; sortie 1) — …`: the last refusal's cause and count, then the other causes' counts
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)((?: ; [\w-]+ \d+)*)\)(?: — )?")
 
