@@ -81,6 +81,7 @@ function main(payload) {
       `- \`<python>\` = \`"${g.python()}"\`.` + (process.platform === 'win32' ? ` ${WINDOWS_PATHS}` : '') +
       (venvReady ? '' : ' Hosa is installing its Python dependencies in the background: a script failing on a missing module → wait a minute, retry.');
   } catch (e) {} // best-effort — never block session start
+  try { if (kbRoot) require('./contexte').ensure(kbRoot, payload.transcript_path); } catch (e) {} // floor of the next session
   let plan = '';
   try { plan = require('./avancement').resumeContext(cwd); } catch (e) {} // plan d'avancement optionnel
   let previous = '';

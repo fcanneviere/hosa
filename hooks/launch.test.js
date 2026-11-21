@@ -14,10 +14,12 @@ const launched = (extra = {}) => ({
   tool_input: { subagent_type: 'hosa:hosa-tester', description: 'Rejeu QA' },
   tool_response: { isAsync: true, status: 'async_launched', agentId: 'a1' }, ...extra,
 });
-const on = (fn) => { process.env.HOSA_ARRET_LANCEMENT = '1'; try { return fn(); } finally { delete process.env.HOSA_ARRET_LANCEMENT; } };
+const on = (fn) => fn();
 
-test('off unless switched on', () => {
-  assert.equal(processPayload(launched()), null);
+test('on by default, off with HOSA_ARRET_LANCEMENT=0', () => {
+  assert.equal(processPayload(launched()).continue, false);
+  process.env.HOSA_ARRET_LANCEMENT = '0';
+  try { assert.equal(processPayload(launched()), null); } finally { delete process.env.HOSA_ARRET_LANCEMENT; }
 });
 
 test('a Hosa agent launched in the background ends the main turn', () => {
@@ -39,7 +41,7 @@ test('goes on for a report already here, another agent, a subagent, or outside a
 
 test('fail-open on a payload that is not JSON, and registered on Agent in hooks.json', () => {
   const run = spawnSync(process.execPath, [path.join(__dirname, 'launch.js')], { input: 'not json', encoding: 'utf8',
-    env: { ...process.env, HOSA_ARRET_LANCEMENT: '1' } });
+    env: process.env });
   assert.equal(run.status, 0);
   assert.equal(run.stdout, '');
   const hooks = JSON.parse(fs.readFileSync(path.join(__dirname, 'hooks.json'), 'utf8')).hooks.PostToolUse;
