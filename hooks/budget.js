@@ -169,9 +169,11 @@ function ceilingGate(p, file, s, now, again, before = '') {
 
 // A message after a pause longer than the cache: refused once per pause, before the call that would pay for it.
 // The refusal erases the message: it is given back, to send again. A slash command passes (/clear, /compact).
+// What the harness sends passes too (an agent's hand-back, a task notification): refused, it is lost, nobody can send it again.
+const HARNESS = /^<\\?\/?(agent-message|task-notification)\b/;
 function pauseGate(p) {
   const prompt = String(p.prompt || '').trim();
-  if (!prompt || prompt.startsWith('/') || planText(p.cwd || process.cwd()) == null) return null;
+  if (!prompt || prompt.startsWith('/') || HARNESS.test(prompt) || planText(p.cwd || process.cwd()) == null) return null;
   const { tokens, at } = lastCall(p.transcript_path);
   const idle = Date.now() - at;
   if (!at || idle < PAUSE) return null;

@@ -111,12 +111,14 @@ flowchart LR
 ## Outillage qualité
 - Tests : <commande de la suite complète>
 - Tests navigateur : <commande> — ou "Sans objet : pas d'interface web"
+- Groupes : <la commande d'un groupe et la liste des groupes, chacun sous 170 s> — seulement si la suite ou les tests navigateur dépassent 170 s
 - Lint : <commande> — Format : <commande de vérification> — Types : <commande, ou "Sans objet">
 - Migrations : <outil> — `<commande pour appliquer>` — ou "Aucune base de données"
 - CI : `<fichier>` — <ce qu'elle lance>
 ```
 
    `hosa-tester`, `hosa-developer` and `hosa-git` run exactly these commands. A tool the stack can't offer → say which, and why.
+   An agent's Bash call stops waiting at 180 s. A suite or a browser run over 170 s → write `Groupes`: one command that runs group `<n>`, and the groups, each measured under 170 s in the container (a script `scripts/tests_groupe.sh <n>` or a list of commands). Together the groups run every test once: none twice, none left out. `done infra` refuses a duration over 170 s without that line (rieki sprint-4: 7 min out of the browser, 25 min in it, each developer cutting the suite by hand into a dozen calls). A request from `## Installation nécessaire` for groups → Mode 2, the same rule.
 
    **Exit proof.** Then run each command once more **inside the container**, on the code as committed, and write what it gave under `## Preuve de sortie` of the same file. `done infra` refuses a missing line or one without `exit 0` (`avancement.py check infra`). rieki started its first sprint with `main` red on lint and format, a container serving stale code (the Windows mount not reloaded), 15 tests that ran only on the host and a browser suite of 799 s: half of sprint 2 paid for it.
 
@@ -126,7 +128,7 @@ flowchart LR
 - **Format** : <commande de vérification> — exit 0 — <durée> s — <date>
 - **Tests** : <commande de la suite complète, dans le conteneur> — exit 0 — <durée> s — <date>
 - **Rechargement** : <fichier monté modifié, puis ce que le serveur sert> — exit 0 — <date> — ou `aucun — <pas de code monté>`
-- **Navigateur** : <commande, sous 180 s ou découpée par fichier> — exit 0 — <durée> s — <date> — ou `aucun — pas d'interface web`
+- **Navigateur** : <commande, ou ses `Groupes`> — exit 0 — <durée> s — <date> — ou `aucun — pas d'interface web`
 ```
 
    A command that fails is fixed before the stage closes: never a red baseline handed to the first sprint. Each exit code is read from the command itself (`> fichier; echo EXIT=$?`), never through `| tail`.

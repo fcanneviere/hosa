@@ -1621,6 +1621,26 @@ class Bounds(unittest.TestCase):
             + drawn, encoding="utf-8")
         self.assertEqual(av.upstream_check(k, "infra"), [])
 
+    def test_infra_writes_the_groups_of_a_suite_longer_than_one_call(self):
+        """rieki sprint-4: 7 min out of the browser, 25 min in it, each developer cutting the suite by hand."""
+        proof = ("## Preuve de sortie\n- **Lint** : ruff check . — exit 0 — 2 s — 2026-11-17\n"
+                 "- **Format** : ruff format --check . — exit 0 — 1 s — 2026-11-17\n"
+                 "- **Tests** : pytest -q — exit 0 — 420 s — 2026-11-17\n"
+                 "- **Rechargement** : aucun — pas de code monté\n"
+                 "- **Navigateur** : pytest -m navigateur — exit 0 — 1500 s — 2026-11-17\n")
+        k = kb({"infra/environnement-docker.md": "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + proof})
+        self.assertEqual(av.infra_exit(k), [
+            "`kb/infra/environnement-docker.md` : **Tests et Navigateur** au-delà de 170 s, et `## Outillage qualité` "
+            "n'a pas de ligne `- Groupes :` (la commande de chaque groupe, chacun sous 170 s)"])
+        (k / "infra" / "environnement-docker.md").write_text(
+            "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n"
+            "- Groupes : `scripts/tests_groupe.sh <n>`, n de 1 à 12 — chacun sous 170 s\n" + proof, encoding="utf-8")
+        self.assertEqual(av.infra_exit(k), [])
+        quick = proof.replace("420 s", "90 s").replace("1500 s", "160 s")
+        (k / "infra" / "environnement-docker.md").write_text(
+            "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + quick, encoding="utf-8")
+        self.assertEqual(av.infra_exit(k), [])                       # each fits one call: no groups needed
+
     def test_schema_db_closes_on_the_database_diagram_the_user_validated(self):
         k = kb({"infra/base-de-donnees.md": "---\ntype: Infra\n---\n## Commandes\n- migrer : make migrate\n"})
         self.assertEqual(av.upstream_check(k, "schema-db"), [

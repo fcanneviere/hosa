@@ -320,6 +320,8 @@ test('a message after a pause longer than the cache, in a heavy session, is refu
   assert.match(out.reason, /Pause de 2 h 10 .* 150 k tokens .*\/clear, puis « reprends » .* 30 k .*« développe le lot suivant »/);
   assert.equal(say('développe le lot suivant', 'p1'), null);          // sent again: the user chose to stay
   assert.equal(say('/clear', 'p2'), null);                            // a command passes
+  assert.equal(say('<agent-message from="a50c">\n[Subagent hand-back] ## En bref', 'p2a'), null);  // a hand-back: refused, it is lost
+  assert.equal(say('<task-notification>\n<task-id>b1</task-id>', 'p2b'), null);                   // a notification too
   fs.writeFileSync(t, call(30000, 200) + call(150000, 20));
   assert.equal(say('la suite', 'p3'), null);                          // cache still alive
   fs.writeFileSync(t, call(30000, 200) + call(40000, 130));

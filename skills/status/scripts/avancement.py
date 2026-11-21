@@ -591,6 +591,7 @@ def concept(kb: Path, rel: str, ctype: str, heading: str | None = None) -> str |
 # half of sprint 2 and the « recette et test très lourde » of sprint 3). Each line: `- **<item>** : <commande> —
 # exit 0 — <durée> s — <date>`, or `- **<item>** : aucun — <raison>` (no mounted code, no browser).
 EXIT_ITEMS = ("Lint", "Format", "Tests", "Rechargement", "Navigateur")
+GROUP_MAX = 170  # s: an agent's Bash call stops waiting at 180 s
 
 
 def infra_exit(kb: Path) -> list[str]:
@@ -606,6 +607,14 @@ def infra_exit(kb: Path) -> list[str]:
             gaps.append(f"`kb/infra/{p.name}` `## Preuve de sortie` : ligne **{item}** absente")
         elif not re.match(r"aucun\s+—\s+\S", m[1], re.I) and not re.search(r"\bexit 0\b", m[1]):
             gaps.append(f"`kb/infra/{p.name}` `## Preuve de sortie` : **{item}** sans `exit 0` — {m[1][:80]}")
+    # A suite longer than one agent call needs its groups written down (rieki sprint-4: 7 min out of the browser, 25 min
+    # in it, each developer cutting it by hand into a dozen calls).
+    slow = [i for i in ("Tests", "Navigateur") if (m := re.search(rf"^\s*[-*]\s+\*\*{i}\*\*\s*:.*?\b(\d+)\s*s\b", proof, re.M))
+            and int(m[1]) > GROUP_MAX]
+    tooling = section(text, "Outillage qualité") or ""
+    if slow and not re.search(r"^\s*[-*]\s+(\*\*)?Groupes(\*\*)?\s*:\s*\S", tooling, re.M):
+        gaps.append(f"`kb/infra/{p.name}` : **{' et '.join(slow)}** au-delà de {GROUP_MAX} s, et `## Outillage qualité` "
+                    f"n'a pas de ligne `- Groupes :` (la commande de chaque groupe, chacun sous {GROUP_MAX} s)")
     return gaps
 
 
