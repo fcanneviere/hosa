@@ -111,6 +111,9 @@ flowchart LR
 ## Outillage qualité
 - Tests : <commande de la suite complète>
 - Tests navigateur : <commande> — ou "Sans objet : pas d'interface web"
+- Partage : <ce qui démarre une fois par session ou par worker (serveur, navigateur, base), le mécanisme de la stack, et comment chaque test est isolé> — ou `aucun — <raison>`
+- Parallèle : <l'outil du lanceur et le nombre de workers, la base et le port de chacun> — ou `aucun — <raison>`
+- Coût par test : <navigateur | suite> — <raison, mesure> — seulement si une suite dépasse la borne par test
 - Groupes : <la commande d'un groupe et la liste des groupes, chacun sous 170 s> — seulement si la suite ou les tests navigateur dépassent 170 s
 - Lint : <commande> — Format : <commande de vérification> — Types : <commande, ou "Sans objet">
 - Migrations : <outil> — `<commande pour appliquer>` — ou "Aucune base de données"
@@ -120,15 +123,17 @@ flowchart LR
    `hosa-tester`, `hosa-developer` and `hosa-git` run exactly these commands. A tool the stack can't offer → say which, and why.
    An agent's Bash call stops waiting at 180 s. A suite or a browser run over 170 s → write `Groupes`: one command that runs group `<n>`, and the groups, each measured under 170 s in the container (a script `scripts/tests_groupe.sh <n>` or a list of commands). Together the groups run every test once: none twice, none left out. `done infra` refuses a duration over 170 s without that line (rieki sprint-4: 7 min out of the browser, 25 min in it, each developer cutting the suite by hand into a dozen calls). A request from `## Installation nécessaire` for groups → Mode 2, the same rule.
 
+   **Start once, reset between, run side by side.** Before the first test, choose from the Stack Decision how the suite stays fast as it grows, install it, and write `Partage` and `Parallèle`. A costly resource (an application server, a browser, a database, a container) starts once per session or per worker, never once per test. Each test is isolated by resetting its data (the dataset's `## Remise à zéro`, a transaction rolled back), not by restarting the process. A test that truly needs a fresh process carries a marker of its own, and only it pays the start. Use the stack's own mechanism, for example: pytest `scope="session"` fixtures and `pytest-xdist`; Playwright `webServer`, `globalSetup` and `workers`; Jest or Vitest `globalSetup` and their workers; Go `TestMain`, `-p` and `t.Parallel()`; Rust a shared fixture and `cargo nextest`; JUnit `@BeforeAll`, a shared container and parallel execution. Each worker gets its own port and its own copy of the database. Unknown for the stack → look it up in its documentation (WebSearch), never guess. Give each of **Tests** and **Navigateur** its number of tests after its duration. `done infra` refuses a missing `Partage` or `Parallèle` line, a duration without its count, and, from the `min` tests of pipeline.json's `cout` on, more seconds per test than it allows (0.5 s for the suite, 3 s in the browser), unless `Coût par test` gives the measured reason. The same bound is checked after each `develop` lot: the tooling must still hold it at 500 tests (rieki sprint-4: one Streamlit server started and stopped for each of 97 browser tests, in series — 25 min).
+
    **Exit proof.** Then run each command once more **inside the container**, on the code as committed, and write what it gave under `## Preuve de sortie` of the same file. `done infra` refuses a missing line or one without `exit 0` (`avancement.py check infra`). rieki started its first sprint with `main` red on lint and format, a container serving stale code (the Windows mount not reloaded), 15 tests that ran only on the host and a browser suite of 799 s: half of sprint 2 paid for it.
 
 ```markdown
 ## Preuve de sortie
 - **Lint** : <commande> — exit 0 — <durée> s — <date>
 - **Format** : <commande de vérification> — exit 0 — <durée> s — <date>
-- **Tests** : <commande de la suite complète, dans le conteneur> — exit 0 — <durée> s — <date>
+- **Tests** : <commande de la suite complète, dans le conteneur> — exit 0 — <durée> s — <n> tests — <date>
 - **Rechargement** : <fichier monté modifié, puis ce que le serveur sert> — exit 0 — <date> — ou `aucun — <pas de code monté>`
-- **Navigateur** : <commande, ou ses `Groupes`> — exit 0 — <durée> s — <date> — ou `aucun — pas d'interface web`
+- **Navigateur** : <commande, ou ses `Groupes`> — exit 0 — <durée> s — <n> tests — <date> — ou `aucun — pas d'interface web`
 ```
 
    A command that fails is fixed before the stage closes: never a red baseline handed to the first sprint. Each exit code is read from the command itself (`> fichier; echo EXIT=$?`), never through `| tail`.

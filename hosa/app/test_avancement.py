@@ -43,6 +43,9 @@ LIBS = ("---\ntype: Stack Decision\n---\n## Bibliothèques\n"
 # a process's diagram and its fingerprint (`cdc valide` stamps it): `redaction` and `infra` need one validated
 DIAGRAM = "## Schéma du processus\n```mermaid\nflowchart LR\n  A --> B\n```\n"
 DIAGRAM_FP = av.cdc_module().empreinte(DIAGRAM)
+# what `infra` chooses to start once and to run side by side (`avancement.infra_exit`)
+SHARED = ("- Partage : serveur et navigateur une fois par session, base remise à zéro entre les tests\n"
+          "- Parallèle : pytest-xdist, 4 workers\n")
 TICKET = "---\ntype: Ticket\nstate: doing\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n"
 
 
@@ -611,6 +614,53 @@ class Tasks(unittest.TestCase):
         task("add", "t1.tests-correction-1", "--agent", "hosa-tester")
         self.assertEqual(task("done", "t1.tests-correction-1", "--sortie", "tests/test_a.py")[0], 0)
         self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 0)  # the tester kept or fixed it
+
+    def test_a_lot_is_refused_while_the_last_full_run_costs_too_much_per_test(self):
+        # rieki sprint-4: 97 browser tests in 25 min, each starting its own Streamlit server, one after the other.
+        wt = Path(tempfile.mkdtemp())
+        (wt / "a.py").write_text("", encoding="utf-8")
+        run_line = "- 2026-11-22T10:00Z — Arbre testé : abc — suite complète 877/877 — t1 — durées : suite 300 s / " \
+                   "780 tests, navigateur {} s / 97 tests\n"
+        sprint = SPRINT.replace("type: Sprint", f"type: Sprint\nworktree: {wt.as_posix()}") + "## Suite complète\n"
+        k = kb({"sprints/s1.md": sprint + run_line.format(1500), "tickets/t1.md": TICKET})
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+
+        def task(op, tid, *rest):
+            return run(k, "task", op, "develop", tid, "--sprint", "s1", *rest)
+
+        task("add", "t1.lot-1", "--agent", "hosa-developer")
+        code, out = task("done", "t1.lot-1", "--sortie", "a.py")
+        self.assertEqual(code, 1, out)
+        self.assertIn("refusée par `cout-tests`", out)
+        self.assertIn("**Navigateur** : 1500 s pour 97 tests, 15.5 s par test (plus de 3 s)", out)
+        self.assertNotIn("**Tests**", out)                        # 0.4 s per test: within the bound
+        with unittest.mock.patch.object(av, "now", return_value="2026-11-22T11:00:00Z"):
+            task("add", "t1.outillage-1", "--agent", "hosa-qa-lead")
+            self.assertEqual(task("done", "t1.outillage-1", "--sortie", "a.py")[0], 0)
+        self.assertEqual(task("done", "t1.lot-1", "--sortie", "a.py")[0], 0)  # the tooling fixed since that run
+        # the next full run, still slow: refused again
+        (k / "sprints" / "s1.md").write_text(sprint + run_line.format(1500).replace("10:00Z", "12:00Z"), encoding="utf-8")
+        task("add", "t1.lot-2", "--agent", "hosa-developer")
+        self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 1)
+        (k / "sprints" / "s1.md").write_text(sprint + run_line.format(240).replace("10:00Z", "13:00Z"), encoding="utf-8")
+        self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 0)  # 2.5 s per test
+
+    def test_a_lot_s_full_run_gives_its_durations(self):
+        wt = Path(tempfile.mkdtemp())
+        (wt / "a.py").write_text("", encoding="utf-8")
+        k = kb({"sprints/s1.md": SPRINT.replace("type: Sprint", f"type: Sprint\nworktree: {wt.as_posix()}")
+                + "## Suite complète\n- 2020-01-01T10:00Z — Arbre testé : abc — suite complète 3/3 — t0\n",
+                "tickets/t1.md": TICKET})
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+        run(k, "task", "add", "develop", "t1.lot-1", "--sprint", "s1", "--agent", "hosa-developer")
+        # an older line without durations: written before this rule, nothing refused
+        self.assertEqual(run(k, "task", "done", "develop", "t1.lot-1", "--sprint", "s1", "--sortie", "a.py")[0], 0)
+        run(k, "task", "add", "develop", "t1.lot-2", "--sprint", "s1", "--agent", "hosa-developer")
+        with (k / "sprints" / "s1.md").open("a", encoding="utf-8") as f:
+            f.write("- 2099-01-01T10:00Z — Arbre testé : def — suite complète 3/3 — t1\n")
+        code, out = run(k, "task", "done", "develop", "t1.lot-2", "--sprint", "s1", "--sortie", "a.py")
+        self.assertEqual(code, 1, out)
+        self.assertIn("n'a pas ses `durées : suite <s> s / <n> tests", out)
 
     def test_an_empty_md_output_is_refused_an_empty_code_file_is_not(self):
         (self.k / "stack" / "vide.md").write_text("\n", encoding="utf-8")
@@ -1597,10 +1647,10 @@ class Bounds(unittest.TestCase):
         self.assertIn("aucune entrée `Infra` n'a de section `## Preuve de sortie`", av.upstream_check(k, "infra")[0])
         proof = ("## Preuve de sortie\n- **Lint** : ruff check . — exit 0 — 2 s — 2026-11-17\n"
                  "- **Format** : ruff format --check . — exit 1 — 1 s — 2026-11-17\n"
-                 "- **Tests** : pytest -q — exit 0 — 9 s — 2026-11-17\n"
+                 "- **Tests** : pytest -q — exit 0 — 9 s — 40 tests — 2026-11-17\n"
                  "- **Navigateur** : aucun — pas d'interface web\n")
         (k / "infra" / "environnement-docker.md").write_text(
-            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + proof, encoding="utf-8")
+            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + SHARED + proof, encoding="utf-8")
         self.assertEqual(av.upstream_check(k, "infra"), [
             "`kb/infra/environnement-docker.md` `## Preuve de sortie` : **Format** sans `exit 0` — "
             "ruff format --check . — exit 1 — 1 s — 2026-11-17",
@@ -1608,38 +1658,72 @@ class Bounds(unittest.TestCase):
             "`cdc` : infra/ — aucune entrée `Infra` de `kb/infra/` n'a de section `## Schéma de l'infrastructure`"])
         fixed = proof.replace("exit 1", "exit 0") + "- **Rechargement** : fichier monté modifié, page servie changée — exit 0\n"
         (k / "infra" / "environnement-docker.md").write_text(
-            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + fixed, encoding="utf-8")
+            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + SHARED + fixed, encoding="utf-8")
         self.assertEqual(av.upstream_check(k, "infra"),
                          ["`cdc` : infra/ — aucune entrée `Infra` de `kb/infra/` n'a de section `## Schéma de l'infrastructure`"])
         # the infrastructure drawn, then validated by the user (`cdc valide infra`)
         drawn = fixed + DIAGRAM.replace("Schéma du processus", "Schéma de l'infrastructure")
         (k / "infra" / "environnement-docker.md").write_text(
-            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + drawn, encoding="utf-8")
+            "---\ntype: Infra\n---\n## Outillage qualité\n- tests : pytest\n" + SHARED + drawn, encoding="utf-8")
         self.assertIn("pas encore validé", av.upstream_check(k, "infra")[0])
         (k / "infra" / "environnement-docker.md").write_text(
             "---\ntype: Infra\nschema_valide: \"2026-11-18 " + DIAGRAM_FP + "\"\n---\n## Outillage qualité\n- tests : pytest\n"
-            + drawn, encoding="utf-8")
+            + SHARED + drawn, encoding="utf-8")
         self.assertEqual(av.upstream_check(k, "infra"), [])
 
     def test_infra_writes_the_groups_of_a_suite_longer_than_one_call(self):
         """rieki sprint-4: 7 min out of the browser, 25 min in it, each developer cutting the suite by hand."""
         proof = ("## Preuve de sortie\n- **Lint** : ruff check . — exit 0 — 2 s — 2026-11-17\n"
                  "- **Format** : ruff format --check . — exit 0 — 1 s — 2026-11-17\n"
-                 "- **Tests** : pytest -q — exit 0 — 420 s — 2026-11-17\n"
+                 "- **Tests** : pytest -q — exit 0 — 420 s — 2000 tests — 2026-11-17\n"
                  "- **Rechargement** : aucun — pas de code monté\n"
-                 "- **Navigateur** : pytest -m navigateur — exit 0 — 1500 s — 2026-11-17\n")
-        k = kb({"infra/environnement-docker.md": "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + proof})
+                 "- **Navigateur** : pytest -m navigateur — exit 0 — 1500 s — 600 tests — 2026-11-17\n")
+        k = kb({"infra/environnement-docker.md": "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + SHARED
+                + proof})
         self.assertEqual(av.infra_exit(k), [
             "`kb/infra/environnement-docker.md` : **Tests et Navigateur** au-delà de 170 s, et `## Outillage qualité` "
             "n'a pas de ligne `- Groupes :` (la commande de chaque groupe, chacun sous 170 s)"])
         (k / "infra" / "environnement-docker.md").write_text(
-            "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n"
+            "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + SHARED +
             "- Groupes : `scripts/tests_groupe.sh <n>`, n de 1 à 12 — chacun sous 170 s\n" + proof, encoding="utf-8")
         self.assertEqual(av.infra_exit(k), [])
         quick = proof.replace("420 s", "90 s").replace("1500 s", "160 s")
         (k / "infra" / "environnement-docker.md").write_text(
-            "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + quick, encoding="utf-8")
+            "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + SHARED + quick, encoding="utf-8")
         self.assertEqual(av.infra_exit(k), [])                       # each fits one call: no groups needed
+
+    def test_infra_chooses_what_starts_once_and_what_runs_in_parallel(self):
+        """rieki sprint-4: a Streamlit server started and stopped for each of 97 browser tests, in series — 25 min."""
+        proof = ("## Preuve de sortie\n- **Lint** : ruff check . — exit 0 — 2 s — 2026-11-17\n"
+                 "- **Format** : ruff format --check . — exit 0 — 1 s — 2026-11-17\n"
+                 "- **Tests** : pytest -q — exit 0 — 9 s — 2026-11-17\n"
+                 "- **Rechargement** : aucun — pas de code monté\n"
+                 "- **Navigateur** : pytest -m navigateur — exit 0 — 150 s — 20 tests — 2026-11-17\n")
+        f = "infra/environnement-docker.md"
+        k = kb({f: "---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + proof})
+        self.assertEqual(av.infra_exit(k), [
+            f"`kb/{f}` `## Outillage qualité` : ligne `- Partage :` absente (ce qui démarre une fois (serveur, navigateur, "
+            "base) et comment chaque test est isolé (remise à zéro des données) ; ou `aucun — <raison>`)",
+            f"`kb/{f}` `## Outillage qualité` : ligne `- Parallèle :` absente (l'outil du lanceur de tests et le nombre de "
+            "workers ; ou `aucun — <raison>`)",
+            f"`kb/{f}` `## Preuve de sortie` : **Tests** sans `<n> tests` après sa durée",
+            f"`kb/{f}` : **Navigateur** : 150 s pour 20 tests, 7.5 s par test (plus de 3 s) — une ressource coûteuse "
+            "redémarre à chaque test, ou rien ne tourne en parallèle : voir `- Partage :` et `- Parallèle :` de "
+            "`## Outillage qualité`"])
+        fast = proof.replace("9 s —", "9 s — 40 tests —").replace("150 s", "50 s")
+        (k / f).write_text("---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + SHARED + fast,
+                           encoding="utf-8")
+        self.assertEqual(av.infra_exit(k), [])
+        # a measured reason keeps a slow browser run
+        slow = fast.replace("50 s", "150 s")
+        (k / f).write_text("---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + SHARED +
+                           "- Coût par test : navigateur — chaque test importe un fichier de 40 Mo, 6 s mesurées\n" + slow,
+                           encoding="utf-8")
+        self.assertEqual(av.infra_exit(k), [])
+        few = proof.replace("9 s —", "9 s — 40 tests —").replace("150 s — 20 tests", "46 s — 1 tests")
+        (k / f).write_text("---\ntype: Infra\n---\n## Outillage qualité\n- Tests : pytest\n" + SHARED + few,
+                           encoding="utf-8")
+        self.assertEqual(av.infra_exit(k), [])                       # one test is mostly its start
 
     def test_schema_db_closes_on_the_database_diagram_the_user_validated(self):
         k = kb({"infra/base-de-donnees.md": "---\ntype: Infra\n---\n## Commandes\n- migrer : make migrate\n"})

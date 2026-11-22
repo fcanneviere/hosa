@@ -615,7 +615,46 @@ def infra_exit(kb: Path) -> list[str]:
     if slow and not re.search(r"^\s*[-*]\s+(\*\*)?Groupes(\*\*)?\s*:\s*\S", tooling, re.M):
         gaps.append(f"`kb/infra/{p.name}` : **{' et '.join(slow)}** au-delà de {GROUP_MAX} s, et `## Outillage qualité` "
                     f"n'a pas de ligne `- Groupes :` (la commande de chaque groupe, chacun sous {GROUP_MAX} s)")
+    # What starts once and what runs side by side, chosen with the stack before the first test (rieki sprint-4: a
+    # Streamlit server started and stopped for each of 97 browser tests, one after the other — 25 min).
+    for line, what in (("Partage", "ce qui démarre une fois (serveur, navigateur, base) et comment chaque test est "
+                                   "isolé (remise à zéro des données)"),
+                       ("Parallèle", "l'outil du lanceur de tests et le nombre de workers")):
+        if not tooling_line(tooling, line):
+            gaps.append(f"`kb/infra/{p.name}` `## Outillage qualité` : ligne `- {line} :` absente ({what} ; ou "
+                        f"`aucun — <raison>`)")
+    for item in ("Tests", "Navigateur"):
+        m = re.search(rf"^\s*[-*]\s+\*\*{item}\*\*\s*:\s*(.*)$", proof, re.M)
+        if not m or re.match(r"aucun\s+—", m[1], re.I):
+            continue
+        d, n = re.search(r"\b(\d+)\s*s\b", m[1]), re.search(r"\b(\d+)\s*tests?\b", m[1])
+        if not n:
+            gaps.append(f"`kb/infra/{p.name}` `## Preuve de sortie` : **{item}** sans `<n> tests` après sa durée")
+        elif d and (gap := cost_gap(item, int(d[1]), int(n[1]), tooling)):
+            gaps.append(f"`kb/infra/{p.name}` : {gap}")
     return gaps
+
+def tooling_line(tooling: str, name: str) -> str | None:
+    m = re.search(rf"^\s*[-*]\s+(?:\*\*)?{name}(?:\*\*)?\s*:\s*(\S.*)$", tooling, re.M)
+    return m[1] if m else None
+
+def cost_limits() -> dict:
+    """The most seconds per test, from pipeline.json (the `cout-tests` control of `develop`'s lots), and the least
+    count of tests from which the ratio counts (one test is mostly its start)."""
+    return next((x["cout"] for x in TASKS["controls"] if "cout" in x), {"Tests": 0.5, "Navigateur": 3, "min": 10})
+
+def cost_gap(item: str, seconds: int, count: int, tooling: str) -> str | None:
+    """`item`'s run costs more per test than pipeline.json allows, and `## Outillage qualité` gives no measured
+    reason for it (`- Coût par test : navigateur — <raison, mesure>`)."""
+    lim = cost_limits()
+    if count < lim["min"] or seconds <= lim[item] * count:
+        return None
+    why = tooling_line(tooling, "Coût par test") or ""
+    if re.search(r"navigateur" if item == "Navigateur" else r"\b(tests|suite)\b", why, re.I):
+        return None
+    return (f"**{item}** : {seconds} s pour {count} tests, {seconds / count:.1f} s par test (plus de {lim[item]} s) — "
+            f"une ressource coûteuse redémarre à chaque test, ou rien ne tourne en parallèle : voir `- Partage :` et "
+            f"`- Parallèle :` de `## Outillage qualité`")
 
 
 def infra_with(kb: Path, heading: str) -> str | None:
@@ -1892,9 +1931,44 @@ def ctl_tests_ecrits(kb: Path, files: list[tuple[str, Path | None]], t: dict) ->
     return gaps
 
 
+DUREE = re.compile(r"\b(suite|navigateur)\s+(\d+)\s*s\s*/\s*(\d+)\s*tests?\b", re.I)
+
+def ctl_cout_tests(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """The last full run of the sprint (`## Suite complète`, its `durées : suite <s> s / <n> tests, navigateur <s> s /
+    <n> tests`) costs no more per test than pipeline.json allows. Past it, `hosa-qa-lead` fixes the tooling before the
+    next lot (rieki sprint-4: 97 browser tests in 25 min, each starting its own server, one after the other). A done
+    `hosa-qa-lead` task `<ticket>.outillage-<n>` dated after that run lifts the refusal until the next run."""
+    lines = [x for x in (section(read(kb / "sprints" / f"{t['scope']}.md"), "Suite complète") or "").splitlines()
+             if x.strip().startswith(("-", "*"))]
+    if not lines:
+        return []
+    last = lines[-1]
+    runs = DUREE.findall(last)
+    if not runs:
+        return (["la dernière ligne de `## Suite complète`, écrite par ce lot, n'a pas ses `durées : suite <s> s / <n> "
+                 "tests, navigateur <s> s / <n> tests` (`## Checks` du développeur)"]
+                if newer(last, t.get("at") or "") else [])
+    fixed = [x for x in load_tasks(kb / "project" / "avancement.md")
+             if (x["stage"], x["scope"], x["agent"], x["statut"]) == (t["stage"], t["scope"], "hosa-qa-lead", DONE)
+             and fnmatch(x["id"], "*.outillage-*") and x["at"][:16] >= stamp_of(last)]
+    if fixed:
+        return []
+    tooling = next((section(tx, "Outillage qualité") or "" for _, tx in concepts(kb, "infra", "Infra")
+                    if section(tx, "Outillage qualité") is not None), "")
+    gaps = [g for kind, s, n in runs
+            if (g := cost_gap("Navigateur" if kind.lower() == "navigateur" else "Tests", int(s), int(n), tooling))]
+    return [f"{g}. Envoie-le à `hosa-qa-lead` Mode 2, défaut d'outillage (`task add {t['stage']} <ticket>.outillage-<n> "
+            f"--agent hosa-qa-lead`), avant le lot suivant ; puis `task done` ce lot à nouveau" for g in gaps]
+
+def stamp_of(line: str) -> str:
+    m = STAMP.search(line)
+    return f"{m[1]}T{m[2]}" if m and m[2] else (m[1] if m else "")
+
+
 CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
             "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix,
-            "rechargement": ctl_rechargement, "couverture": ctl_couverture, "tests-ecrits": ctl_tests_ecrits}
+            "rechargement": ctl_rechargement, "couverture": ctl_couverture, "tests-ecrits": ctl_tests_ecrits,
+            "cout-tests": ctl_cout_tests}
 # `refus 2/2 (okf ; sortie 1) — …`: the last refusal's cause and count, then the other causes' counts
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)((?: ; [\w-]+ \d+)*)\)(?: — )?")
 

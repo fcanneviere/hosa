@@ -88,6 +88,8 @@ Lié à : [ticket](../tickets/<slug-ticket>.md)
 
 **Défaut d'outillage** (from `develop`): a shared fixture, `conftest`, the runner, a test server's start or stop breaks a run (rieki sprint-4: a browser teardown raised `TimeoutExpired` at 10 s and the full suite never ran). It is a defect, not a proposal: fix it at once, no confirmation, in the test tooling files only. Show it fixed: the failing command, then the same command green. Report the files changed under `## Outillage (Mode 2)`. Its cause is in the application code → say so with the output, change nothing.
 
+**Coût par test** (a `défaut d'outillage` from `develop`'s `cout-tests`): a run costs more seconds per test than pipeline.json's `cout`. Find what restarts at each test (a server, a browser, a database, a container) and what runs in series. Apply the `Partage` and `Parallèle` of `## Outillage qualité` in the test tooling: the costly resource starts once per session or worker, each test reset by its data; only the tests that truly need a fresh process keep one, under a marker of their own. A runner plugin not installed → `## Installation nécessaire` for `hosa-infra`, never installed by you. Show it: the run's duration and count before, then after, on the same command. Every test still passes, none skipped to get faster.
+
 ## Mode 3 — Demo
 
 The user sees the sprint working before it lands, and plays only what the agents could not see. Two kinds of T-test, per `retours` 3b:
