@@ -16,7 +16,7 @@ const REPORT_MAX = 4000; // budget.js refuses a longer final report once — sam
 const AGENT_RULES = `## Hosa agent rules (your own instructions win where they differ)
 **Context:** every call re-reads your whole context; a file read is paid again on each later call.
 - Independent calls (reads, greps, queries) go in one message: one call, not several.
-- Your brief's paths, excerpts and slugs first. KB: the root's \`.hosa/kb/\`, never \`.worktrees/…/.hosa/kb\`; \`sommaire.md\`, then \`<hosa> kb_query\` (\`--type\`, \`--where\`, \`--sections "<heading>"\`, \`--fields\`), not whole files.
+- Your brief's paths, excerpts and slugs first. KB: the root's \`.hosa/kb/\`, never \`.worktrees/…/.hosa/kb\`; then \`<hosa> kb_query\` (\`--slug\`, \`--where\`, \`--sections\`, \`--fields\`), not whole files nor a \`grep\` of many.
 - Code: the project graph first (\`graph.py map|find|explain|affected|ticket\`, \`## Project graph\`), then its regions; Grep last.
 - Slices: \`<hosa> lire "<file>#<section>"\` or \`"<file>:<a>-<b>"\`, not \`cat\`; no lockfile, generated or vendored file; no re-read; quiet reporters.
 - Read a Hosa skill or agent file only when your brief or instructions name it, only the section named.

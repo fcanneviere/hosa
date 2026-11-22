@@ -181,6 +181,27 @@ test('Bash: a worktree file\'s outline is asked by its path in the main checkout
   assert.deepEqual(asked, ['src/app.py']);
 });
 
+// rieki sprint-4: 489 agent greps in the KB, 1.8 M characters, mostly tickets/ and test/.
+test('Bash: a grep of a header field or a heading over tickets gets its kb_query once', () => {
+  n++;
+  const kbDir = fwd(path.join(proj, '.hosa', 'kb'));
+  let out = bash(`grep -l "^state: done" ${fwd(tickets)}/*.md`);
+  assert.ok(denied(out));
+  assert.ok(reason(out).includes(`kb_query "${kbDir}" --bundle tickets --where state~done --fields state`), reason(out));
+  assert.equal(bash(`grep -l "^state: done" ${fwd(tickets)}/*.md`), null, 'its retry passes');
+  assert.equal(bash(`grep -rl "^state: done" ${fwd(tickets)}`), null, 'once per query and agent');
+  out = bash(`cd .hosa/kb && grep -rn "^## Critères" tickets`);
+  assert.ok(denied(out));
+  assert.match(reason(out), /--bundle tickets --sections "Critères"/);
+  n++;
+  out = bash(`grep -rln "commentaire hostile" ${fwd(tickets)}`);
+  assert.ok(denied(out), 'a plain phrase of the body');
+  assert.match(reason(out), /--bundle tickets --grep "commentaire hostile"/);
+  assert.equal(bash(`grep -rn "commentaire.*hostile" ${fwd(tickets)}`), null, 'a regex passes');
+  assert.equal(bash(`grep -n "^state:" ${fwd(tickets)}/a.md`), null, 'one file passes');
+  assert.equal(bash(`grep -rn "^state:" ${fwd(path.join(proj, '.hosa', 'kb'))}`), null, 'the whole KB: not one bundle');
+});
+
 test('Bash: HOSA_READ_GUARD=0 turns it off', () => {
   n++;
   process.env.HOSA_READ_GUARD = '0';
@@ -193,6 +214,7 @@ test('Bash: HOSA_READ_GUARD=0 turns it off', () => {
 test('Bash: a grep in the KB is not sent to the graph', () => {
   n++;
   const query = () => 'src/app.py:1 hit';
-  assert.equal(bash('grep -rn "commentaire" .hosa/kb/tickets', {}, query), null);
+  const out = bash('grep -rn "commentaire" .hosa/kb/tickets', {}, query); // kb_query's answer, never the graph's
+  assert.ok(!out || !reason(out).includes('src/app.py:1 hit'));
   assert.equal(bash('cd .hosa/kb && grep -rn "commentaire" .', {}, query), null);
 });

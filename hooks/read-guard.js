@@ -59,7 +59,7 @@ function glob(word, dir) {
 // Reads through `cd`, `K="…"` assignments and `for f in …; do … done` loops; skips what it can't name.
 function bashReads(cmd, cwd) {
   if (/<</.test(cmd)) return null; // a heredoc's lines are not commands
-  const vars = {}, reads = [], greps = [], outlines = [];
+  const vars = {}, reads = [], greps = [], outlines = [], kbGreps = [];
   let loop = null, piped = null;
   const expand = (w, dir) => {
     let outs = [w];
@@ -127,7 +127,13 @@ function bashReads(cmd, cwd) {
       const isDir = (t) => { try { return fs.statSync(t).isDirectory(); } catch (e) { return false; } };
       // the graph indexes the code: a grep in the KB (`.hosa/`) is not one it answers
       const inKb = targets.some((t) => /[\\/]\.hosa([\\/]|$)/.test(t));
-      if (!pattern || inKb) return;
+      if (pattern && inKb) { // a field or a heading over many tickets or test plans: `kb_query` answers it
+        const many = recursive ? targets : files(rest);
+        const q = kbQueryFor(pattern, many, recursive);
+        if (q) kbGreps.push(q);
+        return;
+      }
+      if (!pattern) return;
       if (!recursive) { // `grep -n "def \|class " f.py`: the outline of one code file
         const code = rest.length === 1 && files(rest).filter((f) => CODE.test(f));
         if (code && code.length === 1 && alternatives(pattern).every((a) => OUTLINE.test(a))) outlines.push(code[0]);
@@ -159,7 +165,29 @@ function bashReads(cmd, cwd) {
       for (const f of files(rest)) reads.push({ file: f, a, b });
     }
   });
-  return { reads, greps, outlines };
+  return { reads, greps, outlines, kbGreps };
+}
+
+// Rieki sprint-4: 489 agent greps in the KB (1.8 M characters), mostly `kb/tickets` and `kb/test`. A grep of a
+// header field (`^state: done`), a `## ` heading or a plain word over several of their files → the `kb_query`
+// that answers it (`--where`/`--fields`, `--sections`, `--grep`), or null. A regex, one file, the whole KB pass.
+const KB_BUNDLES = new Set(['tickets', 'test']);
+function kbQueryFor(pattern, targets, recursive) {
+  const where = targets.map((t) => /^(.*?[\\/]\.hosa[\\/]kb)[\\/]([^\\/]+)/.exec(t)).filter(Boolean);
+  if (!where.length || where.length !== targets.length) return null;
+  const kb = where[0][1].split(path.sep).join('/'), bundle = where[0][2];
+  if (!KB_BUNDLES.has(bundle) || where.some((w) => w[2] !== bundle) || (!recursive && targets.length < 2)) return null;
+  const p = pattern.replace(/^\^/, '').replace(/\\s\*|\\s\+/g, ' ');
+  const field = /^([a-z_]+):\s*([\w.-]*)\s*$/.exec(p);
+  if (field) {
+    const [, key, value] = field;
+    return `<hosa> kb_query "${kb}" --bundle ${bundle} ${value ? `--where ${key}~${value} ` : ''}--fields ${key}`;
+  }
+  const heading = /^##\s+(\S.*?)\s*$/.exec(p);
+  if (heading) return `<hosa> kb_query "${kb}" --bundle ${bundle} --sections "${heading[1]}"`;
+  // a plain word or phrase (no regex): the concepts whose body holds it, one line each
+  return /^[\p{L}\p{N}_ '’«».,:-]{3,}$/u.test(p) && !p.includes('"')
+    ? `<hosa> kb_query "${kb}" --bundle ${bundle} --grep "${p.trim()}"` : null;
 }
 
 // `head`'s line count (10 by default), or 0 when it counts bytes or from the end: left alone.
@@ -244,6 +272,12 @@ function bashGuard(p, query = queryGraph) {
       // a sprint worktree's file: the graph indexes the main checkout, same path below the worktree
       path.relative(groot, found.outlines[0]).split(path.sep).join('/').replace(/^\.worktrees\/[^/]+\/[^/]+\//, ''), query);
   if (asked) reasons.push(text(asked));
+  const kbq = found.kbGreps.find((q) => !s[`kbq:${q}`]);
+  if (kbq) {
+    s[`kbq:${kbq}`] = 1; // once per query and agent
+    reasons.push(`\`kb_query\` answers this grep of the KB, one line per concept and capped: \`${kbq}\` ` +
+      '(`--slug <name>` for one concept, `--where key=value` to filter, `--count` for a number).');
+  }
   if (!reasons.length) { remember(); store(file, s); return null; }
   s['~retry'] = h;
   store(file, s);
