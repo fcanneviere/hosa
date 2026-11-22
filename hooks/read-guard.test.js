@@ -107,7 +107,7 @@ test('Bash: a loop printing many KB files is refused for kb_query, then passes',
 
 test('Bash: piped, redirected, heredoc or unresolved output is left alone', () => {
   n++;
-  for (const cmd of [`cat "${src}" | head -5`, `cat "${src}" > /dev/null`, `cat "$UNKNOWN/app.py"`,
+  for (const cmd of [`cat "${src}" | grep ligne`, `cat "${src}" | head -5 | cut -c1-9`, `cat "${src}" > /dev/null`, `cat "$UNKNOWN/app.py"`,
     `python - <<'EOF'\ncat "${src}"\nEOF`]) {
     assert.equal(bash(cmd), null, cmd);
     assert.equal(bash(cmd), null, cmd);
@@ -134,6 +134,51 @@ test('Bash: a tree-wide grep for an identifier gets the graph answer once', () =
   assert.equal(bash('grep -rn "calcul_total" src tests', {}, query), null);
   assert.equal(bash(`grep -n "autre_nom" "${src}"`, {}, query), null, 'one file: not tree-wide');
   assert.equal(bash('grep -rn "a.*b" src', {}, query), null, 'a regex: not an identifier');
+});
+
+// rieki sprint-4: the guard saw 52 of 1 134 agent reads; these three forms made most of the rest.
+test('Bash: `cat f | head -n N` and `cat f | sed -n a,bp` are reads of those lines', () => {
+  n++;
+  assert.equal(bash(`cat "${src}" 2>/dev/null | head -30`), null);
+  assert.ok(denied(bash(`sed -n 5,10p "${src}"`)), 'inside the 30 lines already read');
+  n++;
+  assert.equal(bash(`cat "${src}" | sed -n 1,20p`), null);
+  assert.ok(denied(bash(`head -n 10 "${src}"`)));
+});
+
+test('Bash: a tree-wide grep of identifiers as alternatives gets the graph answer once', () => {
+  n++;
+  const query = (root, pattern) => (pattern === 'calcul_total' ? 'src/app.py:12 calcul_total (function)' : '');
+  const out = bash('grep -rn "calcul_total\\|Facture" src --include=*.py | head -20', {}, query);
+  assert.ok(denied(out));
+  assert.match(reason(out), /src\/app.py:12/);
+  assert.equal(bash('grep -rn "calcul_total\\|a.*b" src', {}, query), null, 'one alternative is a regex');
+});
+
+test('Bash: a grep of one code file for its def/class lines gets its outline once per file', () => {
+  n++;
+  const asked = [];
+  const query = (root, term, sub) => { asked.push([term, sub]); return sub === 'explain' ? 'file src/app.py\n→ contains\n  function calcul_total src/app.py:12' : ''; };
+  const out = bash(`grep -n "def \\|class " "${src}"`, {}, query);
+  assert.ok(denied(out));
+  assert.match(reason(out), /outline of src\/app.py/);
+  assert.deepEqual(asked, [['src/app.py', 'explain']]);
+  assert.equal(bash(`grep -n "def \\|class " "${src}"`, {}, query), null, 'its retry passes');
+  assert.equal(bash(`grep -n "^class " "${src}"`, {}, query), null, 'once per file');
+  n++;
+  assert.equal(bash(`grep -n "ligne 3" "${src}"`, {}, query), null, 'a text grep of one file passes');
+  assert.equal(bash(`grep -n "def " "${fwd(tickets)}/a.md"`, {}, query), null, 'not a code file');
+});
+
+test('Bash: a worktree file\'s outline is asked by its path in the main checkout', () => {
+  n++;
+  const wt = path.join(proj, '.worktrees', 'sprint', 's1', 'src');
+  fs.mkdirSync(wt, { recursive: true });
+  fs.writeFileSync(path.join(wt, 'app.py'), 'def f():\n  pass\n');
+  const asked = [];
+  const query = (root, term, sub) => { asked.push(term); return 'file src/app.py'; };
+  assert.ok(denied(bash(`cd "${fwd(wt)}" && grep -n "def " app.py`, {}, query)));
+  assert.deepEqual(asked, ['src/app.py']);
 });
 
 test('Bash: HOSA_READ_GUARD=0 turns it off', () => {

@@ -13,15 +13,18 @@
 // quarter of their context; 1 772 files read twice or more by the same agent; 17 agents of 708 queried the graph.
 // A command is refused once when it re-reads an unchanged file or range (by Read or Bash), prints more than
 // BASH_BIG bytes of files (→ `<hosa> lire`, `kb_query`), or greps the whole tree for an identifier the graph
-// locates (the answer in the refusal). Its retry, same text, passes. Output piped or redirected, heredocs and
-// variables it can't resolve are left alone: the guard reads what it can name, never more.
+// locates (the answer in the refusal). Rieki sprint-4, after this guard shipped: it saw 52 of 1 134 agent reads.
+// Now also `grep -rn "a\|b"` with identifiers as alternatives, `grep -n "def \|class " f.py` (the file's outline:
+// `graph explain <file>`, once per file) and `cat f | head -n N` / `| sed -n a,bp` (a read of those lines).
+// Its retry, same text, passes. Other pipes, redirections, heredocs and variables it can't resolve are left
+// alone: the guard reads what it can name, never more.
 // Fail-open; a retry after refusal always passes. Kill switch: HOSA_READ_GUARD=0.
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const { findKbRoot, findUp, guardGrep, queryGraph, IDENT_RE } = require('./graph');
+const { findKbRoot, findUp, guardGrep, guardOutline, queryGraph, IDENT_RE } = require('./graph');
 const { walk, native } = require('./gate');
 
 const stateDir = () => process.env.HOSA_STATE_DIR || path.join(os.tmpdir(), 'hosa-compress');
@@ -56,8 +59,8 @@ function glob(word, dir) {
 // Reads through `cd`, `K="…"` assignments and `for f in …; do … done` loops; skips what it can't name.
 function bashReads(cmd, cwd) {
   if (/<</.test(cmd)) return null; // a heredoc's lines are not commands
-  const vars = {}, reads = [], greps = [];
-  let loop = null;
+  const vars = {}, reads = [], greps = [], outlines = [];
+  let loop = null, piped = null;
   const expand = (w, dir) => {
     let outs = [w];
     for (const n of new Set([...w.matchAll(/\$\{?(\w+)\}?/g)].map((m) => m[1]))) {
@@ -98,9 +101,20 @@ function bashReads(cmd, cwd) {
       }
       return out;
     };
+    const source = piped;
+    piped = null;
+    // `cat f | head -n N` / `cat f | sed -n a,bp`: lines of f land in the context, as `head -n N f` would
+    if (source && (name === 'head' || name === 'sed') && !seg.pipeOut && !args.some((a) => /^(>|1>)/.test(a))) {
+      const n = name === 'head' ? headCount(args) : null;
+      const m = name === 'sed' && args.includes('-n') && /^(\d+)(?:,(\d+|\$))?p$/.exec(args.filter((a) => !a.startsWith('-'))[0] || '');
+      const extra = args.filter((a) => !a.startsWith('-') && !/^\d+$/.test(a) && a !== (m && m[0]));
+      if (!extra.length && n) for (const f of source) reads.push({ file: f, a: 1, b: n });
+      if (!extra.length && m) for (const f of source) reads.push({ file: f, a: Number(m[1]), b: m[2] === '$' ? null : m[2] ? Number(m[2]) : Number(m[1]) });
+      return;
+    }
     if (name === 'grep' || name === 'rg') {
       const flags = args.filter((a) => /^-[^-]/.test(a)).join('');
-      if (name === 'grep' && !/[rR]/.test(flags) && !args.includes('--recursive')) return;
+      const recursive = name === 'rg' || /[rR]/.test(flags) || args.includes('--recursive');
       const rest = [];
       let pattern = null;
       for (let k = 0; k < args.length; k++) {
@@ -113,24 +127,28 @@ function bashReads(cmd, cwd) {
       const isDir = (t) => { try { return fs.statSync(t).isDirectory(); } catch (e) { return false; } };
       // the graph indexes the code: a grep in the KB (`.hosa/`) is not one it answers
       const inKb = targets.some((t) => /[\\/]\.hosa([\\/]|$)/.test(t));
-      if (pattern && IDENT_RE.test(pattern) && !inKb && targets.some(isDir)) greps.push(pattern);
+      if (!pattern || inKb) return;
+      if (!recursive) { // `grep -n "def \|class " f.py`: the outline of one code file
+        const code = rest.length === 1 && files(rest).filter((f) => CODE.test(f));
+        if (code && code.length === 1 && alternatives(pattern).every((a) => OUTLINE.test(a))) outlines.push(code[0]);
+        return;
+      }
+      // `grep -rn "calcul_total\|Run" src`: each alternative an identifier the graph may locate
+      const alts = alternatives(pattern);
+      if (alts.every((a) => IDENT_RE.test(a)) && targets.some(isDir)) greps.push(...alts);
       return;
     }
-    // output piped (`cat f | head`) or redirected (`> f`): not what lands in the context
+    const catFiles = () => files(args.filter((a) => !a.startsWith('-') && !/^\d*>/.test(a)));
+    // `cat f | head`: the next command says how much of f lands in the context
+    if (name === 'cat' && seg.pipeOut && !args.some((a) => /^(>|1>)/.test(a))) { piped = catFiles(); return; }
+    // output piped (`cat f | grep x`) or redirected (`> f`): not what lands in the context
     if (seg.pipeOut || args.some((a) => /^(>|1>)/.test(a))) return;
     if (name === 'cat') {
-      for (const f of files(args.filter((a) => !a.startsWith('-')))) reads.push({ file: f, a: 1, b: null });
+      for (const f of catFiles()) reads.push({ file: f, a: 1, b: null });
     } else if (name === 'head') {
-      let n = 10;
-      const rest = [];
-      for (let k = 0; k < args.length; k++) {
-        const m = /^-(?:n)?(\d+)$/.exec(args[k]) || /^--lines=(\d+)$/.exec(args[k]);
-        if (m) n = Number(m[1]);
-        else if (args[k] === '-n') n = Number(args[++k]);
-        else if (args[k].startsWith('-')) return; // -c (bytes), a negative count: left alone
-        else rest.push(args[k]);
-      }
-      if (n > 0) for (const f of files(rest)) reads.push({ file: f, a: 1, b: n });
+      const n = headCount(args);
+      const rest = args.filter((a, k) => !a.startsWith('-') && !(args[k - 1] === '-n'));
+      if (n) for (const f of files(rest)) reads.push({ file: f, a: 1, b: n });
     } else if (name === 'sed') {
       if (!args.includes('-n')) return;
       const rest = args.filter((a) => !a.startsWith('-'));
@@ -141,8 +159,26 @@ function bashReads(cmd, cwd) {
       for (const f of files(rest)) reads.push({ file: f, a, b });
     }
   });
-  return { reads, greps };
+  return { reads, greps, outlines };
 }
+
+// `head`'s line count (10 by default), or 0 when it counts bytes or from the end: left alone.
+function headCount(args) {
+  let n = 10;
+  for (let k = 0; k < args.length; k++) {
+    const m = /^-(?:n)?(\d+)$/.exec(args[k]) || /^--lines=(\d+)$/.exec(args[k]);
+    if (m) n = Number(m[1]);
+    else if (args[k] === '-n') n = Number(args[++k]);
+    else if (args[k].startsWith('-')) return 0; // -c (bytes), a negative count
+  }
+  return n > 0 ? n : 0;
+}
+
+// A grep pattern's alternatives: `a\|b` (basic), `a|b` (-E, rg); `^`, `\s*` and spaces around each dropped.
+const alternatives = (p) => p.split(/\\\||\|/).map((a) => a.replace(/^\^/, '').replace(/^(\\s\*|\s)+/, '').trim());
+// Rieki sprint-4: 689 greps of one code file for its `def`/`class` lines — the outline `graph explain <file>` gives.
+const OUTLINE = /^(async\s+def|def|class|function|export|interface)(\s+\w*)?(\\?\(|:)?$/;
+const CODE = /\.(py|js|mjs|cjs|ts|tsx|jsx)$/i;
 
 const sliceOf = (file, a, b) => fs.readFileSync(file, 'utf8').split('\n').slice(a - 1, b == null ? undefined : b).join('\n');
 
@@ -198,12 +234,16 @@ function bashGuard(p, query = queryGraph) {
       '`"<file>:<start>-<end>"` (numbered, capped; a file too big gives its outline)' +
       (kb ? '; in the KB, `<hosa> kb_query <kb> --slug <slug> --sections "<heading>"` or `--fields`, several tickets in one call.' : '.'));
   }
-  const groot = found.greps.length && findUp(cwd, path.join('.hosa', 'graph', 'graph.json'));
-  for (const pattern of groot ? found.greps.slice(0, 1) : []) { // one graph query: it takes up to 4 s, the hook 5 s
-    const out = guardGrep({ session_id: p.session_id, agent_id: p.agent_id, tool_input: { pattern } },
-      path.join(groot, '.hosa', 'graph'), groot, query);
-    if (out) reasons.push(out.hookSpecificOutput.permissionDecisionReason.replace(/^\[hosa\] /, '').replace(/Need raw text.*$/s, '').trim());
-  }
+  const groot = (found.greps.length || found.outlines.length) && findUp(cwd, path.join('.hosa', 'graph', 'graph.json'));
+  const who = { session_id: p.session_id, agent_id: p.agent_id };
+  const text = (out) => out && out.hookSpecificOutput.permissionDecisionReason.replace(/^\[hosa\] /, '').replace(/Need raw text.*$/s, '').trim();
+  // one graph query per command: it takes up to 4 s
+  const asked = !groot ? null : found.greps.length
+    ? guardGrep({ ...who, tool_input: { pattern: found.greps[0] } }, path.join(groot, '.hosa', 'graph'), groot, query)
+    : guardOutline(who, path.join(groot, '.hosa', 'graph'), groot,
+      // a sprint worktree's file: the graph indexes the main checkout, same path below the worktree
+      path.relative(groot, found.outlines[0]).split(path.sep).join('/').replace(/^\.worktrees\/[^/]+\/[^/]+\//, ''), query);
+  if (asked) reasons.push(text(asked));
   if (!reasons.length) { remember(); store(file, s); return null; }
   s['~retry'] = h;
   store(file, s);

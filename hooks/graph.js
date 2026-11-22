@@ -96,12 +96,12 @@ function runGraph(root, args) {
   spawnSync(python(), [GRAPH_PY, '--root', root, ...args], { timeout: 10000, stdio: 'ignore', windowsHide: true });
 }
 
-// `graph.py find` output, or '' on failure/no hit. Stays under the 5 s hook timeout.
-function queryGraph(root, text) {
-  const r = spawnSync(python(), [GRAPH_PY, '--root', root, '--budget', '500', 'find', text],
+// `graph.py find` output (`explain` for a file's outline), or '' on failure/no hit. Stays under the 5 s hook timeout.
+function queryGraph(root, text, sub = 'find') {
+  const r = spawnSync(python(), [GRAPH_PY, '--root', root, '--budget', '500', sub, text],
     { timeout: 4000, encoding: 'utf8', windowsHide: true });
   const out = (r.status === 0 && r.stdout || '').trim();
-  return out === 'Aucun résultat.' ? '' : out;
+  return out === 'Aucun résultat.' || /^Aucun élément/.test(out) ? '' : out;
 }
 
 // Grep over a whole tree for a bare identifier: the graph already knows where it
@@ -114,15 +114,31 @@ function broadIdentGrep(p) {
   try { return !i.path || fs.statSync(path.resolve(p.cwd || '.', i.path)).isDirectory(); } catch (e) { return false; }
 }
 
-function guardGrep(p, gdir, root, query) {
+// Once per session, agent and key: true the first time (and records it), false after.
+function firstTime(gdir, p, key) {
   const file = path.join(gdir, 'refused');
   let s = {};
   try { s = JSON.parse(fs.readFileSync(file, 'utf8')) || {}; } catch (e) {}
   if (s.session !== p.session_id) s = { session: p.session_id, keys: [] };
-  const key = `${p.agent_id || ''}:${p.tool_input.pattern}`;
-  if (s.keys.includes(key)) return null;
-  s.keys.push(key);
+  const k = `${p.agent_id || ''}:${key}`;
+  if (s.keys.includes(k)) return false;
+  s.keys.push(k);
   fs.writeFileSync(file, JSON.stringify(s));
+  return true;
+}
+
+// A grep for a code file's `def`/`class` lines: the graph gives its outline (`explain <file>`), refused once.
+function guardOutline(p, gdir, root, rel, query) {
+  if (!firstTime(gdir, p, `outline:${rel}`)) return null;
+  const out = query(root, rel, 'explain');
+  if (!out) return null;
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason:
+    `[hosa] The project graph gives the outline of ${rel} (its classes, functions and lines, who imports it):\n${out}\n` +
+    `Read only the lines you need. \`${commandLine()} explain <name>\` gives a symbol's callers.` } };
+}
+
+function guardGrep(p, gdir, root, query) {
+  if (!firstTime(gdir, p, p.tool_input.pattern)) return null;
   const hits = query(root, p.tool_input.pattern);
   if (!hits) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason:
@@ -204,5 +220,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { pythonBackground, processPayload, sessionStart, guardGrep, queryGraph, IDENT_RE, findUp, findKbRoot, commandLine, refreshSummary, python, VENV,
+module.exports = { pythonBackground, processPayload, sessionStart, guardGrep, guardOutline, queryGraph, IDENT_RE, findUp, findKbRoot, commandLine, refreshSummary, python, VENV,
   hosaCommand, writeShim, shimText, pluginRoot };
