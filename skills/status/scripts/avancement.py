@@ -2004,11 +2004,27 @@ def ctl_tests_ecrits(kb: Path, files: list[tuple[str, Path | None]], t: dict) ->
     for p, at in handed.items():
         f = resolve(kb, p, t["scope"])
         when = datetime.fromisoformat(at.replace("Z", "+00:00")).timestamp()
-        if f and f.is_file() and f.stat().st_mtime > when + 1:
+        if f and f.is_file() and f.stat().st_mtime > when + 1 and not committed_clean(f):
             gaps.append(f"`{p}` modifié après la remise de `hosa-tester` ({at}) : un test écrit d'abord ne change que "
                         f"par lui. Donne-lui le `## Tests à revoir` du développeur (`task add {t['stage']} "
                         f"<ticket>.tests-correction-<n>`) : il garde ou corrige ces tests, puis `task done` ce lot à nouveau")
     return gaps
+
+
+def committed_clean(f: Path) -> bool:
+    """`f` is committed and has no change in its worktree: a test of an earlier ticket, committed with it, is not
+    this lot's change, whatever its date (rieki sprint-4, 0.1.127: two lots refused on tests of tickets committed
+    from 18 to 21 November, `--force` twice). Not a git checkout, or git fails: False, the date alone decides."""
+    import subprocess
+    try:
+        r = subprocess.run(["git", "-C", str(f.parent), "status", "--porcelain", "--", f.name], capture_output=True,
+                           text=True, timeout=15, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        tracked = subprocess.run(["git", "-C", str(f.parent), "ls-files", "--error-unmatch", "--", f.name],
+                                 capture_output=True, text=True, timeout=15,
+                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0 and tracked.returncode == 0 and not r.stdout.strip()
 
 
 DUREE = re.compile(r"\b(suite|navigateur)\s+(\d+)\s*s\s*/\s*(\d+)\s*tests?\b", re.I)

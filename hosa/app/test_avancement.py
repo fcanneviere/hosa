@@ -645,6 +645,47 @@ class Tasks(unittest.TestCase):
         self.assertEqual(task("done", "t1.tests-correction-1", "--sortie", "tests/test_a.py")[0], 0)
         self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 0)  # the tester kept or fixed it
 
+    def test_a_committed_test_of_an_earlier_ticket_is_not_this_lot_s_change(self):
+        # rieki sprint-4 (0.1.127): two lots refused on tests of tickets committed days before, `--force` twice.
+        import shutil
+        import subprocess
+        import time
+        if not shutil.which("git"):
+            self.skipTest("git absent")
+        wt = Path(tempfile.mkdtemp())
+        (wt / "tests").mkdir()
+        test, src = wt / "tests" / "test_a.py", wt / "a.py"
+        test.write_text("assert x == 3\n", encoding="utf-8")
+        src.write_text("", encoding="utf-8")
+        k = kb({"sprints/s1.md": SPRINT.replace("type: Sprint", f"type: Sprint\nworktree: {wt.as_posix()}"),
+                "tickets/t1.md": TICKET})
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+
+        def task(op, tid, *rest):
+            return run(k, "task", op, "develop", tid, "--sprint", "s1", *rest)
+
+        def git(*a):
+            subprocess.run(["git", "-C", str(wt), "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                           capture_output=True, check=True)
+
+        task("add", "t0.tests", "--agent", "hosa-tester")
+        old = time.time() - 120
+        os.utime(test, (old, old))
+        with unittest.mock.patch.object(av, "now", return_value=time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                                               time.gmtime(old + 60))):
+            self.assertEqual(task("done", "t0.tests", "--sortie", "tests/test_a.py")[0], 0)
+        git("init", "-q")
+        test.write_text("assert x == 4\n", encoding="utf-8")  # changed with its ticket, then committed
+        git("add", "-A")
+        git("commit", "-qm", "t0")
+        task("add", "t1.lot-1", "--agent", "hosa-developer")
+        self.assertEqual(task("done", "t1.lot-1", "--sortie", "a.py")[0], 0)  # committed, unchanged: not refused
+        task("add", "t1.lot-2", "--agent", "hosa-developer")
+        test.write_text("assert x == 5\n", encoding="utf-8")  # this lot changes it
+        code, out = task("done", "t1.lot-2", "--sortie", "a.py")
+        self.assertEqual(code, 1, out)
+        self.assertIn("`tests/test_a.py` modifié après la remise de `hosa-tester`", out)
+
     def test_a_lot_is_refused_while_the_last_full_run_costs_too_much_per_test(self):
         # rieki sprint-4: 97 browser tests in 25 min, each starting its own Streamlit server, one after the other.
         wt = Path(tempfile.mkdtemp())
