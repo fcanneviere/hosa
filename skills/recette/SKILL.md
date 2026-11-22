@@ -74,7 +74,7 @@ Append to `kb/test/log.md` (create if missing, OKF §9 format). If the persona w
 
 ## Step 5: Report and Route
 
-Report the agent's verdict, scénarios, pain points, and quick wins in plain language, and its `## Ménage` — a recette that couldn't reset the environment leaves data the next one would trip on: say so, and propose `qa-plan` to have `hosa-data-engineer` add or fix the dataset's `## Remise à zéro`.
+Report the agent's verdict, scénarios, pain points, and quick wins in plain language, and its `## Ménage` — a recette that couldn't reset the environment leaves data the next one would trip on: say so, and propose to have `hosa-data-engineer` (Responsibility 4, the dataset written and loaded at `qa`) add or fix the dataset's `## Remise à zéro`.
 
 - **A ticket of the `active` sprint** → no new ticket: route as `qa` Step 4 does. A `CAn` answered `Non` is a defect fixed in the sprint: `develop <ticket> correction`, then `qa <sprint> <ticket>`. A need the criteria never asked for → the backlog, as below.
 - **Otherwise, Échoué scenarios that look like implementation bugs** → dispatch `hosa-product-owner` to create a `Ticket` (`state: todo`, linked to the recette `Test Plan` and the target) with the exact gap, then suggest `debug` on it.

@@ -15,9 +15,10 @@ technique.md
         ↓ manquant
 Propose de lancer qa-plan d'abord
         ↓ tous présents
-Vérifie l'environnement Docker du sprint et la remise à zéro
-documentée du jeu de données
-        ↓ manquant → propose qa-plan / git, stop
+Vérifie l'environnement Docker du sprint
+        ↓ manquant → propose git, stop
+Écrit puis charge le jeu de données sur le code du sprint
+(hosa-data-engineer : jeu-ecriture, puis jeu-chargement)
 Par lot de tickets : dispatch hosa-tester (Exécuter) avec les
 slugs — il trouve tout, teste, corrige le côté tests, enregistre
 ses résultats et fait le ménage ; suite complète au dernier lot
@@ -43,13 +44,17 @@ Manual: `/qa <slug-sprint> [<slug-ticket> [technique]]` — a ticket given re-ru
 
 ## Step 1: Read the Sprint and Check Preconditions
 
-`avancement.py … start qa --sprint <slug>`: refused → it names the stage not done (`qa-plan`, `develop`…) — propose it and stop, don't partially execute. After a correction, `back qa develop` already reopened `qa`; a re-run of a `qa` already done, asked by the user → `start … --rouvre "<their request>"`. Then read `kb/sprints/<slug>.md` for its `## Tickets` list. Once the lots (Step 3) and the personas (Step 4) are known, list every dispatch: `avancement.py … task add qa lot-<k> --sprint <slug> --agent hosa-tester --objet "<tickets du lot>"`, `task add qa recette-<persona> --sprint <slug> --agent hosa-key-user --objet "<tickets>"`, `task add qa outillage --sprint <slug> --agent hosa-qa-lead`. Tasks already listed (a resumed session): keep them, dispatch the first `à faire` one. A ticket re-run alone after a correction re-adds its lot and the recettes it needs (`task add` on a known id resets it to `à faire`).
+`avancement.py … start qa --sprint <slug>`: refused → it names the stage not done (`qa-plan`, `develop`…) — propose it and stop, don't partially execute. After a correction, `back qa develop` already reopened `qa`; a re-run of a `qa` already done, asked by the user → `start … --rouvre "<their request>"`. Then read `kb/sprints/<slug>.md` for its `## Tickets` list. Once the dataset is loaded (Step 2) and the lots (Step 3) and the personas (Step 4) are known, list every dispatch: `avancement.py … task add qa lot-<k> --sprint <slug> --agent hosa-tester --objet "<tickets du lot>"`, `task add qa recette-<persona> --sprint <slug> --agent hosa-key-user --objet "<tickets>"`, `task add qa outillage --sprint <slug> --agent hosa-qa-lead`. Tasks already listed (a resumed session): keep them, dispatch the first `à faire` one. A ticket re-run alone after a correction re-adds its lot and the recettes it needs (`task add` on a known id resets it to `à faire`).
 
 ## Step 2: Check the Environment and the Dataset
 
 Read the sprint's `docker_project`: missing on an `active` sprint → run `git` Mode 1 (reattach) first, which starts the sprint's own environment. Then `docker_check.py <docker_project> <worktree>` must pass — it guarantees tests and recettes run on this sprint's files, not a previous sprint's; a failure is recreated from the worktree before going on. 
 
-The test dataset must exist with its documented `## Remise à zéro` (prepared by `qa-plan` before the sprint started) — `hosa-tester` and `hosa-key-user` reset to it at the start and end of every pass. No dataset, or no reset command → propose `qa-plan` first and stop: running tests against unknown data proves nothing.
+Then the test dataset, on the sprint's code — written now, not at `qa-plan`: the code that loads it exists only now (rieki sprint-3: a dataset in SQL « équivalent » for an import function not yet written). Dispatch `hosa-data-engineer` **with `model: sonnet`** (Responsibility 4) twice, a fresh agent each time, with the sprint slug, the `worktree`, the `docker_project` and the paths the task before wrote:
+1. `jeu-ecriture` — write or extend the dataset from the README's `## Couverture des critères` (written by `qa-plan`) and the plans' `## Cas de test`, through the sprint's code: its migrations, its import and creation functions. `--sortie` the dataset's files.
+2. `jeu-chargement` — load it with `## Remise à zéro` then `## Vérification` in the sprint's `docker_project`, and update the README. `--sortie` the README: `task done` refuses it without those two sections and a line `Dernier rechargement : <AAAA-MM-JJ> — OK`.
+
+`task add` refuses a `lot-<k>` or a `recette-<persona>` while `jeu-chargement` is open (pipeline.json `after`): running tests against unknown data proves nothing. Already done this sprint (a re-run after a correction) → no new task; Step 5b reloads it. No `## Couverture des critères` in the README → propose `qa-plan` first and stop. `hosa-tester` and `hosa-key-user` reset to the dataset at the start and end of every pass.
 
 ## Step 3: Run Technical Tests Per Lot
 

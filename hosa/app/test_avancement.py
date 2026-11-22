@@ -2335,30 +2335,63 @@ class QaPlanTasks(unittest.TestCase):
                           f"même défaut que `a-technique` « - [CA1] x{fails('ax')} » : garder le cas du "
                           "niveau le plus bas qui le voit (`qa-plan`)"])
 
-    def test_the_dataset_is_written_then_loaded_then_covers_every_criterion(self):
-        self.task("add", "jeu-ecriture", "--agent", "hosa-data-engineer")
-        self.assertEqual(self.task("add", "jeu-chargement", "--agent", "hosa-data-engineer")[0], 1)  # after writing
-        (self.readme.parent / "seed.sql").write_text("insert", encoding="utf-8")
-        self.assertEqual(self.task("done", "jeu-ecriture", "--sortie", str(self.readme.parent / "seed.sql"))[0], 0)
-        self.task("add", "jeu-chargement", "--agent", "hosa-data-engineer")
-        self.readme.write_text("# Jeu\n## Remise à zéro\nx\n## Vérification\ny\n", encoding="utf-8")
-        code, out = self.task("done", "jeu-chargement", "--sortie", str(self.readme))
-        self.assertEqual(code, 1)
-        self.assertIn("Dernier rechargement", out)
-        self.readme.write_text(self.readme.read_text(encoding="utf-8") + "Dernier rechargement : 2026-11-18 — OK\n",
-                               encoding="utf-8")
-        self.assertEqual(self.task("done", "jeu-chargement", "--sortie", str(self.readme))[0], 0)
-        self.task("add", "jeu-couverture", "--agent", "hosa-data-engineer")
-        self.readme.write_text(self.readme.read_text(encoding="utf-8") + "## Couverture des critères\n"
+    def test_the_plan_names_the_data_each_criterion_needs(self):
+        # qa-plan writes the needs only: the dataset is written and loaded at qa, on the sprint's code (rieki
+        # 2026-11-15: a dataset in SQL for `ajouter_import`, not yet written)
+        self.task("add", "jeu-besoins", "--agent", "hosa-data-engineer")
+        self.readme.write_text("## Couverture des critères\n"
                                "- a CA1, CA2 — deux ventes\n- b CA1 à CA3 — un run\n- c CA1 — Non observable : x\n",
                                encoding="utf-8")
-        code, out = self.task("done", "jeu-couverture", "--sortie", str(self.readme))
+        code, out = self.task("done", "jeu-besoins", "--sortie", str(self.readme))
         self.assertEqual(code, 1)
         self.assertIn("a : CA3 sans ligne", out)
         self.assertIn("c : CA2, CA3 sans ligne", out)
         self.readme.write_text(self.readme.read_text(encoding="utf-8") + "- a CA3 — x\n- c CA2-CA3 — y\n",
                                encoding="utf-8")
-        self.assertEqual(self.task("done", "jeu-couverture", "--sortie", str(self.readme))[0], 0)
+        self.assertEqual(self.task("done", "jeu-besoins", "--sortie", str(self.readme))[0], 0)
+
+    def test_qa_writes_then_loads_the_dataset_before_its_first_lot(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            for s in ("qa-plan", "git-demarrage", "develop", "audit"):
+                av.main([str(self.k), "done", s, "--sprint", "s1", "--force"])
+        run(self.k, "start", "qa", "--sprint", "s1")
+        qa = lambda *argv: run(self.k, "task", *argv[:1], "qa", *argv[1:], "--sprint", "s1")  # noqa: E731
+        qa("add", "jeu-ecriture", "--agent", "hosa-data-engineer")
+        self.assertEqual(qa("add", "jeu-chargement", "--agent", "hosa-data-engineer")[0], 1)  # after writing
+        (self.readme.parent / "seed.sql").write_text("insert", encoding="utf-8")
+        self.readme.write_text("# Jeu\n## Remise à zéro\nx\n## Vérification\ny\n", encoding="utf-8")
+        self.assertEqual(qa("done", "jeu-ecriture", "--sortie", str(self.readme.parent / "seed.sql"))[0], 0)
+        qa("add", "jeu-chargement", "--agent", "hosa-data-engineer")
+        for tid, agent in (("lot-1", "hosa-tester"), ("recette-lea", "hosa-key-user")):
+            code, out = qa("add", tid, "--agent", agent)
+            self.assertEqual(code, 1, out)  # never tested on data not loaded
+            self.assertIn("après `jeu-chargement`", out)
+        code, out = qa("done", "jeu-chargement", "--sortie", str(self.readme))
+        self.assertEqual(code, 1)
+        self.assertIn("Dernier rechargement", out)
+        self.readme.write_text(self.readme.read_text(encoding="utf-8") + "Dernier rechargement : 2026-11-18 — OK\n",
+                               encoding="utf-8")
+        self.assertEqual(qa("done", "jeu-chargement", "--sortie", str(self.readme))[0], 0)
+        self.assertEqual(qa("add", "lot-1", "--agent", "hosa-tester")[0], 0)
+
+    def test_a_case_never_names_the_code(self):
+        # a plan is written before the code: rieki 2026-11-15, a brief's paths wrong; 11-17, a schema « qui existe »
+        for named, hit in (("`services/prevision.py:12` renvoie la bande", "services/prevision.py:12"),
+                           ("`ajouter_import(fichier)` refuse le CSV", "ajouter_import()"),
+                           ("le test tests/test_import.py échoue", "tests/test_import.py")):
+            gaps = av.case_gaps(f"## Cas de test\n- [CA1] {named}{fails('x')}\n", None)
+            self.assertEqual(len(gaps), 1, gaps)
+            self.assertIn(f"nomme le code (`{hit}`)", gaps[0])
+        for seen in ("l'utilisateur dépose `clients.csv` sur la page Importer", "rendu par Next.js",
+                     "`<hosa> lexique_check` sort à 0", "GET `/api/runs` répond 403 (rôle lecteur)"):
+            self.assertEqual(av.case_gaps(f"## Cas de test\n- [CA1] {seen}{fails('x')}\n", None), [], seen)
+        plan = self.k / "test" / "a-technique.md"
+        plan.write_text(plan.read_text(encoding="utf-8").replace("- [CA1] x", "- [CA1] `lancer()` x"), encoding="utf-8")
+        self.task("add", "plans-1", "--agent", "hosa-qa-lead")
+        code, out = self.task("done", "plans-1", "--sortie", "kb/test/a-technique.md")
+        self.assertEqual(code, 1, out)
+        self.assertIn("nomme le code (`lancer()`)", out)
+        self.assertIn("nomme le code", " ".join(av.check(self.k, "qa-plan", "s1")))
 
 
 class SmallPoints(unittest.TestCase):

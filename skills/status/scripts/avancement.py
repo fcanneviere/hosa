@@ -399,6 +399,17 @@ def observation_gaps(plan: str, crit: list[str]) -> list[str]:
 CASE = re.compile(r"^[-*]\s*((?:\[[^\]]+\]\s*)+)(.*)$")
 FAILS_IF = re.compile(r"—\s*échoue si\s*:\s*\S", re.I)
 NOT_A_TEST = re.compile(r"non testable|sans objet", re.I)
+# the code a case may not name: a source file (`services/prevision.py:12`), a call (`ajouter_import()`)
+SOURCE = re.compile(r"(?<![\w./-])(?:[\w.-]+/)*[a-z_][\w-]*\.(?:py|pyi|js|mjs|cjs|ts|tsx|jsx|vue|svelte|go|rs|java|kt|"
+                    r"rb|php|cs|swift|dart|ex|exs)\b(?::\d+)?")
+CALL = re.compile(r"`[^`\n]*?\b([A-Za-z_][\w.]*\()[^`\n]*`")
+
+def code_named(case: str) -> str | None:
+    """What a case names of the code, or None. A plan is written at `qa-plan`, before the code: a case says the
+    input and what is seen; `hosa-tester` places it on the code in `develop` (rieki 2026-11: paths wrong in the
+    briefs, a schema « qui existe » with other columns, a dataset in SQL for a function not yet written)."""
+    m = SOURCE.search(case) or CALL.search(case)
+    return (m[0] if m.re is SOURCE else m[1] + ")") if m else None
 
 
 def case_gaps(plan: str, browser_max: int | None) -> list[str]:
@@ -414,6 +425,9 @@ def case_gaps(plan: str, browser_max: int | None) -> list[str]:
         if not m or NOT_A_TEST.search(m[2]):
             continue
         browser += "[navigateur]" in m[1].lower()
+        if hit := code_named(m[2]):
+            gaps.append(f"`## Cas de test` : « {x.strip()[:80]} » nomme le code (`{hit}`) : un cas dit l'entrée et "
+                        "ce qui se voit ; `hosa-tester` le place sur le code au ticket (`develop`)")
         if not FAILS_IF.search(m[2]):
             gaps.append(f"`## Cas de test` : « {x.strip()[:80]} » sans `— échoue si : <le défaut du code du projet "
                         f"qu'il attrape>` (un cas qui n'échoue que si le framework change n'est pas écrit)")
@@ -1935,8 +1949,8 @@ def readme_of(files: list[tuple[str, Path | None]]) -> tuple[Path | None, str | 
 
 
 def ctl_rechargement(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
-    """The dataset loaded and checked (`qa-plan` Step 4, task `jeu-chargement`): its README with its reset, its check
-    and the line of the last load (rieki sprint-4: one pass for 21 plans and 4 000 rows stopped before loading)."""
+    """The dataset loaded and checked (`qa` Step 2, task `jeu-chargement`, on the sprint's code): its README with
+    its reset, its check and the line of the last load (rieki sprint-4: one pass for 21 plans and 4 000 rows stopped before loading)."""
     f, text = readme_of(files)
     if text is None:
         return ["pas de `README.md` du jeu de données dans `--sortie`"]
@@ -1965,8 +1979,8 @@ def sprint_plans(kb: Path, tickets: list[str]) -> dict[str, str]:
 
 
 def ctl_couverture(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
-    """Every criterion of the sprint seen in the dataset (`qa-plan` Step 4b, task `jeu-couverture`): a line
-    `<ticket> CAn — …` under `## Couverture des critères`, lists and ranges counting for each."""
+    """Every criterion of the sprint seen in the dataset (`qa-plan` Step 4, task `jeu-besoins`: the data each
+    criterion needs): a line `<ticket> CAn — …` under `## Couverture des critères`, lists and ranges counting for each."""
     f, text = readme_of(files)
     if text is None:
         return ["pas de `README.md` du jeu de données dans `--sortie`"]

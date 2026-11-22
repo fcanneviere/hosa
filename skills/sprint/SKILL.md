@@ -75,7 +75,7 @@ Redispatch `hosa-sprint-planner` (Phase 2) with the sprint's name/objective and 
 
 ## Step 4: Add the Tests to the Sprint
 
-A sprint isn't ready to start until its tests are part of it. Run `qa-plan` on the sprint now: one technical test plan per ticket (`hosa-qa-lead`) and the test dataset with its reset command (`hosa-data-engineer`). `git` Mode 1 refuses to start a sprint whose tickets don't all have their plan. Then, without asking: `git` (Mode 1) opens the sprint's branch, worktree and environment, and `develop` starts on the first ticket of `## Tickets`.
+A sprint isn't ready to start until its tests are part of it. Run `qa-plan` on the sprint now: one technical test plan per ticket, in black-box cases (`hosa-qa-lead`), and the data each criterion needs (`hosa-data-engineer`; `qa` writes and loads the dataset on the sprint's code). `git` Mode 1 refuses to start a sprint whose tickets don't all have their plan. Then, without asking: `git` (Mode 1) opens the sprint's branch, worktree and environment, and `develop` starts on the first ticket of `## Tickets`.
 
 ## Commits
 
@@ -91,7 +91,7 @@ None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git chec
 - `kb/tickets/<slug>.md` — [titre]
 
 ## Tests du sprint
-- [N plans de test écrits par `qa-plan`, jeu de données : <path>]
+- [N plans de test écrits par `qa-plan`, données nécessaires : <path>/README.md]
 
 ## Tickets écartés (manque technique)
 - `kb/tickets/<slug>.md` — [ce qui manque, proposé et décliné/différé]

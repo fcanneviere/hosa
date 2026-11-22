@@ -1,15 +1,15 @@
 ---
 name: qa-plan
-description: "Use to add the tests to a sprint before it starts: one test plan per ticket and the test dataset with its reset. Trigger: \"prépare les tests du sprint\"."
+description: "Use to add the tests to a sprint before it starts: one test plan per ticket, in black-box cases, and the data each criterion needs. Trigger: \"prépare les tests du sprint\"."
 ---
 
 # QA Plan
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything (a ticket added to a sprint whose `qa-plan` is done excepted: no call): `avancement.py start qa-plan --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block qa-plan --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done qa-plan --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
-**Tâches.** Before each dispatch, `avancement.py task add qa-plan <id> --sprint <slug> --agent <agent>`; on its return, `task done qa-plan <id> --sprint <slug> --sortie <the paths it wrote>`: `plans-<k>` (`hosa-qa-lead`, Step 3, one per lot) → the lot's `kb/test/<ticket>-technique.md`; `base-de-test` (`hosa-dba`, Step 3b) → `kb/infra/base-de-donnees.md`; `jeu-ecriture` → the dataset's files, `jeu-chargement` → its README, `jeu-couverture` → its README again (`hosa-data-engineer`, Step 4, three tasks in that order, refused at `task add` before the one they follow); `defaut-<ticket>` (`hosa-product-owner`, a `Défaut constaté`) → `kb/tickets/<ticket>.md`, then `cas-<ticket>` (`hosa-qa-lead`) → its plan. Stopped on an Open Question → `task block qa-plan <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered. A ticket added to a sprint whose `qa-plan` is done is not a stage: no task.
+**Tâches.** Before each dispatch, `avancement.py task add qa-plan <id> --sprint <slug> --agent <agent>`; on its return, `task done qa-plan <id> --sprint <slug> --sortie <the paths it wrote>`: `plans-<k>` (`hosa-qa-lead`, Step 3, one per lot) → the lot's `kb/test/<ticket>-technique.md`; `base-de-test` (`hosa-dba`, Step 3b) → `kb/infra/base-de-donnees.md`; `jeu-besoins` (`hosa-data-engineer`, Step 4) → the dataset's README; `defaut-<ticket>` (`hosa-product-owner`, a `Défaut constaté`) → `kb/tickets/<ticket>.md`, then `cas-<ticket>` (`hosa-qa-lead`) → its plan. Stopped on an Open Question → `task block qa-plan <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered. A ticket added to a sprint whose `qa-plan` is done is not a stage: no task.
 
-Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, before the sprint starts — so `develop` can write each ticket's tests before its code, and `qa` has something concrete to execute. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
+Turns a composed sprint (`kb/sprints/<slug>.md`) into one technical `Test Plan` per ticket in `kb/test/`, before the sprint starts — so `develop` can write each ticket's tests before its code, and `qa` has something concrete to execute. The code doesn't exist yet: a case says the input and what is seen, never a file or a function (`cas-utiles` refuses it). `hosa-tester` places each case on the code in `develop`, and `qa` writes and loads the dataset on the sprint's code. This skill is the only one that talks to the user — the actual test-case definition is `hosa-qa-lead`'s.
 
 ## Flow
 
@@ -25,8 +25,8 @@ existant : dispatch hosa-qa-lead (Mode 1)
 Ticket déjà préparé (fichier existe) → passe au suivant,
 ne re-génère pas
         ↓ tous les plans écrits
-Dispatch hosa-data-engineer (Responsabilité 4) : crée/étend,
-documente et charge le jeu de données de test
+Dispatch hosa-data-engineer (Responsabilité 4, jeu-besoins) :
+la donnée qui montre chaque critère (écrite et chargée en qa)
         ↓
 Enchaîne sur le démarrage du sprint (git Mode 1)
 ```
@@ -62,18 +62,13 @@ Its report, in this order:
 
 If `kb/infra/base-de-donnees.md` has no `## Tests` section yet (or doesn't exist), dispatch `hosa-dba` (Mode 2 Tests, `agents/dba.md`) first: the isolated test database, the isolation between tests, and the *réinitialiser la base de test* command the dataset's reset will call. No database in the project → skip.
 
-## Step 4: Dispatch for the Test Dataset
+## Step 4: The Data Each Criterion Needs
 
-Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` **with `model: sonnet`** (Responsibility 4, `agents/data-engineer.md`) three times, one task each, a fresh agent each time with the sprint slug and the paths the task before wrote — building a dataset from written plans needs no design judgment. One pass doing all three stopped at its cap before the load (rieki sprint-4: 21 plans and 4 000 rows, 125 k).
-1. `jeu-ecriture` — write or extend the dataset covering every test case and recette. `--sortie` the dataset's files.
-2. `jeu-chargement` — load it with `## Remise à zéro` then `## Vérification`, and update the README. `--sortie` the README: `task done` refuses it without those two sections and a line `Dernier rechargement : <AAAA-MM-JJ> — OK`.
-3. `jeu-couverture` — Step 4b. `--sortie` the README: `task done` refuses it while a `CAn` of a sprint ticket has no line under `## Couverture des critères`.
+Once every ticket of the sprint has its plan, dispatch `hosa-data-engineer` **with `model: sonnet`** (Responsibility 4, `agents/data-engineer.md`), task `jeu-besoins`, with the sprint slug and the plans' paths. It writes no data: the code that loads it is not written yet (rieki sprint-3: a dataset in SQL « équivalent » for an import function not yet written). It writes, in the dataset's `README.md`, `## Couverture des critères`: one line per criterion of every sprint ticket, `<ticket> CAn — <donnée qui le montre>` (an empty state, an error, a second sprint, a persona linked, a broken file…); `<ticket> CA1, CA2 — …` and `<ticket> CA3 à CA5 — …` count for each. A criterion no data can show is named with its reason (`<ticket> CAn — Non observable : <raison>`) — the recette then reports it `Non observé` instead of guessing. `--sortie` the README: `task done` refuses it while a `CAn` has no line (pipeline.json `couverture`). Measured on hosa-ui: recettes without these lines left about twenty criteria unverifiable.
+
+`qa` (Step 2) writes and loads the dataset from these lines, on the sprint's code, before its first lot (tasks `jeu-ecriture`, `jeu-chargement`).
 
 An Open Question (architecture not done yet, tool missing for `hosa-infra`) → relay it to the user, and redispatch only once resolved.
-
-## Step 4b: Every Criterion Observable
-
-The dataset is done when every `CAn` of every sprint ticket can be seen in it — not only the test cases' happy path. Task `jeu-couverture` writes a line per criterion under the dataset README's `## Couverture des critères`: `<ticket> CAn — <donnée qui le montre>` (an empty state, an error, a second sprint, a persona linked, a broken file…); `<ticket> CA1, CA2 — …` and `<ticket> CA3 à CA5 — …` count for each. A criterion with no data is added to the dataset, or named there with the reason it cannot be (`<ticket> CAn — Non observable : <raison>`) — the recette then reports it `Non observé` instead of guessing. Measured on hosa-ui: recettes without this left about twenty criteria unverifiable.
 
 ## Commits
 
@@ -89,8 +84,8 @@ None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git chec
 - `kb/tickets/<slug-ticket>.md` — plan déjà existant
 [Si aucun : "Aucun"]
 
-## Jeu de données de test
-- `<path>` — [créé | mis à jour] — doc : `<path>/README.md`
+## Données nécessaires
+- `<path>/README.md` — `## Couverture des critères` : [N critères, dont M non observables] — jeu écrit et chargé en `qa`
 
 ## Open Questions
 [Si rien : "None"]
