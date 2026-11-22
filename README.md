@@ -2,6 +2,40 @@
 
 **Hosa est un plugin Claude Code qui pilote un projet logiciel de bout en bout** : du cahier des charges aux sprints livrés, avec une équipe d'agents spécialisés (Product Owner, UX designer, architecte, expert sécurité, DBA, testeur…). Tout ce qui est décidé est écrit dans une base de connaissances versionnée, dans le projet lui-même.
 
+## Avant d'installer : les prérequis
+
+Installe ces outils une fois, sur ta machine. Chacun doit répondre dans un nouveau terminal.
+
+| Outil | Version | Pourquoi | Vérifier |
+|---|---|---|---|
+| [Claude Code](https://docs.claude.com/fr/docs/claude-code/setup) | récente | Hosa est un plugin de Claude Code. | `claude --version` |
+| [Node.js](https://nodejs.org/) | 20 ou plus (testé en 24) | Les hooks de Hosa et les captures d'écran de l'interface tournent sous Node. | `node --version` |
+| [Python](https://www.python.org/downloads/) | 3.10 ou plus (testé en 3.12) | Les scripts de Hosa et le tableau de bord. | `python --version` (Windows), `python3 --version` (macOS, Linux) |
+| [Git](https://git-scm.com/downloads) | récente | La KB et les sprints vivent dans le dépôt git du projet. | `git --version` |
+| [Docker](https://docs.docker.com/get-started/get-docker/) avec Docker Compose | récente | Chaque commande du projet géré tourne dans son environnement Docker. | `docker compose version` |
+| Chrome, Chromium ou Edge | récente | Les captures d'écran de l'étape `interface`. Edge est déjà présent sous Windows. | — |
+
+Sous Windows, en une fois (PowerShell) :
+
+```powershell
+winget install OpenJS.NodeJS.LTS Python.Python.3.12 Git.Git Docker.DockerDesktop
+```
+
+Sous macOS, avec [Homebrew](https://brew.sh/) :
+
+```bash
+brew install node python git
+brew install --cask docker
+```
+
+Points d'attention :
+- **Windows** : coche « Add python.exe to PATH » dans l'installeur de Python. Hosa appelle `python` et `pythonw`, pas `py`.
+- **Docker Desktop** doit être lancé avant de travailler sur un projet. Sous Windows, il demande WSL 2 au premier démarrage : accepte.
+- Rouvre ton terminal (et VS Code) après les installations, pour qu'ils voient le nouveau `PATH`.
+- Optionnel : [uv](https://docs.astral.sh/uv/). S'il est présent, Hosa installe ses dépendances Python plus vite.
+
+Tu n'installes rien d'autre à la main. Hosa installe ses propres dépendances Python dans son dossier de données (voir [Le tableau de bord](#le-tableau-de-bord)). La stack de chaque projet géré s'installe dans son conteneur Docker, par l'agent `hosa-infra`.
+
 ## Installer le plugin
 
 Dans Claude Code :
@@ -15,7 +49,7 @@ Dans l'extension VS Code, `/plugin` n'existe pas : lance les mêmes commandes da
 
 Pour mettre à jour : `/plugin`, puis mettre à jour `hosa`. Hosa démarre tout seul à chaque session ouverte dans un projet.
 
-Prérequis côté projet géré : `git`, Docker et Python 3.10 ou plus.
+À la première session après l'installation, Hosa installe ses dépendances Python en arrière-plan (une minute environ). Un script qui échoue sur un module manquant pendant ce temps : attends, puis relance.
 
 ## Comment ça marche
 
