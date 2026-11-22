@@ -1032,6 +1032,10 @@ def stage_proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
         gaps.append("le sprint n'a pas de `worktree` (`git` Mode 1)")
     if stage == "git-fusion" and not field(s, "merge_commit"):
         gaps.append("le sprint n'a pas de `merge_commit` (`git` Mode 2)")
+    # rieki: 3 merged sprints left their 6.6 GB image each, `down -v` keeps images (`git` Mode 2 step 8)
+    if stage == "git-fusion" and field(s, "merge_commit") and not field(s, "nettoyage"):
+        gaps.append("le sprint n'a pas de `nettoyage` : la dernière ligne de `docker_check --orphans <root> --clean` "
+                    "(`git` Mode 2 étape 8)")
     if stage == "bilan-sprint" and read(kb / "sprints" / f"{sprint}-review.md") is None:
         gaps.append(f"pas de `kb/sprints/{sprint}-review.md` (`bilan-sprint`)")
     # the release record `livraison` Step 7 writes: production, or test / tag only

@@ -70,7 +70,7 @@ Log every `state`/`branch`/`worktree` change to `kb/sprints/log.md` (OKF §9). T
    - **Red → diagnose before asking.** Run the failing test files in the root, on the base, in the base environment (`<projet>`). They fail there too → pre-existing. They pass there → the worktree's environment is the cause: compare the two (ignored files, a reset step, a variable), fix it, rerun; never commit for it. Never state a cause you didn't check.
    Only failures still red after that → Open Question, each labelled `préexistant` or `propre au worktree` with what you compared, and two options:
    - start anyway: record the failures under `## Baseline` in the sprint, so QA doesn't blame the sprint for them;
-   - cancel: `docker compose -p … down -v`, `git worktree remove`, `git branch -d`; `state` stays `planned`.
+   - cancel: `docker compose -p … down -v --rmi local`, `git worktree remove`, `git branch -d`; `state` stays `planned`.
    Lint red on the base → recorded under `## Baseline` the same way.
 7. Write `state: active`, `branch`, `worktree`, `base`, `docker_project` (and `## Baseline` if any) to the sprint; log it.
 8. Report: ticket work happens in the worktree, one ticket at a time, via `develop`.
@@ -92,7 +92,7 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 5. **Database:** `hosa-dba`'s *vérifier* (catches conflicting migrations between sprint and base), then *migrer*, in the sprint's environment. Failure → `## Base de données nécessaire`; you're redispatched from this step.
 6. **Test the exact content that will land** — the branch tip, with the full suite and the lint, format and type commands of `## Outillage qualité` — in the sprint's environment (`docker_check` first; after an integration merge, recreate with `--build`). Skip only if Step 4 merged nothing **and** the tip's tree without `.hosa/` — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"` — equals an `Arbre testé :` hash with a fully passed suite in a ticket's last `## Résultats techniques` or in the last line of the sprint's `## Suite complète`. The skip covers the suite only: lint, format and types always run. Failure → stop, base untouched. Report run or skip, with the hash.
 7. **Land**, in the root: its branch must be `<base>` (otherwise Open Question — never switch branches under the user). Re-check `--is-ancestor` (moved → back to Step 4), then `git merge --no-ff sprint/<slug> -m "Merge sprint <slug>"`. The base being an ancestor, the result's tree is the one tested. Git refuses over local changes → stop and list them.
-8. **Clean up:** `docker compose -p <docker_project> down -v` from the worktree (its volumes held only test data), then the agent memories (Rules), then `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` — refused → report, leave it, never force.
+8. **Clean up:** `docker compose -p <docker_project> down -v --rmi local` from the worktree (its volumes held only test data, its image is rebuilt by `up --build`), then the agent memories (Rules), then `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` — refused → report, leave it, never force. After the base environment is rebuilt (step 9), `<hosa> docker_check --orphans "<root>" --clean`: it removes what finished sprints left (images, environments on a vanished worktree, unnamed images of the project). Write its last line to the sprint as `nettoyage: <line>` with step 10 (`done git-fusion` refuses without it). A line « à confirmer » (an environment started from the root under another name) → Open Question naming it and its command; never remove it without the user's word.
 9. **Refresh the base environment:** `docker compose -p <projet> up -d --build` from the root, then `docker_check.py`.
 10. Write `state: done` and `merge_commit: <sha of the merge on the base>`, remove `branch`, `worktree`, `docker_project`; log it; report. The KB commit made after it records the same code commit, so the KB state of each merged sprint stays traceable.
 
@@ -106,7 +106,7 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 **Ad hoc:** handle the request directly under the rules above. One more request comes from a Hosa skill:
 - **Release** (`livraison`): on the base branch in the root, commit the release notes and documentation files `livraison` lists (`docs: version <version>`), then run the full suite and the `## Outillage qualité` checks in the base environment; red → stop and report. Skip the suite when `git diff --name-only <merge_commit> HEAD` (the last merged sprint's `merge_commit`, given by `livraison`) lists only the files `livraison` listed: Mode 2 tested that tree, and documentation runs no code. Lint, format and types always run. Report run or skip, with the `merge_commit`. Green → annotated tag `v<version>` (`git tag -a v<version> -m "<version>"`) on the base's tip; report the tag and the commit. Push the tag only with the push the user asked for.
 
-Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments still running on a vanished sprint folder — stop each (`docker compose -p <name> down`) once the user confirms. No KB write unless it concerns a sprint (then Mode 1/2 applies).
+Cleanup includes Docker: `<hosa> docker_check --orphans "<root>"` lists what finished sprints left (images, environments on a vanished worktree, unnamed images) and the extra environments started from the root; `--clean` removes the first ones, an extra environment only on the user's word (its command is on its line). No KB write unless it concerns a sprint (then Mode 1/2 applies).
 
 **Push / PR:** only when the request names it explicitly (e.g. `livraison` after the user confirmed it) — never as part of finishing a sprint or a release. Confirm the remote and branch before `git push`; never force-push. The KB is on its own branch `hosa-kb`: ask whether to push it too (`git -C <root>/.hosa/kb push origin hosa-kb`) — it carries the project's specification and history. A PR needs the same explicit ask and a title/body: derive them from the release notes or sprint, and say what you used.
 
@@ -127,7 +127,7 @@ Cleanup includes Docker: `docker_check.py --orphans <root>` lists environments s
 ## Sprint <slug> fusionné (Mode 2)
 - Fusionné dans <base> — base intégrée : [non / oui, commit <sha>]
 - Tests : [lancés sur le résultat exact / sautés — arbre <hash> déjà testé]
-- Worktree et branche supprimés, environnement du sprint arrêté, environnement de base reconstruit : <docker_check>
+- Worktree et branche supprimés, environnement et image du sprint supprimés, environnement de base reconstruit : <docker_check> — nettoyage : <dernière ligne de --orphans --clean>
 
 ## Sprint <slug> bloqué (Mode 2)
 - [Tickets bloquants et ce qui manque / conflits : <fichiers> / tests en échec : <détail> / fichiers non commités : <liste>] — la branche de base n'a pas été touchée

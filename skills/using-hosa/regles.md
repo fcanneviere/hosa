@@ -28,7 +28,7 @@ The full text of the rules `using-hosa` sums up under `## Hosa project rules`. R
 
 ## Docker
 
-**Docker, on the right files.** Every command on the managed project runs in its checkout's Docker environment (during a sprint, the sprint's `docker_project` in `kb/sprints/<slug>.md`). `docker_check.py <docker_project> <checkout>` (`skills/infra/scripts/`) passes first; otherwise recreate with `docker compose -f "<checkout>/docker-compose.yml" -p <docker_project> up -d --build --force-recreate` — the `-f` ties the project to its checkout whatever the current folder (`gate.js` refuses a sprint's `up` from elsewhere).
+**Docker, on the right files.** Every command on the managed project runs in its checkout's Docker environment (during a sprint, the sprint's `docker_project` in `kb/sprints/<slug>.md`). `docker_check.py <docker_project> <checkout>` (`skills/infra/scripts/`) passes first; otherwise recreate with `docker compose -f "<checkout>/docker-compose.yml" -p <docker_project> up -d --build --force-recreate` — the `-f` ties the project to its checkout whatever the current folder (`gate.js` refuses a sprint's `up` from elsewhere). An environment started for a moment (screenshots, a check) under another `-p` is removed before the report: `docker compose -p <name> down -v --rmi local` (rieki: `rieki-ux` ran 40 h). What finished sprints leave: `docker_check --orphans <root> --clean` (`hosa-git` Mode 2).
 
 ## Dès la conception
 

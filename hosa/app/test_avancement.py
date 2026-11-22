@@ -524,6 +524,15 @@ class Tasks(unittest.TestCase):
         self.assertIn("- Tâche bloquée : `a` hosa-senior-dev (`stack`) — Q1. Postgres ou SQLite ?", out)
         self.assertIn("tâche `a` hosa-senior-dev : bloqué", run(self.k, "next")[1])
 
+    def test_a_merge_proves_its_docker_cleanup(self):
+        # rieki: sprints 1-3 merged, each left its 6.6 GB image (`down -v` keeps images)
+        merged = SPRINT.replace("type: Sprint", "type: Sprint\nmerge_commit: abc123")
+        gaps = av.proofs(kb({"sprints/s1.md": merged, "tickets/t1.md": "---\ntype: Ticket\n---\n"}), "git-fusion", "s1")
+        self.assertTrue(any("`nettoyage`" in g for g in gaps))
+        clean = merged.replace("merge_commit: abc123", "merge_commit: abc123\nnettoyage: ✓ aucun environnement orphelin")
+        gaps = av.proofs(kb({"sprints/s1.md": clean, "tickets/t1.md": "---\ntype: Ticket\n---\n"}), "git-fusion", "s1")
+        self.assertFalse(any("nettoyage" in g or "merge_commit" in g for g in gaps))
+
     def test_a_sprint_holds_what_its_tickets_need(self):
         sprint = "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n- [B](../tickets/b.md)\n"
         k = kb({"sprints/s1.md": sprint, "tickets/fait.md": "---\ntype: Ticket\nstate: done\n---\n",

@@ -8,9 +8,14 @@
       from the managed project other than <checkout-dir> — no other sprint's
       worktree, no base checkout when a sprint is targeted.
 
-  docker_check.py --orphans <project-root>
-      List compose projects started from a `.worktrees/` folder of
-      <project-root> that no longer exists (a finished or deleted sprint).
+  docker_check.py --orphans <project-root> [--clean]
+      List what a finished sprint left behind: compose projects started from a
+      `.worktrees/` folder of <project-root> that no longer exists, the images
+      of a `<projet>-sprint-<slug>` whose worktree is gone and that no container
+      uses, and the dangling images of the project's compose projects. Also lists,
+      to confirm with the user, the extra compose projects started from the root
+      under another name than the base project (`rieki-ux`). `--clean` removes
+      the first three (rebuilt by `up --build`), never an extra project.
 
 Exit: 0 OK / no orphan, 1 problems listed, 2 bad invocation or Docker
 unreachable. Stdlib only. Paths are compared after normalising Windows,
@@ -81,15 +86,55 @@ def problems(containers: list[dict], checkout: str) -> list[str]:
     return out
 
 
-def orphans(projects: list[dict], root: str) -> list[str]:
-    """`projects`: [{"Name":…, "ConfigFiles":…}] as `docker compose ls -a --format json` gives."""
-    out = []
+def base_project(root: str) -> str:
+    """Compose's default project name for the root: its folder name, lowercased, [a-z0-9_-] only."""
+    return re.sub(r"[^a-z0-9_-]", "", Path(root.replace("\\", "/").rstrip("/")).name.lower())
+
+
+def folders(project: dict) -> list[str]:
+    return [str(Path(c.strip()).parent) for c in str(project.get("ConfigFiles", "")).split(",") if c.strip()]
+
+
+def orphans(projects: list[dict], root: str, images: list[dict] | None = None,
+            exists=lambda f: Path(f).exists()) -> list[dict]:
+    """What a finished sprint left behind, as [{"quoi", "nom", "taille", "sur": bool, "cmd": [[docker args]…]}].
+
+    `projects`: `docker compose ls -a --format json`; `images`: `docker image inspect` of the images carrying a
+    compose project label. `sur` = rebuilt by `up --build`, removed by `--clean`; else the user confirms first."""
+    base, wt = base_project(root), str(Path(root) / ".worktrees")
+    out, names = [], {p.get("Name") for p in projects}
     for p in projects:
-        for cfg in str(p.get("ConfigFiles", "")).split(","):
-            folder = str(Path(cfg.strip()).parent) if cfg.strip() else ""
-            if folder and inside(folder, str(Path(root) / ".worktrees")) and not Path(folder).exists():
-                out.append(f"{p.get('Name')} : dossier {folder} disparu — `docker compose -p {p.get('Name')} down`")
+        name, fs = p.get("Name"), folders(p)
+        gone = [f for f in fs if inside(f, wt) and not exists(f)]
+        if gone:
+            out.append({"quoi": f"environnement sur un dossier disparu ({gone[0]})", "nom": name, "sur": True,
+                        "cmd": [["compose", "-p", name, "down", "-v", "--remove-orphans"]]})
+        elif fs and all(inside(f, root) and not inside(f, wt) for f in fs) and name != base:
+            out.append({"quoi": f"environnement hors plan démarré depuis {root}", "nom": name, "sur": False,
+                        "cmd": [["compose", "-p", name, "down", "-v", "--rmi", "local"]]})
+    for i in images or []:
+        labels = (i.get("Config") or {}).get("Labels") or {}
+        proj, tags = labels.get(PROJECT, ""), i.get("RepoTags") or []
+        size = f"{(i.get('Size') or 0) / 1e9:.1f} Go"
+        sprint = re.fullmatch(rf"{re.escape(base)}-sprint-(.+)", proj)
+        if not tags and (proj == base or sprint):
+            out.append({"quoi": f"image sans nom de {proj}", "nom": i.get("Id", "?")[7:19], "taille": size,
+                        "sur": True, "cmd": [["image", "rm", i.get("Id", "")]]})
+        elif sprint and proj not in names and not exists(str(Path(wt) / "sprint" / sprint.group(1))):
+            out.append({"quoi": "image d'un sprint fini", "nom": ", ".join(tags), "taille": size, "sur": True,
+                        "cmd": [["image", "rm", *tags]]})
     return out
+
+
+def line(o: dict) -> str:
+    cmds = " ; ".join("docker " + " ".join(c) for c in o["cmd"])
+    size = f" ({o['taille']})" if o.get("taille") else ""
+    return f"{o['nom']}{size} : {o['quoi']} — `{cmds}`" + ("" if o["sur"] else " — à confirmer avec l'utilisateur")
+
+
+def compose_images() -> list[dict]:
+    ids = sorted(set(docker("image", "ls", "-aq", "--filter", f"label={PROJECT}").split()))
+    return json.loads(docker("image", "inspect", *ids)) if ids else []
 
 
 def docker(*args: str) -> str:
@@ -101,9 +146,20 @@ def docker(*args: str) -> str:
 
 def main(argv: list[str]) -> int:
     try:
-        if len(argv) == 2 and argv[0] == "--orphans":
+        if len(argv) in (2, 3) and argv[0] == "--orphans" and argv[2:] in ([], ["--clean"]):
             raw = docker("compose", "ls", "-a", "--format", "json").strip() or "[]"
-            found = orphans(json.loads(raw), argv[1])
+            left = orphans(json.loads(raw), argv[1], compose_images())
+            if argv[2:]:
+                for o in [o for o in left if o["sur"]]:
+                    try:
+                        for c in o["cmd"]:
+                            docker(*c)
+                        print(f"✓ supprimé : {o['nom']}" + (f" ({o['taille']})" if o.get("taille") else ""))
+                    except RuntimeError as exc:  # an image still used: say it, go on with the others
+                        print(f"✗ {o['nom']} : {exc}")
+                raw = docker("compose", "ls", "-a", "--format", "json").strip() or "[]"
+                left = orphans(json.loads(raw), argv[1], compose_images())
+            found = [line(o) for o in left]
             ok = "✓ aucun environnement orphelin"
         elif len(argv) == 2:
             ids = docker("ps", "-aq", "--filter", f"label={PROJECT}={argv[0]}").split()
@@ -111,7 +167,7 @@ def main(argv: list[str]) -> int:
             ok = f"✓ {argv[0]} tourne sur {argv[1]}"
         else:
             print(__doc__.strip().splitlines()[2].strip(), file=sys.stderr)
-            print("       docker_check.py --orphans <project-root>", file=sys.stderr)
+            print("       docker_check.py --orphans <project-root> [--clean]", file=sys.stderr)
             return 2
     except (RuntimeError, FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"error: Docker injoignable ou réponse illisible — {exc}", file=sys.stderr)
