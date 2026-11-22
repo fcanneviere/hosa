@@ -304,3 +304,11 @@ test('a test suite piped to tail or head is refused: its exit code would be tail
   const other = fs.mkdtempSync(path.join(os.tmpdir(), 'hosa-pipe-')); // not a Hosa project: untouched
   assert.equal(bash(other, 'pytest -q | tail -20'), null);
 });
+
+test('the PreToolUse hooks on Bash wait 15 s: under a Docker load, Node starts in over 5 s and the check is skipped', () => {
+  const hooks = JSON.parse(fs.readFileSync(path.join(__dirname, 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  const onBash = hooks.filter((g) => g.matcher === '*' || new RegExp(`^(${g.matcher})$`).test('Bash'));
+  const names = onBash.flatMap((g) => g.hooks.map((h) => h.command.match(/hooks\/([\w-]+)\.js/)[1]));
+  assert.deepEqual(names.sort(), ['budget', 'gate', 'read-guard']);
+  for (const g of onBash) for (const h of g.hooks) assert.equal(h.timeout, 15, h.command);
+});
