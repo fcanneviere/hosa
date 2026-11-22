@@ -86,6 +86,7 @@ import re
 import sys
 import tempfile
 import time
+import unicodedata
 from datetime import datetime, timezone
 from fnmatch import fnmatchcase as fnmatch
 from pathlib import Path
@@ -419,6 +420,31 @@ def case_gaps(plan: str, browser_max: int | None) -> list[str]:
     if browser_max and browser > browser_max:
         gaps.append(f"{browser} cas `[navigateur]`, {browser_max} au plus : un cas par état d'écran, ses vérifications "
                     f"en assertions d'un seul test ; le reste au niveau unitaire ou application")
+    return gaps + shared_defects({"": plan}, across=False)
+
+def defect_key(case: str) -> str:
+    """The defect a case names, compared without case, accents nor punctuation."""
+    d = re.split(r"—\s*échoue si\s*:", case, maxsplit=1, flags=re.I)[-1]
+    d = unicodedata.normalize("NFKD", d.lower())
+    return " ".join(re.sub(r"[^\w\s]", " ", "".join(c for c in d if not unicodedata.combining(c))).split())
+
+def shared_defects(plans: dict[str, str], across: bool = True) -> list[str]:
+    """Two cases that fail on the same defect, in one plan (`across=False`) or in two of the sprint's plans: one
+    proof per behaviour, at the lowest level that sees it. rieki sprint-4: 1360 tests for about 51 tickets, a
+    hostile comment tested in the service, the interface and the browser. The same defect in the same words."""
+    seen: dict[str, tuple[str, str]] = {}
+    gaps = []
+    for name, plan in plans.items():
+        for x in (section(plan, "Cas de test") or "").splitlines():
+            m = CASE.match(x.strip())
+            if not m or NOT_A_TEST.search(m[2]) or not FAILS_IF.search(m[2]):
+                continue
+            key = defect_key(m[2])
+            if key in seen and (seen[key][0] != name) == across:
+                plan_of, where = (f"{name} : ", f"`{seen[key][0]}` ") if across else ("", "")
+                gaps.append(f"{plan_of}`## Cas de test` : « {x.strip()[:60]} » échoue sur le même défaut que {where}"
+                            f"« {seen[key][1][:60]} » : garder le cas du niveau le plus bas qui le voit")
+            seen.setdefault(key, (name, x.strip()))
     return gaps
 
 
@@ -1121,6 +1147,8 @@ def stage_proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
             unproved = [ca for ca in cov["criteres"] if ca not in cov["couverts"]]
             if unproved:
                 gaps.append(f"{t} : {', '.join(unproved)} prouvé(s) par aucun cas [CAn] ni recette Oui (`qa-plan`)")
+    if stage == "qa-plan":
+        gaps += [f"{g} (`qa-plan`)" for g in shared_defects(sprint_plans(kb, tickets))]
     if stage == "develop":
         for at, only in reopened(kb, "develop", sprint):
             reviews = [x for t in tickets for h in ("Revue", "Corrections")
@@ -1919,8 +1947,19 @@ def ctl_rechargement(kb: Path, files: list[tuple[str, Path | None]], t: dict) ->
 def ctl_cas_utiles(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
     """The test plans a `hosa-qa-lead` task wrote pass `case_gaps` (`plans-*`, `cas-*`)."""
     browser_max = control_value(t["stage"], t["id"], "navigateur")
-    return [f"{f.stem} : {g}" for _, f in files if f and f.name.endswith("-technique.md")
-            for g in case_gaps(read(f) or "", browser_max)]
+    mine = {f.stem: read(f) or "" for _, f in files if f and f.name.endswith("-technique.md")}
+    gaps = [f"{name} : {g}" for name, plan in mine.items() for g in case_gaps(plan, browser_max)]
+    s = read(kb / "sprints" / f"{t['scope']}.md") if t.get("scope") else None
+    others = {k: v for k, v in sprint_plans(kb, re.findall(r"\(\.\./tickets/([^)]+)\.md\)",
+                                                          section(s, "Tickets") or "")).items() if k not in mine}
+    # the sprint's other plans first: a duplicate is named in this lot's plan; theirs alone are not this task's
+    theirs = set(shared_defects(others))
+    return gaps + [g for g in shared_defects({**others, **mine}) if g not in theirs]
+
+def sprint_plans(kb: Path, tickets: list[str]) -> dict[str, str]:
+    """The technical test plans of the sprint's tickets, by plan name."""
+    plans = {f"{t}-technique": read(kb / "test" / f"{t}-technique.md") for t in tickets}
+    return {k: v for k, v in plans.items() if v is not None}
 
 
 def ctl_couverture(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:

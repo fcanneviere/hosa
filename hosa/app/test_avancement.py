@@ -47,22 +47,23 @@ DIAGRAM_FP = av.cdc_module().empreinte(DIAGRAM)
 SHARED = ("- Partage : serveur et navigateur une fois par session, base remise à zéro entre les tests\n"
           "- Parallèle : pytest-xdist, 4 workers\n")
 # what a test plan's case catches (`avancement.case_gaps`)
-FAILS = " — échoue si : le code du projet régresse"
+def fails(case) -> str:
+    return f" — échoue si : le code du cas {case} régresse"
 TICKET = "---\ntype: Ticket\nstate: doing\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n"
 
 
 class Check(unittest.TestCase):
     def test_qa_plan_needs_a_case_per_criterion(self):
-        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": f"## Cas de test\n- [CA1] x{FAILS}\n## Observation\nAucun\n"})
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": f"## Cas de test\n- [CA1] x{fails('x')}\n## Observation\nAucun\n"})
         self.assertEqual(av.check(k, "qa-plan", "s1"), ["t1 : CA2 sans cas de test [CAn] (`qa-plan`)"])
         (k / "test" / "t1-technique.md").write_text(
-            f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] [manuel] y{FAILS}\n## Observation\nAucun\n",
+            f"## Cas de test\n- [CA1] x{fails('x')}\n- [CA2] [manuel] y{fails('y')}\n## Observation\nAucun\n",
                                                     encoding="utf-8")
         self.assertEqual(av.check(k, "qa-plan", "s1"), [])
 
     def test_qa_plan_names_how_the_demo_sees_each_hidden_criterion(self):
         # rieki: recettes « avec réserves » three sprints running, on failures and base states nobody could see.
-        plan = f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] y{FAILS}\n"
+        plan = f"## Cas de test\n- [CA1] x{fails('x')}\n- [CA2] y{fails('y')}\n"
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})
         self.assertEqual(av.check(k, "qa-plan", "s1"), [
             "t1 : pas de `## Observation` (critères invisibles à l'écran et leur moyen d'observation, ou « Aucun ») (`qa-plan`)"])
@@ -78,12 +79,12 @@ class Check(unittest.TestCase):
 
     def test_each_case_names_the_defect_it_catches_and_browser_cases_stay_few(self):
         # rieki sprint-2: a styling ticket, a browser test per criterion, header and theme — 25 page loads for 3 states
-        plan = (f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2][navigateur] y\n"
+        plan = (f"## Cas de test\n- [CA1] x{fails('x')}\n- [CA2][navigateur] y\n"
                 "- [nfr] Documentation — non testable : pas de cible\n- [juridique] Sans objet : aucune contrainte\n")
         self.assertEqual(av.case_gaps(plan, 3), ["`## Cas de test` : « - [CA2][navigateur] y » sans `— échoue si : "
                                                  "<le défaut du code du projet qu'il attrape>` (un cas qui n'échoue "
                                                  "que si le framework change n'est pas écrit)"])
-        browser = "## Cas de test\n" + "".join(f"- [CA{n}][Navigateur] y{FAILS}\n" for n in range(1, 5))
+        browser = "## Cas de test\n" + "".join(f"- [CA{n}][Navigateur] y{fails(n)}\n" for n in range(1, 5))
         self.assertEqual(len(av.case_gaps(browser, 3)), 1)
         self.assertIn("4 cas `[navigateur]`, 3 au plus", av.case_gaps(browser, 3)[0])
         self.assertEqual(av.case_gaps(browser, None), [])
@@ -2148,7 +2149,7 @@ class CheckOutput(unittest.TestCase):
     def test_a_task_waiting_is_not_a_wrong_proof(self):
         # rieki sprint-4: `check sprint` exited 1 for an `ecriture` task not run yet, read as a fault in the order
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET,
-                "test/t1-technique.md": f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] y{FAILS}\n## Observation\nAucun\n"})
+                "test/t1-technique.md": f"## Cas de test\n- [CA1] x{fails('x')}\n- [CA2] y{fails('y')}\n## Observation\nAucun\n"})
         closed_until(k, "backlog")
         run(k, "done", "sprint", "--sprint", "s1", "--force")
         run(k, "start", "qa-plan", "--sprint", "s1")
@@ -2156,7 +2157,7 @@ class CheckOutput(unittest.TestCase):
         code, out = run(k, "check", "qa-plan", "--sprint", "s1")
         self.assertEqual(code, 3, out)
         self.assertIn("✓ `qa-plan` : preuves complètes\nTâches en attente :\n- tâche `jeu-de-donnees`", out)
-        (k / "test" / "t1-technique.md").write_text(f"## Cas de test\n- [CA1] x{FAILS}\n## Observation\nAucun\n",
+        (k / "test" / "t1-technique.md").write_text(f"## Cas de test\n- [CA1] x{fails('x')}\n## Observation\nAucun\n",
                                                     encoding="utf-8")
         code, out = run(k, "check", "qa-plan", "--sprint", "s1")
         self.assertEqual(code, 1)
@@ -2181,12 +2182,14 @@ class QaPlanTasks(unittest.TestCase):
 
     def setUp(self):
         t = "---\ntype: Ticket\nstate: planned\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n- CA3 — c\n"
-        plan = ('---\ntype: Test Plan\ntitle: "T"\ndescription: "D."\ntags: [technique]\n'
-                "generated: { by: hosa-qa-lead/1.0, at: '2026-11-18T00:00:00Z' }\n---\n"
-                f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] y{FAILS}\n- [CA3] z{FAILS}\n## Observation\nAucun\n")
+        def plan(s):  # each ticket's own defects: two plans never fail on the same one
+            return ('---\ntype: Test Plan\ntitle: "T"\ndescription: "D."\ntags: [technique]\n'
+                    "generated: { by: hosa-qa-lead/1.0, at: '2026-11-18T00:00:00Z' }\n---\n## Cas de test\n"
+                    + "".join(f"- [CA{n}] {c}{fails(s + c)}\n" for n, c in enumerate("xyz", 1))
+                    + "## Observation\nAucun\n")
         self.k = kb({"sprints/s1.md": "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n"
                                       "- [B](../tickets/b.md)\n- [C](../tickets/c.md)\n",
-                     **{f"tickets/{s}.md": t for s in "abc"}, **{f"test/{s}-technique.md": plan for s in "abc"}})
+                     **{f"tickets/{s}.md": t for s in "abc"}, **{f"test/{s}-technique.md": plan(s) for s in "abc"}})
         closed_until(self.k, "backlog")
         run(self.k, "done", "sprint", "--sprint", "s1", "--force")
         run(self.k, "start", "qa-plan", "--sprint", "s1")
@@ -2205,7 +2208,7 @@ class QaPlanTasks(unittest.TestCase):
 
     def test_a_plan_handed_back_names_what_each_case_catches(self):
         plan = self.k / "test" / "a-technique.md"
-        plan.write_text(plan.read_text(encoding="utf-8").replace("- [CA3] z — échoue si : le code du projet régresse",
+        plan.write_text(plan.read_text(encoding="utf-8").replace("- [CA3] z" + fails("az"),
                                                                  "- [CA3] z"), encoding="utf-8")
         for tid in ("plans-1", "cas-a"):
             self.task("add", tid, "--agent", "hosa-qa-lead")
@@ -2213,6 +2216,32 @@ class QaPlanTasks(unittest.TestCase):
             self.assertEqual(code, 1, out)
             self.assertIn("a-technique : `## Cas de test` : « - [CA3] z » sans `— échoue si", out)
         self.assertEqual(self.task("done", "plans-1", "--sortie", "kb/test/b-technique.md")[0], 0)
+
+    def test_two_cases_never_fail_on_the_same_defect(self):
+        # rieki sprint-4: 1360 tests for about 51 tickets, a hostile comment tested in the service, the interface
+        # and the browser; one proof per defect, at the lowest level that sees it
+        same = " — échoue si : le commentaire hostile s'affiche en gras."
+        self.assertEqual(av.defect_key(same), av.defect_key(" — Échoue si : Le commentaire HOSTILE s’affiche en gras"))
+        plan = (f"## Cas de test\n- [CA1] service{same}\n- [CA1][navigateur] page{same}\n- [manuel] vu{same}\n"
+                f"- [nfr] Sans objet{same}\n")
+        gaps = av.case_gaps(plan, 3)
+        self.assertEqual(len(gaps), 2, gaps)  # a manual case for an automated defect too; « sans objet » is no case
+        self.assertIn("« - [CA1][navigateur] page", gaps[0])
+        self.assertIn("même défaut que « - [CA1] service", gaps[0])
+        self.assertIn("« - [manuel] vu", gaps[1])
+        b = self.k / "test" / "b-technique.md"
+        b.write_text(b.read_text(encoding="utf-8").replace(fails("by"), fails("ax")), encoding="utf-8")
+        self.task("add", "cas-b", "--agent", "hosa-qa-lead")
+        code, out = self.task("done", "cas-b", "--sortie", "kb/test/b-technique.md")
+        self.assertEqual(code, 1, out)
+        self.assertIn("b-technique : `## Cas de test` : « - [CA2] y", out)
+        self.assertIn("que `a-technique` « - [CA1] x", out)
+        self.assertEqual(self.task("done", "cas-b", "--sortie", "kb/test/c-technique.md")[0], 0)  # not its duplicate
+        gaps = av.check(self.k, "qa-plan", "s1")
+        self.assertEqual([g for g in gaps if "même défaut" in g],
+                         [f"b-technique : `## Cas de test` : « - [CA2] y{fails('ax')} » échoue sur le "
+                          f"même défaut que `a-technique` « - [CA1] x{fails('ax')} » : garder le cas du "
+                          "niveau le plus bas qui le voit (`qa-plan`)"])
 
     def test_the_dataset_is_written_then_loaded_then_covers_every_criterion(self):
         self.task("add", "jeu-ecriture", "--agent", "hosa-data-engineer")
