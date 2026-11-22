@@ -1,6 +1,6 @@
 ---
 name: bilan-sprint
-description: "Use after a sprint merges: `hosa-product-owner` judges the objective, delivered vs deferred, recurring friction, and writes the Sprint Review and follow-ups. Triggers: \"fais le bilan du sprint X\", \"rétro\", after the merge."
+description: "Use after a sprint merges, to judge its objective, delivered vs deferred work and recurring friction (Sprint Review). Triggers: \"fais le bilan du sprint X\", \"rétro\"."
 ---
 
 # Bilan Sprint

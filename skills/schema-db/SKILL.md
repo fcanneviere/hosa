@@ -1,6 +1,6 @@
 ---
 name: schema-db
-description: "Use to draw the database diagram the user validates (tables, relations, data formats), write its migrations (`hosa-data-engineer`), then apply, validate and document the database tooling (`hosa-dba`). Structuration stage 5. Trigger: \"génère la structure de base de données\", after `schema-app`."
+description: "Use to draw the database diagram the user validates, then write, apply and document its migrations. Trigger: \"génère la structure de base de données\", after `schema-app`."
 ---
 
 # Schema DB

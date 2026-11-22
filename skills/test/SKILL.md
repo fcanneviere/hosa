@@ -1,6 +1,6 @@
 ---
 name: test
-description: "Use when the user wants to test the implementation. Dispatches the tester agent to run existing tests, identify coverage gaps, and write new tests. Commits new tests in the user's name only. Suggests debug for implementation failures. Triggers: \"teste…\", \"lance les tests\", \"ajoute des tests\"."
+description: "Use to test an implementation: run the tests, find coverage gaps, write new tests. Triggers: \"teste…\", \"lance les tests\", \"ajoute des tests\"."
 ---
 
 # Test

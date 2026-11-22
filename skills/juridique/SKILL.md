@@ -1,6 +1,6 @@
 ---
 name: juridique
-description: "Use to put every legal constraint (RGPD, AI Act, cookies, LCEN, consumer law, accessibility, sector rules) in the cahier des charges before the stack — legal exigences, `## Contraintes juridiques`, processing register. CDC stage 4, mandatory; legal Go/No-Go inside `livraison`. Dispatches `hosa-legal`. Triggers: \"conformité RGPD\", \"AI Act\", \"contraintes juridiques\", after `fondamentaux`."
+description: "Use to put every legal constraint (RGPD, AI Act, cookies, accessibility, sector rules) in the cahier des charges, and for the legal Go/No-Go. Triggers: \"conformité RGPD\", \"contraintes juridiques\"."
 ---
 
 # Juridique

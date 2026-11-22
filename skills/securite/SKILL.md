@@ -1,6 +1,6 @@
 ---
 name: securite
-description: "Use for the managed project's security, in three moments: constraints in the cahier des charges (CDC stage 5, mandatory), threat model after `architecture` (STRIDE, abuse cases), Go/No-Go before a release; also a code audit on request. Dispatches `hosa-security`. Triggers: \"sécurité dès la conception\", \"modèle de menaces\", \"audite la sécurité\"."
+description: "Use for security by design: CDC constraints, threat model after `architecture`, release Go/No-Go, code audit. Triggers: \"sécurité dès la conception\", \"modèle de menaces\"."
 ---
 
 # Sécurité

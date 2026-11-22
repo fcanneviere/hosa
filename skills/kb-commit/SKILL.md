@@ -1,6 +1,6 @@
 ---
 name: kb-commit
-description: "Use to commit the KB's pending changes on its own `hosa-kb` branch (linked to the code commit), or to migrate a KB still tracked in the code branches. Triggers: `/kb-commit`, `/kb-commit migrer`; proposed after KB writes."
+description: "Use to commit the KB's pending changes on its `hosa-kb` branch, or to migrate a KB still in the code branches. Triggers: `/kb-commit`, `/kb-commit migrer`."
 ---
 
 # KB Commit

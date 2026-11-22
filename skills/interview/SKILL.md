@@ -1,6 +1,6 @@
 ---
 name: interview
-description: "Use to gather the cahier des charges: business processes, who does what, what each means for each persona; writes a Compte Rendu. CDC stage 1. Triggers: \"rédige le cahier des charges\", \"interview les personas\"."
+description: "Use to gather the cahier des charges: business processes, who does what, each persona's needs; writes a Compte Rendu. Triggers: \"rédige le cahier des charges\", \"interview les personas\"."
 ---
 
 # Interview

@@ -1,6 +1,6 @@
 ---
 name: qa-plan
-description: "Use to add the tests to a sprint before it starts: one test plan per ticket (`hosa-qa-lead`) and the test dataset with its reset (`hosa-data-engineer`). Chained by `sprint`. Triggers: \"prépare les tests du sprint\"."
+description: "Use to add the tests to a sprint before it starts: one test plan per ticket and the test dataset with its reset. Trigger: \"prépare les tests du sprint\"."
 ---
 
 # QA Plan

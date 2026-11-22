@@ -1,6 +1,6 @@
 ---
 name: schema-app
-description: "Use to derive entities from qualified exigences and write the application data structures and their documentation. Structuration stage 4. Trigger: \"génère la structure de données de l'application\", after `donnees`."
+description: "Use to derive entities from qualified exigences and write the application data structures. Trigger: \"génère la structure de données de l'application\", after `donnees`."
 ---
 
 # Schema App

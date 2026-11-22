@@ -1,6 +1,6 @@
 ---
 name: bdd
-description: "Use for any database operation on the managed project — migrations, conflicts, an environment's or the test database, reset, backup/restore, slow query — via `hosa-dba`. Triggers: \"applique les migrations\", \"conflit de migrations\", \"restaure la base\", `## Base de données nécessaire`."
+description: "Use for any database operation on the managed project: migrations and their conflicts, test database, reset, backup/restore, slow query. Triggers: \"applique les migrations\", \"restaure la base\"."
 ---
 
 # Base de données

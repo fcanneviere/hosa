@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Use when the user wants to check if the implementation matches the spec and requirements. Finds gaps, triggers a build cycle for missing pieces, and loops until all requirements are satisfied. All commits in the user's name only. Triggers: \"vérifie que ça respecte la spec\", \"il manque quoi ?\"."
+description: "Use to check that an implementation matches its spec, find the gaps and loop until all are met. Triggers: \"vérifie que ça respecte la spec\", \"il manque quoi ?\"."
 ---
 
 # Review

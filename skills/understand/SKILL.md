@@ -1,6 +1,6 @@
 ---
 name: understand
-description: "Use when the user has a new idea, feature request, or plan. Runs a combined brainstorm + grill session to make sure both parties fully understand what needs to be built, then writes a spec, quizzes the user on it, and commits in the user's name only. Triggers: \"j'ai une idée\", \"on voudrait ajouter…\", \"réfléchissons à…\"."
+description: "Use for a new idea or feature request: brainstorm and grill it until both sides agree, then write the spec. Triggers: \"j'ai une idée\", \"on voudrait ajouter…\"."
 ---
 
 # Understand

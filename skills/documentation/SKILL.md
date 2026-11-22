@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: "Use to check the managed project's documentation against its sources and refresh what drifted (`hosa-documentation`, cold check). Trigger: \"vérifie que la documentation est à jour\"."
+description: "Use to check the managed project's documentation against its sources and refresh what drifted. Trigger: \"vérifie que la documentation est à jour\"."
 ---
 
 # Documentation

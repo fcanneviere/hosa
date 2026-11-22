@@ -1,6 +1,6 @@
 ---
 name: iterate
-description: "Use when the user wants to change, extend, or refactor something that already exists — not build from scratch. Reads existing code, understands the current state, lightly grills the change, plans a targeted implementation, then builds with the standard quiz-and-commit flow. Triggers: \"modifie…\", \"change le comportement de…\", \"refactore…\"."
+description: "Use to change, extend or refactor something that exists, not build it from scratch. Triggers: \"modifie…\", \"change le comportement de…\", \"refactore…\"."
 ---
 
 # Iterate

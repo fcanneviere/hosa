@@ -1,6 +1,6 @@
 ---
 name: livraison
-description: "Use to ship merged work: scope done tickets, quality gate (`qualite`), security and legal gates (`securite`, `juridique`), release notes and user docs (`hosa-documentation`), tested tag (`hosa-git`), optional deployment on a test target or in production (backup and every gate; `hosa-dba`, `hosa-infra`), promotion from test, optional push. Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
+description: "Use to ship merged work: quality, security and legal gates, release notes, tested tag, optional deployment and push. Triggers: \"livre le projet\", \"prépare la release\", \"déploie\"."
 ---
 
 # Livraison

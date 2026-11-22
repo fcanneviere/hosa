@@ -1,6 +1,6 @@
 ---
 name: using-hosa
-description: "Bootstrap skill, injected at every session start. What Hosa is, how its pipelines chain, when to trigger skills, and the core rules every skill and agent follows."
+description: "Bootstrap skill, injected at session start: what Hosa is, how its pipelines chain, when to trigger skills, the core rules."
 ---
 
 # Hosa

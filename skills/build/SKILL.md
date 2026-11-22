@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Use when the user wants to implement something. Reads the spec (or accepts an inline description), dispatches agents to plan and build, and quizzes the user after each task or parallel group before committing. All commits in the user's name only. Triggers: \"implémente la spec\", \"construis…\", \"code ça\"."
+description: "Use to implement something from a spec or an inline description: agents plan and build, the user is quizzed before each commit. Triggers: \"implémente la spec\", \"construis…\", \"code ça\"."
 ---
 
 # Build

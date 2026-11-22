@@ -1,6 +1,6 @@
 ---
 name: okf
-description: "Rules every `.hosa/kb/` file follows (Open Knowledge Format 0.2), the validator closing every KB write, the KB summary and `kb_query.py`. Applied by every KB writer; triggers: \"vérifie la KB\", \"valide le format OKF\"."
+description: "Use when writing or checking a `.hosa/kb/` file: the OKF 0.2 rules, its validator, the KB summary and `kb_query.py`. Triggers: \"vérifie la KB\", \"valide le format OKF\"."
 ---
 
 # OKF — writing the Hosa knowledge base

@@ -1,6 +1,6 @@
 ---
 name: changement
-description: "Use when a stable exigence must change: impact analysis (tickets, data, architecture, interface, docs), back to draft, mini relecture/contestation, follow-up tickets. Triggers: \"cette exigence a changé\", \"le besoin a évolué sur…\"."
+description: "Use when a stable exigence must change: impact analysis, back to draft, mini review, follow-up tickets. Triggers: \"cette exigence a changé\", \"le besoin a évolué sur…\"."
 ---
 
 # Changement

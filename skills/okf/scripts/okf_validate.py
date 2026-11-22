@@ -159,7 +159,7 @@ def _read_text(path: Path, rel: str, report: Report) -> str | None:
     the whole validation run.
     """
     try:
-        return path.read_text(encoding="utf-8").lstrip("﻿")
+        return path.read_text(encoding="utf-8").lstrip("\ufeff")
     except (UnicodeDecodeError, OSError) as exc:
         report.err(rel, f"cannot read file: {exc}")
         return None
@@ -519,7 +519,7 @@ def migrate(bundle: Path) -> list[str]:
         is_root_index = path.name == "index.md" and path.parent == bundle
         if path.name == "index.md" and not is_root_index:
             continue
-        new = migrate_text(text.lstrip("﻿"), is_root_index)
+        new = migrate_text(text.lstrip("\ufeff"), is_root_index)
         if new is not None and new != text:
             path.write_text(new, encoding="utf-8")
             changed.append(rel)

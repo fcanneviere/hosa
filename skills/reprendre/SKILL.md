@@ -1,6 +1,6 @@
 ---
 name: reprendre
-description: "Use to resume a Hosa project after a /clear, a limit or a new day: one call gives the stage, its skill, the agents' tasks and the next action, then the work goes on at once. Triggers: « reprends », « on reprend », « continue », « où on en était », /reprendre."
+description: "Use to resume a Hosa project after a /clear, a limit or a new day, at the exact stage and action. Triggers: « reprends », « on reprend », « continue », /reprendre."
 ---
 
 # Reprendre

@@ -1,6 +1,6 @@
 ---
 name: pilotage
-description: "Use when the user wants to see the project in the browser — the Hosa dashboard: progress plan, board, sprints, KB, graph, journal. Triggers: \"ouvre le tableau de bord\", \"lance l'app\", \"montre-moi l'avancement dans le navigateur\", \"/pilotage\"."
+description: "Use to show the project in the browser: the Hosa dashboard (plan, board, sprints, KB, graph). Triggers: \"ouvre le tableau de bord\", \"lance l'app\", \"/pilotage\"."
 ---
 
 # Pilotage

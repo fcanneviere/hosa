@@ -1,6 +1,6 @@
 ---
 name: interface
-description: "Use to design and scaffold a complete, navigable interface: style cards, layout directions and pages on comparison pages, front/back office navigation, lexicon, UX fundamentals, screenshot-verified scaffold with an independent review; also completes an existing one. Structuration stage 8. Triggers: \"conçois l'interface\", \"la navigation manque\"."
+description: "Use to design and scaffold a complete, navigable interface (style, layouts, navigation, lexicon, screenshot review), or complete one. Triggers: \"conçois l'interface\", \"la navigation manque\"."
 ---
 
 # Interface

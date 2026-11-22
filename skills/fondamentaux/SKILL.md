@@ -1,6 +1,6 @@
 ---
 name: fondamentaux
-description: "Use to put every basic software function (administration, users, rights, logs, history, backup, import/export…), front/back office coverage and core NFRs in the cahier des charges, included by default. CDC stage 3, mandatory. Triggers: \"vérifie les fondamentaux\", after `redaction`."
+description: "Use to put the basic functions (admin, users, rights, logs, backup, import/export…) and core NFRs in the cahier des charges. Triggers: \"vérifie les fondamentaux\", after `redaction`."
 ---
 
 # Fondamentaux

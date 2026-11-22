@@ -1,6 +1,6 @@
 ---
 name: donnees
-description: "Use to qualify each data item's origin (générée/fournie/saisie) in stable exigences. Structuration stage 3. Triggers: \"qualifie l'origine des données\", after `infra`."
+description: "Use to qualify each data item's origin (générée/fournie/saisie) in stable exigences. Triggers: \"qualifie l'origine des données\", after `infra`."
 ---
 
 # Données

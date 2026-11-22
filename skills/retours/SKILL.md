@@ -1,6 +1,6 @@
 ---
 name: retours
-description: "Hosa's report standard for every reply and agent report: answer first, ASD-STE100 French, questions numbered Q1… with options, human tests numbered T1…. Reference, not a pipeline step."
+description: "Hosa's report standard for every reply and agent report: answer first, ASD-STE100 French, Q1… questions, T1… tests. Reference, not a pipeline step."
 ---
 
 # Retours — the Hosa report standard

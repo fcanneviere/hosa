@@ -93,7 +93,7 @@ LINK = re.compile(r"\]\(([^)#\s:]+\.md)(#[^)]*)?\)")
 # --- reading -----------------------------------------------------------------
 
 def split(text: str) -> tuple[dict[str, str], str]:
-    m = re.match(r"^﻿?---\s*\n(.*?)\n---\s*(?:\n|$)(.*)$", text, re.S)
+    m = re.match(r"^\ufeff?---\s*\n(.*?)\n---\s*(?:\n|$)(.*)$", text, re.S)
     if not m:
         return {}, text
     fm: dict[str, str] = {}

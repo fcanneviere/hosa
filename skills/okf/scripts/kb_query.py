@@ -70,7 +70,7 @@ def text_of(v) -> str:
 
 def split(text: str) -> tuple[dict[str, str | list[str]], str]:
     """Tolerant frontmatter reader (stdlib only): scalars, flow lists and block lists."""
-    m = re.match(r"^﻿?---\s*\n(.*?)\n---\s*(?:\n|$)(.*)$", text, re.S)
+    m = re.match(r"^\ufeff?---\s*\n(.*?)\n---\s*(?:\n|$)(.*)$", text, re.S)
     if not m:
         return {}, text
     fm: dict[str, str | list[str]] = {}

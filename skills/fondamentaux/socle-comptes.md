@@ -124,7 +124,7 @@ Créer un compte pour une personne précise, avec son rôle, sans que l'administ
 ## Règles de gestion
 - Le lien d'invitation est valable `{duree_invitation}` et ne sert qu'une fois ; renvoyer une invitation invalide le lien précédent.
 - Le lien contient un jeton aléatoire d'au moins 128 bits ; seule son empreinte est stockée.
-- L'email est unique parmi les comptes, sans distinction de casse (exemple : `Anne@x.fr` et `anne@x.fr` sont le même compte).
+- L'email est unique parmi les comptes, sans distinction de casse (exemple : `Anne@example.org` et `anne@example.org` sont le même compte).
 - Un compte back office n'est actif qu'une fois la double authentification activée si `{mfa_bo}` est obligatoire.
 - Un administrateur ne peut attribuer qu'un rôle de niveau inférieur ou égal au sien.
 

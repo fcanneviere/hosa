@@ -1,6 +1,6 @@
 ---
 name: develop
-description: "Use to implement sprint tickets in the sprint worktree: tests first (`hosa-tester`), tasks (`hosa-tech-lead`), code (`hosa-developer`), full checks, code review (`hosa-reviewer`), commit — by lot of small same-module tickets (default) or one ticket; also fixes a sprint ticket's defect (correction). Triggers: \"développe le ticket X\", \"développe le sprint\", \"développe le lot\"."
+description: "Use to implement sprint tickets in the sprint worktree, tests first, by lot (default) or one ticket, or to fix a ticket's defect. Triggers: \"développe le ticket X\", \"développe le sprint\"."
 ---
 
 # Develop

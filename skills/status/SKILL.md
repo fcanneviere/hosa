@@ -1,6 +1,6 @@
 ---
 name: status
-description: "Use when the user asks where the project stands — progress plan and resume point, CDC, backlog, active sprint and QA, quality, documentation, next step — or how many tokens each agent and skill consumes. Triggers: \"où en est-on ?\", \"qu'est-ce qui reste ?\", \"consommation par agent\"."
+description: "Use when the user asks where the project stands or what is left, or how many tokens each agent and skill uses. Triggers: \"où en est-on ?\", \"consommation par agent\"."
 ---
 
 # Status

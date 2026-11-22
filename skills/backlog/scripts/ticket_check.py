@@ -453,7 +453,7 @@ def grounding(heading: str, content: str, exploratory: bool = False) -> list[str
 
 
 def split(text: str) -> tuple[str, str]:
-    m = re.match(r"^﻿?---\s*\n(.*?)\n---\s*\n(.*)$", text, re.S)
+    m = re.match(r"^\ufeff?---\s*\n(.*?)\n---\s*\n(.*)$", text, re.S)
     return (m.group(1), m.group(2)) if m else ("", text)
 
 

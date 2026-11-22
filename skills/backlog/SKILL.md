@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "Use to turn every stable Exigence into Product Backlog tickets planned at once — vertical slices with story, criteria, `depends_on` and estimate, judged, then the roadmap whose first milestone measures an objective; notes come at the sprint; `nfr` exigences become the definition of done; also completes one ticket. Structuration stage 9. Triggers: \"crée le product backlog\", after `interface`."
+description: "Use to turn every stable exigence into planned backlog tickets (story, criteria, `depends_on`, estimate) and the roadmap, or to complete one ticket. Triggers: \"crée le product backlog\", after `interface`."
 ---
 
 # Backlog

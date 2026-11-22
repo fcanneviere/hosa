@@ -1,6 +1,6 @@
 ---
 name: sprint
-description: "Use to compose the next sprint: the next one of the roadmap computed from the tickets' dependency graph (milestones validated once, the first measuring an objective; up to 20 tickets and 15 demo tests), gaps with one fix applied, its tickets' notes written and judged, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
+description: "Use to compose the next sprint from the roadmap, write and judge its tickets' notes, then chain `qa-plan`. Triggers: \"planifie un sprint\", \"compose le prochain sprint\"."
 ---
 
 # Sprint

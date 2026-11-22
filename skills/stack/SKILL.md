@@ -1,6 +1,6 @@
 ---
 name: stack
-description: "Use to propose (2-3 options) and record the managed project's technical stack from the stable cahier des charges and its security constraints. Structuration stage 1. Triggers: \"choisis la stack technique\", after `contestation`."
+description: "Use to propose 2-3 options and record the technical stack from the stable cahier des charges. Triggers: \"choisis la stack technique\", after `contestation`."
 ---
 
 # Stack

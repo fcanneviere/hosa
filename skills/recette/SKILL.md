@@ -1,6 +1,6 @@
 ---
 name: recette
-description: "Use for a business acceptance test (recette) of a feature or ticket from one persona's point of view (`hosa-key-user`) — not code tests. Triggers: \"fais une recette de…\", \"valide ça avec [persona]\"."
+description: "Use for a business acceptance test of a feature or ticket from one persona's view, not code tests. Triggers: \"fais une recette de…\", \"valide ça avec [persona]\"."
 ---
 
 # Recette

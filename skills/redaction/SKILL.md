@@ -1,6 +1,6 @@
 ---
 name: redaction
-description: "Use to turn interview notes into structured exigences in `kb/cdc/`. CDC stage 2. Triggers: \"rédige les exigences\" with notes, after `interview`."
+description: "Use to turn interview notes into structured exigences in `kb/cdc/`. Triggers: \"rédige les exigences\" with notes, after `interview`."
 ---
 
 # Redaction

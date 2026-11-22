@@ -1,6 +1,6 @@
 ---
 name: infra
-description: "Use to set up the managed project's Docker environment, its stack on pinned versions and its quality tooling (tests, lint, CI), or to handle an agent's `## Installation nécessaire` (`hosa-infra`). Structuration stage 2. Triggers: \"installe la stack\", after `stack`."
+description: "Use to set up the Docker environment, the pinned stack and the quality tooling, or to handle a `## Installation nécessaire`. Triggers: \"installe la stack\", after `stack`."
 ---
 
 # Infra

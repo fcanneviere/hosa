@@ -1,6 +1,6 @@
 ---
 name: qa
-description: "Use to run a sprint's QA: `hosa-tester` per ticket (autonomous, records results, cleans up), `hosa-key-user` recettes, failures routed. Triggers: \"exécute la QA du sprint\", \"teste le sprint\", \"fais la recette du sprint\"."
+description: "Use to run a sprint's QA: a tester per ticket, persona recettes, failures routed. Triggers: \"exécute la QA du sprint\", \"teste le sprint\"."
 ---
 
 # QA

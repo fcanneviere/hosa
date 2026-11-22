@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: "Use to design and scaffold the managed project's software architecture (layers, modules, observability baseline) from the stable CDC, the stack and the data structures. Structuration stage 6. Triggers: \"crée l'architecture logicielle\", after `schema-db`."
+description: "Use to design and scaffold the software architecture (layers, modules, observability) from the stable CDC, stack and data structures. Triggers: \"crée l'architecture logicielle\", after `schema-db`."
 ---
 
 # Architecture

@@ -1,6 +1,6 @@
 ---
 name: qualite
-description: "Use to audit the managed project's code: best practices and performance (`hosa-senior-dev`), security (`hosa-security`), database (`hosa-dba`); blocking findings become tickets. Also the sprint audit (stage `audit`, after `develop`, before `qa`). Triggers: \"audite la qualité du code\", \"revue de sécurité du code\", \"audite le sprint\"."
+description: "Use to audit the managed project's code (practices, performance, security, database), and for the sprint audit before `qa`. Triggers: \"audite la qualité du code\", \"audite le sprint\"."
 ---
 
 # Qualité

@@ -1,6 +1,6 @@
 ---
 name: contestation
-description: "Use for the final challenge of the cahier des charges (PO re-questions personas, `hosa-challenger` audits) and the user's sign-off. CDC stage 7; requires fondamentaux, juridique, securite, relecture. Triggers: \"challenge le cahier des charges\", after a clean relecture."
+description: "Use for the final challenge of the cahier des charges and the user's sign-off; needs fondamentaux, juridique, securite, relecture. Triggers: \"challenge le cahier des charges\"."
 ---
 
 # Contestation

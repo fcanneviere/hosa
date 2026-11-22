@@ -1,6 +1,6 @@
 ---
 name: debug
-description: "Use when something is broken, not working as expected, or throwing errors. Root cause before fix, always. Can dispatch multiple debugger agents in parallel when the problem spans multiple areas. Commits fix in the user's name only. Triggers: \"ça plante\", \"ça ne marche pas\", \"j'ai une erreur\", \"bug\"."
+description: "Use when something is broken or throws errors: root cause before fix, parallel debuggers when it spans areas. Triggers: \"ça plante\", \"ça ne marche pas\", \"j'ai une erreur\", \"bug\"."
 ---
 
 # Debug

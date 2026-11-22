@@ -1,6 +1,6 @@
 ---
 name: git
-description: "Use to start a sprint (branch, worktree, Docker environment, baseline) or merge it once every ticket is validated, or for any git request on the managed project (`hosa-git`). Triggers: \"démarre le sprint X\", \"fusionne le sprint X\", push, PR."
+description: "Use to start a sprint (branch, worktree, Docker), merge a validated one, or for any git request on the managed project. Triggers: \"démarre le sprint X\", \"fusionne le sprint X\", push, PR."
 ---
 
 # Git

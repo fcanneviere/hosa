@@ -1,6 +1,6 @@
 ---
 name: validation
-description: "Use to accept or reject an implemented, tested ticket against its criteria, test results and recettes (`hosa-product-owner`), then run the sprint demo with the user. Required before the sprint merge. Triggers: \"valide le ticket X\", after `qa`."
+description: "Use to accept or reject a tested ticket against its criteria, then run the sprint demo with the user, before the merge. Triggers: \"valide le ticket X\", after `qa`."
 ---
 
 # Validation

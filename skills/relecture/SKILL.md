@@ -1,6 +1,6 @@
 ---
 name: relecture
-description: "Use to check every exigence for precision, completeness and consistency, routing gaps to `redaction` or `interview`. CDC stage 6. Triggers: \"relis le cahier des charges\", after `securite`."
+description: "Use to check every exigence for precision, completeness and consistency. Triggers: \"relis le cahier des charges\", after `securite`."
 ---
 
 # Relecture
