@@ -3,7 +3,7 @@
 
   atelier.py cartes   <cartes.json> --out <dossier> [--force]
       Valide les cartes (contraste WCAG AA calculé pour chaque paire de couleurs affichée, avec une couleur proposée
-      pour chaque paire refusée), refuse une carte aux choix par défaut d'une interface générée (police des titres,
+      pour chaque paire refusée ; une direction par carte : caractère, monde, moments, signature), refuse une carte aux choix par défaut d'une interface générée (police des titres,
       accent indigo ou violet) sans `assume`, refuse deux cartes qui diffèrent sur moins de 3 axes de l'identité, dessine une
       carte par identité sur le même contenu réel, et la page `comparaison.html`.
   atelier.py comparer <manifest.json> --out <page.html> [--force]
@@ -264,6 +264,7 @@ def charge_cartes(chemin: Path) -> dict:
         chaine(carte, "nom", ou)
         chaine(carte, "intention", ou)
         chaines(carte, "traits", ou)
+        carte["direction"] = direction(carte, ou)
         col = objet(carte, "couleurs", ou)
         for role in COULEURS:
             v = chaine(col, role, f"{ou}.couleurs")
@@ -330,6 +331,40 @@ def cliches(carte: dict) -> list[str]:
     if TEINTES_BANALES[0] <= t * 360 <= TEINTES_BANALES[1] and s >= 0.4 and 0.25 <= l <= 0.8:
         out.append(f"couleurs.accent : {accent}, l'indigo ou le violet par défaut ; prends la teinte du sujet")
     return out
+
+
+# Des mots qui décrivent n'importe quel gabarit : un caractère fait de ces mots ne dit rien du produit.
+CARACTERES_VIDES = re.compile(
+    r"\b(?:moderne|modern|[ée]pur[ée]e?s?|[ée]l[ée]gante?s?|premium|minimal\w*|sobres?|professionnel\w*|"
+    r"clean|sleek|intuiti(?:f|ve)s?|simples?|frais|fraîche|dynamiques?|tendance|chic|haut de gamme|"
+    r"innovante?s?|futuriste|neutre|polyvalente?s?)\b", re.I)
+DIRECTION = {"caractere": "Caractère", "monde": "Monde", "moments": "Moments", "signature": "Signature"}
+
+
+def direction(carte: dict, ou: str) -> dict:
+    """La direction d'une identité, tirée du produit : son caractère (2 ou 3 mots concrets), son monde (le lieu ou la
+    matière d'où viennent la teinte des gris et l'accent), ses 1 ou 2 moments (là où l'écran devient riche) et
+    une seule signature (un détail que seul ce produit aurait). Sans elle, une carte n'est qu'une palette."""
+    d = objet(carte, "direction", ou)
+    ou = f"{ou}.direction"
+    mots = chaines(d, "caractere", ou, requise=True)
+    if not 2 <= len(mots) <= 3:
+        raise Refus(f"{ou}.caractere : 2 ou 3 mots concrets tirés du produit, il y en a {len(mots)}")
+    vides = [m for m in mots if CARACTERES_VIDES.search(m)]
+    if vides:
+        raise Refus(f"{ou}.caractere : « {', '.join(vides)} » décrit n'importe quel gabarit ; prends des mots du "
+                    "produit et de ses utilisateurs (par exemple « patient, artisanal » pour un atelier)")
+    moments = chaines(d, "moments", ou, requise=True)
+    if len(moments) > 2:
+        raise Refus(f"{ou}.moments : 1 ou 2 moments, pas {len(moments)} ; le reste de l'écran reste calme")
+    return {"caractere": mots, "monde": chaine(d, "monde", ou), "moments": moments,
+            "signature": chaine(d, "signature", ou)}
+
+
+def direction_lignes(d: dict) -> dict:
+    """La direction en une ligne par champ, pour la carte et pour `kb/interface/choix.md`."""
+    joint = {"caractere": ", ", "moments": " ; "}
+    return {cle: joint[cle].join(d[cle]) if cle in joint else d[cle] for cle in DIRECTION if d.get(cle)}
 
 
 AXES = ("fond", "teinte de l'accent", "police des titres", "police du texte", "arrondi", "relief", "rythme")
@@ -476,6 +511,7 @@ def carte_html(cfg: dict, carte: dict, lettre: str) -> str:
     champ = (f'<label class="champ">{e(c["champ"]["libelle"])}<span>{e(c["champ"]["valeur"])}</span></label>'
              if c.get("champ") else "")
     traits = "".join(f"<li>{e(t)}</li>" for t in carte.get("traits", []))
+    direc = "".join(f"<dt>{DIRECTION[k]}</dt><dd>{e(v)}</dd>" for k, v in direction_lignes(carte["direction"]).items())
     contr = "".join(f"<li>{e(x)}</li>" for x in lignes)
     variante = ""
     if carte.get("variante"):
@@ -517,6 +553,8 @@ body{{margin:0;background:var(--color-bg);color:var(--color-text);font:var(--fon
 .champ span{{min-width:220px;padding:var(--space-y) 12px;border:1px solid var(--color-muted);border-radius:var(--radius);background:var(--color-surface);color:var(--color-text);font-size:14px}}
 .intention p{{margin:0;max-width:44em}}
 .traits{{display:flex;flex-wrap:wrap;gap:6px}}
+.direction{{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:12px 0 0;font-size:13px}}
+.direction dt{{color:var(--color-muted)}}.direction dd{{margin:0}}
 .traits li{{padding:2px 9px;border:1px solid var(--color-line);border-radius:999px}}
 .cadre{{height:300px;overflow:hidden;border:var(--border);box-shadow:var(--shadow);border-radius:var(--radius);background:var(--color-surface);font-size:13px}}
 .e{{height:100%;display:flex;flex-direction:column}} .e-cote{{flex-direction:row}}
@@ -556,7 +594,7 @@ dl{{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}} dt{{colo
 <div><h2 class="rub">Couleurs et contrastes</h2><div class="nuancier">{nuancier}</div><ul class="contrastes">{contr}</ul></div></section>
 <section><h2 class="rub">Contrôles</h2><div class="controles"><button class="btn btn-principal">{e(c['action'])}</button>
 <button class="btn">{e(c['action_secondaire'])}</button><button class="btn btn-focus" tabindex="-1">Focus clavier</button>{etiquettes}{champ}</div></section>
-<section class="intention"><h2 class="rub">Intention</h2><p>{e(carte['intention'])}</p><ul class="traits">{traits}</ul></section>
+<section class="intention"><h2 class="rub">Intention</h2><p>{e(carte['intention'])}</p><ul class="traits">{traits}</ul><dl class="direction">{direc}</dl></section>
 </main></body></html>
 """
 
@@ -1174,9 +1212,11 @@ def lit_choix(kb: Path) -> dict:
     jet = dict(JETON.findall(section(t, "Jetons") or ""))
     variante = next(({"mode": m, "jetons": dict(JETON.findall(section(t, f"Jetons du mode {m}")))}
                      for m in MODES if section(t, f"Jetons du mode {m}") is not None), None)
+    direc = {cle: m[1].strip() for cle, nom in DIRECTION.items()
+             for m in [re.search(rf"^- {nom} : (.+)$", section(t, "Direction") or "", re.M)] if m}
     css = re.search(r"`([^`]+)`", section(t, "Fichier CSS") or "")
     par = re.search(r"^generated:\s*\{\s*by:\s*([^,}]+)", t, re.M)
-    return {"manches": manches, "jetons": jet, "variante": variante, "css": css[1] if css else None,
+    return {"manches": manches, "jetons": jet, "variante": variante, "direction": direc, "css": css[1] if css else None,
             "existe": f.is_file(), "par": par[1].strip() if par else None}
 
 
@@ -1199,6 +1239,10 @@ def ecrit_choix(kb: Path, etat: dict, par: str) -> Path:
                   f"{var['mode']} : `atelier css` les écrit sous `prefers-color-scheme` et `[data-theme]`.\n\n"
                   "| Jeton | Valeur |\n|---|---|\n"
                   + "\n".join(f"| `{k}` | `{v}` |" for k, v in var["jetons"].items()) + "\n")
+    if etat.get("direction"):
+        corps += ("\n## Direction\nCe que l'identité retenue doit faire sentir : la revue visuelle la cherche sur les "
+                  "captures (R17).\n\n" + "\n".join(f"- {DIRECTION[k]} : {v}" for k, v in etat["direction"].items()
+                                                   if k in DIRECTION) + "\n")
     if etat["css"]:
         corps += f"\n## Fichier CSS\n`{etat['css']}`\n"
     f = kb / CHOIX
@@ -1241,7 +1285,7 @@ def choisir(kb: Path, manche: str, option: str | None, depuis: Path | None, par:
             raise Refus("--conserve garde l'existant : pas d'option à nommer")
         etat["manches"][manche] = ("conservée", "existant gardé", note or "", maintenant())
         if manche == "styles":  # l'identité existante n'a pas de jetons Hosa : rien à comparer au CSS
-            etat["jetons"], etat["variante"] = {}, None
+            etat["jetons"], etat["variante"], etat["direction"] = {}, None, {}
     else:
         if not option or depuis is None:
             raise Refus("il faut l'id de l'option et --depuis <cartes.json|manifest.json> de la manche")
@@ -1261,6 +1305,7 @@ def choisir(kb: Path, manche: str, option: str | None, depuis: Path | None, par:
             etat["jetons"] = jetons(trouve)
             vj = jetons_variante(trouve)
             etat["variante"] = {"mode": mode(trouve["variante"]), "jetons": vj} if vj else None
+            etat["direction"] = direction_lignes(trouve["direction"])
         etat["manches"][manche] = (option, str(trouve.get("nom", option)), note or "", maintenant())
     f = ecrit_choix(kb, etat, qui)
     journal(kb, qui, f"noté la manche {manche} dans")

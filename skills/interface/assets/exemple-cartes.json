@@ -34,28 +34,32 @@
   },
   "cartes": [
     {
-      "id": "email", "nom": "Émail fait main", "intention": "Les couleurs de l'émail : un gris-vert profond en accent, le beige de la terre brute en fond.",
+      "id": "email", "direction": {"caractere": ["patient", "artisanal", "chaleureux"], "monde": "La terre crue et l'émail qui sèche sur l'étagère", "moments": ["La photo de la pièce de l'élève à la sortie du four", "Le calendrier des places du week-end"], "signature": "Un point d'émail gris-vert devant chaque cours qui a encore des places"},
+      "nom": "Émail fait main", "intention": "Les couleurs de l'émail : un gris-vert profond en accent, le beige de la terre brute en fond.",
       "traits": ["Fond terre beige", "Accent émail gris-vert", "Boutons arrondis"],
       "couleurs": {"fond": "#EFE7DA", "surface": "#F8F3EA", "texte": "#3B302A", "secondaire": "#675B51", "accent": "#3F6560", "sur_accent": "#FFFFFF", "trait": "#DED3C2", "alerte": "#94451F"},
       "polices": {"titres": "Georgia, serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "Georgia, serif"},
       "graisses": {"titres": 500, "chiffres": 400}, "arrondi": 14, "relief": "ombre", "rythme": "ample", "ecran": "accueil"
     },
     {
-      "id": "galerie", "nom": "Galerie de porcelaine", "intention": "Comme un cartel de musée : beaucoup de blanc, les pièces au premier plan, le texte en retrait.",
+      "id": "galerie", "direction": {"caractere": ["exact", "silencieux"], "monde": "Le cartel de musée et la vitrine de porcelaine", "moments": ["La pièce photographiée en grand sur fond blanc"], "signature": "Chaque pièce porte son cartel : nom de l'élève, terre, date de cuisson"},
+      "nom": "Galerie de porcelaine", "intention": "Comme un cartel de musée : beaucoup de blanc, les pièces au premier plan, le texte en retrait.",
       "traits": ["Fond blanc froid", "Traits fins, angles droits", "Tableau de bord dense"],
       "couleurs": {"fond": "#F7F7F5", "surface": "#FFFFFF", "texte": "#1E1E1C", "secondaire": "#5E5E5A", "accent": "#1E1E1C", "sur_accent": "#FFFFFF", "trait": "#E2E2DE", "alerte": "#8A4F24"},
       "polices": {"titres": "\"Helvetica Neue\", Arial, sans-serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "\"Helvetica Neue\", sans-serif"},
       "graisses": {"titres": 400, "chiffres": 400}, "arrondi": 0, "relief": "trait", "rythme": "serre", "ecran": "tableau-de-bord"
     },
     {
-      "id": "four", "nom": "Cours du soir au four", "intention": "La salle des fours le soir : un charbon sombre sur tout l'écran, l'orange du feu réservé à l'essentiel.",
+      "id": "four", "direction": {"caractere": ["nocturne", "ardent", "concentré"], "monde": "La salle des fours le soir, le charbon et la braise", "moments": ["La jauge de remplissage du four"], "signature": "La température du prochain four, toujours visible en haut à droite"},
+      "nom": "Cours du soir au four", "intention": "La salle des fours le soir : un charbon sombre sur tout l'écran, l'orange du feu réservé à l'essentiel.",
       "traits": ["Charbon pleine page", "Orange du four", "Titres en gras"],
       "couleurs": {"fond": "#2A2522", "surface": "#36302C", "texte": "#F3E9DF", "secondaire": "#C9BBAF", "accent": "#F09A5E", "sur_accent": "#1F1A17", "trait": "#4A423C", "alerte": "#EDC06A"},
       "polices": {"titres": "\"Avenir Next\", \"Helvetica Neue\", sans-serif", "texte": "\"Helvetica Neue\", Arial, sans-serif", "chiffres": "\"Avenir Next\", sans-serif"},
       "graisses": {"titres": 700, "chiffres": 600}, "arrondi": 6, "relief": "contour", "rythme": "normal", "ecran": "liste-detail"
     },
     {
-      "id": "journal", "nom": "Journal d'atelier", "intention": "Le petit journal imprimé par l'atelier : gros titres, fiches en tuiles, le rouge seulement pour l'essentiel.",
+      "id": "journal", "direction": {"caractere": ["bavard", "vif", "imprimé"], "monde": "Le petit journal d'atelier tiré sur papier gris", "moments": ["La une : la pièce de la semaine"], "signature": "Des annotations vermillon dans la marge, comme à la main"},
+      "nom": "Journal d'atelier", "intention": "Le petit journal imprimé par l'atelier : gros titres, fiches en tuiles, le rouge seulement pour l'essentiel.",
       "traits": ["Gris papier journal", "Gros titres", "Annotations vermillon"],
       "couleurs": {"fond": "#F1EFEA", "surface": "#FAF9F5", "texte": "#22201D", "secondaire": "#5B5750", "accent": "#A82E1C", "sur_accent": "#FFFFFF", "trait": "#D8D4CB", "alerte": "#6E540E"},
       "polices": {"titres": "Georgia, \"Times New Roman\", serif", "texte": "Georgia, serif", "chiffres": "Menlo, monospace"},

@@ -570,6 +570,40 @@ class Diversite(Base):
         self.assertEqual([at.cliches(c) for c in at.charge_cartes(self.cfg())["cartes"]], [[]] * 4)  # the example
         self.assertEqual(at.cliches({"polices": {"titres": "Georgia, serif"}, "couleurs": {"accent": "#2563EB"}}), [])
 
+    def test_each_card_has_a_direction_taken_from_the_product(self):
+        data = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        cas = [({"caractere": ["moderne", "épuré"]}, "« moderne, épuré » décrit n'importe quel gabarit"),
+               ({"caractere": ["patient"]}, "2 ou 3 mots concrets"),
+               ({"moments": ["a", "b", "c"]}, "1 ou 2 moments, pas 3"),
+               ({"signature": ""}, "direction.signature"),
+               ({"monde": None}, "direction.monde")]
+        for change, attendu in cas:
+            d = copy.deepcopy(data)
+            d["cartes"][1]["direction"].update(change)
+            with self.subTest(change=change), self.assertRaises(at.Refus) as e:
+                at.charge_cartes(self.cfg(cartes=d["cartes"]))
+            self.assertIn(attendu, str(e.exception))
+        del data["cartes"][2]["direction"]
+        with self.assertRaises(at.Refus) as e:
+            at.charge_cartes(self.cfg(cartes=data["cartes"]))
+        self.assertIn("carte four.direction : un objet", str(e.exception))
+        at.cartes(self.cfg(), self.d / "o", False)  # the example passes, and its page shows each card's direction
+        pages = " ".join(p.read_text(encoding="utf-8") for p in (self.d / "o").rglob("*.html"))
+        self.assertIn("Un point d&#x27;émail gris-vert", pages)
+
+    def test_the_chosen_card_s_direction_goes_to_the_kb_and_survives_the_next_rounds(self):
+        k = self.d / "proj" / ".hosa" / "kb"
+        (k / "interface").mkdir(parents=True)
+        at.choisir(k, "styles", "four", self.cfg(), "Fabien", None, False)
+        at.choisir(k, "directions", "four", self.cfg(), "Fabien", None, False)  # a rewrite of choix.md
+        self.assertEqual(at.lit_choix(k)["direction"], {
+            "caractere": "nocturne, ardent, concentré", "monde": "La salle des fours le soir, le charbon et la braise",
+            "moments": "La jauge de remplissage du four",
+            "signature": "La température du prochain four, toujours visible en haut à droite"})
+        self.assertIn("## Direction\n", (k / "interface" / "choix.md").read_text(encoding="utf-8"))
+        at.choisir(k, "styles", None, None, "Fabien", None, True)  # an identity kept: no direction of Hosa's
+        self.assertEqual(at.lit_choix(k)["direction"], {})
+
     def test_a_refinement_round_and_the_user_s_choice_are_not_refused(self):
         p = self.jumelles()
         k = self.d / ".hosa" / "kb"
@@ -637,18 +671,18 @@ class Revue(Base):
         k = self.kb()
         non = {"ou": "Accueil", "constat": "deux boutons principaux", "correction": "un seul"}
         r = at.revue(k, self.remplie(R4={"reponse": "non", **non}, R13={"reponse": "na", "constat": "pas de back office"}))
-        self.assertEqual((r["note"], r["grille"]), (9, "14/15"))
+        self.assertEqual((r["note"], r["grille"]), (9, "16/17"))
         self.assertEqual(at.revue(k, self.remplie(R8={"reponse": "non", **non}))["note"], 7)  # a default template
         self.assertEqual(at.revue(k, self.remplie(R16={"reponse": "non", **non}))["note"], 7)  # default ornaments
         deux = {f"R{i}": {"reponse": "non", **non} for i in (6, 7)}
-        self.assertEqual(at.revue(k, self.remplie(**deux))["note"], 8)  # 14/16
-        self.assertEqual(at.revue(k, self.remplie(**deux, R10={"reponse": "non", **non}))["note"], 7)  # 13/16 = 8, a 3rd non
+        self.assertEqual(at.revue(k, self.remplie(**deux))["note"], 8)  # 16/18
+        self.assertEqual(at.revue(k, self.remplie(**deux, R10={"reponse": "non", **non}))["note"], 7)  # 15/18 = 8, a 3rd non
         r = at.revue(k, self.remplie(R1={"reponse": "non", **non}))
         self.assertEqual(r["note"], 7)
         nav = (k / "interface" / "navigation.md").read_text(encoding="utf-8")
         lignes = [l for l in nav.split("## Revue visuelle")[1].splitlines() if l.startswith("- ")]
         self.assertEqual(len(lignes), 6)  # appended, never rewritten
-        self.assertRegex(lignes[5], r"— note 7/10 — grille 15/16 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
+        self.assertRegex(lignes[5], r"— note 7/10 — grille 17/18 \(1 non, 1 bloquant\) — R1 Accueil : deux boutons")
         self.assertIn("## Fondamentaux UX", nav)
         sys.path.insert(0, str(ROOT / "skills" / "status" / "scripts"))
         import avancement as av

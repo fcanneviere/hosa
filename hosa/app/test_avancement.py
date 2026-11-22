@@ -2023,7 +2023,7 @@ class LoopsClosed(unittest.TestCase):
         at.revue(k, low)
         code, out = done(low)
         self.assertEqual(code, 1)
-        self.assertIn("note 7/10, 8 attendu — grille 15/16", out)
+        self.assertIn("note 7/10, 8 attendu — grille 17/18", out)
         good = grid("g3.json", R4=non)
         at.revue(k, good)
         self.assertIn("n'est pas celle de `g2.json`", done(low)[1])  # the line proves this grid, no other
@@ -2130,10 +2130,26 @@ class LoopsClosed(unittest.TestCase):
 
     def test_the_interface_proof_keeps_one_backticked_line_per_checker(self):
         k = kb({})
-        found = ["interface_check : écran a sans espace", "interface_check : b", "lexique_check : c"]
+        found = ["interface_check : écran a sans espace", "interface_check : b", "lexique_check : c",
+                 "gabarit_check : src/a.css:3 — halo coloré"]
         with unittest.mock.patch.object(av, "interface_gaps", return_value=found) as m:
             gaps = [g for g in av.upstream_check(k, "interface") if g.startswith("`")]
-        self.assertEqual((gaps, m.call_count), (["`interface_check` : écran a sans espace ; b", "`lexique_check` : c"], 1))
+        self.assertEqual((gaps, m.call_count), (["`interface_check` : écran a sans espace ; b", "`lexique_check` : c",
+                                                 "`gabarit_check` : src/a.css:3 — halo coloré"], 1))
+
+    def test_the_3c_gate_reads_the_template_signs_in_the_project_s_code(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        k = root / ".hosa" / "kb"
+        (k / "interface").mkdir(parents=True)
+        (root / "src").mkdir()
+        (root / "src" / "a.css").write_text(".x { box-shadow: 0 0 20px rgba(139,92,246,.5) }\n", encoding="utf-8")
+        gaps = [g for g in av.interface_gaps(k) if g.startswith("gabarit_check : ")]
+        self.assertEqual(len(gaps), 1)
+        self.assertIn("src/a.css:1 — halo coloré", gaps[0])
+        with unittest.mock.patch.dict(os.environ, {"HOSA_GABARIT": "0"}):  # its switch
+            self.assertEqual([g for g in av.interface_gaps(k) if g.startswith("gabarit_check")], [])
 
     def test_a_date_without_its_time_is_newer_only_from_the_next_day(self):
         self.assertEqual([av.newer(x, "2026-11-12T10:00:00Z") for x in

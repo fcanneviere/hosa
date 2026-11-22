@@ -27,6 +27,8 @@ The menu follows the work, not the database: the queues and the objects the role
 4. **The right chart, or none:** a number alone for a level, a line for a trend over time, bars for a comparison between categories, a table for exact values. No pie with more than 3 parts, no gauge, no 3D, no decorative chart. Each chart has its values available as text (a table or a label) for screen readers.
 5. **Freshness and states:** the data's date (« mis à jour à 9 h 12 »), a loading state, an empty state that says why (« aucune réservation cette semaine ») and an error state with a retry.
 6. **Below the indicators, the work:** what to handle now (the queue, the next action). A dashboard that only shows is half a screen.
+7. **A hierarchy, like a text:** one main chart, clearly the largest thing on the screen; anything else that shows data is smaller and of another kind (a ranked list, a short table), never a second chart of the same size. Tiles of varied widths, not a row of identical cards.
+8. **One accent per chart:** the series that matters (this month, the target) takes the accent, the others neutral steps of the palette. A change's colour says good or bad for the role, not up or down: fewer unpaid bookings is good news.
 
 In `round: styles`, a project with a dashboard gets one card with `ecran: "tableau-de-bord"` and `contenu.indicateurs`: the real indicators' names, plausible values and their series.
 

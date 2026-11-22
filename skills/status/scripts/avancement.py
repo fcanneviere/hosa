@@ -758,8 +758,10 @@ def script_lines(rel: str, *args) -> list[str]:
 def interface_gaps(kb: Path) -> list[str]:
     """The interface's completeness, one definition: the stage's proof and the `3c` task's control."""
     gaps = [f"interface_check : {g}" for g in script_lines("interface/scripts/interface_check.py", kb)]
-    if kb.parent.name == ".hosa":  # it scans the project's files: only from a real `<root>/.hosa/kb`
+    if kb.parent.name == ".hosa":  # they scan the project's files: only from a real `<root>/.hosa/kb`
         gaps += [f"lexique_check : {g}" for g in script_lines("interface/scripts/lexique_check.py", kb, kb.parent.parent)]
+        # a default template's signs and what the law sanctions (zoom, focus, alt, pre-ticked consent), read in the code
+        gaps += [f"gabarit_check : {g}" for g in script_lines("interface/scripts/gabarit_check.py", kb, kb.parent.parent)]
     return gaps
 
 
@@ -874,7 +876,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps.append(concept(kb, "interface/navigation.md", "Plan de navigation"))
         gaps.append(concept(kb, "interface/lexique.md", "Lexique interface"))
         found = interface_gaps(kb)  # run once: each checker scans the project
-        for name in ("interface_check", "lexique_check"):
+        for name in ("interface_check", "lexique_check", "gabarit_check"):
             mine = [g.split(" : ", 1)[1] for g in found if g.startswith(f"{name} : ")]
             more = f" (+{len(mine) - 5})" if len(mine) > 5 else ""
             gaps += [f"`{name}` : " + " ; ".join(mine[:5]) + more] if mine else []
@@ -1499,7 +1501,7 @@ def ctl_verdict(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list
 
 
 def ctl_interface(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
-    """`interface` 3c: the scaffold passes `interface_check` and `lexique_check`. A missing `espace` is left out:
+    """`interface` 3c: the scaffold passes `interface_check`, `lexique_check` and `gabarit_check`. A missing `espace` is left out:
     the PO sets it (`back interface fondamentaux`), it never costs the designer a round."""
     return [g for g in interface_gaps(kb) if ESPACE_GAP not in g] + verification_gaps(kb, t)
 
