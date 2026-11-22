@@ -101,7 +101,7 @@ function queryGraph(root, text, sub = 'find') {
   const r = spawnSync(python(), [GRAPH_PY, '--root', root, '--budget', '500', sub, text],
     { timeout: 4000, encoding: 'utf8', windowsHide: true });
   const out = (r.status === 0 && r.stdout || '').trim();
-  return out === 'Aucun résultat.' || /^Aucun élément/.test(out) ? '' : out;
+  return /^Aucun résultat\./.test(out) || /^Aucun élément/.test(out) ? '' : out; // a miss may name close words
 }
 
 // Grep over a whole tree for a bare identifier: the graph already knows where it

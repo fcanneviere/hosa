@@ -185,8 +185,9 @@ def _mention_target(m, nodes, by_base, by_name):
     return hits.pop() if len(hits) == 1 and len(m) >= 4 else None
 
 
-def build(facts, kb_items, touches):
-    """Graphe complet dérivé des faits par fichier et de la KB. Pur : aucun accès disque."""
+def build(facts, kb_items, touches, symbols=None):
+    """Graphe complet dérivé des faits par fichier et de la KB. Pur : aucun accès disque.
+    `symbols` ({slug: {fichier: {noms}}}, `ticket_symbols`) : un ticket touche aussi les définitions qu'il a changées."""
     nodes, edges, seen = {}, [], set()
 
     def edge(src, dst, rel, conf="exact", line=None):
@@ -260,7 +261,7 @@ def build(facts, kb_items, touches):
     for p in files:
         by_base.setdefault(posixpath.basename(p), []).append(p)
     for item in kb_items:
-        nodes[item["id"]] ={k: v for k, v in item.items() if k not in ("links", "mentions")}
+        nodes[item["id"]] = {k: v for k, v in item.items() if k not in ("links", "mentions", "depends_on")}
     for item in kb_items:
         for target in item.get("links", []):
             if target in nodes:
@@ -269,11 +270,23 @@ def build(facts, kb_items, touches):
             target = _mention_target(m, nodes, by_base, by_name)
             if target:
                 edge(item["id"], target, "mentions")
+        for d in item.get("depends_on", []):
+            if f"ticket:{d}" in nodes:
+                edge(item["id"], f"ticket:{d}", "depends_on")
     for slug, paths in touches.items():
         if f"ticket:{slug}" in nodes:
             for p in paths:
                 if p in nodes:
                     edge(f"ticket:{slug}", p, "touches")
+    for slug, by_path in (symbols or {}).items():
+        if f"ticket:{slug}" not in nodes:
+            continue
+        for p, names in by_path.items():
+            if TEST_PATH.search(p):  # a test file stays a file: its new test names would drown the code's
+                continue
+            for d in (facts.get(p) or {}).get("defs", []):
+                if d["name"] in names:
+                    edge(f"ticket:{slug}", node_id(p, d["qual"]), "touches")
     return {"nodes": sorted(nodes.values(), key=lambda n: n["id"]), "edges": edges}
 
 
@@ -311,6 +324,8 @@ def kb_items(root):
         if kind == "ticket":
             item["state"] = fm.get("state", "todo")
             item["links"] = sorted({f"exigence:{s}" for s in CDC_LINK.findall(c["body"])})
+            deps = fm.get("depends_on") or []
+            item["depends_on"] = sorted({str(d) for d in (deps if isinstance(deps, list) else [deps])})
         else:
             item["status"] = fm.get("status", "draft")
         out.append(item)
@@ -347,6 +362,51 @@ def ticket_touches(root):
             p = renamed[p]
         return p
     return {s: sorted({current(p) for p in ps}) for s, ps in touches.items()}
+
+
+# git's own function-context drivers: a hunk then names its enclosing `def`/`class`/`function`
+DIFF_DRIVERS = "*.py diff=python\n*.rb diff=ruby\n*.go diff=golang\n*.rs diff=rust\n*.java diff=java\n*.php diff=php\n"
+HUNK = re.compile(r"^@@ [^@]* @@ ?(.*)$")
+TEST_PATH = re.compile(r"(^|/)(tests?|spec|__tests__)/|(^|/)test_[^/]*$|[._-](test|spec)\.[^/]+$")
+
+
+def ticket_symbols(root):
+    """{slug: {fichier: {noms}}} : les noms qu'un commit `Hosa-Ticket: <slug>` change — le contexte de chaque bloc
+    du diff (sa fonction ou sa classe) et les mots des lignes ajoutées. `build` n'en garde que les définitions du
+    fichier : la mémoire du ticket (rieki sprint-4 : `services/prevision.py` relu 26 fois par des agents successifs)."""
+    import tempfile
+    attrs = None
+    try:
+        with tempfile.NamedTemporaryFile("w", suffix=".gitattributes", delete=False, encoding="utf-8") as f:
+            f.write(DIFF_DRIVERS)
+            attrs = f.name
+        out = subprocess.run(["git", "-C", str(root), "-c", "core.quotePath=false", "-c", f"core.attributesFile={attrs}",
+                              "log", "--no-merges", "--grep=^Hosa-Ticket:", "-p", "-U0", "--no-color", "--no-ext-diff",
+                              "--format=%x1e%B%x1f"],
+                             capture_output=True, check=True, timeout=60, **NO_WINDOW).stdout.decode("utf-8", "replace")
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return {}
+    finally:
+        if attrs:
+            Path(attrs).unlink(missing_ok=True)
+    symbols = {}
+    for record in out.split("\x1e")[1:]:
+        body, _, diff = record.partition("\x1f")
+        slugs = re.findall(r"^Hosa-Ticket:\s*(\S+)", body, re.M)
+        names, path = {}, None
+        for line in diff.splitlines():
+            if line.startswith("+++ "):
+                path = line[6:] if line.startswith("+++ b/") else None
+                continue
+            if not path or line.startswith("--- "):
+                continue
+            m = HUNK.match(line)
+            words = re.findall(r"[A-Za-z_]\w{2,}", m[1] if m else line[1:] if line.startswith("+") else "")
+            names.setdefault(path, set()).update(words)
+        for s in slugs:
+            for p, ws in names.items():
+                symbols.setdefault(s, {}).setdefault(p, set()).update(ws)
+    return symbols
 
 
 # --- Carte OKF (kb/code/) ------------------------------------------------------
@@ -505,7 +565,8 @@ def refresh(root, paths=None):
                 facts = {"lang": gx.lang_of(rel), "doc": "", "defs": [], "calls": [], "imports": [], "error": str(e)[:200]}
             files[rel] = {"mtime": st.st_mtime, "sha256": sha, "facts": facts}
         graph = {"version": VERSION, "root": root.as_posix(),
-                 **build({p: e["facts"] for p, e in files.items()}, kb_items(root), ticket_touches(root))}
+                 **build({p: e["facts"] for p, e in files.items()}, kb_items(root), ticket_touches(root),
+                         ticket_symbols(root))}
         old = _load_json(gdir / "graph.json", {})
         changed = {k: v for k, v in old.items() if k != "built_at"} != graph
         if changed:
@@ -592,6 +653,20 @@ class Index:
                 scored.append((-found, -score, KIND_ORDER[n["kind"]], i))
         return [i for *_, i in sorted(scored)[offset:offset + limit]]
 
+    def near(self, text, n=8):
+        """Les mots du graphe les plus proches de ceux de `text` (noms découpés, mots des corps) : à relancer quand
+        `find` ne trouve rien (rieki : 11 `find` suivis d'un Grep ; graphify ne cherche qu'avec son vocabulaire)."""
+        import difflib
+        vocab = set()
+        for node in self.nodes.values():
+            for part in re.split(r"[^\w]+|_", node["label"]):
+                vocab.update(w.lower() for w in re.findall(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+", part) if len(w) >= 3)
+            vocab.update(w for w in node.get("terms", "").split() if len(w) >= 3)
+        out = []
+        for t in (t for t in re.split(r"[\s/.:_-]+", text.lower()) if len(t) >= 3):
+            out += [w for w in difflib.get_close_matches(t, vocab, 4, 0.75) if w not in out and w != t]
+        return out[:n]
+
     def detail(self, nid):
         return {"node": self.nodes[nid],
                 "out": [{**e, "node": self.nodes[e["dst"]]} for e in self.out.get(nid, [])],
@@ -650,6 +725,20 @@ def budgeted(lines, budget=BUDGET):
             break
         out.append(line)
     return "\n".join(out)
+
+
+def _touch_lines(title, edges):
+    """A ticket's `touches`, one line per file: `  src/a.py — f:12, Classe.m:40` (rieki: 600 lines one per symbol)."""
+    by_file = {}
+    for e in edges:
+        if e["rel"] == "touches":
+            n = e["node"]
+            by_file.setdefault(n["file"], [])
+            if n["kind"] != "file":
+                by_file[n["file"]].append(f"{n['label']}:{n['line']}")
+    if not by_file:
+        return []
+    return [title] + [f"  {f}" + (f" — {', '.join(syms)}" if syms else "") for f, syms in sorted(by_file.items())]
 
 
 def _edge_lines(edges, key, arrow):
@@ -752,9 +841,12 @@ def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET, path=None, kind=N
     (graph_dir(root) / "last_query").write_text(str(time.time()), encoding="utf-8")
     if cmd == "find":
         hits = g.find(arg, limit, path, kind, offset)
-        _log_search(root, {"find": arg, "hits": len(hits)})
+        near = [] if hits or offset else g.near(arg)
+        _log_search(root, {"find": arg, "hits": len(hits), **({"near": near} if near else {})})
+        miss = "Aucun résultat." + (f" Mots proches dans le graphe : {', '.join(near)} — relance `find` avec l'un d'eux."
+                                     if near else "")
         return budgeted([fmt(g.nodes[i]) + (f"  — {g.nodes[i]['doc']}" if g.nodes[i].get("doc") else "")
-                         for i in hits] or ["Aucun résultat."], budget)
+                         for i in hits] or [miss], budget)
     if cmd == "explain":
         d = g.detail(g.one(arg))
         head = [fmt(d["node"])] + ([f"  {d['node']['doc']}"] if d["node"].get("doc") else [])
@@ -768,7 +860,12 @@ def run(root, cmd, arg=None, depth=2, limit=20, budget=BUDGET, path=None, kind=N
         return budgeted(lines, budget)
     if cmd == "ticket":
         d = g.detail(g.one(arg if arg.startswith("ticket:") else f"ticket:{arg}"))
-        return budgeted([fmt(d["node"])] + _edge_lines(d["out"], "node", "→"), budget)
+        lines = [fmt(d["node"])] + _edge_lines([e for e in d["out"] if e["rel"] != "touches"], "node", "→")
+        lines += _touch_lines("→ touches", d["out"])
+        # the memory of the tickets it builds on: what their commits changed, file by file, symbol and line
+        for dep in sorted(e["dst"] for e in d["out"] if e["rel"] == "depends_on"):
+            lines += _touch_lines(f"Mémoire de {dep} (changé par ses commits) :", g.detail(dep)["out"])
+        return budgeted(lines, budget)
     raise GraphError(f"commande inconnue : {cmd}")
 
 

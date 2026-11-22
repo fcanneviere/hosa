@@ -171,6 +171,39 @@ class GraphTest(unittest.TestCase):
         git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "rename")
         self.assertEqual(graph.ticket_touches(self.root)["export-csv"], ["app/factures.py"])
 
+    def test_a_ticket_touches_the_definitions_its_commit_changed(self):
+        # rieki sprint-4: `services/prevision.py` read 26 times by successive agents; the ticket now says where
+        (self.root / "app/util.py").write_text(FILES["app/util.py"].replace("return str(x)", "return repr(x)"),
+                                               encoding="utf-8")
+        git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "fix: fmt",
+            "-m", "Hosa-Ticket: export-csv")
+        g = graph.refresh(self.root)
+        touched = {e["dst"] for e in g["edges"] if e["rel"] == "touches" and e["src"] == "ticket:export-csv"}
+        self.assertIn("app/util.py::fmt", touched)          # the hunk's function
+        self.assertNotIn("app/util.py::helper", touched)    # unchanged, same file
+        self.assertNotIn("lib/other.py::helper", touched)   # another file's definition never counts
+        out = graph.run(self.root, "ticket", "export-csv")
+        self.assertIn("  app/util.py — fmt:1", out)              # one line per file, symbol and line
+
+    def test_a_ticket_gives_the_memory_of_the_tickets_it_depends_on(self):
+        # a new ticket has no commit yet: what its tech-lead needs is what the tickets before it changed
+        (self.root / ".hosa/kb/tickets/relance.md").write_text(
+            "---\ntype: Ticket\ntitle: Relance\nstate: todo\ndepends_on: [export-csv]\n---\nRelancer.\n", encoding="utf-8")
+        (self.root / "app/billing.py").write_text(FILES["app/billing.py"].replace("Invoice().total()", "Invoice().total() + 0"),
+                                                  encoding="utf-8")
+        git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "feat: export",
+            "-m", "Hosa-Ticket: export-csv")
+        out = graph.run(self.root, "ticket", "relance")
+        self.assertIn("→ depends_on", out)
+        self.assertIn("Mémoire de ticket:export-csv (changé par ses commits) :", out)
+        self.assertIn("export_csv:12", out.split("Mémoire de")[1])
+
+    def test_a_miss_names_the_graph_s_closest_words(self):
+        out = graph.run(self.root, "find", "invoyce")
+        self.assertTrue(out.startswith("Aucun résultat. Mots proches dans le graphe : "), out)
+        self.assertIn("invoice", out)
+        self.assertEqual(graph.run(self.root, "find", "zzzqqq"), "Aucun résultat.")  # nothing close: nothing named
+
     def test_touches_of_a_lot_commit(self):
         # `-m` par trailer : git en fait deux paragraphes, %(trailers) ne lirait que le dernier
         (self.root / "app/util.py").write_text(FILES["app/util.py"] + "\n# lot\n", encoding="utf-8")
