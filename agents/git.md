@@ -90,7 +90,11 @@ Integrate the base into the sprint branch, test there, then land: a failure neve
 3. Uncommitted source in the worktree → stop and list it; the user decides.
 4. **Integrate:** `git merge-base --is-ancestor <base> sprint/<slug>` succeeds → nothing to do. Otherwise `git merge --no-ff <base> -m "Merge <base> into sprint/<slug>"` in the worktree; conflict → `git merge --abort`, list the files, stop (`state` stays `active`; resolved on the sprint branch, then Mode 2 again).
 5. **Database:** `hosa-dba`'s *vérifier* (catches conflicting migrations between sprint and base), then *migrer*, in the sprint's environment. Failure → `## Base de données nécessaire`; you're redispatched from this step.
-6. **Test the exact content that will land** — the branch tip, with the full suite and the lint, format and type commands of `## Outillage qualité` — in the sprint's environment (`docker_check` first; after an integration merge, recreate with `--build`). Skip only if Step 4 merged nothing **and** the tip's tree without `.hosa/` — `t=$(mktemp -u) && GIT_INDEX_FILE=$t git read-tree sprint/<slug> && GIT_INDEX_FILE=$t git rm -rq --cached --ignore-unmatch .hosa && GIT_INDEX_FILE=$t git write-tree; rm -f "$t"` — equals an `Arbre testé :` hash with a fully passed suite in a ticket's last `## Résultats techniques` or in the last line of the sprint's `## Suite complète`. The skip covers the suite only: lint, format and types always run. Failure → stop, base untouched. Report run or skip, with the hash.
+6. **Test the exact content that will land** — the branch tip — in the sprint's environment (`docker_check` first; after an integration merge, recreate with `--build`). The lint, format and type commands of `## Outillage qualité` always run. The suite is decided by `<hosa> suite_fusion "<root>/.hosa/kb" "<worktree>"`, never by hand: it compares the tip's tree without `.hosa/` with every fully passed `Arbre testé` of the KB.
+   - exit 0 `sauter` → no suite: the same product code and tests already passed;
+   - exit 0 `ciblé` → run only the test files listed under `lancer :`, with the suite's command of `## Outillage qualité` (browser options included for a browser test file): only tests changed since a fully passed tree, so the rest already passed on the same code;
+   - exit 1 or 2 → the full suite, browser tests included.
+   Failure → stop, base untouched. Report the script's first line, and what ran.
 7. **Land**, in the root: its branch must be `<base>` (otherwise Open Question — never switch branches under the user). Re-check `--is-ancestor` (moved → back to Step 4), then `git merge --no-ff sprint/<slug> -m "Merge sprint <slug>"`. The base being an ancestor, the result's tree is the one tested. Git refuses over local changes → stop and list them.
 8. **Clean up:** `docker compose -p <docker_project> down -v --rmi local` from the worktree (its volumes held only test data, its image is rebuilt by `up --build`), then the agent memories (Rules), then `git worktree remove .worktrees/sprint/<slug>` and `git branch -d sprint/<slug>` — refused → report, leave it, never force. After the base environment is rebuilt (step 9), `<hosa> docker_check --orphans "<root>" --clean`: it removes what finished sprints left (images, environments on a vanished worktree, unnamed images of the project). Write its last line to the sprint as `nettoyage: <line>` with step 10 (`done git-fusion` refuses without it). A line « à confirmer » (an environment started from the root under another name) → Open Question naming it and its command; never remove it without the user's word.
 9. **Refresh the base environment:** `docker compose -p <projet> up -d --build` from the root, then `docker_check.py`.
@@ -126,7 +130,7 @@ Cleanup includes Docker: `<hosa> docker_check --orphans "<root>"` lists what fin
 
 ## Sprint <slug> fusionné (Mode 2)
 - Fusionné dans <base> — base intégrée : [non / oui, commit <sha>]
-- Tests : [lancés sur le résultat exact / sautés — arbre <hash> déjà testé]
+- Tests : [première ligne de `suite_fusion`] — [suite complète X/Y / ciblés : <fichiers> X/Y / sautés]
 - Worktree et branche supprimés, environnement et image du sprint supprimés, environnement de base reconstruit : <docker_check> — nettoyage : <dernière ligne de --orphans --clean>
 
 ## Sprint <slug> bloqué (Mode 2)

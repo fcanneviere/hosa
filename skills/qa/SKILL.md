@@ -83,7 +83,7 @@ The test files the QA writes or fixes are committed on the sprint branch, after 
 1. After each `hosa-tester` pass: the files under its `## New Tests Written` and `## Corrections côté tests`, per ticket. After `hosa-qa-lead` Phase 2: the files it changed, under the ticket whose run showed the problem.
 2. From the worktree, branch `sprint/<slug>` checked: `git -C <worktree> status --porcelain -- . ':(exclude).hosa'` must list exactly those files. Another file → stop and show it to the user: the tester never touches product code.
 3. One commit per ticket, user's identity only, no co-author: `git -C <worktree> add <its files>` then `git -C <worktree> commit -m "test: <ticket> — tests de QA" --trailer "Hosa-Ticket: <slug>"` (the `gate.js` hook checks its review, already passed).
-4. Commit as is, right after the run: the tree then equals the `Arbre testé` recorded, so `hosa-git` skips the suite at merge.
+4. Commit as is, right after the run: the tree then equals the `Arbre testé` recorded, so `hosa-git` skips the suite at merge. A test file committed after the last full run is rerun alone at merge (`suite_fusion`), never the whole suite.
 
 No question to the user: these are test files only, listed by the agent that wrote them, like a `git` checkpoint. Name each commit in the report. Nothing in Hosa's own KB is committed here.
 
