@@ -394,6 +394,34 @@ def observation_gaps(plan: str, crit: list[str]) -> list[str]:
     return gaps
 
 
+# `- [CA2][navigateur] <cas> — échoue si : <défaut>`: the tags, then the case
+CASE = re.compile(r"^[-*]\s*((?:\[[^\]]+\]\s*)+)(.*)$")
+FAILS_IF = re.compile(r"—\s*échoue si\s*:\s*\S", re.I)
+NOT_A_TEST = re.compile(r"non testable|sans objet", re.I)
+
+
+def case_gaps(plan: str, browser_max: int | None) -> list[str]:
+    """A plan's `## Cas de test`: each case names the defect of the project's code it catches, and the browser
+    cases stay few — one per screen state, its checks asserted in one test. rieki sprint-2: one styling ticket,
+    a browser test per criterion, per header and per theme, 25 page loads where 3 saw the same."""
+    body = section(plan, "Cas de test")
+    if body is None:
+        return ["pas de `## Cas de test`"]
+    gaps, browser = [], 0
+    for x in body.splitlines():
+        m = CASE.match(x.strip())
+        if not m or NOT_A_TEST.search(m[2]):
+            continue
+        browser += "[navigateur]" in m[1].lower()
+        if not FAILS_IF.search(m[2]):
+            gaps.append(f"`## Cas de test` : « {x.strip()[:80]} » sans `— échoue si : <le défaut du code du projet "
+                        f"qu'il attrape>` (un cas qui n'échoue que si le framework change n'est pas écrit)")
+    if browser_max and browser > browser_max:
+        gaps.append(f"{browser} cas `[navigateur]`, {browser_max} au plus : un cas par état d'écran, ses vérifications "
+                    f"en assertions d'un seul test ; le reste au niveau unitaire ou application")
+    return gaps
+
+
 @functools.cache
 def lexique_check():
     import importlib.util
@@ -1058,6 +1086,8 @@ def stage_proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
                 gaps.append(f"{t} : {', '.join(missing)} sans cas de test [CAn] (`qa-plan`)")
             if plan is not None:
                 gaps += [f"{t} : {g} (`qa-plan`)" for g in observation_gaps(plan, crit)]
+                gaps += [f"{t} : {g} (`qa-plan`)"
+                         for g in case_gaps(plan, control_value("qa-plan", "plans-*", "navigateur"))]
         if stage == "develop":
             verdict = last_verdict(text)
             if verdict in (None, "FAIL"):
@@ -1886,6 +1916,13 @@ def ctl_rechargement(kb: Path, files: list[tuple[str, Path | None]], t: dict) ->
     return gaps
 
 
+def ctl_cas_utiles(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """The test plans a `hosa-qa-lead` task wrote pass `case_gaps` (`plans-*`, `cas-*`)."""
+    browser_max = control_value(t["stage"], t["id"], "navigateur")
+    return [f"{f.stem} : {g}" for _, f in files if f and f.name.endswith("-technique.md")
+            for g in case_gaps(read(f) or "", browser_max)]
+
+
 def ctl_couverture(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
     """Every criterion of the sprint seen in the dataset (`qa-plan` Step 4b, task `jeu-couverture`): a line
     `<ticket> CAn — …` under `## Couverture des critères`, lists and ranges counting for each."""
@@ -1972,7 +2009,7 @@ def stamp_of(line: str) -> str:
 CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
             "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix,
             "rechargement": ctl_rechargement, "couverture": ctl_couverture, "tests-ecrits": ctl_tests_ecrits,
-            "cout-tests": ctl_cout_tests}
+            "cout-tests": ctl_cout_tests, "cas-utiles": ctl_cas_utiles}
 # `refus 2/2 (okf ; sortie 1) — …`: the last refusal's cause and count, then the other causes' counts
 REFUS = re.compile(r"^refus (\d+)/\d+ \(([\w-]+)((?: ; [\w-]+ \d+)*)\)(?: — )?")
 

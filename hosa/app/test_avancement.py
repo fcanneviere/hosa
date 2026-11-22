@@ -46,20 +46,23 @@ DIAGRAM_FP = av.cdc_module().empreinte(DIAGRAM)
 # what `infra` chooses to start once and to run side by side (`avancement.infra_exit`)
 SHARED = ("- Partage : serveur et navigateur une fois par session, base remise à zéro entre les tests\n"
           "- Parallèle : pytest-xdist, 4 workers\n")
+# what a test plan's case catches (`avancement.case_gaps`)
+FAILS = " — échoue si : le code du projet régresse"
 TICKET = "---\ntype: Ticket\nstate: doing\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n"
 
 
 class Check(unittest.TestCase):
     def test_qa_plan_needs_a_case_per_criterion(self):
-        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": "- [CA1] x\n## Observation\nAucun\n"})
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": f"## Cas de test\n- [CA1] x{FAILS}\n## Observation\nAucun\n"})
         self.assertEqual(av.check(k, "qa-plan", "s1"), ["t1 : CA2 sans cas de test [CAn] (`qa-plan`)"])
-        (k / "test" / "t1-technique.md").write_text("- [CA1] x\n- [CA2] [manuel] y\n## Observation\nAucun\n",
+        (k / "test" / "t1-technique.md").write_text(
+            f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] [manuel] y{FAILS}\n## Observation\nAucun\n",
                                                     encoding="utf-8")
         self.assertEqual(av.check(k, "qa-plan", "s1"), [])
 
     def test_qa_plan_names_how_the_demo_sees_each_hidden_criterion(self):
         # rieki: recettes « avec réserves » three sprints running, on failures and base states nobody could see.
-        plan = "- [CA1] x\n- [CA2] y\n"
+        plan = f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] y{FAILS}\n"
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET, "test/t1-technique.md": plan})
         self.assertEqual(av.check(k, "qa-plan", "s1"), [
             "t1 : pas de `## Observation` (critères invisibles à l'écran et leur moyen d'observation, ou « Aucun ») (`qa-plan`)"])
@@ -72,6 +75,22 @@ class Check(unittest.TestCase):
         self.assertEqual(len(gaps), 2)
         self.assertIn("observé par", gaps[0])
         self.assertIn("CA9 n'est pas un critère du ticket", gaps[1])
+
+    def test_each_case_names_the_defect_it_catches_and_browser_cases_stay_few(self):
+        # rieki sprint-2: a styling ticket, a browser test per criterion, header and theme — 25 page loads for 3 states
+        plan = (f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2][navigateur] y\n"
+                "- [nfr] Documentation — non testable : pas de cible\n- [juridique] Sans objet : aucune contrainte\n")
+        self.assertEqual(av.case_gaps(plan, 3), ["`## Cas de test` : « - [CA2][navigateur] y » sans `— échoue si : "
+                                                 "<le défaut du code du projet qu'il attrape>` (un cas qui n'échoue "
+                                                 "que si le framework change n'est pas écrit)"])
+        browser = "## Cas de test\n" + "".join(f"- [CA{n}][Navigateur] y{FAILS}\n" for n in range(1, 5))
+        self.assertEqual(len(av.case_gaps(browser, 3)), 1)
+        self.assertIn("4 cas `[navigateur]`, 3 au plus", av.case_gaps(browser, 3)[0])
+        self.assertEqual(av.case_gaps(browser, None), [])
+        self.assertEqual(av.case_gaps("- [CA1] x\n", 3), ["pas de `## Cas de test`"])
+        k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET,
+                "test/t1-technique.md": browser + "## Observation\nAucun\n"})
+        self.assertIn("4 cas `[navigateur]`, 3 au plus", av.check(k, "qa-plan", "s1")[0])
 
     def test_develop_needs_a_passed_review(self):
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET + "## Revue\n- d — PASS — ok\n- d — FAIL — CA2\n"})
@@ -312,6 +331,7 @@ class Coverage(unittest.TestCase):
         self.assertEqual(av.check(k, "qa-plan", "s1"), [
             "t1 : CA2, CA3 sans cas de test [CAn] (`qa-plan`)",
             "t1 : pas de `## Observation` (critères invisibles à l'écran et leur moyen d'observation, ou « Aucun ») (`qa-plan`)",
+            "t1 : pas de `## Cas de test` (`qa-plan`)",
             "t2 : pas de plan `kb/test/t2-technique.md` (`qa-plan`)",
             "t2 : CA1, CA2, CA3 sans cas de test [CAn] (`qa-plan`)",
             "t3 : pas de plan `kb/test/t3-technique.md` (`qa-plan`)"])
@@ -2128,7 +2148,7 @@ class CheckOutput(unittest.TestCase):
     def test_a_task_waiting_is_not_a_wrong_proof(self):
         # rieki sprint-4: `check sprint` exited 1 for an `ecriture` task not run yet, read as a fault in the order
         k = kb({"sprints/s1.md": SPRINT, "tickets/t1.md": TICKET,
-                "test/t1-technique.md": "- [CA1] x\n- [CA2] y\n## Observation\nAucun\n"})
+                "test/t1-technique.md": f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] y{FAILS}\n## Observation\nAucun\n"})
         closed_until(k, "backlog")
         run(k, "done", "sprint", "--sprint", "s1", "--force")
         run(k, "start", "qa-plan", "--sprint", "s1")
@@ -2136,7 +2156,8 @@ class CheckOutput(unittest.TestCase):
         code, out = run(k, "check", "qa-plan", "--sprint", "s1")
         self.assertEqual(code, 3, out)
         self.assertIn("✓ `qa-plan` : preuves complètes\nTâches en attente :\n- tâche `jeu-de-donnees`", out)
-        (k / "test" / "t1-technique.md").write_text("- [CA1] x\n## Observation\nAucun\n", encoding="utf-8")
+        (k / "test" / "t1-technique.md").write_text(f"## Cas de test\n- [CA1] x{FAILS}\n## Observation\nAucun\n",
+                                                    encoding="utf-8")
         code, out = run(k, "check", "qa-plan", "--sprint", "s1")
         self.assertEqual(code, 1)
         self.assertIn("Preuves manquantes :\n- t1 : CA2 sans cas", out)
@@ -2162,7 +2183,7 @@ class QaPlanTasks(unittest.TestCase):
         t = "---\ntype: Ticket\nstate: planned\n---\n## Critères d'acceptation\n- CA1 — a\n- CA2 — b\n- CA3 — c\n"
         plan = ('---\ntype: Test Plan\ntitle: "T"\ndescription: "D."\ntags: [technique]\n'
                 "generated: { by: hosa-qa-lead/1.0, at: '2026-11-18T00:00:00Z' }\n---\n"
-                "## Cas de test\n- [CA1] x\n- [CA2] y\n- [CA3] z\n## Observation\nAucun\n")
+                f"## Cas de test\n- [CA1] x{FAILS}\n- [CA2] y{FAILS}\n- [CA3] z{FAILS}\n## Observation\nAucun\n")
         self.k = kb({"sprints/s1.md": "---\ntype: Sprint\n---\n## Tickets\n- [A](../tickets/a.md)\n"
                                       "- [B](../tickets/b.md)\n- [C](../tickets/c.md)\n",
                      **{f"tickets/{s}.md": t for s in "abc"}, **{f"test/{s}-technique.md": plan for s in "abc"}})
@@ -2181,6 +2202,17 @@ class QaPlanTasks(unittest.TestCase):
                                                               "kb/test/c-technique.md")
         self.assertEqual(code, 1, out)
         self.assertIn("lot de 3 tickets, 2 au plus", out)
+
+    def test_a_plan_handed_back_names_what_each_case_catches(self):
+        plan = self.k / "test" / "a-technique.md"
+        plan.write_text(plan.read_text(encoding="utf-8").replace("- [CA3] z — échoue si : le code du projet régresse",
+                                                                 "- [CA3] z"), encoding="utf-8")
+        for tid in ("plans-1", "cas-a"):
+            self.task("add", tid, "--agent", "hosa-qa-lead")
+            code, out = self.task("done", tid, "--sortie", "kb/test/a-technique.md")
+            self.assertEqual(code, 1, out)
+            self.assertIn("a-technique : `## Cas de test` : « - [CA3] z » sans `— échoue si", out)
+        self.assertEqual(self.task("done", "plans-1", "--sortie", "kb/test/b-technique.md")[0], 0)
 
     def test_the_dataset_is_written_then_loaded_then_covers_every_criterion(self):
         self.task("add", "jeu-ecriture", "--agent", "hosa-data-engineer")
