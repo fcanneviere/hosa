@@ -677,14 +677,49 @@ class Tasks(unittest.TestCase):
         git("init", "-q")
         test.write_text("assert x == 4\n", encoding="utf-8")  # changed with its ticket, then committed
         git("add", "-A")
-        git("commit", "-qm", "t0")
+        git("commit", "-qm", "t0", "--trailer", "Hosa-Ticket: t0")
         task("add", "t1.lot-1", "--agent", "hosa-developer")
-        self.assertEqual(task("done", "t1.lot-1", "--sortie", "a.py")[0], 0)  # committed, unchanged: not refused
+        self.assertEqual(task("done", "t1.lot-1", "--sortie", "a.py")[0], 0)  # t0's commit, unchanged: not refused
         task("add", "t1.lot-2", "--agent", "hosa-developer")
         test.write_text("assert x == 5\n", encoding="utf-8")  # this lot changes it
         code, out = task("done", "t1.lot-2", "--sortie", "a.py")
         self.assertEqual(code, 1, out)
         self.assertIn("`tests/test_a.py` modifié après la remise de `hosa-tester`", out)
+        git("commit", "-qam", "lot-2")  # the lot commits its change: not t0's commit, still refused
+        self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 1)
+        git("commit", "-q", "--amend", "-m", "x", "--trailer", "Hosa-Ticket: t1")  # nor the lot's own ticket's
+        self.assertEqual(task("done", "t1.lot-2", "--sortie", "a.py")[0], 1)
+
+    def test_a_test_of_the_lot_s_own_ticket_is_checked_by_date_even_committed(self):
+        import shutil
+        import subprocess
+        import time
+        if not shutil.which("git"):
+            self.skipTest("git absent")
+        wt = Path(tempfile.mkdtemp())
+        (wt / "tests").mkdir()
+        test, src = wt / "tests" / "test_a.py", wt / "a.py"
+        test.write_text("assert x == 3\n", encoding="utf-8")
+        src.write_text("", encoding="utf-8")
+        k = kb({"sprints/s1.md": SPRINT.replace("type: Sprint", f"type: Sprint\nworktree: {wt.as_posix()}"),
+                "tickets/t1.md": TICKET})
+        run(k, "start", "develop", "--sprint", "s1", "--force")
+
+        def task(op, tid, *rest):
+            return run(k, "task", op, "develop", tid, "--sprint", "s1", *rest)
+
+        task("add", "t1.tests", "--agent", "hosa-tester")
+        old = time.time() - 120
+        os.utime(test, (old, old))
+        with unittest.mock.patch.object(av, "now", return_value=time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                                               time.gmtime(old + 60))):
+            self.assertEqual(task("done", "t1.tests", "--sortie", "tests/test_a.py")[0], 0)
+        test.write_text("assert x == 4\n", encoding="utf-8")
+        for a in (["init", "-q"], ["add", "-A"], ["commit", "-qm", "t1", "--trailer", "Hosa-Ticket: t1"]):
+            subprocess.run(["git", "-C", str(wt), "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                           capture_output=True, check=True)
+        task("add", "t1.lot-1", "--agent", "hosa-developer")
+        self.assertEqual(task("done", "t1.lot-1", "--sortie", "a.py")[0], 1)
 
     def test_a_lot_is_refused_while_the_last_full_run_costs_too_much_per_test(self):
         # rieki sprint-4: 97 browser tests in 25 min, each starting its own Streamlit server, one after the other.

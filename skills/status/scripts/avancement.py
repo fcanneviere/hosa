@@ -1995,36 +1995,41 @@ def ctl_tests_ecrits(kb: Path, files: list[tuple[str, Path | None]], t: dict) ->
             if (x["stage"], x["scope"], x["agent"]) == (t["stage"], t["scope"], "hosa-tester")]
     if any(x["statut"] not in CLOSED for x in mine):
         return []
-    handed: dict[str, str] = {}
+    handed: dict[str, tuple[str, str]] = {}
     for x in mine:
         for p in (p.strip() for p in x["sortie"].split(",") if x["statut"] == DONE):
-            if p and x["at"] > handed.get(p, ""):
-                handed[p] = x["at"]
+            if p and x["at"] > handed.get(p, ("", ""))[0]:
+                handed[p] = (x["at"], x["id"].split(".")[0])
+    lot = t["id"].split(".")[0]
     gaps = []
-    for p, at in handed.items():
+    for p, (at, ticket) in handed.items():
         f = resolve(kb, p, t["scope"])
         when = datetime.fromisoformat(at.replace("Z", "+00:00")).timestamp()
-        if f and f.is_file() and f.stat().st_mtime > when + 1 and not committed_clean(f):
+        # this lot's ticket: the date decides, committed or not; another ticket's: its own commit closes it
+        if f and f.is_file() and f.stat().st_mtime > when + 1 and (ticket == lot or not committed_by(f, ticket)):
             gaps.append(f"`{p}` modifié après la remise de `hosa-tester` ({at}) : un test écrit d'abord ne change que "
                         f"par lui. Donne-lui le `## Tests à revoir` du développeur (`task add {t['stage']} "
                         f"<ticket>.tests-correction-<n>`) : il garde ou corrige ces tests, puis `task done` ce lot à nouveau")
     return gaps
 
 
-def committed_clean(f: Path) -> bool:
-    """`f` is committed and has no change in its worktree: a test of an earlier ticket, committed with it, is not
-    this lot's change, whatever its date (rieki sprint-4, 0.1.127: two lots refused on tests of tickets committed
-    from 18 to 21 November, `--force` twice). Not a git checkout, or git fails: False, the date alone decides."""
+def committed_by(f: Path, ticket: str) -> bool:
+    """`f` has no change in its worktree and its last commit is `ticket`'s (`Hosa-Ticket: <ticket>`): a test of an
+    earlier ticket, committed with it, is not this lot's change, whatever its date (rieki sprint-4, 0.1.127: two lots
+    refused on tests of tickets committed from 18 to 21 November, `--force` twice). A lot that commits its own change
+    to it doesn't pass: its commit doesn't carry that ticket. Not a git checkout, or git fails: False, the date decides."""
     import subprocess
+
+    def git(*args):
+        return subprocess.run(["git", "-C", str(f.parent), *args, "--", f.name], capture_output=True, text=True,
+                              timeout=15, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     try:
-        r = subprocess.run(["git", "-C", str(f.parent), "status", "--porcelain", "--", f.name], capture_output=True,
-                           text=True, timeout=15, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-        tracked = subprocess.run(["git", "-C", str(f.parent), "ls-files", "--error-unmatch", "--", f.name],
-                                 capture_output=True, text=True, timeout=15,
-                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        status = git("status", "--porcelain")
+        last = git("log", "-1", "--format=%(trailers:key=Hosa-Ticket,valueonly)")
     except (OSError, subprocess.SubprocessError):
         return False
-    return r.returncode == 0 and tracked.returncode == 0 and not r.stdout.strip()
+    return (status.returncode == 0 and not status.stdout.strip() and last.returncode == 0
+            and ticket in {v.strip() for v in last.stdout.splitlines()})
 
 
 DUREE = re.compile(r"\b(suite|navigateur)\s+(\d+)\s*s\s*/\s*(\d+)\s*tests?\b", re.I)
