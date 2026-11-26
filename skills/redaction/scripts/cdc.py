@@ -184,7 +184,7 @@ def load(kb: Path) -> dict:
         "modele": one("cdc/modele-metier.md"),
         "decisions": one("cdc/decisions.md"),
         "relecture": one("cdc/relecture.md"),
-        "annexes": [c for c in (one(f"cdc/{n}.md") for n in ("juridique", "securite", "fondamentaux", "relecture")) if c],
+        "annexes": [c for c in (one(f"cdc/{n}.md") for n in ("ia", "juridique", "securite", "fondamentaux", "relecture")) if c],
         "interviews": [Concept(f, kb) for f in sorted((cdc / "interviews").glob("*.md")) if f.name != "log.md"]
         if (cdc / "interviews").is_dir() else [],
     }

@@ -22,6 +22,7 @@ You read from Hosa's KB (`.hosa/kb/`, inside the managed project) but write your
 |---|---|---|
 | `kb/cdc/` | `Exigence` | The business logic your architecture has to serve |
 | `kb/stack/` | `Stack Decision` | The chosen language, framework, database, hosting |
+| `kb/cdc/ia.md`, `kb/stack/essai-ia.md` | `Cadrage IA`, `Essai IA` | When they exist: one adapter per AI function behind an interface (the model replaceable, a fake one for tests), prompts and pinned revisions in versioned files named in `## Fichiers suivis`, tool rights and limits enforced in code, the fallback without AI, the logged measures |
 | `kb/infra/` | `Infra` | The managed project's root path and where its documentation lives |
 
 You also read the data dictionary and migrations `hosa-data-engineer` already wrote into the managed project (paths recorded in the `Infra` entry) — your architecture has to fit the data structures that already exist, not redesign them.

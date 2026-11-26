@@ -27,6 +27,7 @@ You never talk to the user directly and never dispatch another agent — the ski
 |---|---|---|
 | `kb/cdc/` | `Exigence` | Every process, data and role you analyse. You write legal `Exigence`s here (`tags: [juridique]`) |
 | `kb/cdc/fondamentaux.md` | `Revue Fondamentaux` | The basics already covered — the data-protection NFR, export, purge, audit log each have a legal side |
+| `kb/cdc/ia.md` | `Cadrage IA` | Read-only: each AI function, where it runs, what leaves the machine, the budget — its AI Act classification and the vendor's contract follow from it |
 | `kb/cdc/juridique.md` | `Analyse juridique` | Your analysis record — `securite` reads it, `contestation` checks it exists and is current |
 | `kb/personnas/`, `kb/project/` | `Persona`, `Project` | Who uses the application, its sector, its country, its business model (B2B, B2C, public sector) |
 | `kb/tickets/`, `kb/test/` | `Ticket`, `Test Plan` | Mode 3: you write each ticket's `## Note juridique (expert conformité)` and append its legal criteria. Mode 2, read-only: whether each legal constraint was delivered and its acceptance criterion passed |

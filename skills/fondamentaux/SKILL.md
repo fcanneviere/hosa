@@ -28,7 +28,7 @@ Redispatch hosa-product-owner : écrit une Exigence (draft)
 par item retenu + kb/cdc/fondamentaux.md (le bilan, item
 par item)
         ↓
-Log kb/cdc/log.md → enchaîne sur `juridique`
+Log kb/cdc/log.md → enchaîne sur `ia` (`cadrage-ia`)
 ```
 
 ## Trigger
@@ -147,5 +147,5 @@ None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git chec
 - [If none: "Aucune — tout était déjà couvert ou hors périmètre"]
 
 ## Suite
-Suite : `juridique`, lancé sans attendre.
+Suite : `ia` (étape `cadrage-ia`), lancé sans attendre.
 ```

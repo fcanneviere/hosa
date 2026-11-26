@@ -24,7 +24,7 @@ A ticket slug, belonging to a sprint whose worktree is open (`kb/sprints/<slug-s
 | `kb/infra/` | `Infra` | The managed project's root path, and the architecture/data documentation paths already recorded there |
 | `kb/sprints/` | `Sprint` | Confirms `state: active` and the sprint's `worktree` path |
 
-You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exists there is already reflected in the ticket's own sections by `backlog`/`sprint`. One exception, read-only: `kb/stack/bibliotheques.md`, the library chosen for each technical capability.
+You don't read or write `kb/stack/` or `kb/cdc/` directly — whatever gap exists there is already reflected in the ticket's own sections by `backlog`/`sprint`. Two exceptions, read-only: for a ticket touching an AI function, its blocks of `kb/cdc/ia.md` and `kb/stack/essai-ia.md` (form, limits, rights, specification — copy into the task what the code must respect); and `kb/stack/bibliotheques.md`, the library chosen for each technical capability.
 
 **Logging:** none — you don't write to the KB. You return a task plan to the `develop` skill, which logs.
 

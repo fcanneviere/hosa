@@ -7,7 +7,7 @@ description: "Use to ship merged work: quality, security and legal gates, releas
 
 **Plan d'avancement.** `avancement.py` = `<hosa> avancement <root>/.hosa/kb`. Before anything: `avancement.py start livraison --sprint <slug>`; refused → name the missing stage to the user and stop; refused as already done → a re-run only on the user's request: the same `start` with `--rouvre "<their request>"`. Stopped on a user question: `block livraison --sprint <slug> --detail "<question>"`. Once the stage's output is written and committed: `done livraison --sprint <slug>`. Never skip these calls: without them a cut session can't resume (« reprends »), and `budget.js` can't apply the stage's `dispatch` rules (each agent's model, the agents at once) — they hold only while the stage is `en cours`.
 
-**Tâches.** Before each dispatch of this skill, `avancement.py task add livraison <id> --sprint <slug> --agent <agent>`; on its return, `task done livraison <id> --sprint <slug> --sortie <the paths it wrote>`: `notes` (`hosa-documentation`, Step 4) → the changelog and the user documentation; `tag` (`hosa-git`, Step 5) → the files it committed; `base-de-donnees` (`hosa-dba`, Step 6) → `kb/infra/base-de-donnees.md`; `deploiement` (`hosa-infra`, Step 6) → `kb/infra/deploiement.md`. The gates run through `qualite`, `securite` and `juridique`, which keep their own records. Stopped on an Open Question → `task block livraison <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered.
+**Tâches.** Before each dispatch of this skill, `avancement.py task add livraison <id> --sprint <slug> --agent <agent>`; on its return, `task done livraison <id> --sprint <slug> --sortie <the paths it wrote>`: `notes` (`hosa-documentation`, Step 4) → the changelog and the user documentation; `tag` (`hosa-git`, Step 5) → the files it committed; `base-de-donnees` (`hosa-dba`, Step 6) → `kb/infra/base-de-donnees.md`; `deploiement` (`hosa-infra`, Step 6) → `kb/infra/deploiement.md`; `ia-rejeu` (`hosa-ia`, Step 3d) → `kb/stack/essai-ia.md`. The gates run through `qualite`, `securite` and `juridique`, which keep their own records. Stopped on an Open Question → `task block livraison <id> --sprint <slug> --detail "<la question>"`, and `task add` the same id again once answered.
 
 `git` Mode 2 merges a sprint locally; nothing after that checks the whole, versions it, deploys it, or tells anyone what shipped. This skill closes that gap: scope what's new, pass the quality gate, write it down, tag a tested version, deploy it if asked, record the release, and push only if asked.
 
@@ -105,6 +105,10 @@ First `<hosa> ticket_check .hosa/kb --differes`: the abuse cases deferred while 
 **Production only.** Test or aucune → not run: no real user and no real personal data, so no obligation applies yet; write « Non applicable (cible de test) » in the record. The gate runs when the version goes to production, promotion included.
 
 Invoke `juridique` in Livraison mode with the version, the planned release date and the previous production release's date. **Go** → continue. **No-Go** → `juridique` asks the user: fix first (stop here; each missing constraint is a ticket fixed in a sprint), or ship anyway (the derogation is recorded by `juridique`; continue and say so in the Output).
+
+## Step 3d: AI Functions Replayed
+
+`kb/cdc/ia.md` exists → `<hosa> ia_check .hosa/kb rejeu`, on the base branch's checkout. Gaps → `task add livraison ia-rejeu --sprint <slug> --agent hosa-ia`, dispatch it (Mode 3). A FAIL → stop the release: a ticket fixed in a sprint. `done livraison` refuses while a gap stays.
 
 ## Step 4: Release Notes and User Documentation
 

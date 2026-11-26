@@ -60,6 +60,7 @@ For each ticket from Step 2 that isn't `state: todo`, dispatch the agent(s) whos
 - `hosa-data-engineer` — does the change alter what data is needed, its origin, or its shape? Scope it to this Exigence and the entities it already derived from it.
 - `hosa-architect` — does the change move a module boundary or invalidate an assumption the architecture made?
 - `hosa-ux-designer` — does the change alter a screen/flow already scaffolded?
+- an AI function appears or changes (its model, threshold, data or place) — not an agent of this step: say it, and chain `ia` on the user's yes (`start cadrage-ia --rouvre`)
 - `hosa-documentation` — which docs reference this Exigence or the entities/screens above and would need a refresh?
 
 Each returns whether it's impacted and how, in its normal Output format — no agent writes anything yet at this step, this is read-only impact reporting.

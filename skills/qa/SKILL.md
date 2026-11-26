@@ -78,6 +78,10 @@ After each lot's tests and after each persona's recette: `avancement.py … task
 
 Once every ticket in the sprint has been run through Steps 3-5: dispatch `hosa-qa-lead` (Mode 2 Phase 1) to review whether the same test was flagged flaky or slow in at least two runs recorded in the sprint's `## Résultats techniques`, and every residue reported under `## Ménage` — data a test or a recette leaves that the reset doesn't cover gets a concrete fix (test isolation, or extending the documented reset), not a note. If it returns a proposal, present it to the user; if they confirm, redispatch `hosa-qa-lead` (Mode 2 Phase 2) to apply it. If nothing recurs, report "rien à signaler sur l'outillage".
 
+## Step 6b: AI Functions Replayed
+
+`kb/cdc/ia.md` exists → `<hosa> ia_check .hosa/kb rejeu --root <worktree>`. Gaps → `task add qa ia-rejeu --sprint <slug> --agent hosa-ia`, dispatch it (Mode 3) with the `worktree`, the `docker_project` and those lines, then commit the files it names under the ticket that changed them. A FAIL is a defect: `back qa develop` with the metric's old and new values. A measure to re-judge, not the code → `ia`. `done qa` refuses while a gap stays.
+
 ## Step 7: Close the Stage
 
 Every ticket's tests passed, every required recette recorded, every task done or skipped → after the commits (Commits below): `avancement.py … done qa --sprint <slug>` (it refuses while a ticket lacks its results or a recette: do what it names), then `validation`, launched without waiting. A failure still routed to a correction → no `done`: the `back qa develop` loop is open.

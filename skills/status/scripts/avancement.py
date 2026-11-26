@@ -110,6 +110,8 @@ TODO, DOING, DONE, BLOCKED, SKIPPED = "à faire", "en cours", "fait", "bloqué",
 CLOSED = {DONE, SKIPPED}
 # a sprint begun before the `audit` stage existed had its audit inside `validation`
 AFTER_AUDIT = {"validation", "git-fusion", "bilan-sprint", "livraison"}
+# stages added to the graph after projects had begun: absent from a plan whose later stage has begun, they never block it
+ADDED = ("cadrage-ia", "essai-ia")
 ROW = re.compile(r"^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
 
 
@@ -124,7 +126,7 @@ def load(path: Path) -> tuple[dict[str, list[list[str]]], str]:
     text = read(path)
     if text is None:
         return sections, resume
-    current = None
+    current, seen = None, set()
     body = text.split("\n---\n", 1)[-1]
     for line in body.splitlines():
         if line.startswith("## "):
@@ -143,6 +145,12 @@ def load(path: Path) -> tuple[dict[str, list[list[str]]], str]:
                 row = [m.group(1), TODO, "", ""]
                 rows.append(row)
             row[1:] = [m.group(2), m.group(3), m.group(4)]
+            seen.add(row[0])
+    order = [r for title, _ in PIPELINES for r in sections[title]]
+    later_sprint = any(r[1] != TODO for t, rows in sections.items() if t.startswith("Sprint ") for r in rows)
+    for i, r in enumerate(order):  # a later stage begun: the project is past it
+        if r[0] in ADDED and r[0] not in seen and (later_sprint or any(x[1] != TODO for x in order[i + 1:])):
+            r[1:] = [SKIPPED, "", f"étape ajoutée après coup : `start {r[0]} --rouvre \"<demande>\"` pour la faire"]
     for title, rows in sections.items():
         if title.startswith("Sprint "):
             known = {r[0] for r in rows}
@@ -805,6 +813,23 @@ def espace_gaps(kb: Path, exigences: list[tuple[Path, str]]) -> list[str]:
     return out
 
 
+def undated(kb: Path, stage: str, rel: str, heading: str, form: str) -> list[str]:
+    """A loop reran <stage>, whose proof is a file already complete: it needs a line dated after the loop."""
+    lines = (section(read(kb / rel), heading) or "").splitlines()
+    return [f"`kb/{rel}` : aucune ligne sous `## {heading}` datée après la réouverture du {at[:16]}Z (`{form}`)"
+            for at, _ in reopened(kb, stage, None) if not any(newer(x, at) for x in lines)][:1]
+
+
+def ai_replay(kb: Path, sprint_text: str) -> list[str]:
+    """`qa` and `livraison`: each AI function's tracked files, in the sprint's checkout, are the ones its last PASS
+    measured. No `kb/cdc/ia.md` (no AI function) → nothing to replay."""
+    if not (kb / "cdc" / "ia.md").is_file() or kb.parent.name != ".hosa":
+        return []
+    tree = field(sprint_text, "worktree")
+    root = Path(tree) if tree and Path(tree).is_dir() else kb.resolve().parent.parent
+    return script("ia/scripts/ia_check.py", kb, "rejeu", "--root", root)
+
+
 def upstream_check(kb: Path, stage: str) -> list[str]:
     """What the KB lacks to prove a stage of the cahier des charges or the structuration done:
     the files each stage's skill writes, and the checkers its skill must pass."""
@@ -840,6 +865,12 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
     elif stage == "fondamentaux":
         gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux", "Bilan"))
         gaps += espace_gaps(kb, exigences)
+    elif stage == "cadrage-ia":
+        gaps += script("ia/scripts/ia_check.py", kb, "cadrage")
+        gaps += undated(kb, stage, "cdc/ia.md", "Révisions", "- <AAAA-MM-JJTHH:MMZ> — <ce qui change>")
+    elif stage == "essai-ia":
+        gaps += script("ia/scripts/ia_check.py", kb, "essai")
+        gaps += undated(kb, stage, "stack/essai-ia.md", "Résultats", "- <AAAA-MM-JJTHH:MMZ> — IAn — PASS|FAIL — …")
     elif stage == "juridique":
         gaps.append(concept(kb, "cdc/juridique.md", "Analyse juridique", "Contraintes retenues"))
     elif stage == "securite":
@@ -1113,6 +1144,8 @@ def stage_proofs(kb: Path, stage: str, sprint: str | None) -> list[str]:
                                     for f in ("derniere-livraison.md", "derniere-livraison-test.md")):
         gaps.append("pas de fiche `kb/infra/derniere-livraison.md` ni `derniere-livraison-test.md` avec sa section "
                     "`## Version` (`livraison` étape 7)")
+    if stage in ("qa", "livraison"):
+        gaps += ai_replay(kb, s)
     if stage == "livraison":  # real use: every abuse case deferred while the project was explored is built first
         gaps += script("backlog/scripts/ticket_check.py", kb, "--differes")
     tests = sorted(p.name for p in (kb / "test").glob("*.md")) if (kb / "test").is_dir() else []
@@ -2110,7 +2143,17 @@ def stamp_of(line: str) -> str:
     return f"{m[1]}T{m[2]}" if m and m[2] else (m[1] if m else "")
 
 
-CONTROLS = {"sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
+def ctl_spec_ia(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`essai-ia` `besoins`: each AI function specified by its form, and what to install listed."""
+    return script_lines("ia/scripts/ia_check.py", kb, "spec")
+
+
+def ctl_besoins_ia(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`essai-ia` `installation`: each need pinned and verified (`exit 0`) before any measure."""
+    return script_lines("ia/scripts/ia_check.py", kb, "besoins")
+
+
+CONTROLS = {"spec-ia": ctl_spec_ia, "besoins-ia": ctl_besoins_ia, "sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
             "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix,
             "rechargement": ctl_rechargement, "couverture": ctl_couverture, "tests-ecrits": ctl_tests_ecrits,
             "cout-tests": ctl_cout_tests, "cas-utiles": ctl_cas_utiles}
@@ -2382,6 +2425,10 @@ def init(kb: Path) -> tuple[dict, list[str]]:
 
     def walk(title, rows, sprint=None) -> bool:
         for r in rows:
+            # a project that already chose its stack began before the AI stages: never stopped on them
+            if r[0] in ADDED and not (kb / "cdc" / "ia.md").is_file() and concepts(kb, "stack", "Stack Decision"):
+                r[1:] = [SKIPPED, now(), "repris de la KB (`init`) : étape ajoutée après coup"]
+                continue
             gaps = check(kb, r[0], sprint)
             if gaps or r[0] == "livraison":
                 report.append(f"- {title} : arrêt à `{r[0]}` — " + ("; ".join(gaps) if gaps else "à confirmer"))

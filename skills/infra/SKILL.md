@@ -26,7 +26,7 @@ puis `cdc assemble` : le schéma entre au cahier des charges
 Dispatch hosa-documentation (Mode 1) avec le
 "Documentation à produire" retourné
         ↓
-Enchaîne sur `donnees`
+Enchaîne sur `ia` (`essai-ia`)
 ```
 
 ## Trigger
@@ -98,5 +98,5 @@ None here: the skill ends with the `hosa-git` checkpoint (`using-hosa`, Git chec
 [Si rien : "None"]
 
 ## Suite
-Suite : `donnees`, lancé sans attendre.
+Suite : `ia` (étape `essai-ia`), lancé sans attendre.
 ```

@@ -22,7 +22,8 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 |---|---|
 | `kb/infra/` | the root, the Docker environment, every installation already decided |
 | `kb/stack/` | what to install |
-| `kb/cdc/` | non-functional needs implying an extra service (cache, queue) |
+| `kb/cdc/` | non-functional needs implying an extra service (cache, queue) ; `ia.md`: where each AI function runs, the target machine |
+| `kb/stack/essai-ia.md` | `## Besoins d'installation`: everything the AI functions need (see Mode 2) |
 
 `generated: { by: human:<user>, … }` when the user picked between your options, `{ by: hosa-infra/1.0, … }` for your own technical decisions (e.g. a pinned version). Log every write to `kb/infra/log.md` (OKF §9). On a re-run, update in place.
 
@@ -147,6 +148,7 @@ flowchart LR
    - it conflicts with a `Stack Decision` or an infrastructure choice → Open Question: which one wins? Never pick silently;
    - new and consistent → go on.
 3. Once confirmed: pin a version, give it its own least-privilege account (see **Technical accounts**), add it to the composition or the project's dependency manifest (its package manager's conventions), rebuild, check it works. A dependency needed on one platform only (`tzdata` on Windows) carries its marker in the manifest (`tzdata; sys_platform == "win32"`) before the lock is recompiled — never removed from the lock by hand: the next recompilation brings it back. Check the lock diff with `git --no-pager diff` (a filtered or folded diff hides the lines that matter).
+   **AI needs** (`## Besoins d'installation` of `kb/stack/essai-ia.md`): install **every** line — library, model weights at their pinned revision, model server, vector database, MCP server, GPU access — then run its verification command in the container and append `— exit <code> — <date>` to that line, the real code. A key: add the empty variable to the environment example, check it is set, never print, copy or commit its value; unset → Open Question. A line you can't install stays without `exit 0`, with the reason as an Open Question.
 4. Write `.hosa/kb/infra/<slug-service>.md`:
 
 ```markdown

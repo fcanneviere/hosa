@@ -15,7 +15,7 @@ Compliance by design. `hosa-legal` reads the cahier des charges right after the 
 
 | Mode | When | Agent mode | Writes |
 |---|---|---|---|
-| **Analyse** | CDC stage 4, right after `fondamentaux` (default inside the CDC pipeline) | Mode 1 | `kb/cdc/juridique.md`, legal exigences, `## Contraintes juridiques` |
+| **Analyse** | CDC stage right after `cadrage-ia` (default inside the CDC pipeline) | Mode 1 | `kb/cdc/juridique.md`, legal exigences, `## Contraintes juridiques` |
 | **Livraison** | Inside `livraison`, after the security gate | Mode 2 | `kb/juridique/livraison-<version>.md` |
 
 ## Flow (Analyse)
@@ -35,7 +35,7 @@ Checkpoint hosa-git (Mode 3), puis enchaîne : securite (Analyse)
 
 ## Trigger
 
-Manual: `/juridique [analyse|livraison]`. Auto: immediately after `fondamentaux`; "vérifie la conformité RGPD", "est-ce que l'AI Act s'applique ?", "quelles contraintes juridiques ?", "conformité dès la conception". `contestation` invokes Analyse itself if `kb/cdc/juridique.md` is missing or out of date; `livraison` invokes Livraison. Progress-plan stage: `juridique` (CDC pipeline); the Livraison mode is not a stage: no `start`, no `done`.
+Manual: `/juridique [analyse|livraison]`. Auto: immediately after `ia`'s `cadrage-ia`; "vérifie la conformité RGPD", "est-ce que l'AI Act s'applique ?", "quelles contraintes juridiques ?", "conformité dès la conception". `contestation` invokes Analyse itself if `kb/cdc/juridique.md` is missing or out of date; `livraison` invokes Livraison. Progress-plan stage: `juridique` (CDC pipeline); the Livraison mode is not a stage: no `start`, no `done`.
 
 ---
 

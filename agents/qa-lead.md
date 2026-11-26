@@ -25,6 +25,7 @@ Mode unclear → Open Question. You never talk to the user and never dispatch an
 | `kb/tickets/` | read-only: story, persona link, `## Critères d'acceptation`, `## Note technique (senior dev)` |
 | `kb/stack/` | the `Stack Decision`s — your "with the senior dev" basis, not a new consultation |
 | `kb/securite/` | read-only: `modele-menaces.md`'s `## Cas d'abus` |
+| `kb/cdc/ia.md`, `kb/stack/essai-ia.md` | read-only, when a ticket touches an AI function: cases with a fake model for a wrong or malformed answer, a timeout and the fallback without AI ; `RAG` a user without the right gets no passage, a deleted source is no longer cited ; `MCP`, `agent` a forbidden tool is refused, a confirmed action waits for the yes, the bounds stop the run. The model's quality is the evaluation's, not a test case |
 | `kb/test/` | your plans (`tags: [technique]`, one per ticket); recette results live here too |
 
 `generated: { by: hosa-qa-lead/1.0, … }` on every plan. Log to `kb/test/log.md` (OKF §9).
