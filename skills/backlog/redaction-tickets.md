@@ -30,6 +30,11 @@ For each `Exigence` left after Step 1, **split it into tickets** first. A ticket
 
 **Production setup is a ticket, not a release surprise.** A `## Documents à produire hors logiciel` line or a production prerequisite (least-privilege accounts, encrypted backups with a tested restore, proxy configuration) that needs code or configuration gets its ticket here, not from the audit (pilot2: three database Blocking findings and four production-setup tickets created after sprint 1). The document itself stays the user's.
 
+**Code existant.** An exigence with `existant: [EXn]` takes over a process the code did before Hosa (`kb/existant/inventaire.md`: its `Code :`, its `État :`; `kb/existant/diagnostic.md`: its problems). Never write a ticket to build again what the code already does:
+- **What the code does** → a ticket `state: done`, `existant: [EXn]`, with its story and criteria as any ticket, each criterion citing its rule. Under `## Preuve`, one line per criterion: the test that proves it, or the code that does it when no test exists — ``- CA1 — `tests/test_commandes.py` ``, ``- CA2 — `src/commandes.py:40` (aucun test)``, the path between backticks. The path must exist. No `estimate`, no notes: it is delivered.
+- **What is missing** (a process `partiel` or `cassé`, or what the interview changed) → a ticket `todo`, `existant: [EXn]`, and a `## Écart à l'existant` section: what the code does today, what the ticket changes, with the `chemin:ligne`. A ticket whose only aim is a problem `Dn` decided `corriger` takes `diagnostic: [Dn]` (and its `existant` when it touches a process).
+- `done backlog` refuses a kept `EXn` complet or partiel with no `done` ticket, a partiel or cassé one with no `todo` ticket, a `todo` ticket citing an `EXn` without its `## Écart à l'existant`, and a `done` ticket's criterion without its proof.
+
 **Exigences tagged `socle-comptes`** are not re-sliced: take the split of `${CLAUDE_PLUGIN_ROOT}/skills/fondamentaux/socle-comptes.md` § Découpage en tickets, the tickets the variants keep, with its `depends_on`. Rate limiting is in `connexion`'s criteria, never a later ticket (pilot2: login shipped without it). In Step 6, propose these tickets first, in the split's order.
 
 Then write each ticket to `kb/tickets/<slug>.md`, `state: todo`:
@@ -45,6 +50,7 @@ depends_on: []          # tickets à livrer avant celui-ci — retiré si vide
 estimate: <1|2|3>       # 1 ≤ ½ jour, 2 ≈ 1 jour, 3 = 2-3 jours ; plus → découper
 mesure: M1              # seulement pour le ticket qui fait une mesure `[à mesurer M1 …]` du cahier des charges
 diagnostic: [D1]        # seulement pour le ticket qui corrige un problème du code existant (kb/existant/diagnostic.md)
+existant: [EX1]         # seulement pour le ticket d'un processus que le code existant fait (kb/existant/inventaire.md) — voir « Code existant »
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 En tant que [persona],

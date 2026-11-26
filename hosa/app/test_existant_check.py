@@ -218,10 +218,70 @@ class Downstream(unittest.TestCase):
 
     def test_each_problem_to_fix_gets_a_ticket(self):
         kb = project(diagnostic=DECIDED)
-        self.assertEqual([g[:2] for g in ex.backlog_gaps(kb)], ["D1"])
+        problems = lambda: [g[:2] for g in ex.backlog_gaps(kb) if g.startswith("D")]  # noqa: E731
+        self.assertEqual(problems(), ["D1"])
         (kb / "tickets").mkdir()
         (kb / "tickets" / "mdp.md").write_text("---\ntype: Ticket\ndiagnostic: [D1]\n---\n", encoding="utf-8")
-        self.assertEqual(ex.backlog_gaps(kb), [])
+        self.assertEqual(problems(), [])
+
+
+def ticket(slug: str, kb: Path, state="todo", existant="", body="") -> None:
+    (kb / "tickets").mkdir(exist_ok=True)
+    head = f"---\ntype: Ticket\nstate: {state}\n" + (f"existant: [{existant}]\n" if existant else "") + "---\n"
+    (kb / "tickets" / f"{slug}.md").write_text(head + body, encoding="utf-8")
+
+
+CRITERIA = "## Critères d'acceptation\n- CA1 [R1] — commande créée\n- CA2 [R2] — total juste\n"
+
+
+class Backlog(unittest.TestCase):
+    """What the existing code does is a delivered ticket, never one to build again."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED)
+        ticket("mdp", self.kb)  # the ticket of D1, decided `corriger`
+        (self.kb / "tickets" / "mdp.md").write_text("---\ntype: Ticket\ndiagnostic: [D1]\n---\n", encoding="utf-8")
+
+    def gaps(self):
+        return "\n".join(ex.backlog_gaps(self.kb))
+
+    def test_a_process_the_code_does_needs_its_delivered_ticket_and_a_partial_one_its_gap(self):
+        gaps = self.gaps()
+        self.assertIn("EX1 (complet) : aucun ticket `state: done`", gaps)
+        self.assertIn("EX2 (partiel) : aucun ticket `state: done`", gaps)
+        self.assertIn("EX2 (partiel) : aucun ticket `todo`", gaps)
+
+    def test_a_delivered_ticket_proves_each_criterion_with_a_path_that_exists(self):
+        ticket("commande", self.kb, "done", "EX1", CRITERIA + "## Preuve\n- CA1 — `src/commandes.py:3`\n")
+        self.assertIn("`commande` CA2 : absent de `## Preuve`", self.gaps())
+        ticket("commande", self.kb, "done", "EX1", CRITERIA + "## Preuve\n- CA1 — `src/commandes.py:3`\n"
+                                                             "- CA2 — `tests/absent.py`\n")
+        self.assertIn("`tests/absent.py` absent", self.gaps())
+        ticket("commande", self.kb, "done", "EX1", CRITERIA)
+        self.assertIn("`commande` (livré, code existant) : pas de `## Preuve`", self.gaps())
+
+    def test_a_todo_ticket_on_existing_code_says_what_it_changes(self):
+        ticket("export", self.kb, "todo", "EX2", "## Critères d'acceptation\n- CA1 — filtre par date\n")
+        self.assertIn("`export` (todo, EX2 partiel) : pas de `## Écart à l'existant`", self.gaps())
+
+    def test_a_complete_backlog_passes(self):
+        proof = "## Preuve\n- CA1 — `src/commandes.py:3`\n- CA2 — `src/commandes.py:2` (aucun test)\n"
+        ticket("commande", self.kb, "done", "EX1", CRITERIA + proof)
+        ticket("export-actuel", self.kb, "done", "EX2", "## Critères d'acceptation\n- CA1 — export\n"
+                                                        "## Preuve\n- CA1 — `src/export.py`\n")
+        ticket("export-dates", self.kb, "todo", "EX2", "## Écart à l'existant\nAujourd'hui sans filtre "
+                                                       "(`src/export.py:1`) ; ajoute le filtre par date.\n")
+        self.assertEqual(ex.backlog_gaps(self.kb), [])
+
+    def test_a_dropped_process_needs_no_ticket(self):
+        (self.kb / "cdc" / "interviews").mkdir(parents=True)
+        (self.kb / "cdc" / "interviews" / "cr.md").write_text("- EX1\n- Export (EX2, abandonné)\n", encoding="utf-8")
+        self.assertNotIn("EX2", self.gaps())
+
+    def test_the_ticket_guide_carries_the_rules(self):
+        guide = (ROOT / "skills/backlog/redaction-tickets.md").read_text(encoding="utf-8")
+        for word in ("existant: [EX1]", "## Preuve", "## Écart à l'existant", "state: done"):
+            self.assertIn(word, guide)
 
     def test_a_new_project_has_nothing_to_cover(self):
         kb = project(inventaire=None, diagnostic=None, depart="Neuf")

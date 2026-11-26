@@ -23,6 +23,11 @@ does is lost on the way to the cahier des charges and the backlog.
   existant_check.py <kb> cdc          each `EXn` is cited by an exigence's `existant:` field, unless a compte
                                       rendu marks it `abandonné`
   existant_check.py <kb> backlog      each `Dn` decided `corriger` is cited by a ticket's `diagnostic:` field
+                                      ; each `EXn` kept (not `abandonné`) complet or partiel has a ticket
+                                      `state: done` with `existant: [EXn]`, each criterion of it proved under
+                                      `## Preuve` by a test or the code (`- CA1 — tests/test_x.py` in backticks, which
+                                      exists); each partiel or cassé one a `todo` ticket for what is missing; a
+                                      `todo` ticket citing an `EXn` says what it changes (`## Écart à l'existant`)
 
 No `kb/existant/inventaire.md` → `interview`, `cdc` and `backlog` have nothing to check (a new project).
 The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
@@ -317,13 +322,80 @@ def cdc_gaps(kb: Path) -> list[str]:
             if ex not in cited and not re.search(rf"\b{ex}\b[^\n]*abandonn", said)]
 
 
-def backlog_gaps(kb: Path) -> list[str]:
-    cited = set()
+def body_section(text: str, heading: str) -> str | None:
+    lines, inside, found = [], False, False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            inside = line[3:].strip() == heading
+            found = found or inside
+            continue
+        if inside:
+            lines.append(line)
+    return "\n".join(lines) if found else None
+
+
+def tickets(kb: Path) -> list[tuple[str, str, str]]:
+    """[(slug, state, text)] of `kb/tickets/`."""
+    out = []
     for p in sorted((kb / "tickets").glob("*.md")) if (kb / "tickets").is_dir() else []:
-        m = re.search(r"^diagnostic:\s*(.*)$", front(read(p) or ""), re.M)
-        cited |= set(re.findall(r"\bD\d+\b", m[1])) if m else set()
-    return [f"{d} (décidé « corriger ») : aucun ticket ne le cite (`diagnostic: [{d}]`)" for d, _, f in problems(kb)
-            if choice(f.get("Décision", "")) == "corriger" and d not in cited]
+        text = read(p) or ""
+        if of_type(text, "Ticket"):
+            m = re.search(r"^state:\s*(\w+)", front(text), re.M)
+            out.append((p.stem, m[1] if m else "todo", text))
+    return out
+
+
+def ids_of(text: str, key: str, pattern: str) -> set[str]:
+    m = re.search(rf"^{key}:\s*(.*)$", front(text), re.M)
+    return set(re.findall(pattern, m[1])) if m else set()
+
+
+def proof_gaps(root: Path, slug: str, text: str) -> list[str]:
+    """A delivered ticket of the existing code: each criterion proved by a test or the code, which exist."""
+    proof = body_section(text, "Preuve")
+    if proof is None:
+        return [f"`{slug}` (livré, code existant) : pas de `## Preuve` (par critère : `- CA1 — <chemin du test>`)"]
+    gaps = []
+    crit = re.findall(r"^-\s+(CA\d+)\b", body_section(text, "Critères d'acceptation") or "", re.M)
+    lines = {m[1]: m[2] for m in re.finditer(r"^-\s+(CA\d+)\b(.*)$", proof, re.M)}
+    for ca in crit:
+        if ca not in lines:
+            gaps.append(f"`{slug}` {ca} : absent de `## Preuve` (le test ou le code qui le prouve)")
+        else:
+            gaps += code_gaps(root, f"`{slug}` {ca} `## Preuve`", lines[ca])
+    return gaps
+
+
+def backlog_gaps(kb: Path, root: Path | None = None) -> list[str]:
+    root = root or kb.resolve().parent.parent
+    all_tickets = tickets(kb)
+    fixed = set().union(*(ids_of(t, "diagnostic", r"\bD\d+\b") for _, _, t in all_tickets)) if all_tickets else set()
+    gaps = [f"{d} (décidé « corriger ») : aucun ticket ne le cite (`diagnostic: [{d}]`)" for d, _, f in problems(kb)
+            if choice(f.get("Décision", "")) == "corriger" and d not in fixed]
+    said = interviews(kb)
+    states = {ex: f.get("État", "").split("—", 1)[0].strip().lower()
+              for ex, _, f in items(section(read(kb / INVENTAIRE), "Processus constatés")) if ex.startswith("EX")}
+    by = {"done": {}, "todo": {}}
+    for slug, state, text in all_tickets:
+        for ex in ids_of(text, "existant", r"\bEX\d+\b"):
+            by["done" if state == "done" else "todo"].setdefault(ex, []).append((slug, text))
+    for ex, state in states.items():
+        if re.search(rf"\b{ex}\b[^\n]*abandonn", said):
+            continue
+        if state in ("complet", "partiel") and ex not in by["done"]:
+            gaps.append(f"{ex} ({state}) : aucun ticket `state: done` ne reprend ce que le code fait déjà "
+                        f"(`existant: [{ex}]`, `## Preuve`)")
+        if state in ("partiel", "cassé") and ex not in by["todo"]:
+            gaps.append(f"{ex} ({state}) : aucun ticket `todo` pour ce qui manque (`existant: [{ex}]`, "
+                        "`## Écart à l'existant`)")
+        for slug, text in by["todo"].get(ex, []):
+            if not re.search(r"\S", body_section(text, "Écart à l'existant") or ""):
+                gaps.append(f"`{slug}` (todo, {ex} {state or '?'}) : pas de `## Écart à l'existant` — ce que le "
+                            "ticket change au code ; sans écart, il refait ce qui existe")
+    for slug, state, text in all_tickets:
+        if state == "done" and ids_of(text, "existant", r"\bEX\d+\b"):
+            gaps += proof_gaps(root, slug, text)
+    return gaps
 
 
 def main(argv: list[str]) -> int:
@@ -345,7 +417,7 @@ def main(argv: list[str]) -> int:
     checks = {"inventaire": lambda: inventaire_gaps(a.kb, root), "diagnostic": lambda: diagnostic_gaps(a.kb, root),
               "documentation": lambda: documentation_gaps(a.kb, root),
               "adoption": lambda: adoption_gaps(a.kb, root), "interview": lambda: interview_gaps(a.kb),
-              "cdc": lambda: cdc_gaps(a.kb), "backlog": lambda: backlog_gaps(a.kb)}
+              "cdc": lambda: cdc_gaps(a.kb), "backlog": lambda: backlog_gaps(a.kb, root)}
     gaps = checks[a.action]()
     for g in gaps:
         print(f"✗ {g}")

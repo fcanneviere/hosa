@@ -89,7 +89,7 @@ A `Bloquant` the user accepts → ask its reason: it goes after the decision. Wr
 
 `done adoption` refuses while a problem has no decision, a path is wrong, a document is not rebuilt or the identity is not `Existant` (`<hosa> existant_check .hosa/kb adoption`). Checkpoint (`hosa-git` Mode 3: `kb/existant/`, the audits, the personas, the rebuilt documentation and `kb/documentation/`), then chain `interview` in one line: « Code existant lu : <n> processus, <b> problèmes à corriger. Je lance l'interview. »
 
-Downstream, each `EXn` must be cited by a compte rendu (`done interview`) and by an exigence's `existant: [EXn]` unless a compte rendu says it `abandonné` (`done redaction`); each `Dn` decided `corriger` gets a ticket with `diagnostic: [Dn]` (`done backlog`).
+Downstream, each `EXn` must be cited by a compte rendu (`done interview`) and by an exigence's `existant: [EXn]` unless a compte rendu says it `abandonné` (`done redaction`); in the backlog, what the code does is a `state: done` ticket (`existant: [EXn]`, each criterion proved under `## Preuve`), what is missing a `todo` ticket with its `## Écart à l'existant`, and each `Dn` decided `corriger` a ticket with `diagnostic: [Dn]` (`done backlog`).
 
 ## Step 6: A loop from `interview`
 
