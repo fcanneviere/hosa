@@ -31,6 +31,8 @@ type: Cadrage IA
 ## Contraintes
 - Machine cible : poste Windows sans GPU
 - Budget : 0 €
+## Choix validés
+- 2026-01-01 — human:fabien — seuil 70 %, local seulement
 ## Révisions
 - 2026-01-01T10:00Z — création
 """
@@ -102,6 +104,10 @@ class Cadrage(unittest.TestCase):
     def test_a_threshold_may_wait_for_its_measure(self):
         waiting = CADRAGE.replace("900 s par lot", "[à mesurer M1 : durée du lot — étape essai-ia]")
         self.assertEqual(ia.cadrage_gaps(project(cadrage=waiting)), [])
+
+    def test_the_users_choices_stay_written(self):
+        gone = CADRAGE.replace("- 2026-01-01 — human:fabien — seuil 70 %, local seulement\n", "")
+        self.assertIn("`## Choix validés` vide", "\n".join(ia.cadrage_gaps(project(cadrage=gone))))
 
     def test_no_file_says_to_skip(self):
         self.assertIn("skip cadrage-ia", ia.cadrage_gaps(project())[0])
@@ -250,6 +256,22 @@ class Plan(unittest.TestCase):
         (kb / "stack" / "essai-ia.md").write_text(essai(result(), result(at="2999-01-02T10:00Z")), encoding="utf-8")
         self.assertEqual(av.check(kb, "essai-ia", None), [])
 
+    def test_a_loop_from_qa_reopens_the_trial_only(self):
+        kb = project(cadrage=CADRAGE, essai=essai(result()))
+        with contextlib.redirect_stdout(io.StringIO()):
+            for s in [s for _, ss in av.PIPELINES for s in ss]:
+                av.main([str(kb), "done", s, "--force"])
+        (kb / "sprints").mkdir()
+        (kb / "sprints" / "s1.md").write_text("---\ntype: Sprint\n---\n## Tickets\n", encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            for s in av.SPRINT[:av.SPRINT.index("qa")]:
+                av.main([str(kb), "done", s, "--sprint", "s1", "--force"])
+        code, out = plan(kb, "back", "qa", "essai-ia", "--sprint", "s1", "--cause", "IA1", "--detail", "62 %")
+        self.assertEqual(code, 0, out)
+        status = {r[0]: r[1] for rows in av.load(kb / "project" / "avancement.md")[0].values() for r in rows}
+        self.assertEqual((status["essai-ia"], status["cadrage-ia"], status["stack"]), (av.TODO, av.DONE, av.DONE))
+        self.assertIn("datée après la réouverture", "\n".join(av.check(kb, "essai-ia", None)))
+
     def test_qa_and_livraison_replay_on_the_sprints_checkout(self):
         kb = project(cadrage=CADRAGE, essai=essai(result()))
         for stage in ("qa", "livraison"):
@@ -290,11 +312,20 @@ class Wiring(unittest.TestCase):
         for name in ("infra", "architect", "tech-lead", "qa-lead"):
             self.assertIn("essai-ia.md", (ROOT / "agents" / f"{name}.md").read_text(encoding="utf-8"), name)
 
+    def test_contestation_and_qa_send_back_by_an_edge(self):
+        """An AI finding at the sign-off reopens the cadrage; a model that no longer holds at `qa` reopens the trial."""
+        self.assertTrue(av.edge("contestation", "cadrage-ia"))
+        self.assertTrue(av.edge("qa", "essai-ia"))
+        self.assertIn("ia.md", (ROOT / "agents" / "challenger.md").read_text(encoding="utf-8"))
+        for skill, call in (("contestation", "back contestation cadrage-ia"), ("qa", "back qa essai-ia")):
+            self.assertIn(call, (ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8"), skill)
+
     def test_the_agent_template_passes_the_checker(self):
         """The two templates of `agents/ia.md`, filled in, are what `ia_check` accepts."""
         agent = (ROOT / "agents" / "ia.md").read_text(encoding="utf-8")
         for field in ia.FIELDS + ia.CONSTRAINTS:
             self.assertIn(f"{field} :", agent)
+        self.assertIn(f"## {ia.CHOICES}", agent)
         for field in [f for fields in (*ia.FORMS.values(), *ia.SPEC.values()) for f in fields]:
             self.assertIn(f"`{field}`", agent)
         line = next(x for x in agent.splitlines() if x.startswith("- <AAAA-MM-JJTHH:MMZ> — IA1"))

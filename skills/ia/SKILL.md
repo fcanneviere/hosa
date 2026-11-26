@@ -17,15 +17,15 @@ description: "Use for any AI feature, local or cloud: frame it (baseline, thresh
    - **None** → `skip cadrage-ia --detail "aucune fonction d'IA"` and `skip essai-ia --detail "aucune fonction d'IA"`, say it in one line, chain `juridique`.
    - Unsure → one question to the user.
 2. `hosa-ia` Mode 1 Phase 1. Relay its Open Questions: for each function, its form (single call, RAG, MCP, agent) and that form's fields (documents and who may read them; MCP servers, tools, actions to confirm; bounds), the baseline without AI, the threshold, the longest duration, local or cloud, the data that may leave the machine, the budget, what the product does when the model is wrong.
-3. Write the answers in `kb/cdc/ia.md` (`type: Cadrage IA`, `status: draft`) under `## Choix validés`, then `task done cadrage-ia phase-1`.
+3. Write the answers in `kb/cdc/ia.md` (`type: Cadrage IA`, `status: draft`) under `## Choix validés`, one line each (`- <AAAA-MM-JJ> — human:<user> — <réponse>`), then `task done cadrage-ia phase-1`.
 4. `hosa-ia` Mode 1 Phase 2 with that file: it writes the cadrage and puts each threshold in its exigence.
 5. `done cadrage-ia` refuses while a function lacks a field (`<hosa> ia_check .hosa/kb cadrage`). Checkpoint, chain `juridique`.
 
-Reopened by a loop → the change is a new line under `## Révisions`; a signed (`stable`) exigence changes through `changement`.
+Reopened by a loop (`back essai-ia cadrage-ia`, `back contestation cadrage-ia`) → dispatch Phase 2 with the loop's detail only; the change is a new line under `## Révisions`, and `## Choix validés` keeps every choice, the new one dated; a signed (`stable`) exigence changes through `changement`.
 
 ## Essai (`essai-ia`)
 
-1. `cadrage-ia` is `non applicable` → `skip essai-ia` with the same reason, chain `donnees`.
+1. `cadrage-ia` is `non applicable` → `skip essai-ia` with the same reason, chain `donnees`. Reopened by `back qa essai-ia` → go to step 4 with the loop's detail, the sprint's `worktree` and its `docker_project`; once done, back to `qa`.
 2. Task `besoins`: `hosa-ia` Mode 2a — the technical specification of each function and **everything** to install.
 3. Task `installation`: `hosa-infra` Mode 2 (`infra`) with the whole `## Besoins d'installation`: it installs, runs each verification in the container and writes its exit code. Ask the user to put each API key in the untracked environment file — never in the chat.
 4. Task `essai`: `hosa-ia` Mode 2b with `docker_project`. Relay the Open Questions (real data, yes before a cloud call or a paid one). A new `## Installation nécessaire` → `task add essai-ia installation` again, then `essai`.

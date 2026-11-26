@@ -1021,12 +1021,14 @@ def reopened(kb: Path, stage: str, sprint: str | None) -> list[tuple[str, str]]:
     """(when, ticket) of each open loop of this sprint that reran <stage>, or that <stage> sent back (`audit` →
     `develop`: the audit runs again on the correction): its proof must be written after it. `## Audit` and
     `## Revue` keep their older lines, and the last `Bloquant : 0` or PASS of before the correction proved the
-    stage again at once (the loop then reran nothing)."""
+    stage again at once (the loop then reran nothing). An upstream stage (no <sprint>) counts the loops a sprint
+    opened too (`back qa essai-ia`: the trial measures again after it)."""
     out = []
     for lp in load_loops(kb / "project" / "avancement.md"):
         head, _, ticket = lp["scope"].partition(", ")
         e = edge(lp["from"], lp["to"])
-        if lp["etat"] == OPEN and e and head == (sprint or "") and stage in [lp["from"], lp["to"], *e.get("then", [])]:
+        mine = head == (sprint or "") or (sprint is None and stage not in SPRINT and lp["from"] in SPRINT)
+        if lp["etat"] == OPEN and e and mine and stage in [lp["from"], lp["to"], *e.get("then", [])]:
             out.append((lp["at"], ticket))
     return out
 

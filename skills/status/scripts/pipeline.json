@@ -12,7 +12,7 @@
     {"from": "interview", "to": ["adoption"], "max": 2},
     {"from": "relecture", "to": ["redaction"], "max": 2},
     {"from": "relecture", "to": ["interview"], "then": ["redaction"], "max": 2},
-    {"from": "contestation", "to": ["redaction", "fondamentaux", "juridique", "securite"], "then": ["relecture"], "max": 2},
+    {"from": "contestation", "to": ["redaction", "fondamentaux", "cadrage-ia", "juridique", "securite"], "then": ["relecture"], "max": 2},
     {"from": "contestation", "to": ["interview"], "then": ["redaction", "relecture"], "max": 2},
     {"from": "contestation", "to": ["relecture"], "max": 2},
     {"from": "essai-ia", "to": ["stack"], "then": ["infra"], "max": 2},
@@ -29,6 +29,7 @@
     {"from": "develop", "to": ["stack"], "then": ["infra"], "max": 2},
     {"from": "audit", "to": ["develop"], "max": 2},
     {"from": "qa", "to": ["develop"], "then": ["audit"], "max": 2},
+    {"from": "qa", "to": ["essai-ia"], "max": 2},
     {"from": "validation", "to": ["develop"], "then": ["audit", "qa"], "max": 2},
     {"from": "validation", "to": ["qa"], "max": 2},
     {"from": "changement", "to": ["changement"], "max": 2}

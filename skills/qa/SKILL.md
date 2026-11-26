@@ -80,7 +80,7 @@ Once every ticket in the sprint has been run through Steps 3-5: dispatch `hosa-q
 
 ## Step 6b: AI Functions Replayed
 
-`kb/cdc/ia.md` exists → `<hosa> ia_check .hosa/kb rejeu --root <worktree>`. Gaps → `task add qa ia-rejeu --sprint <slug> --agent hosa-ia`, dispatch it (Mode 3) with the `worktree`, the `docker_project` and those lines, then commit the files it names under the ticket that changed them. A FAIL is a defect: `back qa develop` with the metric's old and new values. A measure to re-judge, not the code → `ia`. `done qa` refuses while a gap stays.
+`kb/cdc/ia.md` exists → `<hosa> ia_check .hosa/kb rejeu --root <worktree>`. Gaps → `task add qa ia-rejeu --sprint <slug> --agent hosa-ia`, dispatch it (Mode 3) with the `worktree`, the `docker_project` and those lines, then commit the files it names under the ticket that changed them. A FAIL is a defect: `back qa develop` with the metric's old and new values. The code is right but the model no longer holds the threshold → one question to the user, then `back qa essai-ia --cause IA<n> --detail "<mesuré contre seuil>"`: `ia` measures again on the sprint's `worktree`; a threshold to change goes through `changement` (the cadrage is signed). `done qa` refuses while a gap stays.
 
 ## Step 7: Close the Stage
 

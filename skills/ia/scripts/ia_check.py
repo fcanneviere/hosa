@@ -5,7 +5,8 @@
                                               single call, RAG, MCP, agent), its baseline without AI, its metric,
                                               threshold, longest duration, place (local or cloud), data, limits,
                                               behaviour on a wrong answer, and the fields of its form; the target
-                                              machine and the budget are written
+                                              machine and the budget are written, and the user's answers kept
+                                              under `## Choix validés`
   ia_check.py <kb> spec                       `kb/stack/essai-ia.md`: each function's technical specification, by
                                               form, and what must be installed (`## Besoins d'installation`)
   ia_check.py <kb> besoins                    each need pinned, with its verification command run (`exit 0`)
@@ -60,6 +61,7 @@ NEEDS = "Besoins d'installation"
 SECRET = re.compile(r"\b(?:sk-[A-Za-z0-9_-]{16,}|hf_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,})"
                     r"|(?:API_KEY|TOKEN|SECRET|PASSWORD)\s*=\s*[\"']?[A-Za-z0-9_-]{12,}")
 CONSTRAINTS = ("Machine cible", "Budget")
+CHOICES = "Choix validés"  # the user's answers, written by the skill: the agent's rewrite never drops them
 PLACES = ("local", "cloud", "à comparer")
 RESULT_FIELDS = ("modèle", "exécution", "mesuré", "référence", "durée", "mémoire", "coût", "commande", "empreinte")
 FUNCTION = re.compile(r"^-\s+\*\*(IA\d+)\*\*(?:\s*—\s*(.*))?$")
@@ -145,6 +147,9 @@ def cadrage_gaps(kb: Path) -> list[str]:
     constraints = "\n".join(section(text, "Contraintes"))
     gaps += [f"`## Contraintes` : ligne `- {c} :` absente ou vide" for c in CONSTRAINTS
              if not re.search(rf"^-\s+(?:\*\*)?{c}(?:\*\*)?\s*:[ \t]*\S", constraints, re.M)]
+    if not any(re.match(r"^-\s+\S", x) for x in section(text, CHOICES)):
+        gaps.append(f"`## {CHOICES}` vide : les réponses de l'utilisateur (`- <date> — human:<user> — <réponse>`), "
+                    "écrites par le skill, gardées par `hosa-ia`")
     return gaps + secrets(kb)
 
 

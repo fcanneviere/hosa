@@ -62,6 +62,9 @@ Read `kb/cdc/securite.md` (`Analyse de sécurité`). A process handling sensitiv
 ### 8. Conformité juridique
 Read `kb/cdc/juridique.md` (`Analyse juridique`). Name each of these findings: a process collecting personal data with no line in the register (purpose, legal basis, retention); a right of the people (access, erasure, portability…) with no exigence that delivers it; an AI feature with no AI Act classification; a legal constraint worded so it can't be tested; a regulation marked « incertain » with no open question. Obligations the user dropped with a reason aren't findings. A missing analysis is itself a finding.
 
+### 9. Fonctions d'IA
+Read `kb/cdc/ia.md` (`Cadrage IA`), if it exists. Name each of these findings: an exigence whose process predicts, classifies, ranks, extracts, generates, recognises or converses with a model, and no `IAn` line; a threshold that doesn't beat the baseline without AI, or that the metric can't measure; a longest duration the persona's task can't wait; data the cadrage sends out of the machine that `juridique.md` doesn't allow to that vendor; an `Erreur du modèle` with no fallback without AI; an `agent` or `MCP` tool that writes with no `Actions confirmées`; a budget the `Limites` exceed. Route each one `cadrage-ia`. A missing cadrage with such an exigence is itself a finding.
+
 Be concrete. "This could be clearer" is not a finding — name the exigence, the exact problem, and what's missing to fix it. A value restated in several files is one finding listing every copy, not one per file.
 
 ## Context Diet
