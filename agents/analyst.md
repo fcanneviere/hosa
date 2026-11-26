@@ -106,7 +106,7 @@ generated: { by: hosa-analyst/1.0, at: <ISO8601> }
 - <ce qui est bien fait, à garder> — `src/…:12` — <pourquoi le garder>
 
 ## Problèmes
-- **D1** — Bloquant | À corriger | Mineur — `src/…:12` — <le problème, sa conséquence> — source : qualité | sécurité | bdd | inventaire
+- **D1** — Bloquant | À corriger | Mineur — `src/…:12` — <le problème, sa conséquence> — source : qualité | sécurité | bdd | inventaire | tests
   - Proposition : corriger | accepter | plus tard — <ta raison>
 
 ## Révisions

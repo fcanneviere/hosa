@@ -45,6 +45,16 @@ Dispatch `hosa-infra` (Mode 1, `agents/infra.md`) to find the managed project, c
 
 If it returns an Open Question (no project path, no `Stack Decision` yet, Docker unavailable) — relay it to the user, get the answer, and only redispatch once you have it. Never guess a path or an installed version yourself.
 
+### Step 1a: The User Decides Each Failing Existing Test
+
+Code adopted only (`kb/existant/inventaire.md` exists). `hosa-infra` ran the existing tests once and wrote `## Tests existants` in `kb/infra/environnement-docker.md`: each failure is a new problem `Dn` (`source : tests`) of `kb/existant/diagnostic.md`, set aside so the suite is green. Ask the user one question per `Dn`, as `adoption` does: what the test expects, what the code does, the proposition as `a)`.
+
+**Q1** — D7 : `tests/test_export.py::test_dates` échoue (<ce que le test attend, ce que le code fait>). Que fait-on ?
+a) <la proposition de `hosa-infra`>.
+b) <les deux autres choix parmi corriger, accepter, plus tard>.
+
+Write each answer under its problem, `  - Décision : corriger | accepter | plus tard — <raison, dite par l'utilisateur>`, a line under `## Révisions`, then `reponse infra --detail "Q1 a"`. A `Dn` to fix becomes a ticket in `backlog` (`diagnostic: [Dn]`), and its test is put back in the suite when that ticket is delivered. `done infra` refuses a failure without its decision (`<hosa> existant_check .hosa/kb infra`).
+
 ### Step 1b: The User Validates the Infrastructure Diagram
 
 `hosa-infra` drew the infrastructure in `kb/infra/environnement-docker.md` § `## Schéma de l'infrastructure`. The user validates it before it enters the cahier des charges:

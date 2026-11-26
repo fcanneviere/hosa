@@ -23,6 +23,10 @@ does is lost on the way to the cahier des charges and the backlog.
                                       (`type: Stack Decision`) `## Stack reprise`, by its `source :` path:
                                       `conservé`, or `remplacé par <x>` with its `raison :` (a `Dn` the user
                                       decided `corriger`, or an exigence's link) and its `migration :` cost
+  existant_check.py <kb> infra        the tests of `## Tests constatés` run once in the container: `kb/infra/
+                                      environnement-docker.md` `## Tests existants` gives the first run's counts,
+                                      and each failing test (its file exists) its problem `Dn` (`source : tests`,
+                                      the user's `Décision :`) and how the suite sets it aside (`exclu :`)
   existant_check.py <kb> interview    each `EXn` is cited by a compte rendu of `kb/cdc/interviews/`
   existant_check.py <kb> cdc          each `EXn` is cited by an exigence's `existant:` field, unless a compte
                                       rendu marks it `abandonné`
@@ -33,7 +37,7 @@ does is lost on the way to the cahier des charges and the backlog.
                                       exists); each partiel or cassé one a `todo` ticket for what is missing; a
                                       `todo` ticket citing an `EXn` says what it changes (`## Écart à l'existant`)
 
-No `kb/existant/inventaire.md` → `stack`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
+No `kb/existant/inventaire.md` → `stack`, `infra`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
 The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
 
   - **EX1** — <ce que le logiciel fait, en mots de métier>
@@ -48,6 +52,8 @@ The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
   - `LICENSE.md` — licence — cible : aucune — <pourquoi il reste tel quel>
   - Django 5.1 — source : `requirements.txt:1` — conservé
   - SQLite 3 — source : `settings.py:80` — remplacé par PostgreSQL 16 — raison : D4 — migration : <coût>
+  - Premier lancement : `pytest` — 42 tests — 40 passés — 2 en échec
+  - `tests/test_export.py::test_dates` — AssertionError — D7 — exclu : `xfail(strict=True, reason="D7")`
 
 HOSA_ADOPTION=0 turns the checks off. Exit: 0 complete, 1 gaps (`✗` lines), 2 bad invocation. Stdlib only.
 """
@@ -60,11 +66,12 @@ import sys
 from pathlib import Path
 
 INVENTAIRE, DIAGNOSTIC, STACK = "existant/inventaire.md", "existant/diagnostic.md", "stack/existant.md"
+INFRA = "infra/environnement-docker.md"
 SECTIONS = ("Périmètre lu", "Stack constatée", "Processus constatés", "Rôles constatés", "Données constatées",
             "Architecture constatée", "Tests constatés")
 STATES = ("complet", "partiel", "cassé")
 SEVERITIES = ("Bloquant", "À corriger", "Mineur")
-SOURCES = ("qualité", "sécurité", "bdd", "inventaire")
+SOURCES = ("qualité", "sécurité", "bdd", "inventaire", "tests")
 CHOICES = ("corriger", "accepter", "plus tard")
 ITEM = re.compile(r"^-\s+\*\*((?:EX|D)\d+)\*\*\s*—\s*(.*)$")
 SUB = re.compile(r"^\s+-\s+(?:\*\*)?([^:*]+?)(?:\*\*)?\s*:\s*(.*)$")
@@ -337,6 +344,59 @@ def stack_gaps(kb: Path) -> list[str]:
     return gaps
 
 
+RUN = re.compile(r"(\d+)\s*tests?\b.*?(\d+)\s*pass[ée]s?\b.*?(\d+)\s*en échec", re.I)
+
+
+def infra_gaps(kb: Path, root: Path) -> list[str]:
+    """The existing tests run once in the container before any sprint. Each failure is a problem the user decides,
+    set aside under its `Dn`: the suite is green for the first sprint, and no failure is hidden or fixed in silence."""
+    found = [x for x in section(read(kb / INVENTAIRE), "Tests constatés")
+             if re.match(r"^-\s+\S", x) and not x.lstrip("- ").startswith("Aucun")]
+    if not found:
+        return []
+    text = read(kb / INFRA)
+    if text is None or not has_section(text, "Tests existants"):
+        return [f"`kb/{INFRA}` sans `## Tests existants` : les tests de `## Tests constatés` lancés une fois dans le "
+                "conteneur (`- Premier lancement : <commande> — <n> tests — <p> passés — <f> en échec`)"]
+    lines = [x.strip() for x in section(text, "Tests existants") if re.match(r"^-\s+\S", x)]
+    first = next((x for x in lines if x.lstrip("- ").lower().startswith("premier lancement")), None)
+    run = RUN.search(first) if first else None
+    if not run:
+        return ["`## Tests existants` : pas de ligne `- Premier lancement : <commande> — <n> tests — <p> passés — "
+                "<f> en échec`"]
+    total, passed, failed = map(int, run.groups())
+    gaps = [] if passed + failed <= total else [f"`Premier lancement` : {passed} passés + {failed} en échec > {total} tests"]
+    rows = [x for x in lines if x is not first]
+    if len(rows) != failed:
+        gaps.append(f"`## Tests existants` : {failed} en échec annoncés, {len(rows)} listés — une ligne par test "
+                    "(`- <fichier::test> — <erreur> — Dn — exclu : <comment>`)")
+    decided = {d: f for d, _, f in problems(kb)}
+    firsts = {d: first for d, first, _ in problems(kb)}
+    for row in rows:
+        m = re.match(r"^-\s+`([^`]+)`", row)
+        if not m:
+            gaps.append(f"`## Tests existants` : « {row[:60]} » sans le test entre backticks (`fichier::test`)")
+            continue
+        test, rel = m[1], re.split(r"::|:(?=\D)| ", m[1])[0]
+        if not (root / rel).exists():
+            gaps.append(f"`{test}` : `{rel}` absent de `{root.as_posix()}`")
+        ds = re.findall(r"\bD\d+\b", row)
+        if not ds:
+            gaps.append(f"`{test}` en échec sans son problème `Dn` dans `kb/{DIAGNOSTIC}` (`source : tests`)")
+        for d in ds:
+            if d not in decided:
+                gaps.append(f"`{test}` : {d} absent de `## Problèmes` de `kb/{DIAGNOSTIC}`")
+            elif not re.search(r"source\s*:\s*tests\b", firsts[d]):
+                gaps.append(f"{d} : `source : tests` attendu (le test `{test}` en échec)")
+            elif not choice(decided[d].get("Décision", "")):
+                gaps.append(f"{d} (`{test}` en échec) : pas de `Décision :` de l'utilisateur (corriger, accepter ou "
+                            "plus tard)")
+        if not re.search(r"exclu\s*:\s*\S", row):
+            gaps.append(f"`{test}` : sans `exclu :` — comment la suite l'écarte sous son {ds[0] if ds else 'Dn'} "
+                        "(marqueur d'échec attendu, désélection), pour une suite verte sans le cacher")
+    return gaps
+
+
 def processes(kb: Path) -> list[str]:
     return [i[0] for i in items(section(read(kb / INVENTAIRE), "Processus constatés")) if i[0].startswith("EX")]
 
@@ -444,7 +504,7 @@ def backlog_gaps(kb: Path, root: Path | None = None) -> list[str]:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("kb", type=Path)
-    ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", "stack", "interview", "cdc", "backlog"])
+    ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", "stack", "infra", "interview", "cdc", "backlog"])
     ap.add_argument("--root", type=Path)
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -454,12 +514,12 @@ def main(argv: list[str]) -> int:
     if os.environ.get("HOSA_ADOPTION") == "0":
         print("✓ contrôle de l'existant coupé (HOSA_ADOPTION=0)")
         return 0
-    if a.action in ("stack", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
+    if a.action in ("stack", "infra", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
         print("✓ pas de code existant adopté")
         return 0
     checks = {"inventaire": lambda: inventaire_gaps(a.kb, root), "diagnostic": lambda: diagnostic_gaps(a.kb, root),
               "documentation": lambda: documentation_gaps(a.kb, root),
-              "adoption": lambda: adoption_gaps(a.kb, root), "stack": lambda: stack_gaps(a.kb), "interview": lambda: interview_gaps(a.kb),
+              "adoption": lambda: adoption_gaps(a.kb, root), "stack": lambda: stack_gaps(a.kb), "infra": lambda: infra_gaps(a.kb, root), "interview": lambda: interview_gaps(a.kb),
               "cdc": lambda: cdc_gaps(a.kb), "backlog": lambda: backlog_gaps(a.kb, root)}
     gaps = checks[a.action]()
     for g in gaps:

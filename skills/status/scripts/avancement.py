@@ -913,6 +913,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps += infra_exit(kb)
         # the infrastructure drawn and validated by the user; `cdc assemble` puts it in the cahier des charges
         gaps += script("redaction/scripts/cdc.py", "schemas", kb, "--infra")
+        gaps += script(EXISTANT, kb, "infra")  # the existing tests run once, each failure a problem the user decides
     elif stage == "donnees":
         for p, t in stable:
             lines = [x for h in ("Données en entrée", "Données en sortie")

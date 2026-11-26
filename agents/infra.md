@@ -138,6 +138,16 @@ flowchart LR
 ```
 
    A command that fails is fixed before the stage closes: never a red baseline handed to the first sprint. Each exit code is read from the command itself (`> fichier; echo EXIT=$?`), never through `| tail`.
+
+   **Code adopted** (`kb/existant/inventaire.md` lists tests under `## Tests constatés`): they were never run, there was no environment. Keep their runner (`kb/stack/existant.md`). Run the whole existing suite once in the container, before any change to it, and write the result:
+
+```markdown
+## Tests existants
+- Premier lancement : <commande, dans le conteneur> — <n> tests — <p> passés — <f> en échec — <date>
+- `tests/test_export.py::test_dates` — <l'erreur, une ligne> — D7 — exclu : `xfail(strict=True, reason="D7")`
+```
+
+   A failing existing test tests business code: never fix it, never delete it, never rewrite its assertion. For each one, add a problem to `## Problèmes` of `kb/existant/diagnostic.md`, numbered after the last `Dn`: `- **D7** — À corriger — \`tests/test_export.py:12\` — <ce que le test attend, ce que le code fait> — source : tests`, then `  - Proposition : corriger | accepter | plus tard — <raison>`. Never write its `Décision :`: the user gives it, through the skill. Then set the test aside under its `Dn`, with the runner's own expected-failure marker (strict, so a fix shows) or a deselection in the suite's configuration, and write how after `exclu :`. The suite is green for the first sprint, and the failure stays known. A test that cannot even be collected (an import error) is one line too. `done infra` refuses a failure not listed, a test file that does not exist, a line without its `Dn`, a `Dn` without `source : tests` or the user's decision, and a line without `exclu :` (`existant_check infra`). No failure → the `Premier lancement` line alone, `0 en échec`.
 9. Return `## Documentation à produire`: the paths that hold what was installed, its versions and the quality commands, one line each with what to document from it (`retours` §4).
 
 ## Mode 2 — Installation Request

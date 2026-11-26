@@ -339,6 +339,71 @@ class Stack(unittest.TestCase):
         self.assertNotIn("existant_check", "\n".join(av.check(kb, "stack", None)))
 
 
+TESTS = INVENTAIRE.replace("## Tests constatés\nAucun.", "## Tests constatés\n- pytest — 3 tests dans `tests/` — "
+                                                         "commandes — non lancés (pas d'environnement avant `infra`)")
+FAILED = "  - Décision : plus tard — oui\n- **D3** — À corriger — `tests/test_commandes.py:1` — test en échec — source : tests\n" \
+         "  - Proposition : corriger — la règle du total\n"
+
+
+def first_run(kb: Path, *rows: str) -> None:
+    (kb / "infra").mkdir(exist_ok=True)
+    (kb / "infra" / "environnement-docker.md").write_text(
+        "---\ntype: Infra\n---\n## Tests existants\n" + "".join(f"- {r}\n" for r in rows), encoding="utf-8")
+
+
+class Infra(unittest.TestCase):
+    """The existing tests run once before any sprint; each failure is a problem the user decides, set aside."""
+
+    def setUp(self):
+        self.kb = project(inventaire=TESTS, diagnostic=DECIDED.replace("  - Décision : plus tard — oui\n", FAILED))
+        (root(self.kb) / "tests").mkdir()
+        (root(self.kb) / "tests" / "test_commandes.py").write_text("def test_total(): ...\n", encoding="utf-8")
+
+    def gaps(self):
+        return "\n".join(ex.infra_gaps(self.kb, root(self.kb)))
+
+    def test_the_first_run_is_required(self):
+        self.assertIn("sans `## Tests existants`", self.gaps())
+        first_run(self.kb, "Tests : `pytest`")
+        self.assertIn("pas de ligne `- Premier lancement", self.gaps())
+
+    def test_each_failure_is_listed_with_its_decided_problem_and_set_aside(self):
+        first_run(self.kb, "Premier lancement : `pytest` — 3 tests — 1 passés — 2 en échec",
+                  "`tests/absent.py::test_x` — ImportError")
+        gaps = self.gaps()
+        for word in ("2 en échec annoncés, 1 listés", "`tests/absent.py` absent", "sans son problème `Dn`",
+                     "sans `exclu :`"):
+            self.assertIn(word, gaps)
+        first_run(self.kb, "Premier lancement : `pytest` — 3 tests — 2 passés — 1 en échec",
+                  "`tests/test_commandes.py::test_total` — AssertionError — D3 — exclu : `xfail(strict=True, reason=\"D3\")`")
+        self.assertIn("D3 (`tests/test_commandes.py::test_total` en échec) : pas de `Décision :`", self.gaps())
+        first_run(self.kb, "Premier lancement : `pytest` — 3 tests — 2 passés — 1 en échec",
+                  "`tests/test_commandes.py::test_total` — AssertionError — D1 — exclu : désélectionné")
+        self.assertIn("D1 : `source : tests` attendu", self.gaps())
+
+    def test_a_decided_failure_passes_and_a_green_run_needs_no_problem(self):
+        self.kb.joinpath("existant/diagnostic.md").write_text(DECIDED.replace(
+            "  - Décision : plus tard — oui\n", FAILED + "  - Décision : corriger — oui\n"), encoding="utf-8")
+        first_run(self.kb, "Premier lancement : `pytest` — 3 tests — 2 passés — 1 en échec",
+                  "`tests/test_commandes.py::test_total` — AssertionError — D3 — exclu : `xfail(strict=True, reason=\"D3\")`")
+        self.assertEqual(ex.infra_gaps(self.kb, root(self.kb)), [])
+        first_run(self.kb, "Premier lancement : `pytest` — 3 tests — 3 passés — 0 en échec")
+        self.assertEqual(ex.infra_gaps(self.kb, root(self.kb)), [])
+
+    def test_done_infra_reads_it_and_a_project_without_tests_has_nothing_to_run(self):
+        self.assertIn("existant_check", "\n".join(av.check(self.kb, "infra", None)))
+        kb = project(diagnostic=DECIDED)
+        self.assertEqual(ex.infra_gaps(kb, root(kb)), [])
+        self.assertNotIn("existant_check", "\n".join(av.check(kb, "infra", None)))
+
+    def test_the_agent_carries_the_format(self):
+        agent = (ROOT / "agents" / "infra.md").read_text(encoding="utf-8")
+        for word in ("## Tests existants", "Premier lancement :", "source : tests", "exclu :"):
+            self.assertIn(word, agent)
+        self.assertIn("source : qualité | sécurité | bdd | inventaire | tests",
+                      (ROOT / "agents" / "analyst.md").read_text(encoding="utf-8"))
+
+
 class Plan(unittest.TestCase):
     def test_done_adoption_reads_the_proofs(self):
         kb = project()
