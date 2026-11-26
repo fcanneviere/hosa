@@ -114,7 +114,7 @@
     "contestation": "Signer le cahier des charges complet.",
     "stack": "Choisir la stack parmi les options proposées, et valider l'inventaire des bibliothèques.",
     "infra": "Valider le schéma de l'infrastructure et, pour un code adopté, décider de chaque test existant en échec.",
-    "schema-db": "Valider le schéma de la base de données : tables, relations, format des données.",
+    "schema-db": "Valider le schéma de la base de données : tables, relations, format des données et, pour un code adopté, ce que devient chaque table déjà stockée.",
     "interface": "Choisir le style et la mise en page, puis valider les pages.",
     "sprint": "Valider les jalons de la feuille de route, une seule fois.",
     "validation": "Faire la démo : les tests T1, T2… sur l'application.",

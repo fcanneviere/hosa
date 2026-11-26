@@ -404,6 +404,64 @@ class Infra(unittest.TestCase):
                       (ROOT / "agents" / "analyst.md").read_text(encoding="utf-8"))
 
 
+def reprises(kb: Path, *rows: str) -> None:
+    (kb / "infra").mkdir(exist_ok=True)
+    (kb / "infra" / "schema-base-de-donnees.md").write_text(
+        "---\ntype: Infra\n---\n## Schéma de la base de données\n## Données reprises\n"
+        + "".join(f"- {r}\n" for r in rows), encoding="utf-8")
+
+
+class SchemaDb(unittest.TestCase):
+    """The data the existing code stores is kept, changed by a new migration, or dropped for a decided reason."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED)
+
+    def gaps(self):
+        return "\n".join(ex.schema_db_gaps(self.kb, root(self.kb)))
+
+    def test_each_table_found_must_be_taken_over(self):
+        self.assertIn("sans `## Données reprises`", self.gaps())
+        reprises(self.kb, "ligne — source : `src/export.py` — conservée")
+        self.assertIn("« commande » (`src/commandes.py:2`) absent de `## Données reprises`", self.gaps())
+        reprises(self.kb, "commande — source : `src/commandes.py:2` — gardée")
+        self.assertIn("ni `conservée`", self.gaps())
+        reprises(self.kb, "commande — source : `src/commandes.py:2` — conservée")
+        self.assertEqual(ex.schema_db_gaps(self.kb, root(self.kb)), [])
+
+    def test_a_change_needs_its_new_migration_and_what_the_rows_become(self):
+        reprises(self.kb, "commande — source : `src/commandes.py:2` — modifiée")
+        gaps = self.gaps()
+        self.assertIn("modifiée sans `reprise :`", gaps)
+        self.assertIn("modifiée sans `migration :`", gaps)
+        reprises(self.kb, "commande — source : `src/commandes.py:2` — modifiée — migration : "
+                          "`migrations/0002_total.py` — reprise : total recalculé")
+        self.assertIn("migration `migrations/0002_total.py` absente", self.gaps())
+        (root(self.kb) / "migrations").mkdir()
+        (root(self.kb) / "migrations" / "0002_total.py").write_text("ops = []\n", encoding="utf-8")
+        self.assertEqual(ex.schema_db_gaps(self.kb, root(self.kb)), [])
+
+    def test_a_drop_needs_a_decided_reason(self):
+        reprises(self.kb, "commande — source : `src/commandes.py:2` — supprimée — raison : D2 — reprise : export CSV")
+        self.assertIn("supprimée sans `raison :`", self.gaps())  # D2 is decided `plus tard`
+        reprises(self.kb, "commande — source : `src/commandes.py:2` — supprimée — raison : D1 — reprise : export CSV")
+        self.assertEqual(ex.schema_db_gaps(self.kb, root(self.kb)), [])
+
+    def test_done_schema_db_reads_it_and_a_project_without_data_has_nothing_to_keep(self):
+        self.assertIn("Données reprises", "\n".join(av.check(self.kb, "schema-db", None)))
+        kb = project(inventaire=INVENTAIRE.replace("- commande — `src/commandes.py:2`\n", "Aucun.\n"))
+        self.assertEqual(ex.schema_db_gaps(kb, root(kb)), [])
+        new = project(inventaire=None, diagnostic=None, depart="Neuf")
+        self.assertNotIn("Données reprises", "\n".join(av.check(new, "schema-db", None)))
+
+    def test_the_agents_carry_the_format(self):
+        agent = (ROOT / "agents" / "data-engineer.md").read_text(encoding="utf-8")
+        for word in ("## Données reprises", "conservée", "modifiée", "supprimée", "migration :", "reprise :",
+                     "raison :"):
+            self.assertIn(word, agent)
+        self.assertIn("Données reprises", (ROOT / "agents" / "dba.md").read_text(encoding="utf-8"))
+
+
 class Plan(unittest.TestCase):
     def test_done_adoption_reads_the_proofs(self):
         kb = project()

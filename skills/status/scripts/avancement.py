@@ -927,6 +927,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps.append(concept(kb, "infra/base-de-donnees.md", "Infra", "Commandes"))
         # the database drawn (tables, relations, each column's type and format) and validated by the user
         gaps += script("redaction/scripts/cdc.py", "schemas", kb, "--db")
+        gaps += script(EXISTANT, kb, "schema-db")  # the data the existing code stores, each table kept, changed or dropped
     elif stage == "architecture":
         gaps.append(infra_with(kb, "Documentation d'architecture"))
     elif stage == "menaces":

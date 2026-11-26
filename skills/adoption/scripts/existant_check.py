@@ -27,6 +27,11 @@ does is lost on the way to the cahier des charges and the backlog.
                                       environnement-docker.md` `## Tests existants` gives the first run's counts,
                                       and each failing test (its file exists) its problem `Dn` (`source : tests`,
                                       the user's `Décision :`) and how the suite sets it aside (`exclu :`)
+  existant_check.py <kb> schema-db    each line of `## Données constatées` is taken over in `kb/infra/schema-base-de-
+                                      donnees.md` `## Données reprises`, by its source path: `conservée`; `modifiée`
+                                      with its new `migration :` file (it exists) and its `reprise :` (what the rows
+                                      already stored become); `supprimée` with its `raison :` (a `Dn` decided
+                                      `corriger`, an exigence's link) and its `reprise :`
   existant_check.py <kb> interview    each `EXn` is cited by a compte rendu of `kb/cdc/interviews/`
   existant_check.py <kb> cdc          each `EXn` is cited by an exigence's `existant:` field, unless a compte
                                       rendu marks it `abandonné`
@@ -37,7 +42,7 @@ does is lost on the way to the cahier des charges and the backlog.
                                       exists); each partiel or cassé one a `todo` ticket for what is missing; a
                                       `todo` ticket citing an `EXn` says what it changes (`## Écart à l'existant`)
 
-No `kb/existant/inventaire.md` → `stack`, `infra`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
+No `kb/existant/inventaire.md` → `stack`, `infra`, `schema-db`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
 The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
 
   - **EX1** — <ce que le logiciel fait, en mots de métier>
@@ -54,6 +59,10 @@ The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
   - SQLite 3 — source : `settings.py:80` — remplacé par PostgreSQL 16 — raison : D4 — migration : <coût>
   - Premier lancement : `pytest` — 42 tests — 40 passés — 2 en échec
   - `tests/test_export.py::test_dates` — AssertionError — D7 — exclu : `xfail(strict=True, reason="D7")`
+  - commande — source : `src/modeles.py:20` — conservée
+  - client — source : `src/modeles.py:40` — modifiée — migration : `migrations/0007_client_email.py` — reprise : <ce
+    que deviennent les lignes déjà stockées>
+  - panier — source : `src/modeles.py:60` — supprimée — raison : D5 — reprise : <archivées, exportées>
 
 HOSA_ADOPTION=0 turns the checks off. Exit: 0 complete, 1 gaps (`✗` lines), 2 bad invocation. Stdlib only.
 """
@@ -67,6 +76,7 @@ from pathlib import Path
 
 INVENTAIRE, DIAGNOSTIC, STACK = "existant/inventaire.md", "existant/diagnostic.md", "stack/existant.md"
 INFRA = "infra/environnement-docker.md"
+SCHEMA = "infra/schema-base-de-donnees.md"
 SECTIONS = ("Périmètre lu", "Stack constatée", "Processus constatés", "Rôles constatés", "Données constatées",
             "Architecture constatée", "Tests constatés")
 STATES = ("complet", "partiel", "cassé")
@@ -319,7 +329,6 @@ def stack_gaps(kb: Path) -> list[str]:
         return [f"pas de `kb/{STACK}` (`type: Stack Decision`) : chaque élément de `## Stack constatée`, "
                 "conservé ou remplacé, sous `## Stack reprise`"]
     rows = [x.strip() for x in section(text, "Stack reprise") if re.match(r"^-\s+\S", x)]
-    fix = {d for d, _, f in problems(kb) if choice(f.get("Décision", "")) == "corriger"}
     gaps = []
     for line, cited in found:
         name = line.lstrip("- ").split(" — ")[0][:60]
@@ -333,10 +342,7 @@ def stack_gaps(kb: Path) -> list[str]:
         if not verdict:
             gaps.append(f"« {name} » : ni `conservé` ni `remplacé par <x>` dans `## Stack reprise`")
         elif verdict[1].lower() == "remplacé":
-            reason = re.search(r"raison\s*:\s*(.*?)\s*(?:—|$)", row)
-            ds = set(re.findall(r"\bD\d+\b", reason[1])) if reason else set()
-            link = re.search(r"\]\(\.\./(cdc/[^)]+\.md)\)", reason[1]) if reason else None
-            if not (ds & fix or (link and (kb / link[1]).is_file())):
+            if reason_gap(kb, row):
                 gaps.append(f"« {name} » remplacé sans `raison :` — un problème que l'utilisateur a décidé de "
                             "corriger (`Dn`), ou le lien d'une exigence ; « mieux » ne suffit pas, le code en dépend")
             if not re.search(r"migration\s*:\s*\S", row):
@@ -394,6 +400,59 @@ def infra_gaps(kb: Path, root: Path) -> list[str]:
         if not re.search(r"exclu\s*:\s*\S", row):
             gaps.append(f"`{test}` : sans `exclu :` — comment la suite l'écarte sous son {ds[0] if ds else 'Dn'} "
                         "(marqueur d'échec attendu, désélection), pour une suite verte sans le cacher")
+    return gaps
+
+
+def reason_gap(kb: Path, row: str) -> bool:
+    """No `raison :` the user decided: a `Dn` decided `corriger`, or the link of an exigence that exists."""
+    fix = {d for d, _, f in problems(kb) if choice(f.get("Décision", "")) == "corriger"}
+    reason = re.search(r"raison\s*:\s*(.*?)\s*(?:—|$)", row)
+    ds = set(re.findall(r"\bD\d+\b", reason[1])) if reason else set()
+    link = re.search(r"\]\(\.\./(cdc/[^)]+\.md)\)", reason[1]) if reason else None
+    return not (ds & fix or (link and (kb / link[1]).is_file()))
+
+
+def schema_db_gaps(kb: Path, root: Path) -> list[str]:
+    """The data the existing code already stores is not lost: each table or model is kept, changed by a new migration
+    that says what the stored rows become, or dropped for a reason the user decided. Matched by its source path."""
+    found = [(x.strip(), CODE.findall(x)) for x in section(read(kb / INVENTAIRE), "Données constatées")
+             if re.match(r"^-\s+\S", x) and not x.lstrip("- ").startswith("Aucun") and CODE.search(x)]
+    if not found:
+        return []
+    text = read(kb / SCHEMA)
+    rows = [x.strip() for x in section(text, "Données reprises") if re.match(r"^-\s+\S", x)] if text else []
+    if not rows:
+        return [f"`kb/{SCHEMA}` sans `## Données reprises` : chaque ligne de `## Données constatées`, `conservée`, "
+                "`modifiée` ou `supprimée`, par son chemin source"]
+    gaps = []
+    for line, cited in found:
+        name = line.lstrip("- ").split(" — ")[0][:60]
+        keys = [f"`{rel}:{n}`" if n else f"`{rel}`" for rel, n in cited]
+        row = next((r for r in rows if any(k in r for k in keys)), None)
+        if row is None:
+            gaps.append(f"« {name} » ({', '.join(keys)}) absent de `## Données reprises` de `kb/{SCHEMA}` — "
+                        "`conservée`, `modifiée — migration : <fichier> — reprise : <…>` ou `supprimée — raison : "
+                        "<Dn|exigence> — reprise : <…>`")
+            continue
+        verdict = re.search(r"—\s*(conservée|modifiée|supprimée)\b", row, re.I)
+        if not verdict:
+            gaps.append(f"« {name} » : ni `conservée`, ni `modifiée`, ni `supprimée` dans `## Données reprises`")
+            continue
+        kind = verdict[1].lower()
+        if kind == "conservée":
+            continue
+        if not re.search(r"reprise\s*:\s*\S", row):
+            gaps.append(f"« {name} » {kind} sans `reprise :` — ce que deviennent les lignes déjà stockées")
+        if kind == "modifiée":
+            mig = re.search(r"migration\s*:\s*`([^`]+)`", row)
+            if not mig:
+                gaps.append(f"« {name} » modifiée sans `migration :` — la nouvelle migration entre backticks ; "
+                            "une migration déjà appliquée ne change jamais")
+            elif not (root / mig[1]).is_file():
+                gaps.append(f"« {name} » : migration `{mig[1]}` absente de `{root.as_posix()}`")
+        elif reason_gap(kb, row):
+            gaps.append(f"« {name} » supprimée sans `raison :` — un problème que l'utilisateur a décidé de corriger "
+                        "(`Dn`), ou le lien d'une exigence ; les lignes stockées en dépendent")
     return gaps
 
 
@@ -504,7 +563,8 @@ def backlog_gaps(kb: Path, root: Path | None = None) -> list[str]:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("kb", type=Path)
-    ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", "stack", "infra", "interview", "cdc", "backlog"])
+    ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", "stack", "infra", "schema-db",
+                                           "interview", "cdc", "backlog"])
     ap.add_argument("--root", type=Path)
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -514,12 +574,13 @@ def main(argv: list[str]) -> int:
     if os.environ.get("HOSA_ADOPTION") == "0":
         print("✓ contrôle de l'existant coupé (HOSA_ADOPTION=0)")
         return 0
-    if a.action in ("stack", "infra", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
+    if a.action in ("stack", "infra", "schema-db", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
         print("✓ pas de code existant adopté")
         return 0
     checks = {"inventaire": lambda: inventaire_gaps(a.kb, root), "diagnostic": lambda: diagnostic_gaps(a.kb, root),
               "documentation": lambda: documentation_gaps(a.kb, root),
-              "adoption": lambda: adoption_gaps(a.kb, root), "stack": lambda: stack_gaps(a.kb), "infra": lambda: infra_gaps(a.kb, root), "interview": lambda: interview_gaps(a.kb),
+              "adoption": lambda: adoption_gaps(a.kb, root), "stack": lambda: stack_gaps(a.kb), "infra": lambda: infra_gaps(a.kb, root),
+              "schema-db": lambda: schema_db_gaps(a.kb, root), "interview": lambda: interview_gaps(a.kb),
               "cdc": lambda: cdc_gaps(a.kb), "backlog": lambda: backlog_gaps(a.kb, root)}
     gaps = checks[a.action]()
     for g in gaps:
