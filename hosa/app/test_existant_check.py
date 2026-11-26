@@ -38,6 +38,8 @@ type: Inventaire Existant
 - vues et modèles dans `src/`
 ## Interface constatée
 - Liste des commandes — source : `src/gabarits/liste.html` — client
+## Fondamentaux constatés
+- connexion — source : `src/commandes.py:1` — sans limite de tentatives
 ## Tests constatés
 Aucun.
 ## Révisions
@@ -558,6 +560,96 @@ class Interface(unittest.TestCase):
         for word in ("## Écrans repris", "conservé", "remplacé par", "supprimé", "raison :"):
             self.assertIn(word, agent)
         self.assertIn("## Interface constatée", (ROOT / "agents" / "analyst.md").read_text(encoding="utf-8"))
+
+
+def fichier(kb: Path, rel: str, ctype: str, heading: str, *rows: str) -> None:
+    body = "".join(f"- {r}\n" for r in rows)
+    (kb / rel).parent.mkdir(parents=True, exist_ok=True)
+    (kb / rel).write_text(f"---\ntype: {ctype}\n---\n## {heading}\n{body}", encoding="utf-8")
+
+
+EXIGENCE = "---\ntype: Exigence\nstatus: draft\nexistant: [EX1]\n---\n## Objectif\nse connecter\n"
+
+
+class Fondamentaux(unittest.TestCase):
+    """A basic function the code already has is taken over by an exigence, never written again beside it."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED, **{"cdc/connexion.md": EXIGENCE})
+
+    def bilan(self, *rows):
+        fichier(self.kb, "cdc/fondamentaux.md", "Revue Fondamentaux", "Bilan", *rows)
+        return ex.fondamentaux_gaps(self.kb)
+
+    def test_each_basic_function_found_must_be_in_the_review(self):
+        self.assertIn("sans `## Bilan`", "\n".join(ex.fondamentaux_gaps(self.kb)))
+        self.assertIn("absent du `## Bilan`", "\n".join(self.bilan("Socle comptes — Ajouté : [x](connexion.md)")))
+
+    def test_an_existing_function_needs_the_exigence_that_describes_it(self):
+        self.assertIn("sans l'exigence", "\n".join(self.bilan("Socle comptes — Existant : `src/commandes.py:1`")))
+        self.assertIn("sans l'exigence", "\n".join(
+            self.bilan("Socle comptes — Existant : `src/commandes.py:1` — [exigence](absente.md)")))
+        self.assertEqual(self.bilan("Socle comptes — Existant : `src/commandes.py:1` — [exigence](connexion.md)"), [])
+
+    def test_a_drop_needs_a_decided_reason(self):
+        self.assertIn("sans `raison :`",
+                      "\n".join(self.bilan("Socle comptes — `src/commandes.py:1` — Supprimé — raison : D2")))
+        self.assertEqual(self.bilan("Socle comptes — `src/commandes.py:1` — Supprimé — raison : D1"), [])
+
+    def test_done_reads_it_and_a_project_without_basics_has_nothing_to_keep(self):
+        self.assertIn("Bilan", "\n".join(av.check(self.kb, "fondamentaux", None)))
+        bare = project(inventaire=INVENTAIRE.replace(
+            "- connexion — source : `src/commandes.py:1` — sans limite de tentatives\n", "Aucun.\n"))
+        self.assertEqual(ex.fondamentaux_gaps(bare), [])
+        self.assertEqual(ex.inventaire_gaps(bare, root(bare)), [])
+        self.assertIn("Existant :", (ROOT / "agents" / "product-owner.md").read_text(encoding="utf-8"))
+
+
+class Failles(unittest.TestCase):
+    """Each security flaw of the existing code reaches the security analysis and the threat model, as decided."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED, **{"cdc/hachage.md": EXIGENCE})
+
+    def secu(self, *rows):
+        fichier(self.kb, "cdc/securite.md", "Analyse de sécurité", "Failles existantes", *rows)
+        return ex.faille_gaps(self.kb, ex.SECU, "lien", "risque")
+
+    def menaces(self, *rows):
+        fichier(self.kb, "securite/modele-menaces.md", "Modèle de Menaces", "Failles existantes", *rows)
+        return ex.faille_gaps(self.kb, ex.MENACES, "atténuation", "résiduel")
+
+    def test_each_security_flaw_must_be_listed_and_only_those(self):
+        gaps = self.secu()
+        self.assertEqual(len(gaps), 1)  # D1 (sécurité), not D2 (qualité)
+        self.assertIn("D1", gaps[0])
+
+    def test_the_decision_is_the_users_and_a_fix_needs_its_measure(self):
+        self.assertIn("l'utilisateur a décidé `corriger`",
+                      "\n".join(self.secu("**D1** — mot de passe en clair — accepter — risque : faible")))
+        self.assertIn("sans la mesure", "\n".join(self.secu("**D1** — mot de passe en clair — corriger : à voir")))
+        self.assertEqual(self.secu("**D1** — mot de passe en clair — corriger : [exigence](hachage.md)"), [])
+
+    def test_a_flaw_kept_states_what_stays_exposed(self):
+        self.kb = project(diagnostic=DECIDED.replace("Décision : corriger — oui", "Décision : plus tard — oui"))
+        self.assertIn("sans `risque :`", "\n".join(self.secu("**D1** — mot de passe en clair — plus tard")))
+        self.assertEqual(self.secu("**D1** — mot de passe en clair — plus tard — risque : exposés jusqu'au sprint 2"), [])
+        self.assertIn("sans `résiduel :`", "\n".join(self.menaces("**D1** — connexion — I — plus tard")))
+
+    def test_the_threat_model_places_each_flaw_with_its_mitigation(self):
+        self.assertIn("absent de `## Failles existantes`", "\n".join(self.menaces()))
+        self.assertIn("sans `atténuation :`", "\n".join(self.menaces("**D1** — connexion — I — corriger")))
+        self.assertEqual(self.menaces("**D1** — connexion — I — corriger — atténuation : hachage argon2"), [])
+
+    def test_done_reads_them_and_the_agent_carries_the_format(self):
+        self.assertIn("Failles existantes", "\n".join(av.check(self.kb, "securite", None)))
+        self.assertIn("Failles existantes", "\n".join(av.check(self.kb, "menaces", None)))
+        new = project(inventaire=None)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual([ex.main([str(new), m]) for m in ("fondamentaux", "securite", "menaces")], [0, 0, 0])
+        agent = (ROOT / "agents" / "security.md").read_text(encoding="utf-8")
+        for word in ("## Failles existantes", "risque :", "atténuation :", "résiduel :"):
+            self.assertIn(word, agent)
 
 
 class Plan(unittest.TestCase):

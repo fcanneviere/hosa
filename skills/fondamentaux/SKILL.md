@@ -124,7 +124,11 @@ generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 - <item> — Couvert : [exigence](<slug>.md)
 - <item> — Ajouté : [exigence](<slug>.md)
 - <item> — Hors périmètre (confirmé par l'utilisateur) : <raison>
+- <item> — Existant : `src/comptes/` — [exigence](<slug>.md)
+- <item> — Supprimé — raison : <un `Dn` décidé `corriger`, ou le lien d'une exigence>
 ```
+
+**Adopted code** (`kb/existant/inventaire.md`). Each line of `## Fondamentaux constatés` is a basic function the code already has. It is `Existant`, never `Manquant`: its exigence describes what the code does, and `backlog` tickets what it lacks. A drop needs a reason the user decided. `done fondamentaux` refuses an entry left out, one without its exigence, a drop for no decided reason (`existant_check fondamentaux`).
 
 On a re-run, update this file in place — it always reflects the latest pass.
 

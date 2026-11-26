@@ -878,6 +878,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
     elif stage == "fondamentaux":
         gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux", "Bilan"))
         gaps += espace_gaps(kb, exigences)
+        gaps += script(EXISTANT, kb, "fondamentaux")  # each basic function the existing code has, in an exigence
     elif stage == "cadrage-ia":
         gaps += script("ia/scripts/ia_check.py", kb, "cadrage")
         gaps += undated(kb, stage, "cdc/ia.md", "Révisions", "- <AAAA-MM-JJTHH:MMZ> — <ce qui change>")
@@ -888,6 +889,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps.append(concept(kb, "cdc/juridique.md", "Analyse juridique", "Contraintes retenues"))
     elif stage == "securite":
         gaps.append(concept(kb, "cdc/securite.md", "Analyse de sécurité", "Menaces et mesures"))
+        gaps += script(EXISTANT, kb, "securite")  # each flaw of the existing code, as the user decided it
     elif stage == "relecture":
         gaps.append(concept(kb, "cdc/relecture.md", "Revue Relecture"))
         gaps += script("redaction/scripts/cdc.py", "revue", kb)
@@ -933,6 +935,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps += script(EXISTANT, kb, "architecture")  # each layer of the existing code kept, extended or replaced
     elif stage == "menaces":
         gaps.append(concept(kb, "securite/modele-menaces.md", "Modèle de Menaces"))
+        gaps += script(EXISTANT, kb, "menaces")  # each flaw of the existing code, mitigated or left exposed
     elif stage == "interface":
         gaps.append(infra_with(kb, "Documentation d'interface"))
         gaps.append(concept(kb, "interface/navigation.md", "Plan de navigation"))

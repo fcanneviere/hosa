@@ -39,6 +39,15 @@ does is lost on the way to the cahier des charges and the backlog.
   existant_check.py <kb> interface    each screen of `## Interface constatée` is taken over in `kb/interface/
                                       navigation.md` `## Écrans repris`, by its source path: `conservé`; `remplacé
                                       par <écran>` (a screen of `## Écrans`); `supprimé` with its `raison :`
+  existant_check.py <kb> fondamentaux each line of `## Fondamentaux constatés` (a basic function the code already
+                                      has) is in `kb/cdc/fondamentaux.md` `## Bilan`, by its source path: `Existant :`
+                                      with the link of the exigence that describes it (it exists), or `Supprimé` with
+                                      its `raison :` (a `Dn` decided `corriger`, an exigence's link)
+  existant_check.py <kb> securite     each problem `Dn` of `source : sécurité` is in `kb/cdc/securite.md` `## Failles
+                                      existantes` with the user's decision as it is: `corriger` with the link of the
+                                      exigence or the rule that fixes it, `accepter` or `plus tard` with its `risque :`
+  existant_check.py <kb> menaces      the same `Dn` in `kb/securite/modele-menaces.md` `## Failles existantes`:
+                                      `corriger` with its `atténuation :`, `accepter` or `plus tard` with its `résiduel :`
   existant_check.py <kb> interview    each `EXn` is cited by a compte rendu of `kb/cdc/interviews/`
   existant_check.py <kb> cdc          each `EXn` is cited by an exigence's `existant:` field, unless a compte
                                       rendu marks it `abandonné`
@@ -49,7 +58,7 @@ does is lost on the way to the cahier des charges and the backlog.
                                       exists); each partiel or cassé one a `todo` ticket for what is missing; a
                                       `todo` ticket citing an `EXn` says what it changes (`## Écart à l'existant`)
 
-No `kb/existant/inventaire.md` → `stack`, `infra`, `schema-db`, `architecture`, `interface`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
+No `kb/existant/inventaire.md` → the downstream checks (`fondamentaux` to `backlog`) have nothing to check (a new project).
 The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
 
   - **EX1** — <ce que le logiciel fait, en mots de métier>
@@ -74,6 +83,10 @@ The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
   - accès aux données — `src/dao/` — remplacé par l'ORM — raison : D3 — migration : <ce qui bouge, son coût>
   - Liste des commandes — source : `templates/commandes/liste.html` — conservé
   - Export CSV — source : `templates/export.html` — supprimé — raison : D6
+  - Socle comptes — Existant : `src/comptes/` — [exigence](connexion.md)
+  - **D1** — mots de passe en MD5 — corriger : [exigence](hachage-mots-de-passe.md)
+  - **D2** — pas de limite de tentatives — plus tard — risque : <ce qui reste exposé, jusqu'à quand>
+  - **D1** — formulaire de connexion — S — corriger — atténuation : <le contrôle, son module>
 
 HOSA_ADOPTION=0 turns the checks off. Exit: 0 complete, 1 gaps (`✗` lines), 2 bad invocation. Stdlib only.
 """
@@ -89,8 +102,9 @@ INVENTAIRE, DIAGNOSTIC, STACK = "existant/inventaire.md", "existant/diagnostic.m
 INFRA = "infra/environnement-docker.md"
 SCHEMA = "infra/schema-base-de-donnees.md"
 ARCHI, NAVIGATION = "infra/architecture-existante.md", "interface/navigation.md"
+FONDA, SECU, MENACES = "cdc/fondamentaux.md", "cdc/securite.md", "securite/modele-menaces.md"
 SECTIONS = ("Périmètre lu", "Stack constatée", "Processus constatés", "Rôles constatés", "Données constatées",
-            "Architecture constatée", "Interface constatée", "Tests constatés")
+            "Architecture constatée", "Interface constatée", "Fondamentaux constatés", "Tests constatés")
 STATES = ("complet", "partiel", "cassé")
 SEVERITIES = ("Bloquant", "À corriger", "Mineur")
 SOURCES = ("qualité", "sécurité", "bdd", "inventaire", "tests")
@@ -199,11 +213,12 @@ def inventaire_gaps(kb: Path, root: Path) -> list[str]:
             m = re.search(r"source\s*:\s*(.*)$", line)
             gaps += code_gaps(root, "`## Stack constatée`", m[1]) if m else \
                 [f"`## Stack constatée` : « {line.strip()[:60]} » sans `source : \\`fichier:ligne\\``"]
-    for line in section(text, "Interface constatée"):
-        if re.match(r"^-\s+\S", line) and not line.lstrip("- ").startswith("Aucun"):
-            m = re.search(r"source\s*:\s*(.*)$", line)
-            gaps += code_gaps(root, "`## Interface constatée`", m[1]) if m else \
-                [f"`## Interface constatée` : « {line.strip()[:60]} » sans `source : \\`gabarit ou composant\\``"]
+    for heading, what in (("Interface constatée", "gabarit ou composant"), ("Fondamentaux constatés", "fichier:ligne")):
+        for line in section(text, heading):
+            if re.match(r"^-\s+\S", line) and not line.lstrip("- ").startswith("Aucun"):
+                m = re.search(r"source\s*:\s*(.*)$", line)
+                gaps += code_gaps(root, f"`## {heading}`", m[1]) if m else \
+                    [f"`## {heading}` : « {line.strip()[:60]} » sans `source : \\`{what}\\``"]
     gaps += doc_listing_gaps(kb, root)
     for line in section(text, "Rôles constatés"):
         if re.match(r"^-\s+\S", line) and not line.lstrip("- ").startswith("Aucun"):
@@ -552,6 +567,79 @@ def ecrans_gaps(kb: Path) -> list[str]:
     return gaps
 
 
+def bullets(text: str | None, heading: str) -> list[str]:
+    return [x.strip() for x in section(text, heading) if re.match(r"^-\s+\S", x)] if text else []
+
+
+def fondamentaux_gaps(kb: Path) -> list[str]:
+    """A basic function the code already has (accounts, administration, logs, backup, export) is taken over by an
+    exigence, never written again beside it, or dropped for a reason the user decided. Matched by its source path."""
+    found = found_in(kb, "Fondamentaux constatés")
+    if not found:
+        return []
+    rows = bullets(read(kb / FONDA), "Bilan")
+    if not rows:
+        return [f"`kb/{FONDA}` sans `## Bilan` : chaque ligne de `## Fondamentaux constatés`, `Existant : <chemin> — "
+                "[exigence](<slug>.md)` ou `Supprimé — raison : <Dn|exigence>`"]
+    gaps = []
+    for line, cited in found:
+        name, keys, row = matched(line, cited, rows)
+        if row is None:
+            gaps.append(f"« {name} » ({', '.join(keys)}) absent du `## Bilan` de `kb/{FONDA}` — `Existant : "
+                        f"{keys[0]} — [exigence](<slug>.md)` ou `Supprimé — raison : <Dn|exigence>`")
+            continue
+        verdict = re.search(r"—\s*(existant|supprimée?)\b", row, re.I)
+        if not verdict:
+            gaps.append(f"« {name} » : ni `Existant`, ni `Supprimé` dans le `## Bilan` — le code le fait déjà")
+        elif verdict[1].lower() == "existant":
+            links = re.findall(r"\]\(([^)/]+\.md)\)", row)
+            if not any(of_type(read(kb / "cdc" / p) or "", "Exigence") for p in links):
+                gaps.append(f"« {name} » existant sans l'exigence qui décrit ce que le code fait (`[exigence](<slug>.md)`, "
+                            "dans `kb/cdc/`) — sans elle, une exigence neuve le refait à côté")
+        elif reason_gap(kb, row):
+            gaps.append(f"« {name} » supprimé sans `raison :` — un problème que l'utilisateur a décidé de corriger "
+                        "(`Dn`), ou le lien d'une exigence ; ses utilisateurs s'en servent")
+    return gaps
+
+
+def failles(kb: Path) -> list[tuple[str, str | None]]:
+    """[(Dn, the user's decision)] of the problems the security audit found in the existing code."""
+    return [(d, choice(f.get("Décision", ""))) for d, first, f in problems(kb)
+            if re.search(r"source\s*:\s*sécurité\b", first)]
+
+
+def faille_gaps(kb: Path, rel: str, fix: str, rest: str) -> list[str]:
+    """Each security flaw of the existing code is in `rel` `## Failles existantes` with the user's decision as it is:
+    `corriger` with its `fix`, `accepter` or `plus tard` with what stays exposed (`rest`)."""
+    known = failles(kb)
+    if not known:
+        return []
+    rows = bullets(read(kb / rel), "Failles existantes")
+    gaps = []
+    for d, decided in known:
+        row = next((r for r in rows if re.match(rf"^-\s+(?:\*\*)?{d}\b", r)), None)
+        if row is None:
+            gaps.append(f"{d} (faille du code existant, décision : {decided or '?'}) absent de `## Failles existantes` "
+                        f"de `kb/{rel}` — le système en production y est exposé aujourd'hui")
+            continue
+        said = re.search(r"—\s*(corriger|accepter|plus tard)\b", row)
+        if not said:
+            gaps.append(f"{d} : ni `corriger`, ni `accepter`, ni `plus tard` dans `kb/{rel}`")
+        elif decided and said[1] != decided:
+            gaps.append(f"{d} : `{said[1]}` dans `kb/{rel}`, mais l'utilisateur a décidé `{decided}` — seule sa "
+                        "décision vaut (`adoption`, Step 4)")
+        elif said[1] == "corriger" and fix == "lien":
+            links = re.findall(r"\]\(([^)]+\.md)\)", row)
+            if not any((kb / "cdc" / p).resolve().is_file() for p in links):
+                gaps.append(f"{d} à corriger sans la mesure qui le corrige : le lien d'une exigence ou d'une règle "
+                            "de sécurité qui existe (`[exigence](<slug>.md)`, `[règle](../rules/security/<slug>.md)`)")
+        elif said[1] == "corriger" and not re.search(rf"{fix}\s*:\s*\S", row):
+            gaps.append(f"{d} à corriger sans `{fix} :` — le contrôle qui l'empêche dans l'architecture")
+        elif said[1] != "corriger" and not re.search(rf"{rest}\s*:\s*\S", row):
+            gaps.append(f"{d} {said[1]} sans `{rest} :` — ce qui reste exposé, et jusqu'à quand")
+    return gaps
+
+
 def processes(kb: Path) -> list[str]:
     return [i[0] for i in items(section(read(kb / INVENTAIRE), "Processus constatés")) if i[0].startswith("EX")]
 
@@ -659,8 +747,9 @@ def backlog_gaps(kb: Path, root: Path | None = None) -> list[str]:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("kb", type=Path)
-    ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", "stack", "infra", "schema-db",
-                                           "architecture", "interface", "interview", "cdc", "backlog"])
+    downstream = ("fondamentaux", "securite", "stack", "infra", "schema-db", "architecture", "menaces", "interface",
+                  "interview", "cdc", "backlog")
+    ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", *downstream])
     ap.add_argument("--root", type=Path)
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -670,7 +759,7 @@ def main(argv: list[str]) -> int:
     if os.environ.get("HOSA_ADOPTION") == "0":
         print("✓ contrôle de l'existant coupé (HOSA_ADOPTION=0)")
         return 0
-    if a.action in ("stack", "infra", "schema-db", "architecture", "interface", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
+    if a.action in downstream and not (a.kb / INVENTAIRE).is_file():
         print("✓ pas de code existant adopté")
         return 0
     checks = {"inventaire": lambda: inventaire_gaps(a.kb, root), "diagnostic": lambda: diagnostic_gaps(a.kb, root),
@@ -678,6 +767,9 @@ def main(argv: list[str]) -> int:
               "adoption": lambda: adoption_gaps(a.kb, root), "stack": lambda: stack_gaps(a.kb), "infra": lambda: infra_gaps(a.kb, root),
               "schema-db": lambda: schema_db_gaps(a.kb, root), "architecture": lambda: architecture_gaps(a.kb),
               "interface": lambda: ecrans_gaps(a.kb), "interview": lambda: interview_gaps(a.kb),
+              "fondamentaux": lambda: fondamentaux_gaps(a.kb),
+              "securite": lambda: faille_gaps(a.kb, SECU, "lien", "risque"),
+              "menaces": lambda: faille_gaps(a.kb, MENACES, "atténuation", "résiduel"),
               "cdc": lambda: cdc_gaps(a.kb), "backlog": lambda: backlog_gaps(a.kb, root)}
     gaps = checks[a.action]()
     for g in gaps:

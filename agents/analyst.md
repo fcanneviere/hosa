@@ -68,6 +68,10 @@ generated: { by: hosa-analyst/1.0, at: <ISO8601> }
 - <écran ou page> — route : `/commandes` — source : `templates/commandes/liste.html` — <rôles, ce qu'il montre>
 [ou « Aucune. » sans écran : une API, une ligne de commande]
 
+## Fondamentaux constatés
+- <fonction de base : comptes, rôles et droits, administration, journaux, sauvegarde, import/export, notifications, paramétrage> — source : `src/comptes/vues.py:12` — <ce qu'il fait, ce qui manque>
+[ou « Aucun. »]
+
 ## Tests constatés
 - <outil> — <nombre de tests lus> dans `tests/` — ce qu'ils couvrent — non lancés (pas d'environnement avant `infra`)
 [ou « Aucun. »]

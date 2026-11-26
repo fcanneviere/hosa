@@ -60,6 +60,7 @@ If the mode isn't clear, return an Open Question rather than guessing. You never
    - **Security `Exigence`s** — the constraints the product must meet, worded for the cahier des charges (e.g. "authentification forte pour le back office", "journal des événements de sécurité conservé 1 an", "chiffrement des pièces jointes au repos", "politique de mots de passe", "durée de session", "limitation des tentatives", "contrôle des fichiers téléversés", "sauvegardes chiffrées", "procédure de notification de violation de données").
    - **Project `Security Rule`s** — the development rules that follow from them, on top of the catalog below (e.g. "chaque route back-office vérifie le rôle côté serveur", "les identifiants exposés dans les URL ne sont jamais séquentiels").
    - **Additions to existing exigences** — a security constraint that belongs inside an existing process (e.g. "l'export est journalisé et limité aux rôles X").
+   **Adopted code** (`kb/existant/diagnostic.md`): each problem `Dn` of `source : sécurité` is a flaw of the system in production today. Propose for each, as the user's `Décision :` says it (never re-decided): `corriger` → the exigence or rule that fixes it; `accepter` or `plus tard` → the risk that stays.
    Return all of it under `## Analyse de sécurité`, plus `## Open Questions` for what you can't decide (data classification doubts, regulatory scope, risk acceptance). Write nothing yet.
 
 **Phase 2 — Write (once the skill relays the user's validated choices):**
@@ -85,7 +86,13 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 ## Menaces et mesures
 - <exigence ou zone> — <menace> — <mesure> : [exigence](<slug>.md) / [règle](../rules/security/<slug>.md)
 - <menace> — risque accepté par l'utilisateur : <raison>
+
+## Failles existantes
+- **D1** — <la faille du code existant> — corriger : [exigence](<slug>.md) / [règle](../rules/security/<slug>.md)
+- **D2** — <la faille> — accepter | plus tard — risque : <ce qui reste exposé, jusqu'à quand>
 ```
+
+`## Failles existantes` only for adopted code: one line per `Dn` of `source : sécurité`, its decision word as the user said it. `done securite` refuses a `Dn` left out, a decision changed, a fix with no link that exists, a risk not stated (`existant_check securite`).
 
 9. Log every file written.
 
@@ -124,9 +131,15 @@ generated: { by: hosa-security/1.0, at: <ISO8601> }
 ### <exigence>
 - Étant donné <contexte>, quand un attaquant <action>, alors <résultat attendu>
 
+## Failles existantes
+- **D1** — <frontière> — <S/T/R/I/D/E> — corriger — atténuation : <le contrôle, son module>
+- **D2** — <frontière> — <S/T/R/I/D/E> — plus tard — résiduel : <ce qui reste exposé, ce qui l'atténue en attendant>
+
 ## Règles non retenues
 - <règle du catalogue> — <pourquoi elle ne s'applique pas>
 ```
+
+   `## Failles existantes` only for adopted code: each `Dn` of `source : sécurité` placed on the real architecture, its boundary and its STRIDE letter, its decision as the user said it. Until its ticket ships, the flaw is live: a `corriger` one gets its abuse case too. `done menaces` refuses a `Dn` left out, a decision changed, a fix with no `atténuation :`, a flaw kept with no `résiduel :` (`existant_check menaces`).
 
 9. Return `## Documentation à produire`: one line per structuring security decision, `` `<path>` — <the heading that holds it> `` (`retours` §4), for every one that is hard to reverse, would surprise a future reader without context, and was a real trade-off (authentication strategy, session model, where personal data is stored and for how long) — the `securite` skill dispatches `hosa-documentation` to record each as an ADR. Anything that fails one of those three tests needs no ADR.
 
