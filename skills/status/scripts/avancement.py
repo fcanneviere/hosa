@@ -1517,7 +1517,35 @@ def ctl_verdict(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list
 def ctl_interface(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
     """`interface` 3c: the scaffold passes `interface_check`, `lexique_check` and `gabarit_check`. A missing `espace` is left out:
     the PO sets it (`back interface fondamentaux`), it never costs the designer a round."""
-    return [g for g in interface_gaps(kb) if ESPACE_GAP not in g] + verification_gaps(kb, t)
+    return [g for g in interface_gaps(kb) if ESPACE_GAP not in g] + verification_gaps(kb, t) + extra_env_gaps(kb)
+
+
+BASE_P = re.compile(r"-p\s+`?([a-z0-9][a-z0-9_-]*)")
+
+
+def extra_env_gaps(kb: Path, projects: list[dict] | None = None) -> list[str]:
+    """3c: no compose environment started from the root under another name than the base one is left running
+    (rieki: `rieki-ux`, started for screenshots on 2026-11-06, ran 18 days). The base name is the KB's `-p <name>`
+    in `kb/infra/`, else the folder's. Docker unreachable or `HOSA_DOCKER_CHECK=0` → no gap (fail-open)."""
+    if os.environ.get("HOSA_DOCKER_CHECK") == "0":
+        return []
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "docker_check", Path(__file__).resolve().parents[2] / "infra" / "scripts" / "docker_check.py")
+        dc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dc)
+        if projects is None:
+            projects = json.loads(dc.docker("compose", "ls", "-a", "--format", "json").strip() or "[]")
+        names = [m[1] for f in sorted((kb / "infra").glob("*.md")) for m in BASE_P.finditer(read(f))
+                 if "-sprint" not in m[1]]
+        base = max(set(names), key=names.count) if names else None
+        root = str(kb.parent.parent)
+        return [f"environnement `{o['nom']}` démarré depuis la racine hors plan, encore là — "
+                f"`docker compose -p {o['nom']} down -v --rmi local` avant le rapport"
+                for o in dc.orphans(projects, root, base=base) if not o["sur"]]
+    except Exception:  # Docker absent, a JSON unreadable: never block on the check's own error
+        return []
 
 
 @functools.cache

@@ -96,12 +96,13 @@ def folders(project: dict) -> list[str]:
 
 
 def orphans(projects: list[dict], root: str, images: list[dict] | None = None,
-            exists=lambda f: Path(f).exists()) -> list[dict]:
+            exists=lambda f: Path(f).exists(), base: str | None = None) -> list[dict]:
     """What a finished sprint left behind, as [{"quoi", "nom", "taille", "sur": bool, "cmd": [[docker args]…]}].
 
     `projects`: `docker compose ls -a --format json`; `images`: `docker image inspect` of the images carrying a
-    compose project label. `sur` = rebuilt by `up --build`, removed by `--clean`; else the user confirms first."""
-    base, wt = base_project(root), str(Path(root) / ".worktrees")
+    compose project label. `sur` = rebuilt by `up --build`, removed by `--clean`; else the user confirms first.
+    `base`: the base project's name when the KB names it (`-p courses` on hosa-pilote2), else the folder's."""
+    base, wt = base or base_project(root), str(Path(root) / ".worktrees")
     out, names = [], {p.get("Name") for p in projects}
     for p in projects:
         name, fs = p.get("Name"), folders(p)

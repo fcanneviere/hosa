@@ -1960,6 +1960,21 @@ class LoopsClosed(unittest.TestCase):
             (k / "interface" / "navigation.md").write_text(nav + line + "\n", encoding="utf-8")
             self.assertEqual([g.split(" — ")[0] for g in av.verification_gaps(k, t)], want, line)
 
+    def test_3c_refuses_an_extra_environment_left_running_from_the_root(self):
+        """rieki: `rieki-ux`, started from the root for screenshots, ran 18 days. The base name is the KB's `-p`."""
+        root = kb({".hosa/kb/infra/base-de-donnees.md": "`-p courses` pour la base, `-p courses-sprint-<slug>` "
+                   "pour un sprint\n- Migrer : `docker compose -p courses exec -T app migrate`\n"})
+        k, compose = root / ".hosa" / "kb", str(root / "docker-compose.yml")
+        base = {"Name": "courses", "ConfigFiles": compose}
+        ux = {"Name": "courses-ux", "ConfigFiles": compose}
+        gaps = av.extra_env_gaps(k, [base, ux])
+        self.assertEqual(len(gaps), 1)
+        self.assertIn("`courses-ux`", gaps[0])
+        self.assertIn("docker compose -p courses-ux down -v --rmi local", gaps[0])
+        self.assertEqual(av.extra_env_gaps(k, [base]), [])  # the base, named by the KB, not the folder, passes
+        with unittest.mock.patch.dict(os.environ, {"HOSA_DOCKER_CHECK": "0"}):
+            self.assertEqual(av.extra_env_gaps(k, [base, ux]), [])
+
     def test_the_espace_loop_names_its_exigences_and_fondamentaux_unsigns_them(self):
         ex = "---\ntype: Exigence\nstatus: stable\nverified: human:u\n---\n## Exigence\nx\n"
         k = kb({"cdc/e1.md": ex, "cdc/fondamentaux.md": "---\ntype: Revue Fondamentaux\n---\n## Bilan\nok\n"})
