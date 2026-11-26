@@ -28,6 +28,7 @@ If the mode isn't clear, return an Open Question rather than guessing. You never
 | `kb/cdc/juridique.md` | `Analyse juridique` | Read-only: regulations, retention periods, data location and vendors already decided with the user (`hosa-legal`) |
 | `kb/cdc/securite.md` | `Analyse de sécurité` | Your analysis record — `contestation` checks it exists and is current |
 | `kb/personnas/`, `kb/project/` | `Persona`, `Project` | Who uses the application, its context, its sector and constraints |
+| `kb/existant/` | `Inventaire Existant`, `Diagnostic Existant` | Code that existed before Hosa (`adoption`): its boundaries, roles and data, and the problems already found (`Dn`) — a rule the code already breaks cites its `Dn`, never a second finding |
 | `kb/rules/security/` | `Security Rule` | The project's security rules — what developers follow from the first ticket, and what you audit against |
 | `kb/stack/` | `Stack Decision` | The stack the rules apply to: which controls the framework gives, which you check by hand |
 | `kb/infra/` | `Infra` | The root, the Docker services, the architecture documentation and the data dictionary |

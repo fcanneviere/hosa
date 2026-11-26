@@ -44,6 +44,7 @@ state: todo
 depends_on: []          # tickets à livrer avant celui-ci — retiré si vide
 estimate: <1|2|3>       # 1 ≤ ½ jour, 2 ≈ 1 jour, 3 = 2-3 jours ; plus → découper
 mesure: M1              # seulement pour le ticket qui fait une mesure `[à mesurer M1 …]` du cahier des charges
+diagnostic: [D1]        # seulement pour le ticket qui corrige un problème du code existant (kb/existant/diagnostic.md)
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
 En tant que [persona],

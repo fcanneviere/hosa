@@ -29,6 +29,7 @@ domaine: "<domaine métier>"   # ex. « Listes et courses », « Foyer et compte
 priorite: indispensable   # important | souhaitable
 lot: 1
 objectifs: [O1]   # les objectifs de kb/project/identity.md que ce processus sert, ou [obligation]
+existant: [EX1]   # seulement si le code existant le fait déjà (kb/existant/inventaire.md) — retiré sinon
 status: draft
 generated: { by: hosa-product-owner/1.0, at: <ISO8601> }
 ---
@@ -81,6 +82,7 @@ flowchart TD
 **Frontmatter of the cahier des charges.** `cdc check` (`relecture`) counts a hole for each missing one:
 - `domaine` groups the processes of one business area in the map of the document; reuse an existing domain before creating one.
 - `priorite` and `lot` are the user's choices, gathered by `interview`: `indispensable` (without it the product fails its objectives), `important` (expected, can wait for a later lot), `souhaitable` (a plus). What the project will not do is a `## Non-objectifs` line, not a priority. Lot 1 is the first release that reaches the objectives. Missing in the notes → ask (one numbered question for all the exigences, a proposed table), never guess.
+- `existant` lists the processes `EX1`… of `kb/existant/inventaire.md` (code that existed before Hosa) this exigence takes over, as the compte rendu cites them. The exigence states the behaviour the project wants, not what the code does: a process `partiel` or `cassé`, or one the user changes in the interview, is written as wanted, and its gap is a problem `Dn` of `kb/existant/diagnostic.md`. `done redaction` refuses an `EXn` no exigence takes over, unless a compte rendu says it `abandonné`.
 - `objectifs` lists the `O1`… of `kb/project/identity.md` § Objectifs mesurables this process serves. A process that answers a persona need and serves none → ask: an objective is missing, or the process is out of scope. A process the law, security or the basics impose (`juridique`, `securite`, `rgpd`, `fondamentaux` tags) writes `objectifs: [obligation]` when it serves no business objective — never a question to the user; `cdc check` refuses `obligation` without one of those tags. Transverse exigences leave it out.
 - `nature` (`processus` | `nfr` | `contrainte`) only when the default is wrong: `tags: [nfr]` → nfr; `Aucun — exigence transverse.` with a `juridique`/`securite` tag → contrainte; otherwise processus. Ex. : a confirmation e-mail written by `securite` is still a process → `nature: processus`.
 

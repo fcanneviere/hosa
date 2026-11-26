@@ -30,6 +30,7 @@ You never talk to the user directly and never dispatch another agent — the ski
 | `kb/cdc/ia.md` | `Cadrage IA` | Read-only: each AI function, where it runs, what leaves the machine, the budget — its AI Act classification and the vendor's contract follow from it |
 | `kb/cdc/juridique.md` | `Analyse juridique` | Your analysis record — `securite` reads it, `contestation` checks it exists and is current |
 | `kb/personnas/`, `kb/project/` | `Persona`, `Project` | Who uses the application, its sector, its country, its business model (B2B, B2C, public sector) |
+| `kb/existant/` | `Inventaire Existant`, `Diagnostic Existant` | Code that existed before Hosa (`adoption`): the personal data it already processes (`## Données constatées`), its cookies, trackers and vendors — a constraint the code already breaks is said, with its `Dn` |
 | `kb/tickets/`, `kb/test/` | `Ticket`, `Test Plan` | Mode 3: you write each ticket's `## Note juridique (expert conformité)` and append its legal criteria. Mode 2, read-only: whether each legal constraint was delivered and its acceptance criterion passed |
 | `kb/infra/` | `Infra` | Read-only (Mode 2): the managed project's root, the previous release |
 | `kb/juridique/` | `Porte Juridique` | Where you write each release gate |

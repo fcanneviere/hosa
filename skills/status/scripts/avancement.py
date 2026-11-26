@@ -39,7 +39,7 @@ the work stopped, in the right order.
 or `--rouvre` on the user's request — and while an earlier stage of the same pipeline isn't
 done or skipped (`sprint`: every upstream stage) — `--force` only once the user has confirmed going out of
 order. `done` refuses (exit 1) while `check` finds a gap — same `--force`
-rule. `back` follows a loop of pipeline.json: it reopens <to> (and the
+rule. `skip adoption` refuses (exit 1) while the identity's `## Point de départ` says `Existant` — same rule. `back` follows a loop of pipeline.json: it reopens <to> (and the
 stages the loop re-runs after it) and <from>, and counts the round under
 `## Boucles`; past the loop's `max` rounds it refuses (exit 1) — `--force`
 once the user chose to go on. Each `--cause` has its own count, kept while another one comes between;
@@ -111,7 +111,8 @@ CLOSED = {DONE, SKIPPED}
 # a sprint begun before the `audit` stage existed had its audit inside `validation`
 AFTER_AUDIT = {"validation", "git-fusion", "bilan-sprint", "livraison"}
 # stages added to the graph after projects had begun: absent from a plan whose later stage has begun, they never block it
-ADDED = ("cadrage-ia", "essai-ia")
+ADDED = ("adoption", "cadrage-ia", "essai-ia")
+EXISTANT = "adoption/scripts/existant_check.py"
 ROW = re.compile(r"^\|\s*`?([\w-]+)`?\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
 
 
@@ -830,6 +831,13 @@ def ai_replay(kb: Path, sprint_text: str) -> list[str]:
     return script("ia/scripts/ia_check.py", kb, "rejeu", "--root", root)
 
 
+def existing(kb: Path) -> bool:
+    """The identity's `## Point de départ` says `Existant`: the project's code came before Hosa (`adoption`)."""
+    lines = [x.strip() for x in (section(read(kb / "project" / "identity.md"), "Point de départ") or "").splitlines()
+             if x.strip()]
+    return bool(lines) and lines[0].lower().startswith("existant")
+
+
 def upstream_check(kb: Path, stage: str) -> list[str]:
     """What the KB lacks to prove a stage of the cahier des charges or the structuration done:
     the files each stage's skill writes, and the checkers its skill must pass."""
@@ -847,6 +855,9 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         thin = [p.stem for p, t in personas if not re.search(r"^-\s+\S", section(t, "Besoins") or "", re.M)]
         if thin:
             gaps.append(f"persona(s) sans `## Besoins` (`hosa-key-user`, identification) : {', '.join(thin)}")
+    elif stage == "adoption":
+        gaps += script(EXISTANT, kb, "adoption")
+        gaps += undated(kb, stage, "existant/diagnostic.md", "Révisions", "- <AAAA-MM-JJTHH:MMZ> — <ce qui change>")
     elif stage == "interview":
         drafts = [p.stem for p, t in concepts(kb, "cdc/interviews", "Compte Rendu") if field(front(t), "status") == "draft"]
         if not concepts(kb, "cdc/interviews", "Compte Rendu"):
@@ -855,6 +866,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
             gaps.append(f"compte(s) rendu(s) encore `draft` (processus restant à recueillir) : {', '.join(drafts)}")
         # a loop back to `interview` is done once each gap it was sent has its answer and goes on to `redaction`
         gaps += script("redaction/scripts/cdc.py", "revue", kb, "--route", "interview")
+        gaps += script(EXISTANT, kb, "interview")  # each process the existing code does, gathered or dropped
     elif stage == "redaction":
         if not exigences:
             gaps.append("aucune `Exigence` dans `kb/cdc/`")
@@ -862,6 +874,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps += script("redaction/scripts/cdc.py", "revue", kb, "--route", "redaction")
         # each process drawn, and the diagram validated by the user as it is (`cdc valide`)
         gaps += script("redaction/scripts/cdc.py", "schemas", kb)
+        gaps += script(EXISTANT, kb, "cdc")  # each process the existing code does, in an exigence or dropped
     elif stage == "fondamentaux":
         gaps.append(concept(kb, "cdc/fondamentaux.md", "Revue Fondamentaux", "Bilan"))
         gaps += espace_gaps(kb, exigences)
@@ -940,6 +953,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
             gaps += roadmap_objective(kb)
         # the rules × criteria matrix: a rule no ticket took is in no ticket the judge reads
         gaps += script("backlog/scripts/ticket_check.py", kb, "--regles")
+        gaps += script(EXISTANT, kb, "backlog")  # each problem of the existing code the user said to fix, ticketed
         # one behaviour, one ticket: a criterion restated by two tickets of one exigence (HOSA_REPETES=0 skips it)
         if os.environ.get("HOSA_REPETES") != "0":
             gaps += script("backlog/scripts/ticket_check.py", kb, "--repetes")
@@ -2153,7 +2167,22 @@ def ctl_besoins_ia(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> l
     return script_lines("ia/scripts/ia_check.py", kb, "besoins")
 
 
-CONTROLS = {"spec-ia": ctl_spec_ia, "besoins-ia": ctl_besoins_ia, "sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
+def ctl_inventaire(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`adoption` `inventaire`: the existing code read, each process with its code, roles and state."""
+    return script_lines(EXISTANT, kb, "inventaire")
+
+
+def ctl_diagnostic(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`adoption` `diagnostic`: each strength and problem citing its code and its audit, each problem proposed."""
+    return script_lines(EXISTANT, kb, "diagnostic")
+
+
+def ctl_documentation(kb: Path, files: list[tuple[str, Path | None]], t: dict) -> list[str]:
+    """`adoption` `documentation`: each existing document rebuilt at its target, its register entry citing it."""
+    return script_lines(EXISTANT, kb, "documentation")
+
+
+CONTROLS = {"inventaire": ctl_inventaire, "documentation": ctl_documentation, "diagnostic": ctl_diagnostic, "spec-ia": ctl_spec_ia, "besoins-ia": ctl_besoins_ia, "sortie": ctl_sortie, "okf": ctl_okf, "verdict": ctl_verdict, "lot": ctl_lot, "juge": ctl_juge,
             "interface": ctl_interface, "grille": ctl_grille, "score": ctl_score, "choix": ctl_choix,
             "rechargement": ctl_rechargement, "couverture": ctl_couverture, "tests-ecrits": ctl_tests_ecrits,
             "cout-tests": ctl_cout_tests, "cas-utiles": ctl_cas_utiles}
@@ -2425,6 +2454,12 @@ def init(kb: Path) -> tuple[dict, list[str]]:
 
     def walk(title, rows, sprint=None) -> bool:
         for r in rows:
+            # a new project has no existing code to adopt; one past the interview began before the stage
+            if r[0] == "adoption" and not (kb / "existant").is_dir() and (
+                    not existing(kb) or concepts(kb, "cdc/interviews", "Compte Rendu")):
+                r[1:] = [SKIPPED, now(), "repris de la KB (`init`) : " + ("étape ajoutée après coup" if existing(kb)
+                                                                           else "projet neuf")]
+                continue
             # a project that already chose its stack began before the AI stages: never stopped on them
             if r[0] in ADDED and not (kb / "cdc" / "ia.md").is_file() and concepts(kb, "stack", "Stack Decision"):
                 r[1:] = [SKIPPED, now(), "repris de la KB (`init`) : étape ajoutée après coup"]
@@ -2750,6 +2785,11 @@ def run(argv: list[str]) -> int:
         row[1:] = [BLOCKED, now(), a.detail.strip().splitlines()[0]]
         resume = f"- Bloqué : {where} — {a.detail.strip()}"
     elif a.action == "skip":
+        if a.stage == "adoption" and existing(a.kb) and not a.force:  # the code exists: it is read before the interview
+            print(f"✗ {where} ne peut pas être écartée : `## Point de départ` de `kb/project/identity.md` dit "
+                  "`Existant`. Le code existant est lu et jugé avant l'interview (`adoption`). Projet neuf en fait → "
+                  "corrige `## Point de départ` (`hosa`, mise à jour), ou --force sur la parole de l'utilisateur.")
+            return 1
         row[1:] = [SKIPPED, now(), a.detail]
         scope = a.sprint if a.stage in SPRINT else ""
         tasks = [t for t in tasks if (t["stage"], t["scope"]) != (a.stage, scope)]  # no stage left to do them

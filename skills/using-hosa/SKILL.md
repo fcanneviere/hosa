@@ -9,7 +9,7 @@ Skills to understand, build, test, review and debug any code, and Hosa's pipelin
 
 ## Pipelines
 
-1. **Cahier des charges:** `hosa` → `interview` → `redaction` → `fondamentaux` → `ia` (AI framing) → `juridique` → `securite` → `relecture` → `contestation`.
+1. **Cahier des charges:** `hosa` → `adoption` (existing code only) → `interview` → `redaction` → `fondamentaux` → `ia` (AI framing) → `juridique` → `securite` → `relecture` → `contestation`.
 2. **Structuration:** `stack` → `infra` → `ia` (AI trial) → `donnees` → `schema-app` → `schema-db` → `architecture` → `securite` (threat model) → `interface` → `backlog`.
 3. **Each sprint:** `sprint` → `qa-plan` → `git` (start) → `develop` → `qualite` (sprint audit) → `qa` → `validation` (demo) → `git` (merge) → `bilan-sprint` → `livraison`. A defect from `qa`, the demo or a review: `develop <ticket> correction`.
 

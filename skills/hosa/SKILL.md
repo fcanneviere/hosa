@@ -91,7 +91,7 @@ Ask one question at a time, in order, waiting for an answer before moving on. Th
 10. Non-objectifs (ce que ce projet ne cherche pas à faire — pour cadrer le périmètre)
 11. Contraintes (techniques, réglementaires, business — "aucune" accepté)
 12. Hypothèses, dépendances et risques (ce qu'on tient pour vrai, ce dont le projet dépend, ce qui peut le faire échouer — "aucun" accepté)
-13. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté
+13. Point de départ : projet neuf, ou code existant ? Si existant : ce qui doit être conservé tel quel (stack, conventions, modules) — "rien de particulier" accepté. Propose `Existant` when the project's root already holds source files (`git -C <root> ls-files`, outside `.hosa/`): `adoption` then reads and judges that code before the interview
 14. Échéances, budget et décideur (date de livraison visée, jalons, enveloppe — "aucun" accepté ; et qui signe le cahier des charges et arbitre le périmètre : toi, ou une autre personne — un client, un sponsor — à nommer avec son rôle)
 15. Langue : de la documentation, et du code (identifiants, commentaires) — "français / anglais" par exemple
 
@@ -172,7 +172,7 @@ petit | standard
 exploratoire | réel
 ```
 
-`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. Exigences cite objectives by their `Id` (`objectifs: [O1]`): keep the ids stable, a new objective takes the next number. `## Contexte et enjeux`, `## Objectifs mesurables` and `## Hypothèses, dépendances et risques` open the readable cahier des charges (`cdc assemble`, § 1, 2, 9, 10). `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. `hosa-security` reads `## Usage` when it writes a ticket's security note: `exploratoire` defers the abuse cases of inputs the user controls (`— différé : usage exploratoire`), absent means `réel`. `backlog` and `sprint` make the first milestone the shortest path to an objective of `## Objectifs mesurables` (`feuille --mesure On`). Every skill reads `## Niveau de l'utilisateur` before asking a technical question (`using-hosa`, "Fit the user and the project").
+`contestation` later checks every `Exigence` against `## Objectifs mesurables` — an Exigence that serves none of them is a candidate for the "hors périmètre" route, cross-checked against `## Non-objectifs`. Exigences cite objectives by their `Id` (`objectifs: [O1]`): keep the ids stable, a new objective takes the next number. `## Contexte et enjeux`, `## Objectifs mesurables` and `## Hypothèses, dépendances et risques` open the readable cahier des charges (`cdc assemble`, § 1, 2, 9, 10). `## Point de départ` decides the next stage: `Existant` → `adoption` reads the code first; `hosa-senior-dev` reads `## Point de départ` and `## Échéances et budget` when proposing a stack; `hosa-documentation` writes in the `## Langue` documentation language. `hosa-security` reads `## Usage` when it writes a ticket's security note: `exploratoire` defers the abuse cases of inputs the user controls (`— différé : usage exploratoire`), absent means `réel`. `backlog` and `sprint` make the first milestone the shortest path to an objective of `## Objectifs mesurables` (`feuille --mesure On`). Every skill reads `## Niveau de l'utilisateur` before asking a technical question (`using-hosa`, "Fit the user and the project").
 
 ### Writing personas
 
@@ -206,8 +206,10 @@ A persona is ready when its `## Besoins` holds at least one need, in the
 user's words or confirmed by them: `interview` asks from it, and the coverage
 table of `relecture` proves the cahier des charges against it.
 
-Once every persona in this session has been enriched, chain to `interview`
-without asking ("Personas prêts. Je lance l'interview du cahier des charges.").
+Once every persona in this session has been enriched, chain without asking:
+`## Point de départ` says `Existant` → `adoption` ("Personas prêts. Je lis le
+code existant."); `Neuf` → `avancement.py skip adoption --detail "projet neuf"`,
+then `interview` ("Personas prêts. Je lance l'interview du cahier des charges.").
 If zero personas exist, don't chain: say that `interview` needs at least one
 persona, and ask whether to create one now.
 
@@ -215,7 +217,7 @@ persona, and ask whether to create one now.
 
 Append an entry to `kb/project/log.md` and `kb/personnas/log.md` (create if missing) — OKF §9 format: chronological, most recent date first, grouped by date.
 
-Then dispatch `hosa-git` with `model: haiku` (Mode 3, checkpoint) to commit the initial KB on `hosa-kb` — the identity, the brief if any, the personas — before chaining to `interview`.
+Then dispatch `hosa-git` with `model: haiku` (Mode 3, checkpoint) to commit the initial KB on `hosa-kb` — the identity, the brief if any, the personas — before chaining to `adoption` or `interview`.
 
 ---
 

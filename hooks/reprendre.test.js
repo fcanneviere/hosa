@@ -47,6 +47,7 @@ test('reads the card from the real plan script', () => {
   fs.writeFileSync(path.join(cwd, '.hosa', 'kb', 'project', 'avancement.md'), [
     '---', 'type: Plan d\'avancement', '---', '## Point de reprise', '- Rien en cours.', '',
     '## Cahier des charges', '| Étape | Statut | Mis à jour | Détail |', '|---|---|---|---|', '| `hosa` | fait | 2026-11-01T00:00:00Z |  |',
+    '| `adoption` | non applicable | 2026-11-01T00:00:00Z | projet neuf |',
   ].join('\n'));
   const out = processPayload({ prompt: 'reprends', cwd });
   if (!out) return; // no Python on this machine: fail-open is the contract

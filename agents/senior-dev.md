@@ -24,6 +24,7 @@ You never talk to the user and never dispatch an agent; the skill relays your qu
 |---|---|
 | `kb/cdc/` | what the application must do — the basis of every trade-off |
 | `kb/project/` | `## Point de départ` (existing code to keep — a fixed decision) and `## Échéances et budget` (weigh cost and ramp-up) |
+| `kb/existant/` | Code that existed before Hosa (`adoption`): `inventaire.md` `## Stack constatée` (the stack in place: an option that replaces it says what migrating costs) and `diagnostic.md` (`## Points forts` to keep, the problems decided `corriger`) |
 | `kb/rules/security/` | read-only: hard constraints on the stack |
 | `kb/infra/` | the root |
 | `kb/stack/` | each stack choice you write |
