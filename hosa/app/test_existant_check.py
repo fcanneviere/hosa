@@ -290,6 +290,55 @@ class Backlog(unittest.TestCase):
         self.assertEqual(av.script(av.EXISTANT, kb, "interview"), [])
 
 
+def reprise(kb: Path, *rows: str) -> None:
+    (kb / "stack").mkdir(exist_ok=True)
+    (kb / "stack" / "existant.md").write_text("---\ntype: Stack Decision\n---\n## Stack reprise\n"
+                                             + "".join(f"- {r}\n" for r in rows), encoding="utf-8")
+
+
+class Stack(unittest.TestCase):
+    """The stack in place is kept, or replaced for a reason the user decided, at a stated cost."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED)
+
+    def gaps(self):
+        return "\n".join(ex.stack_gaps(self.kb))
+
+    def test_each_element_found_must_be_taken_over(self):
+        self.assertIn("pas de `kb/stack/existant.md`", self.gaps())
+        reprise(self.kb, "Python 3.12 — source : `src/commandes.py:1` — conservé")
+        self.assertIn("« Django 5.1 » (`requirements.txt:1`) absent de `## Stack reprise`", self.gaps())
+
+    def test_kept_passes(self):
+        reprise(self.kb, "Django 5.1 — source : `requirements.txt:1` — conservé")
+        self.assertEqual(ex.stack_gaps(self.kb), [])
+
+    def test_a_replacement_needs_a_decided_reason_and_its_migration_cost(self):
+        reprise(self.kb, "Django 5.1 — source : `requirements.txt:1` — remplacé par FastAPI — raison : plus moderne")
+        gaps = self.gaps()
+        self.assertIn("remplacé sans `raison :`", gaps)
+        self.assertIn("remplacé sans `migration :`", gaps)
+        reprise(self.kb, "Django 5.1 — source : `requirements.txt:1` — remplacé par FastAPI — raison : D2 — "
+                         "migration : 12 vues")
+        self.assertIn("remplacé sans `raison :`", self.gaps())  # D2 is decided `plus tard`, not `corriger`
+        reprise(self.kb, "Django 5.1 — source : `requirements.txt:1` — remplacé par FastAPI — raison : D1 — "
+                         "migration : 12 vues")
+        self.assertEqual(ex.stack_gaps(self.kb), [])
+
+    def test_a_replacement_for_an_exigence_passes(self):
+        (self.kb / "cdc").mkdir(exist_ok=True)
+        (self.kb / "cdc" / "temps-reel.md").write_text("---\ntype: Exigence\n---\n", encoding="utf-8")
+        reprise(self.kb, "Django 5.1 — source : `requirements.txt:1` — remplacé par Channels — raison : "
+                         "[temps réel](../cdc/temps-reel.md) — migration : 3 vues")
+        self.assertEqual(ex.stack_gaps(self.kb), [])
+
+    def test_done_stack_reads_it_and_a_new_project_has_nothing_to_keep(self):
+        self.assertIn("existant_check", "\n".join(av.check(self.kb, "stack", None)))
+        kb = project(inventaire=None, diagnostic=None, depart="Neuf")
+        self.assertNotIn("existant_check", "\n".join(av.check(kb, "stack", None)))
+
+
 class Plan(unittest.TestCase):
     def test_done_adoption_reads_the_proofs(self):
         kb = project()

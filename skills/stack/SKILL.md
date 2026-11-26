@@ -37,6 +37,8 @@ Enchaîne sur `infra`
 
 Manual: `/stack`. Auto: immediately after a clean `contestation` sign-off, or "choisis la stack technique", "quelle stack pour le projet".
 
+Code adopted (`kb/existant/inventaire.md` exists): the stack in place is kept by default. `hosa-senior-dev` proposes a replacement only for a problem the user decided to fix or an exigence the stack cannot meet, with its migration cost; the user decides. It records each element found, kept or replaced, in `kb/stack/existant.md` `## Stack reprise` (`<hosa> existant_check .hosa/kb stack`, read by `done stack`).
+
 Reopened by a loop (`back develop stack`, `back schema-db stack`): skip Step 1, dispatch `hosa-senior-dev` with the loop's detail only (the capability missing from `kb/stack/bibliotheques.md`, or the database limit). It proposes for that item alone; the user picks; it writes that line or that decision; then `infra` installs it.
 
 ---

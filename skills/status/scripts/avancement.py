@@ -907,6 +907,7 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
                         "<outil, ou testeur de page + point d'entrée du service>`, ou « Sans objet : … »)")
         if concepts(kb, "stack", "Stack Decision"):
             gaps += library_gaps(kb)
+        gaps += script(EXISTANT, kb, "stack")  # the stack the existing code uses, each element kept or replaced
     elif stage == "infra":
         gaps.append(infra_with(kb, "Outillage qualité"))
         gaps += infra_exit(kb)
