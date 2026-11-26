@@ -35,7 +35,7 @@ Manual: `/architecture`. Auto: immediately after `schema-db`, or "crée l'archit
 
 ## Step 1: Dispatch for Design and Scaffold
 
-Dispatch `hosa-architect` (`agents/architect.md`) to gather the inputs (`Infra` entry, `stable` `Exigence`s, `Stack Decision`s, data dictionary + migrations), read existing conventions, design the architecture — layers, modules, boundaries, and the observability baseline (correlation-id propagation, structured logging convention, alertable failure symptoms) — and scaffold it for real in the managed project.
+Dispatch `hosa-architect` (`agents/architect.md`) to gather the inputs (`Infra` entry, `stable` `Exigence`s, `Stack Decision`s, data dictionary + migrations), read existing conventions, design the architecture — layers, modules, boundaries, and the observability baseline (correlation-id propagation, structured logging convention, alertable failure symptoms) — and scaffold it for real in the managed project. Adopted code (`kb/existant/inventaire.md`): it starts from the architecture in place, and `kb/infra/architecture-existante.md` `## Architecture reprise` says for each layer or module `conservé`, `étendu` (what it adds) or `remplacé par <x>` (a `Dn` decided `corriger` or an exigence, what moves). `done architecture` refuses a layer left out or a replacement without a decided reason (`existant_check architecture`).
 
 If it returns an Open Question (no `Infra` entry, missing CDC/stack/data structures) — relay it to the user, propose running the missing stage (`stack`, `schema-app`, `schema-db`), and only redispatch once resolved. Never guess a path or a design decision yourself.
 

@@ -55,6 +55,7 @@ For the back office and dashboards, read `${CLAUDE_PLUGIN_ROOT}/skills/interface
    - Build the front office around the user's journey, the back office around operating efficiency (dense tables, filters, bulk actions, history, logs).
    - `## Gestion back office`: one row per object of `kb/cdc/modele-metier.md` — its list, record and history screens and its actions, following its life cycle and rights.
    - `## Tableaux de bord`: one row per indicator `INn` of the `stable` exigences — the screen that shows it and the detail screen of the records behind it.
+   - **Adopted code** (`kb/existant/inventaire.md`): `## Écrans repris`, one line per screen of `## Interface constatée`, matched by its source path — `conservé` (same route and functions; it may take the new identity), `remplacé par <écran>` (a screen of `## Écrans` that does what it did), or `supprimé — raison : <un \`Dn\` décidé \`corriger\`, ou le lien d'une exigence>`. Its users rely on it: never drop a screen for looks. Keep its route, or name the redirect. `done interface` refuses a screen left out (`existant_check interface`).
 8. **Lexicon** → `kb/interface/lexique.md` (format below). One thing keeps **one name everywhere** — menus, titles, breadcrumbs, buttons, messages, notifications, emails, exports. Every screen is a term. `## Dossiers analysés` lists where the interface's text lives.
 9. **Apply the UX fundamentals** (below) to the shell and every screen — each one done, or not applicable with a reason.
 **3b**, step 10:
@@ -150,6 +151,12 @@ generated: { by: hosa-ux-designer/1.0, at: <ISO8601> }
 |---|---|---|---|---|---|
 | Accueil | `/` | client | [exigence](../cdc/<slug>.md) | connexion | front-office |
 | Utilisateurs | `/admin/utilisateurs` | administrateur | [gestion des utilisateurs](../cdc/<slug>.md) | menu Administration | back-office |
+
+## Écrans repris
+- Liste des commandes — source : `templates/commandes/liste.html` — conservé
+- Export — source : `templates/export.html` — remplacé par Commandes
+- Ancien tableau — source : `templates/stats.html` — supprimé — raison : D4
+[code adopté seulement]
 
 ## Navigation
 ### Front office

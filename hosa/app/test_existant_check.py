@@ -36,6 +36,8 @@ type: Inventaire Existant
 - commande — `src/commandes.py:2`
 ## Architecture constatée
 - vues et modèles dans `src/`
+## Interface constatée
+- Liste des commandes — source : `src/gabarits/liste.html` — client
 ## Tests constatés
 Aucun.
 ## Révisions
@@ -102,11 +104,11 @@ class Inventaire(unittest.TestCase):
     def test_a_wrong_path_a_line_past_the_end_and_a_state_without_its_gap_are_refused(self):
         bad = INVENTAIRE.replace("`src/export.py`", "`src/absent.py`").replace("commandes.py:3", "commandes.py:9") \
             .replace("partiel — pas de filtre par date", "partiel").replace(" — persona : aucun", "") \
-            .replace(" — source : `requirements.txt:1`", "")
+            .replace(" — source : `requirements.txt:1`", "").replace("source : `src/gabarits/liste.html`", "`x`")
         kb = project(inventaire=bad)
         gaps = "\n".join(ex.inventaire_gaps(kb, root(kb)))
         for word in ("`src/absent.py` absent", "`src/commandes.py:9` au-delà", "`État : partiel` sans",
-                     "sans `persona :`", "sans `source :"):
+                     "sans `persona :`", "sans `source :", "`## Interface constatée` :"):
             self.assertIn(word, gaps)
 
     def test_an_empty_section_and_no_process_are_refused(self):
@@ -460,6 +462,102 @@ class SchemaDb(unittest.TestCase):
                      "raison :"):
             self.assertIn(word, agent)
         self.assertIn("Données reprises", (ROOT / "agents" / "dba.md").read_text(encoding="utf-8"))
+
+
+def archi(kb: Path, *rows: str) -> None:
+    (kb / "infra").mkdir(exist_ok=True)
+    (kb / "infra" / "architecture-existante.md").write_text(
+        "---\ntype: Infra\n---\n## Architecture reprise\n" + "".join(f"- {r}\n" for r in rows), encoding="utf-8")
+
+
+class Architecture(unittest.TestCase):
+    """The architecture in place is kept, extended, or replaced for a decided reason with what moves."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED)
+
+    def gaps(self):
+        return "\n".join(ex.architecture_gaps(self.kb))
+
+    def test_each_layer_found_must_be_taken_over(self):
+        self.assertIn("sans `## Architecture reprise`", self.gaps())
+        archi(self.kb, "export — `src/export.py` — conservé")
+        self.assertIn("« vues et modèles dans `src/` » (`src/`) absent", self.gaps())
+        archi(self.kb, "vues et modèles — `src/` — gardé")
+        self.assertIn("ni `conservé`", self.gaps())
+        archi(self.kb, "vues et modèles — `src/` — étendu")
+        self.assertIn("étendu sans ce qui s'ajoute", self.gaps())
+        archi(self.kb, "vues et modèles — `src/` — étendu — `src/services/` pour la règle du total")
+        self.assertEqual(ex.architecture_gaps(self.kb), [])
+
+    def test_a_replacement_needs_a_decided_reason_and_what_moves(self):
+        archi(self.kb, "vues et modèles — `src/` — remplacé par une architecture hexagonale — raison : plus propre")
+        gaps = self.gaps()
+        self.assertIn("remplacé sans `raison :`", gaps)
+        self.assertIn("remplacé sans `migration :`", gaps)
+        archi(self.kb, "vues et modèles — `src/` — remplacé par des services — raison : D1 — migration : 4 vues")
+        self.assertEqual(ex.architecture_gaps(self.kb), [])
+
+    def test_done_architecture_reads_it_and_a_new_project_has_nothing_to_keep(self):
+        self.assertIn("Architecture reprise", "\n".join(av.check(self.kb, "architecture", None)))
+        new = project(inventaire=None, diagnostic=None, depart="Neuf")
+        self.assertNotIn("Architecture reprise", "\n".join(av.check(new, "architecture", None)))
+        agent = (ROOT / "agents" / "architect.md").read_text(encoding="utf-8")
+        for word in ("architecture-existante.md", "## Architecture reprise", "conservé", "étendu", "remplacé par",
+                     "raison :", "migration :"):
+            self.assertIn(word, agent)
+
+
+NAV = "---\ntype: Plan de navigation\n---\n## Écrans\n| Écran | Route |\n|---|---|\n| Commandes | `/commandes` |\n" \
+      "## Écrans repris\n"
+
+
+def ecrans(kb: Path, *rows: str) -> None:
+    (kb / "interface").mkdir(exist_ok=True)
+    (kb / "interface" / "navigation.md").write_text(NAV + "".join(f"- {r}\n" for r in rows), encoding="utf-8")
+
+
+class Interface(unittest.TestCase):
+    """No screen the users already have disappears: kept, replaced by a screen of the navigation, or dropped for a
+    decided reason."""
+
+    def setUp(self):
+        self.kb = project(diagnostic=DECIDED)
+
+    def gaps(self):
+        return "\n".join(ex.ecrans_gaps(self.kb))
+
+    def test_each_screen_found_must_be_taken_over(self):
+        self.assertIn("sans `## Écrans repris`", self.gaps())
+        ecrans(self.kb, "Export — source : `src/export.py` — conservé")
+        self.assertIn("« Liste des commandes » (`src/gabarits/liste.html`) absent", self.gaps())
+        ecrans(self.kb, "Liste des commandes — source : `src/gabarits/liste.html` — refait")
+        self.assertIn("ni `conservé`", self.gaps())
+        ecrans(self.kb, "Liste des commandes — source : `src/gabarits/liste.html` — conservé")
+        self.assertEqual(ex.ecrans_gaps(self.kb), [])
+
+    def test_a_replacement_names_a_screen_of_the_navigation(self):
+        ecrans(self.kb, "Liste des commandes — source : `src/gabarits/liste.html` — remplacé par Tableau de bord")
+        self.assertIn("absent du tableau `## Écrans`", self.gaps())
+        ecrans(self.kb, "Liste des commandes — source : `src/gabarits/liste.html` — remplacé par Commandes")
+        self.assertEqual(ex.ecrans_gaps(self.kb), [])
+
+    def test_a_drop_needs_a_decided_reason(self):
+        ecrans(self.kb, "Liste des commandes — source : `src/gabarits/liste.html` — supprimé — raison : D2")
+        self.assertIn("supprimé sans `raison :`", self.gaps())  # D2 is decided `plus tard`
+        ecrans(self.kb, "Liste des commandes — source : `src/gabarits/liste.html` — supprimé — raison : D1")
+        self.assertEqual(ex.ecrans_gaps(self.kb), [])
+
+    def test_done_interface_reads_it_and_an_api_has_no_screen_to_keep(self):
+        self.assertIn("Écrans repris", "\n".join(av.check(self.kb, "interface", None)))
+        api = project(inventaire=INVENTAIRE.replace(
+            "- Liste des commandes — source : `src/gabarits/liste.html` — client\n", "Aucune.\n"))
+        self.assertEqual(ex.ecrans_gaps(api), [])
+        self.assertEqual(ex.inventaire_gaps(api, root(api)), [])
+        agent = (ROOT / "agents" / "ux-designer.md").read_text(encoding="utf-8")
+        for word in ("## Écrans repris", "conservé", "remplacé par", "supprimé", "raison :"):
+            self.assertIn(word, agent)
+        self.assertIn("## Interface constatée", (ROOT / "agents" / "analyst.md").read_text(encoding="utf-8"))
 
 
 class Plan(unittest.TestCase):

@@ -64,6 +64,10 @@ generated: { by: hosa-analyst/1.0, at: <ISO8601> }
 ## Architecture constatée
 - <couche ou module> — `src/…` — <son rôle, ce qu'il appelle>
 
+## Interface constatée
+- <écran ou page> — route : `/commandes` — source : `templates/commandes/liste.html` — <rôles, ce qu'il montre>
+[ou « Aucune. » sans écran : une API, une ligne de commande]
+
 ## Tests constatés
 - <outil> — <nombre de tests lus> dans `tests/` — ce qu'ils couvrent — non lancés (pas d'environnement avant `infra`)
 [ou « Aucun. »]

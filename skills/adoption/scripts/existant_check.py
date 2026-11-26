@@ -32,6 +32,13 @@ does is lost on the way to the cahier des charges and the backlog.
                                       with its new `migration :` file (it exists) and its `reprise :` (what the rows
                                       already stored become); `supprimée` with its `raison :` (a `Dn` decided
                                       `corriger`, an exigence's link) and its `reprise :`
+  existant_check.py <kb> architecture each line of `## Architecture constatée` is taken over in `kb/infra/architecture-
+                                      existante.md` (`type: Infra`) `## Architecture reprise`, by its path:
+                                      `conservé`, `étendu — <ce qui s'ajoute>`, or `remplacé par <x>` with its
+                                      `raison :` (a `Dn` decided `corriger`, an exigence's link) and its `migration :`
+  existant_check.py <kb> interface    each screen of `## Interface constatée` is taken over in `kb/interface/
+                                      navigation.md` `## Écrans repris`, by its source path: `conservé`; `remplacé
+                                      par <écran>` (a screen of `## Écrans`); `supprimé` with its `raison :`
   existant_check.py <kb> interview    each `EXn` is cited by a compte rendu of `kb/cdc/interviews/`
   existant_check.py <kb> cdc          each `EXn` is cited by an exigence's `existant:` field, unless a compte
                                       rendu marks it `abandonné`
@@ -42,7 +49,7 @@ does is lost on the way to the cahier des charges and the backlog.
                                       exists); each partiel or cassé one a `todo` ticket for what is missing; a
                                       `todo` ticket citing an `EXn` says what it changes (`## Écart à l'existant`)
 
-No `kb/existant/inventaire.md` → `stack`, `infra`, `schema-db`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
+No `kb/existant/inventaire.md` → `stack`, `infra`, `schema-db`, `architecture`, `interface`, `interview`, `cdc` and `backlog` have nothing to check (a new project).
 The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
 
   - **EX1** — <ce que le logiciel fait, en mots de métier>
@@ -63,6 +70,10 @@ The project's root is the KB's (`<root>/.hosa/kb`), or `--root`.
   - client — source : `src/modeles.py:40` — modifiée — migration : `migrations/0007_client_email.py` — reprise : <ce
     que deviennent les lignes déjà stockées>
   - panier — source : `src/modeles.py:60` — supprimée — raison : D5 — reprise : <archivées, exportées>
+  - vues — `src/vues/` — étendu — <ce qui s'ajoute>
+  - accès aux données — `src/dao/` — remplacé par l'ORM — raison : D3 — migration : <ce qui bouge, son coût>
+  - Liste des commandes — source : `templates/commandes/liste.html` — conservé
+  - Export CSV — source : `templates/export.html` — supprimé — raison : D6
 
 HOSA_ADOPTION=0 turns the checks off. Exit: 0 complete, 1 gaps (`✗` lines), 2 bad invocation. Stdlib only.
 """
@@ -77,8 +88,9 @@ from pathlib import Path
 INVENTAIRE, DIAGNOSTIC, STACK = "existant/inventaire.md", "existant/diagnostic.md", "stack/existant.md"
 INFRA = "infra/environnement-docker.md"
 SCHEMA = "infra/schema-base-de-donnees.md"
+ARCHI, NAVIGATION = "infra/architecture-existante.md", "interface/navigation.md"
 SECTIONS = ("Périmètre lu", "Stack constatée", "Processus constatés", "Rôles constatés", "Données constatées",
-            "Architecture constatée", "Tests constatés")
+            "Architecture constatée", "Interface constatée", "Tests constatés")
 STATES = ("complet", "partiel", "cassé")
 SEVERITIES = ("Bloquant", "À corriger", "Mineur")
 SOURCES = ("qualité", "sécurité", "bdd", "inventaire", "tests")
@@ -187,6 +199,11 @@ def inventaire_gaps(kb: Path, root: Path) -> list[str]:
             m = re.search(r"source\s*:\s*(.*)$", line)
             gaps += code_gaps(root, "`## Stack constatée`", m[1]) if m else \
                 [f"`## Stack constatée` : « {line.strip()[:60]} » sans `source : \\`fichier:ligne\\``"]
+    for line in section(text, "Interface constatée"):
+        if re.match(r"^-\s+\S", line) and not line.lstrip("- ").startswith("Aucun"):
+            m = re.search(r"source\s*:\s*(.*)$", line)
+            gaps += code_gaps(root, "`## Interface constatée`", m[1]) if m else \
+                [f"`## Interface constatée` : « {line.strip()[:60]} » sans `source : \\`gabarit ou composant\\``"]
     gaps += doc_listing_gaps(kb, root)
     for line in section(text, "Rôles constatés"):
         if re.match(r"^-\s+\S", line) and not line.lstrip("- ").startswith("Aucun"):
@@ -456,6 +473,85 @@ def schema_db_gaps(kb: Path, root: Path) -> list[str]:
     return gaps
 
 
+def found_in(kb: Path, heading: str) -> list[tuple[str, list[tuple[str, str]]]]:
+    """The lines of an inventory section that cite code, each with its cited paths (after `source :` when given)."""
+    return [(x.strip(), CODE.findall(x.split("source", 1)[-1])) for x in section(read(kb / INVENTAIRE), heading)
+            if re.match(r"^-\s+\S", x) and not x.lstrip("- ").startswith("Aucun") and CODE.search(x)]
+
+
+def matched(line: str, cited: list[tuple[str, str]], rows: list[str]) -> tuple[str, list[str], str | None]:
+    name = line.lstrip("- ").split(" — ")[0][:60]
+    keys = [f"`{rel}:{n}`" if n else f"`{rel}`" for rel, n in cited]
+    return name, keys, next((r for r in rows if any(k in r for k in keys)), None)
+
+
+def architecture_gaps(kb: Path) -> list[str]:
+    """The architecture in place is extended, not redrawn: each layer or module is kept, extended, or replaced for a
+    reason the user decided (a problem to fix, an exigence) with what moves. Matched by its path."""
+    found = found_in(kb, "Architecture constatée")
+    if not found:
+        return []
+    text = read(kb / ARCHI)
+    rows = [x.strip() for x in section(text, "Architecture reprise") if re.match(r"^-\s+\S", x)] if text else []
+    if not rows:
+        return [f"`kb/{ARCHI}` (`type: Infra`) sans `## Architecture reprise` : chaque ligne de `## Architecture "
+                "constatée`, `conservé`, `étendu` ou `remplacé par <x>`, par son chemin"]
+    gaps = []
+    for line, cited in found:
+        name, keys, row = matched(line, cited, rows)
+        if row is None:
+            gaps.append(f"« {name} » ({', '.join(keys)}) absent de `## Architecture reprise` de `kb/{ARCHI}` — "
+                        "`conservé`, `étendu — <ce qui s'ajoute>` ou `remplacé par <x> — raison : <Dn|exigence> — "
+                        "migration : <…>`")
+            continue
+        verdict = re.search(r"—\s*(conservée?|étendue?|remplacée?\s+par)\b", row, re.I)
+        if not verdict:
+            gaps.append(f"« {name} » : ni `conservé`, ni `étendu`, ni `remplacé par <x>` dans `## Architecture reprise`")
+        elif verdict[1].lower().startswith("étendu") and not re.search(r"étendue?\s*—\s*\S", row, re.I):
+            gaps.append(f"« {name} » étendu sans ce qui s'ajoute (`étendu — <modules, chemins>`)")
+        elif verdict[1].lower().startswith("remplacé"):
+            if reason_gap(kb, row):
+                gaps.append(f"« {name} » remplacé sans `raison :` — un problème que l'utilisateur a décidé de "
+                            "corriger (`Dn`), ou le lien d'une exigence ; « plus propre » ne suffit pas, le code en dépend")
+            if not re.search(r"migration\s*:\s*\S", row):
+                gaps.append(f"« {name} » remplacé sans `migration :` — ce qui bouge, et son coût")
+    return gaps
+
+
+def ecrans_gaps(kb: Path) -> list[str]:
+    """No screen the users already have disappears in silence: each one is kept, replaced by a screen of the new
+    navigation, or dropped for a reason the user decided. Matched by its source path."""
+    found = found_in(kb, "Interface constatée")
+    if not found:
+        return []
+    text = read(kb / NAVIGATION)
+    rows = [x.strip() for x in section(text, "Écrans repris") if re.match(r"^-\s+\S", x)] if text else []
+    if not rows:
+        return [f"`kb/{NAVIGATION}` sans `## Écrans repris` : chaque écran de `## Interface constatée`, `conservé`, "
+                "`remplacé par <écran>` ou `supprimé`, par son chemin source"]
+    screens = [x.strip().strip("|").split("|")[0].strip().lower() for x in section(text, "Écrans")
+               if x.strip().startswith("|")]
+    gaps = []
+    for line, cited in found:
+        name, keys, row = matched(line, cited, rows)
+        if row is None:
+            gaps.append(f"« {name} » ({', '.join(keys)}) absent de `## Écrans repris` de `kb/{NAVIGATION}` — "
+                        "`conservé`, `remplacé par <écran>` ou `supprimé — raison : <Dn|exigence>`")
+            continue
+        verdict = re.search(r"—\s*(conservée?|remplacée?\s+par\s+(.+?)|supprimée?)\s*(?:—|$)", row, re.I)
+        if not verdict:
+            gaps.append(f"« {name} » : ni `conservé`, ni `remplacé par <écran>`, ni `supprimé` dans `## Écrans repris`")
+        elif verdict[2]:
+            target = verdict[2].strip().strip("«» \"'").strip().lower()
+            if target not in screens:
+                gaps.append(f"« {name} » remplacé par « {verdict[2].strip()} », absent du tableau `## Écrans` : "
+                            "l'écran qui le remplace doit exister")
+        elif verdict[1].lower().startswith("supprimé") and reason_gap(kb, row):
+            gaps.append(f"« {name} » supprimé sans `raison :` — un problème que l'utilisateur a décidé de corriger "
+                        "(`Dn`), ou le lien d'une exigence ; ses utilisateurs s'en servent")
+    return gaps
+
+
 def processes(kb: Path) -> list[str]:
     return [i[0] for i in items(section(read(kb / INVENTAIRE), "Processus constatés")) if i[0].startswith("EX")]
 
@@ -564,7 +660,7 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("kb", type=Path)
     ap.add_argument("action", choices=["inventaire", "diagnostic", "documentation", "adoption", "stack", "infra", "schema-db",
-                                           "interview", "cdc", "backlog"])
+                                           "architecture", "interface", "interview", "cdc", "backlog"])
     ap.add_argument("--root", type=Path)
     a = ap.parse_args(argv)
     if not a.kb.is_dir():
@@ -574,13 +670,14 @@ def main(argv: list[str]) -> int:
     if os.environ.get("HOSA_ADOPTION") == "0":
         print("✓ contrôle de l'existant coupé (HOSA_ADOPTION=0)")
         return 0
-    if a.action in ("stack", "infra", "schema-db", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
+    if a.action in ("stack", "infra", "schema-db", "architecture", "interface", "interview", "cdc", "backlog") and not (a.kb / INVENTAIRE).is_file():
         print("✓ pas de code existant adopté")
         return 0
     checks = {"inventaire": lambda: inventaire_gaps(a.kb, root), "diagnostic": lambda: diagnostic_gaps(a.kb, root),
               "documentation": lambda: documentation_gaps(a.kb, root),
               "adoption": lambda: adoption_gaps(a.kb, root), "stack": lambda: stack_gaps(a.kb), "infra": lambda: infra_gaps(a.kb, root),
-              "schema-db": lambda: schema_db_gaps(a.kb, root), "interview": lambda: interview_gaps(a.kb),
+              "schema-db": lambda: schema_db_gaps(a.kb, root), "architecture": lambda: architecture_gaps(a.kb),
+              "interface": lambda: ecrans_gaps(a.kb), "interview": lambda: interview_gaps(a.kb),
               "cdc": lambda: cdc_gaps(a.kb), "backlog": lambda: backlog_gaps(a.kb, root)}
     gaps = checks[a.action]()
     for g in gaps:

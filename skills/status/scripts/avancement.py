@@ -930,12 +930,14 @@ def upstream_check(kb: Path, stage: str) -> list[str]:
         gaps += script(EXISTANT, kb, "schema-db")  # the data the existing code stores, each table kept, changed or dropped
     elif stage == "architecture":
         gaps.append(infra_with(kb, "Documentation d'architecture"))
+        gaps += script(EXISTANT, kb, "architecture")  # each layer of the existing code kept, extended or replaced
     elif stage == "menaces":
         gaps.append(concept(kb, "securite/modele-menaces.md", "Modèle de Menaces"))
     elif stage == "interface":
         gaps.append(infra_with(kb, "Documentation d'interface"))
         gaps.append(concept(kb, "interface/navigation.md", "Plan de navigation"))
         gaps.append(concept(kb, "interface/lexique.md", "Lexique interface"))
+        gaps += script(EXISTANT, kb, "interface")  # each existing screen kept, replaced or dropped for a reason
         found = interface_gaps(kb)  # run once: each checker scans the project
         for name in ("interface_check", "lexique_check", "gabarit_check"):
             mine = [g.split(" : ", 1)[1] for g in found if g.startswith(f"{name} : ")]

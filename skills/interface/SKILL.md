@@ -59,7 +59,7 @@ A `hosa-ux-designer` report with `## Reprise` (its tool-call budget is spent) �
 
 ## Step 1: Dispatch for Inputs and Personas
 
-Dispatch `hosa-ux-designer` (Phase 1, `agents/ux-designer.md`) to gather `kb/infra/`, `kb/cdc/`, `kb/personnas/`, `kb/stack/`, and the architecture documentation, and to list every real persona needing a UI-interview.
+Dispatch `hosa-ux-designer` (Phase 1, `agents/ux-designer.md`) to gather `kb/infra/`, `kb/cdc/`, `kb/personnas/`, `kb/stack/`, and the architecture documentation, and to list every real persona needing a UI-interview. Adopted code (`kb/existant/inventaire.md`): the screens of `## Interface constatée` go in as `baseline` at each round, and `kb/interface/navigation.md` `## Écrans repris` says for each one `conservé`, `remplacé par <écran>` or `supprimé` (a `Dn` decided `corriger` or an exigence). The user validates it with the navigation. `done interface` refuses a screen left out, a replacement absent from `## Écrans`, a drop without a decided reason (`existant_check interface`).
 
 If it returns an Open Question (no `Infra`/architecture doc, no `stable` `Exigence`, no `Stack Decision`, only the example persona or `Project`) — relay it to the user, propose the missing stage (`architecture`, `contestation`, `stack`, `hosa`), and only redispatch once resolved.
 
